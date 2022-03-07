@@ -16,10 +16,10 @@
 
 package nutcore
 
+import SSDbackend._
 import chisel3._
 import chisel3.util._
 import chisel3.util.experimental.BoringUtils
-
 import bus.simplebus._
 import bus.axi4._
 import utils._
@@ -104,7 +104,10 @@ class NutCore(implicit val p: NutCoreConfig) extends NutCoreModule {
   }
   
   // Backend
-  if (EnableOutOfOrderExec) {
+  val backend = Module(new SSDbackend)
+  backend.io.in <> frontend.io.out
+
+/*  if (EnableOutOfOrderExec) {
     val mmioXbar = Module(new SimpleBusCrossbarNto1(if (HasDcache) 2 else 3))
     val backend = Module(new Backend_ooo)
     PipelineVector2Connect(new DecodeIO, frontend.io.out(0), frontend.io.out(1), backend.io.in(0), backend.io.in(1), frontend.io.flushVec(1), 16)
@@ -169,5 +172,5 @@ class NutCore(implicit val p: NutCoreConfig) extends NutCoreModule {
     io.mmio <> mmioXbar.io.out
   }
 
-  Debug("------------------------ BACKEND ------------------------\n")
+  Debug("------------------------ BACKEND ------------------------\n")*/
 }
