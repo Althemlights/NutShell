@@ -864,7 +864,7 @@ class CSR(implicit val p: NutCoreConfig) extends NutCoreModule with HasCSRConst{
   BoringUtils.addSink(nutcoretrap, "nutcoretrap")
   def readWithScala(addr: Int): UInt = mapping(addr)._1
 
-  if (!p.FPGAPlatform) {
+/*  if (!p.FPGAPlatform) {
     // to monitor
     BoringUtils.addSource(readWithScala(perfCntList("Mcycle")._1), "simCycleCnt")
     BoringUtils.addSource(readWithScala(perfCntList("Minstret")._1), "simInstrCnt")
@@ -926,5 +926,5 @@ class CSR(implicit val p: NutCoreConfig) extends NutCoreModule with HasCSRConst{
     } else {
       BoringUtils.addSource(readWithScala(perfCntList("Minstret")._1), "ilaInstrCnt")
     }
-  }
+  }*/
 }

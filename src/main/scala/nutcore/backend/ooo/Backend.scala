@@ -639,7 +639,7 @@ class Backend_ooo(implicit val p: NutCoreConfig) extends NutCoreModule with HasR
   BoringUtils.addSource(io.in(1).valid && !instCango(1), "perfCntCondMdp2StCnt")
   BoringUtils.addSource(!io.in(0).valid, "perfCntCondMdpNoInst")
 
-  if (!p.FPGAPlatform) {
+/*  if (!p.FPGAPlatform) {
     val difftestGpr = Module(new DifftestArchIntRegState)
     difftestGpr.io.clock  := clock
     difftestGpr.io.coreid := 0.U // TODO
@@ -663,7 +663,7 @@ class Backend_ooo(implicit val p: NutCoreConfig) extends NutCoreModule with HasR
     difftest.io.pc       := csrrs.io.out.bits.decode.cf.pc
     difftest.io.cycleCnt := cycleCnt
     difftest.io.instrCnt := instrCnt
-  }
+  }*/
   
 }
 

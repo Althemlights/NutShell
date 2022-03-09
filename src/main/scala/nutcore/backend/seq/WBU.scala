@@ -56,7 +56,7 @@ class WBU(implicit val p: NutCoreConfig) extends NutCoreModule{
   BoringUtils.addSource(io.in.valid, "perfCntCondMinstret")
   BoringUtils.addSource(falseWire, "perfCntCondMultiCommit")
   
-  if (!p.FPGAPlatform) {
+/*  if (!p.FPGAPlatform) {
     val difftest_commit = Module(new DifftestInstrCommit)
     difftest_commit.io.clock    := clock
     difftest_commit.io.coreid   := 0.U
@@ -93,5 +93,5 @@ class WBU(implicit val p: NutCoreConfig) extends NutCoreModule{
     BoringUtils.addSource(io.wb.rfWen, "ilaWBUrfWen")
     BoringUtils.addSource(io.wb.rfDest, "ilaWBUrfDest")
     BoringUtils.addSource(io.wb.rfData, "ilaWBUrfData")
-  }
+  }*/
 }

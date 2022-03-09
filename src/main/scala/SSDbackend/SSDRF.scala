@@ -4,8 +4,41 @@ import chisel3._
 import chisel3.util._
 import nutcore.NutCoreModule
 
+class RfReadPort extends Bundle{
+  val addr = Input(UInt(5.W))
+  val data = Output(UInt(64.W))
+}
 
-class SSDRF extends NutCoreModule {
+class RfWritePort extends Bundle{
+  val wen = Input(Bool())
+  val addr = Input(UInt(5.W))
+  val data = Input(UInt(64.W))
+}
+
+class SSDRF extends Module{
+  val io =IO(new Bundle() {
+    val readPorts = Vec(4,new RfReadPort)
+    val writePorts = Vec(2,new RfWritePort)
+    val debugPorts = Output(Vec(32,UInt(64.W)))
+  })
+
+  val mem = Reg(Vec(32,UInt(64.W)))
+
+  for (r <- io.readPorts) {
+    val rdata = Mux(r.addr === 0.U, 0.U, mem(r.addr))
+    r.data := rdata
+  }
+  for (w <- io.writePorts) {
+    when(w.wen) {
+      mem(w.addr) := w.data
+    }
+  }
+  io.debugPorts := mem
+}
+
+
+
+/*class SSDRF extends NutCoreModule {
   val io = IO(new RfIO)
 
   val Regfile = Mem(32, UInt(64.W))
@@ -38,4 +71,4 @@ class SSDRF extends NutCoreModule {
   //write
   Regfile.write(io.waddr(0),io.wen(0))
   Regfile.write(io.waddr(1),io.wen(1) && !wwhit)
-}
+}*/

@@ -104,10 +104,10 @@ class NutCore(implicit val p: NutCoreConfig) extends NutCoreModule {
   }
   
   // Backend
-  val backend = Module(new SSDbackend)
-  backend.io.in <> frontend.io.out
+  val SSbackend = Module(new SSDbackend)
+  SSbackend.io.in <> frontend.io.out
 
-/*  if (EnableOutOfOrderExec) {
+  if (EnableOutOfOrderExec) {
     val mmioXbar = Module(new SimpleBusCrossbarNto1(if (HasDcache) 2 else 3))
     val backend = Module(new Backend_ooo)
     PipelineVector2Connect(new DecodeIO, frontend.io.out(0), frontend.io.out(1), backend.io.in(0), backend.io.in(1), frontend.io.flushVec(1), 16)
@@ -121,7 +121,7 @@ class NutCore(implicit val p: NutCoreConfig) extends NutCoreModule {
     io.imem <> Cache(in = itlb.io.out, mmio = mmioXbar.io.in.take(1), flush = Fill(2, frontend.io.flushVec(0) | frontend.io.bpFlush), empty = itlb.io.cacheEmpty)(
       CacheConfig(ro = true, name = "icache", userBits = ICacheUserBundleWidth)
     )
-    
+
     val dtlb = TLB(in = backend.io.dtlb, mem = dmemXbar.io.in(1), flush = frontend.io.flushVec(3), csrMMU = backend.io.memMMU.dmem)(TLBConfig(name = "dtlb", userBits = DCacheUserBundleWidth, totalEntry = 64))
     dtlb.io.out := DontCare //FIXIT
     dtlb.io.out.req.ready := true.B //FIXIT
@@ -172,5 +172,5 @@ class NutCore(implicit val p: NutCoreConfig) extends NutCoreModule {
     io.mmio <> mmioXbar.io.out
   }
 
-  Debug("------------------------ BACKEND ------------------------\n")*/
+  Debug("------------------------ BACKEND ------------------------\n")
 }

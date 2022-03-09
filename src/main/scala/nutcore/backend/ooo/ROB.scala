@@ -495,7 +495,7 @@ class ROB(implicit val p: NutCoreConfig) extends NutCoreModule with HasInstrType
   BoringUtils.addSource(retireATerm, "perfCntCondMinstret")
   BoringUtils.addSource(retireMultiTerms, "perfCntCondMultiCommit")
   
-  if (!p.FPGAPlatform) {
+/*  if (!p.FPGAPlatform) {
     for (i <- 0 until RetireWidth) {
       val difftest_commit = Module(new DifftestInstrCommit)
       difftest_commit.io.clock    := clock
@@ -525,7 +525,7 @@ class ROB(implicit val p: NutCoreConfig) extends NutCoreModule with HasInstrType
     BoringUtils.addSource(io.wb(0).rfWen, "ilaWBUrfWen")
     BoringUtils.addSource(io.wb(0).rfDest, "ilaWBUrfDest")
     BoringUtils.addSource(io.wb(0).rfData, "ilaWBUrfData")
-  }
+  }*/
 
   Debug(io.empty, "empty\n")
   Debug(io.redirect.valid && io.redirect.rtype === 1.U, "mbr finished\n")
