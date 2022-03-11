@@ -104,8 +104,8 @@ class NutCore(implicit val p: NutCoreConfig) extends NutCoreModule {
   }
   
   // Backend
-  val SSbackend = Module(new SSDbackend)
-  SSbackend.io.in <> frontend.io.out
+  val SSDbackend = Module(new SSDbackend)
+  SSDbackend.io.in <> frontend.io.out
 
   if (EnableOutOfOrderExec) {
     val mmioXbar = Module(new SimpleBusCrossbarNto1(if (HasDcache) 2 else 3))

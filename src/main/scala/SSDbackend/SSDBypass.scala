@@ -61,25 +61,31 @@ class DecodeIO2BypassPkt extends Module {
   i1hiti0 := (io.in(1).bits.ctrl.rfSrc1 === io.in(0).bits.ctrl.rfDest && i1rs1valid && i0decodePkt.rdvalid
     || io.in(1).bits.ctrl.rfSrc2 === io.in(0).bits.ctrl.rfDest && i1rs2valid && i0decodePkt.rdvalid)
   //hit stage
-  val i0rs1hitStage = 10.U(4.W)
-  val i0rs2hitStage = 10.U(4.W)
-  val i1rs1hitStage = 10.U(4.W)
-  val i1rs2hitStage = 10.U(4.W)
+  val i0rs1hitStage = WireInit(10.U(4.W))
+  val i0rs2hitStage = WireInit(10.U(4.W))
+  val i1rs1hitStage = WireInit(10.U(4.W))
+  val i1rs2hitStage = WireInit(10.U(4.W))
+  val i0rs1HitSel = VecInit(Seq.fill(10)(false.B))
+  val i0rs2HitSel = VecInit(Seq.fill(10)(false.B))
+  val i1rs1HitSel = VecInit(Seq.fill(10)(false.B))
+  val i1rs2HitSel = VecInit(Seq.fill(10)(false.B))
+  val stageSeq = Seq(0.U,1.U,2.U,3.U,4.U,5.U,6.U,7.U,8.U,9.U)
 
-  for (i <- 9 to 0) {
-    when(io.in(0).bits.ctrl.rfSrc1 === io.BypassPktTable(i).decodePkt.rd && io.BypassPktTable(i).decodePkt.rdvalid && io.BypassPktValid(i)) {
-      i0rs1hitStage := i.U
-    }
-    when(io.in(0).bits.ctrl.rfSrc2 === io.BypassPktTable(i).decodePkt.rd && io.BypassPktTable(i).decodePkt.rdvalid && io.BypassPktValid(i)) {
-      i0rs2hitStage := i.U
-    }
-    when(io.in(0).bits.ctrl.rfSrc1 === io.BypassPktTable(i).decodePkt.rd && io.BypassPktTable(i).decodePkt.rdvalid && io.BypassPktValid(i)) {
-      i1rs1hitStage := i.U
-    }
-    when(io.in(0).bits.ctrl.rfSrc2 === io.BypassPktTable(i).decodePkt.rd && io.BypassPktTable(i).decodePkt.rdvalid && io.BypassPktValid(i)) {
-      i1rs2hitStage := i.U
-    }
+  i0rs1hitStage := PriorityMux(i0rs1HitSel,stageSeq)
+  i0rs2hitStage := PriorityMux(i0rs2HitSel,stageSeq)
+  i1rs1hitStage := PriorityMux(i1rs1HitSel,stageSeq)
+  i1rs2hitStage := PriorityMux(i1rs2HitSel,stageSeq)
+
+  for (i <- 0 to 9) {
+    i0rs1HitSel(i) := io.in(0).bits.ctrl.rfSrc1 === io.BypassPktTable(i).decodePkt.rd && io.BypassPktTable(i).decodePkt.rdvalid && io.BypassPktValid(i)
+    i0rs2HitSel(i) := io.in(0).bits.ctrl.rfSrc2 === io.BypassPktTable(i).decodePkt.rd && io.BypassPktTable(i).decodePkt.rdvalid && io.BypassPktValid(i)
+    i1rs1HitSel(i) := io.in(1).bits.ctrl.rfSrc1 === io.BypassPktTable(i).decodePkt.rd && io.BypassPktTable(i).decodePkt.rdvalid && io.BypassPktValid(i)
+    i1rs2HitSel(i) := io.in(1).bits.ctrl.rfSrc2 === io.BypassPktTable(i).decodePkt.rd && io.BypassPktTable(i).decodePkt.rdvalid && io.BypassPktValid(i)
   }
+  printf(p" i0rs1hitStage = ${Binary(i0rs1hitStage)}")
+  printf(p" i0rs2hitStage = ${Binary(i0rs2hitStage)}")
+  printf(p" i1rs1hitStage = ${Binary(i1rs1hitStage)}")
+  printf(p" i1rs2hitStage = ${Binary(i1rs2hitStage)}")
     
 
     //merge decodePkt.subalu
@@ -107,7 +113,7 @@ class DecodeIO2BypassPkt extends Module {
     val Valid = VecInit(Seq.fill(10)(false.B))
     for (i <- 0 to 0) Valid(i) := io.BypassPktValid(i)
     //BypassPkt out0
-    io.out0.bits.BypassCtl.rs1bypasse0 := Seq(
+    io.out0.bits.BypassCtl.rs1bypasse0 := VecInit(
       Valid(0) && i0rs1hitStage === 0.U && FuType(0).alu && !FuType(0).subalu,
       Valid(1) && i0rs1hitStage === 1.U && FuType(1).alu && !FuType(1).subalu,
       Valid(2) && i0rs1hitStage === 2.U && FuType(2).alu && !FuType(2).subalu,
@@ -121,7 +127,7 @@ class DecodeIO2BypassPkt extends Module {
       Valid(8) && i0rs1hitStage === 8.U,
       Valid(9) && i0rs1hitStage === 9.U
     )
-    io.out0.bits.BypassCtl.rs2bypasse0 := Seq(
+    io.out0.bits.BypassCtl.rs2bypasse0 := VecInit(
       Valid(0) && i0rs2hitStage === 0.U && FuType(0).alu && !FuType(0).subalu,
       Valid(1) && i0rs2hitStage === 1.U && FuType(1).alu && !FuType(1).subalu,
       Valid(2) && i0rs2hitStage === 2.U && FuType(2).alu && !FuType(2).subalu,
@@ -135,7 +141,7 @@ class DecodeIO2BypassPkt extends Module {
       Valid(8) && i0rs2hitStage === 8.U,
       Valid(9) && i0rs2hitStage === 9.U
     )
-    io.out0.bits.BypassCtl.rs1bypasse2 := Seq(
+    io.out0.bits.BypassCtl.rs1bypasse2 := VecInit(
       Valid(4) && i0rs1hitStage === 4.U && FuType(4).alu && FuType(4).subalu,
       Valid(5) && i0rs1hitStage === 5.U && FuType(5).alu && FuType(5).subalu
     )
@@ -143,7 +149,7 @@ class DecodeIO2BypassPkt extends Module {
       Valid(4) && i0rs2hitStage === 4.U && FuType(4).alu && FuType(4).subalu,
       Valid(5) && i0rs2hitStage === 5.U && FuType(5).alu && FuType(5).subalu
     )
-    io.out0.bits.BypassCtl.rs1bypasse3 := Seq(
+    io.out0.bits.BypassCtl.rs1bypasse3 := VecInit(
       false.B,
       Valid(0) && i0rs1hitStage === 0.U && FuType(0).alu && FuType(0).subalu
         || Valid(0) && i0rs1hitStage === 0.U && FuType(0).load
@@ -161,7 +167,7 @@ class DecodeIO2BypassPkt extends Module {
 
 
 
-    io.out0.bits.BypassCtl.rs2bypasse3 := Seq(
+    io.out0.bits.BypassCtl.rs2bypasse3 := VecInit(
       false.B,
       Valid(0) && i0rs2hitStage === 0.U && FuType(0).alu && FuType(0).subalu
         || Valid(0) && i0rs2hitStage === 0.U && FuType(0).load
@@ -177,7 +183,7 @@ class DecodeIO2BypassPkt extends Module {
         || Valid(3) && i0rs2hitStage === 3.U && FuType(3).mul
     )
     //BypassPkt out1
-    io.out1.bits.BypassCtl.rs1bypasse0 := Seq(
+    io.out1.bits.BypassCtl.rs1bypasse0 := VecInit(
       Valid(0) && i1rs1hitStage === 0.U && FuType(0).alu && !FuType(0).subalu,
       Valid(1) && i1rs1hitStage === 1.U && FuType(1).alu && !FuType(1).subalu,
       Valid(2) && i1rs1hitStage === 2.U && FuType(2).alu && !FuType(2).subalu,
@@ -191,7 +197,7 @@ class DecodeIO2BypassPkt extends Module {
       Valid(8) && i1rs1hitStage === 8.U,
       Valid(9) && i1rs1hitStage === 9.U
     )
-    io.out1.bits.BypassCtl.rs2bypasse0 := Seq(
+    io.out1.bits.BypassCtl.rs2bypasse0 := VecInit(
       Valid(0) && i1rs2hitStage === 0.U && FuType(0).alu && !FuType(0).subalu,
       Valid(1) && i1rs2hitStage === 1.U && FuType(1).alu && !FuType(1).subalu,
       Valid(2) && i1rs2hitStage === 2.U && FuType(2).alu && !FuType(2).subalu,
@@ -205,15 +211,15 @@ class DecodeIO2BypassPkt extends Module {
       Valid(8) && i1rs2hitStage === 8.U,
       Valid(9) && i1rs2hitStage === 9.U
     )
-    io.out1.bits.BypassCtl.rs1bypasse2 := Seq(
+    io.out1.bits.BypassCtl.rs1bypasse2 := VecInit(
       Valid(4) && i1rs1hitStage === 4.U && FuType(4).alu && FuType(4).subalu,
       Valid(5) && i1rs1hitStage === 5.U && FuType(5).alu && FuType(5).subalu
     )
-    io.out1.bits.BypassCtl.rs2bypasse2 := Seq(
+    io.out1.bits.BypassCtl.rs2bypasse2 := VecInit(
       Valid(4) && i1rs2hitStage === 4.U && FuType(4).alu && FuType(4).subalu,
       Valid(5) && i1rs2hitStage === 5.U && FuType(5).alu && FuType(5).subalu
     )
-    io.out1.bits.BypassCtl.rs1bypasse3 := Seq(
+    io.out1.bits.BypassCtl.rs1bypasse3 := VecInit(
       io.in(1).bits.ctrl.rfSrc1 === i1decodePkt.rd && i1decodePkt.alu && i1decodePkt.subalu && i0decodePkt.rdvalid && (i0decodePkt.mul || i0decodePkt.load),
       Valid(0) && i0rs1hitStage === 0.U && FuType(0).alu && FuType(0).subalu
         || Valid(0) && i0rs1hitStage === 0.U && FuType(0).load
@@ -228,7 +234,7 @@ class DecodeIO2BypassPkt extends Module {
         || Valid(3) && i0rs1hitStage === 3.U && FuType(3).load
         || Valid(3) && i0rs1hitStage === 3.U && FuType(3).mul
     )
-    io.out1.bits.BypassCtl.rs2bypasse3 := Seq(
+    io.out1.bits.BypassCtl.rs2bypasse3 := VecInit(
       io.in(1).bits.ctrl.rfSrc2 === i1decodePkt.rd && i1decodePkt.alu && i1decodePkt.subalu && i0decodePkt.rdvalid && (i0decodePkt.mul || i0decodePkt.load),
       Valid(0) && i0rs2hitStage === 0.U && FuType(0).alu && FuType(0).subalu
         || Valid(0) && i0rs2hitStage === 0.U && FuType(0).load
@@ -370,8 +376,8 @@ class Bypass extends Module{
   val pipeOut = Wire(Vec(10,Decoupled(new BypassPkt)))
   val pipeFire = VecInit(Seq.fill(10)(false.B))
   //PktPipeline in ,out & fire
-  pipeIn(0) <> DecodeIO2BypassPkt.io.out0
-  pipeIn(1) <> DecodeIO2BypassPkt.io.out1
+  pipeIn(0) := DecodeIO2BypassPkt.io.out0
+  pipeIn(1) := DecodeIO2BypassPkt.io.out1
 
   for (i <- 2 to 9) {
     pipeIn(i).bits := pipeOut(i - 2).bits
@@ -380,7 +386,7 @@ class Bypass extends Module{
   }
 
   for (i <- 0 to 9) {
-    if (i == 8 || i == 9) pipeFire(i) := false.B
+    if (i == 8 || i == 9) pipeFire(i) := true.B
     else pipeFire(i) := pipeOut(i).valid && pipeIn(i + 2).ready
   }
 
@@ -401,7 +407,8 @@ class Bypass extends Module{
   DecodeIO2BypassPkt.io.BypassPktValid := BypassPktValid
   io.BypassPkt := BypassPkt
   io.BypassPktValid := BypassPktValid
-  DecodeIO2BypassPkt.io.in <> io.in
+  DecodeIO2BypassPkt.io.in(0) <> io.in(1)
+  DecodeIO2BypassPkt.io.in(1) <> io.in(0)
 
 
   io.issueStall := DecodeIO2BypassPkt.io.issueStall

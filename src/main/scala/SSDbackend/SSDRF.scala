@@ -3,6 +3,7 @@ package SSDbackend
 import chisel3._
 import chisel3.util._
 import nutcore.NutCoreModule
+import chisel3.util.experimental.BoringUtils
 
 class RfReadPort extends Bundle{
   val addr = Input(UInt(5.W))
@@ -33,6 +34,7 @@ class SSDRF extends Module{
       mem(w.addr) := w.data
     }
   }
+  BoringUtils.addSource(mem(10), "rf_a0")
   io.debugPorts := mem
 }
 
