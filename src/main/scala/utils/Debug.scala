@@ -52,7 +52,7 @@ object LogUtil {
            (prefix: Boolean, cond: Bool, pable: Printable)
            (implicit name: String): Any = {
     val commonInfo = p"[${GTimer()}] $name: "
-    when (cond && displayLog) {
+    when (cond && displayLog && NutCoreConfig().EnableDebug.B) {
       if(prefix) printf(commonInfo)
       printf(pable)
     }
