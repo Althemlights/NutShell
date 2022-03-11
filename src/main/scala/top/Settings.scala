@@ -27,8 +27,8 @@ object DefaultSettings {
 
     "HasL2cache" -> true,
     "HasPrefetch" -> true,
-    "EnableMultiIssue" -> false,
-    "EnableOutOfOrderExec" -> false,
+    "EnableMultiIssue" -> true,
+    "EnableOutOfOrderExec" -> true,
     "HasDTLB" -> true,
     "HasITLB" -> true,
     "HasDcache" -> true,
