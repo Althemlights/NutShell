@@ -110,7 +110,6 @@ class SSDbackend extends Module with hasBypassConst {
     BypassPkt(4).BypassCtl.rs2bypasse3.asUInt.orR,
     BypassPkt(5).BypassCtl.rs1bypasse3.asUInt.orR,
     BypassPkt(5).BypassCtl.rs2bypasse3.asUInt.orR
-
   )
 
   val ByapssPortE0 = Wire(Vec(E0BypaaPort,UInt(64.W)))
@@ -121,7 +120,7 @@ class SSDbackend extends Module with hasBypassConst {
   val ByapssPortE2 = Wire(Vec(E2BypaaPort,UInt(64.W)))
   ByapssPortE2 := Seq(pipeOut(8).bits.rd,pipeOut(9).bits.rd)
   val ByapssPortE3 = Wire(Vec(E3BypaaPort,UInt(64.W)))
-  ByapssPortE3 := Seq(pipeOut(5).bits.rd,pipeOut(6).bits.rd,pipeOut(7).bits.rd,pipeOut(8).bits.rd,pipeOut(9).bits.rd)
+  ByapssPortE3 := Seq(pipeOut(5).bits.rd,pipeIn(8).bits.rd,pipeIn(9).bits.rd,pipeOut(8).bits.rd,pipeOut(9).bits.rd)
 
   //decode & issue
   //rs1 data type: pc, regfile or bypass
@@ -132,7 +131,7 @@ class SSDbackend extends Module with hasBypassConst {
   e0ByapssRs1(1) := BypassMux(ByPassEna(2), BypassPktE0(1).bits.BypassCtl.rs1bypasse0,ByapssPortE0, regfile.io.readPorts(2).data)
   e0ByapssRs2(0) := BypassMux(ByPassEna(1), BypassPktE0(0).bits.BypassCtl.rs2bypasse0,ByapssPortE0, regfile.io.readPorts(1).data)
   e0ByapssRs2(1) := BypassMux(ByPassEna(3), BypassPktE0(1).bits.BypassCtl.rs2bypasse0,ByapssPortE0, regfile.io.readPorts(3).data)
-
+ //myDebug(pipeIn(0).bits.pc === "h8000003c".U,"pipeIn(0) pc: %x, rs1Bypasse0: %b,rs1Bypass data: %x",pipeIn(0).bits.pc,BypassPktE0(0).bits.BypassCtl.rs1bypasse0.asUInt,e0ByapssRs1(0))
 
   pipeIn(0).valid := io.in(1).valid
   pipeIn(1).valid := io.in(0).valid
@@ -150,8 +149,7 @@ class SSDbackend extends Module with hasBypassConst {
   pipeIn(1).bits.rs2 := Mux(io.in(0).bits.ctrl.src2Type =/= SrcType.reg,
     io.in(0).bits.data.imm,e0ByapssRs2(1))
 
-    printf(p"rs1BypassCtl = ${Binary(BypassPktE0(1).bits.BypassCtl.rs1bypasse0.asUInt)}")
-    printf(p"rs2BypassCtl = ${Binary(BypassPktE0(1).bits.BypassCtl.rs2bypasse0.asUInt)}")
+  //myDebug(true.B,"debugTest %b\n",BypassPktE0(1).bits.BypassCtl.rs1bypasse0.asUInt)
 
   pipeIn(0).bits.fuOpType := io.in(1).bits.ctrl.fuOpType
   pipeIn(1).bits.fuOpType := io.in(0).bits.ctrl.fuOpType
@@ -180,25 +178,28 @@ class SSDbackend extends Module with hasBypassConst {
 //  PipelineConnect(pipeIn(3),pipeOut(3),pipeFire(3),pipeFlush(3))
   //e2
   pipeIn(4).bits.rs1 := BypassMux(ByPassEna(4), BypassPkt(2).BypassCtl.rs1bypasse2,ByapssPortE2, pipeOut(2).bits.rs1)
-  pipeIn(4).bits.rs2 := BypassMux(ByPassEna(5), BypassPkt(2).BypassCtl.rs1bypasse2,ByapssPortE2, pipeOut(2).bits.rs2)
+  pipeIn(4).bits.rs2 := BypassMux(ByPassEna(5), BypassPkt(2).BypassCtl.rs2bypasse2,ByapssPortE2, pipeOut(2).bits.rs2)
   pipeIn(5).bits.rs1 := BypassMux(ByPassEna(6), BypassPkt(3).BypassCtl.rs1bypasse2,ByapssPortE2, pipeOut(3).bits.rs1)
-  pipeIn(5).bits.rs2 := BypassMux(ByPassEna(7), BypassPkt(3).BypassCtl.rs1bypasse2,ByapssPortE2, pipeOut(3).bits.rs2)
+  pipeIn(5).bits.rs2 := BypassMux(ByPassEna(7), BypassPkt(3).BypassCtl.rs2bypasse2,ByapssPortE2, pipeOut(3).bits.rs2)
   //e3_reg
 //  StallPointConnect(pipeIn(4),pipeOut(4),pipeFire(4),pipeFlush(4),memStall)
 //  StallPointConnect(pipeIn(5),pipeOut(5),pipeFire(5),pipeFlush(5),memStall)
   //e3
   pipeIn(6).bits.rd := pipeOut(4).bits.rd  //加入其他Fu后要修改
   pipeIn(6).bits.rs1 := BypassMux(ByPassEna(8), BypassPkt(4).BypassCtl.rs1bypasse3,ByapssPortE3, pipeOut(4).bits.rs1)
-  pipeIn(6).bits.rs2 := BypassMux(ByPassEna(9), BypassPkt(4).BypassCtl.rs1bypasse3,ByapssPortE3, pipeOut(4).bits.rs2)
+  pipeIn(6).bits.rs2 := BypassMux(ByPassEna(9), BypassPkt(4).BypassCtl.rs2bypasse3,ByapssPortE3, pipeOut(4).bits.rs2)
   pipeIn(7).bits.rd := pipeOut(5).bits.rd
   pipeIn(7).bits.rs1 := BypassMux(ByPassEna(10), BypassPkt(5).BypassCtl.rs1bypasse3,ByapssPortE3, pipeOut(5).bits.rs1)
-  pipeIn(7).bits.rs2 := BypassMux(ByPassEna(11), BypassPkt(5).BypassCtl.rs1bypasse3,ByapssPortE3, pipeOut(5).bits.rs2)
+  pipeIn(7).bits.rs2 := BypassMux(ByPassEna(11), BypassPkt(5).BypassCtl.rs2bypasse3,ByapssPortE3, pipeOut(5).bits.rs2)
   //e4_reg
 //  PipelineConnect(pipeIn(6),pipeOut(6),pipeFire(6),pipeFlush(6))
 //  PipelineConnect(pipeIn(7),pipeOut(7),pipeFire(7),pipeFlush(7))
   //e4
   pipeIn(8).bits.rd := Mux(aluValid(2),aluResult(2),pipeOut(6).bits.rd)
   pipeIn(9).bits.rd := Mux(aluValid(3),aluResult(3),pipeOut(7).bits.rd)
+  val cond = Wire(Bool())
+  cond := pipeOut(6).bits.pc === "h8000008c".U
+  myDebug(cond,"aluValid id:%b\n",aluValid(2).asUInt)
   //e5_reg
 //  PipelineConnect(pipeIn(8),pipeOut(8),pipeFire(8),pipeFlush(8))
 //  PipelineConnect(pipeIn(9),pipeOut(9),pipeFire(9),pipeFlush(9))
@@ -256,6 +257,21 @@ class SSDbackend extends Module with hasBypassConst {
 
   /* ----- Difftest ----- */
 
+  val dt_ic1 = Module(new DifftestInstrCommit)
+  dt_ic1.io.clock    := clock
+  dt_ic1.io.coreid   := 0.U
+  dt_ic1.io.index    := 0.U
+  dt_ic1.io.valid    := RegNext(pipeOut(9).valid)
+  dt_ic1.io.pc       := RegNext(pipeOut(9).bits.pc)
+  dt_ic1.io.instr    := RegNext(pipeOut(9).bits.instr)
+  dt_ic1.io.special  := 0.U
+  dt_ic1.io.skip     := false.B
+  dt_ic1.io.isRVC    := false.B
+  dt_ic1.io.scFailed := false.B
+  dt_ic1.io.wen      := RegNext(regfile.io.writePorts(1).wen)
+  dt_ic1.io.wpdest   := RegNext(Cat(0.U(3.W),regfile.io.writePorts(1).addr))
+  dt_ic1.io.wdest    := RegNext(Cat(0.U(3.W),regfile.io.writePorts(1).addr))
+
   val dt_ic0 = Module(new DifftestInstrCommit)
   dt_ic0.io.clock    := clock
   dt_ic0.io.coreid   := 0.U
@@ -272,34 +288,21 @@ class SSDbackend extends Module with hasBypassConst {
   dt_ic0.io.wpdest   := RegNext(Cat(0.U(3.W),regfile.io.writePorts(0).addr))
   dt_ic0.io.wdest    := RegNext(Cat(0.U(3.W),regfile.io.writePorts(0).addr))
 
-  val dt_ic1 = Module(new DifftestInstrCommit)
-  dt_ic1.io.clock    := clock
-  dt_ic1.io.coreid   := 0.U
-  dt_ic1.io.index    := 0.U
-  dt_ic1.io.valid    := RegNext(pipeOut(9).valid)
-  dt_ic1.io.pc       := RegNext(pipeOut(9).bits.pc)
-  dt_ic1.io.instr    := RegNext(pipeOut(9).bits.instr)
-  dt_ic1.io.special  := 0.U
-  dt_ic1.io.skip     := false.B
-  dt_ic1.io.isRVC    := false.B
-  dt_ic1.io.scFailed := false.B
-  dt_ic1.io.wen      := RegNext(regfile.io.writePorts(1).wen)
-  dt_ic1.io.wpdest   := RegNext(Cat(0.U(3.W),regfile.io.writePorts(1).addr))
-  dt_ic1.io.wdest    := RegNext(Cat(0.U(3.W),regfile.io.writePorts(1).addr))
-
   val dt_iw0 = Module(new DifftestIntWriteback)
   dt_iw0.io.clock    := clock
   dt_iw0.io.coreid   := 0.U
-  dt_iw0.io.valid    := RegNext(regfile.io.writePorts(0).wen)
-  dt_iw0.io.dest     := RegNext(regfile.io.writePorts(0).addr)
-  dt_iw0.io.data     := RegNext(regfile.io.writePorts(0).data)
+  dt_iw0.io.valid    := RegNext(regfile.io.writePorts(1).wen)
+  dt_iw0.io.dest     := RegNext(regfile.io.writePorts(1).addr)
+  dt_iw0.io.data     := RegNext(regfile.io.writePorts(1).data)
+
+
 
   val dt_iw1 = Module(new DifftestIntWriteback)
   dt_iw1.io.clock    := clock
   dt_iw1.io.coreid   := 0.U
-  dt_iw1.io.valid    := RegNext(regfile.io.writePorts(1).wen)
-  dt_iw1.io.dest     := RegNext(regfile.io.writePorts(1).addr)
-  dt_iw1.io.data     := RegNext(regfile.io.writePorts(1).data)
+  dt_iw1.io.valid    := RegNext(regfile.io.writePorts(0).wen)
+  dt_iw1.io.dest     := RegNext(regfile.io.writePorts(0).addr)
+  dt_iw1.io.data     := RegNext(regfile.io.writePorts(0).data)
 
 
 
@@ -355,8 +358,6 @@ class SSDbackend extends Module with hasBypassConst {
   dt_irs.io.clock  := clock
   dt_irs.io.coreid := 0.U
   dt_irs.io.gpr := regfile.io.debugPorts
-
-  //dt_irs.io.gpr    := VecInit((0 to 31).map(i => regfile.read(i.U)))
 
 
 }
