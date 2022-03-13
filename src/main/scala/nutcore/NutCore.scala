@@ -104,13 +104,19 @@ class NutCore(implicit val p: NutCoreConfig) extends NutCoreModule {
   }
   
   // Backend
-  val SSDbackend = Module(new SSDbackend)
-  SSDbackend.io.in <> frontend.io.out
+  //tmp interface
+  val frontendTmp = Wire(Decoupled(new DecodeIO))
+  frontendTmp.bits := 0.U.asTypeOf(frontend.io.out(0).bits)
+  frontendTmp.valid := false.B
 
   if (EnableOutOfOrderExec) {
     val mmioXbar = Module(new SimpleBusCrossbarNto1(if (HasDcache) 2 else 3))
     val backend = Module(new Backend_ooo)
-    PipelineVector2Connect(new DecodeIO, frontend.io.out(0), frontend.io.out(1), backend.io.in(0), backend.io.in(1), frontend.io.flushVec(1), 16)
+
+    //**************** modify banckend ready to always false in PipelineVector2Connect ***********************************//
+
+    PipelineVector2Connect(new DecodeIO, frontendTmp, frontendTmp, backend.io.in(0), backend.io.in(1), frontend.io.flushVec(1), 16)
+
     backend.io.flush := frontend.io.flushVec(2)
     frontend.io.redirect <> backend.io.redirect
 
@@ -148,7 +154,7 @@ class NutCore(implicit val p: NutCoreConfig) extends NutCoreModule {
   } else {
     val backend = Module(new Backend_inorder)
 
-    PipelineVector2Connect(new DecodeIO, frontend.io.out(0), frontend.io.out(1), backend.io.in(0), backend.io.in(1), frontend.io.flushVec(1), 4)
+    PipelineVector2Connect(new DecodeIO, frontendTmp, frontendTmp, backend.io.in(0), backend.io.in(1), frontend.io.flushVec(1), 4)
 
     val mmioXbar = Module(new SimpleBusCrossbarNto1(2))
     val dmemXbar = Module(new SimpleBusCrossbarNto1(4))
@@ -171,6 +177,9 @@ class NutCore(implicit val p: NutCoreConfig) extends NutCoreModule {
 
     io.mmio <> mmioXbar.io.out
   }
+  //SSDcore backend
+  val SSDbackend = Module(new SSDbackend)
+  SSDbackend.io.in <> frontend.io.out
 
   Debug("------------------------ BACKEND ------------------------\n")
 }

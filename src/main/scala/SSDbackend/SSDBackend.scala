@@ -41,7 +41,7 @@ class SSDbackend extends Module with hasBypassConst {
   Bypass.io.memStall := memStall
   Bypass.io.flush := VecInit(Seq.fill(4)(false.B))
   val issueStall = VecInit(false.B,false.B)
-  issueStall :=Bypass.io.issueStall
+  issueStall := Bypass.io.issueStall
   val BypassPkt = Wire(Vec(10,new BypassPkt))
   val BypassPktE0 = Wire(Vec(2,Decoupled(new BypassPkt)))
   val BypassPktValid = Wire(Vec(10,Bool()))
@@ -135,8 +135,10 @@ class SSDbackend extends Module with hasBypassConst {
 
   pipeIn(0).valid := io.in(1).valid
   pipeIn(1).valid := io.in(0).valid
-  pipeIn(0).ready := pipeOut(0).ready
-  pipeIn(1).ready := pipeOut(1).ready
+  io.in(0).ready := pipeIn(1).ready
+  io.in(1).ready := pipeIn(0).ready
+  dontTouch(io.in(0).ready)
+  dontTouch(io.in(1).ready)
 
   pipeIn(0).bits.rd := io.in(1).bits.ctrl.rfDest
   pipeIn(1).bits.rd := io.in(0).bits.ctrl.rfDest
@@ -261,7 +263,7 @@ class SSDbackend extends Module with hasBypassConst {
   dt_ic1.io.clock    := clock
   dt_ic1.io.coreid   := 0.U
   dt_ic1.io.index    := 0.U
-  dt_ic1.io.valid    := RegNext(pipeOut(9).valid)
+  dt_ic1.io.valid    := RegNext(pipeOut(9).valid && pipeOut(9).bits.pc =/= 0.U)
   dt_ic1.io.pc       := RegNext(pipeOut(9).bits.pc)
   dt_ic1.io.instr    := RegNext(pipeOut(9).bits.instr)
   dt_ic1.io.special  := 0.U
@@ -277,7 +279,7 @@ class SSDbackend extends Module with hasBypassConst {
   dt_ic0.io.coreid   := 0.U
   dt_ic0.io.index    := 1.U
 
-  dt_ic0.io.valid    := RegNext(pipeOut(8).valid)
+  dt_ic0.io.valid    := RegNext(pipeOut(8).valid && pipeOut(8).bits.pc =/= 0.U)
   dt_ic0.io.pc       := RegNext(pipeOut(8).bits.pc)
   dt_ic0.io.instr    := RegNext(pipeOut(8).bits.instr)
   dt_ic0.io.special  := 0.U

@@ -105,7 +105,7 @@ class DecodeIO2BypassPkt extends Module {
       || i0decodePkt.alu && i0rs2hitStage >= 0.U && i0rs2hitStage <= 3.U && (io.BypassPktTable(i0rs2hitStage).decodePkt.mul || io.BypassPktTable(i0rs2hitStage).decodePkt.load)
       || i0decodePkt.alu && i0rs1hitStage >= 0.U && i0rs1hitStage <= 5.U && io.BypassPktTable(i0rs1hitStage).decodePkt.subalu
       || i0decodePkt.alu && i0rs2hitStage >= 0.U && i0rs2hitStage <= 5.U && io.BypassPktTable(i0rs2hitStage).decodePkt.subalu
-      || i0decodePkt.alu && i1decodePkt.alu && !i1decodePkt.subalu && (io.in(0).bits.ctrl.rfSrc1 === i1decodePkt.rd || io.in(0).bits.ctrl.rfSrc2 === i1decodePkt.rd) && i1decodePkt.rdvalid
+      || i0decodePkt.alu && i1decodePkt.alu && !io.out1.bits.decodePkt.subalu && (io.in(0).bits.ctrl.rfSrc1 === i1decodePkt.rd || io.in(0).bits.ctrl.rfSrc2 === i1decodePkt.rd) && i1decodePkt.rdvalid
       )
 
     io.out1.bits.decodePkt.subalu :=
@@ -116,8 +116,13 @@ class DecodeIO2BypassPkt extends Module {
       )
 
     //issue stall
-    //这部分暂时先只考虑整数指令需要stall的情况（额，整数指令好像这一步不会stall)
-    io.issueStall := VecInit(Seq(false.B,false.B))
+  io.issueStall(0) := (io.in(0).bits.ctrl.rfSrc1 === i1decodePkt.rd || io.in(0).bits.ctrl.rfSrc2 === i1decodePkt.rd) && i1decodePkt.rdvalid && i1decodePkt.alu && io.out1.bits.decodePkt.subalu
+  io.issueStall(1) := false.B
+  dontTouch(io.issueStall)
+
+  val cond = Wire(Bool())
+  cond := io.in(0).bits.cf.pc === "h8000011c".U
+  myDebug(cond,"issue_0 is %b\n",io.issueStall(0).asUInt)
 
     //BypassCtl
     val FuType = VecInit(Seq.fill(10)(0.U.asTypeOf(new decodePkt)))
@@ -128,8 +133,8 @@ class DecodeIO2BypassPkt extends Module {
     //BypassPkt out0
   val i0Hiti1Rs1 = Wire(Bool())
   val i0Hiti1Rs2 = Wire(Bool())
-  i0Hiti1Rs1 := io.in(0).bits.ctrl.rfSrc1 === i1decodePkt.rd && i1decodePkt.rdvalid && (i1decodePkt.mul || i1decodePkt.load || i1decodePkt.alu && !i1decodePkt.subalu)
-  i0Hiti1Rs2 := io.in(0).bits.ctrl.rfSrc2 === i1decodePkt.rd && i1decodePkt.rdvalid && (i1decodePkt.mul || i1decodePkt.load || i1decodePkt.alu && !i1decodePkt.subalu)
+  i0Hiti1Rs1 := io.in(0).bits.ctrl.rfSrc1 === i1decodePkt.rd && i1decodePkt.rdvalid && (i1decodePkt.mul || i1decodePkt.load || i1decodePkt.alu && !io.out1.bits.decodePkt.subalu)
+  i0Hiti1Rs2 := io.in(0).bits.ctrl.rfSrc2 === i1decodePkt.rd && i1decodePkt.rdvalid && (i1decodePkt.mul || i1decodePkt.load || i1decodePkt.alu && !io.out1.bits.decodePkt.subalu)
 
   io.out0.bits.BypassCtl.rs1bypasse0 := VecInit(
       Valid(0) && i0rs1hitStage === 0.U && FuType(0).alu && !FuType(0).subalu && !i0Hiti1Rs1,
@@ -416,12 +421,6 @@ class Bypass extends Module{
   pipeStage4.io.isStall := io.memStall
   pipeStage5.io.isStall := io.memStall
 
-  //object connect
-  /*StallPointConnect(pipeIn(0), pipeOut(0), pipeFire(0), PipelineCtl.pipeCtl.flush(0), DecodeIO2BypassPkt.io.issueStall(0))
-  StallPointConnect(pipeIn(1), pipeOut(1), pipeFire(1), PipelineCtl.pipeCtl.flush(1), DecodeIO2BypassPkt.io.issueStall(1))
-  StallPointConnect(pipeIn(4), pipeOut(4), pipeFire(4), PipelineCtl.pipeCtl.flush(4), io.memStall)
-  StallPointConnect(pipeIn(5), pipeOut(5), pipeFire(5), PipelineCtl.pipeCtl.flush(5), io.memStall)*/
-
   //normal stage
   val pipeStage2 = Module(new normalPipeConnect(new BypassPkt))
   val pipeStage3 = Module(new normalPipeConnect(new BypassPkt))
@@ -440,11 +439,6 @@ class Bypass extends Module{
     a.io.isFlush <> PipelineCtl.pipeCtl.flush(b)
   }
 
-/*  for (i <- 0 to 9) {
-    if (i != 0 && i != 1 && i != 4 && i != 5) {
-      PipelineConnect(pipeIn(i), pipeOut(i), pipeFire(i), PipelineCtl.pipeCtl.flush(i))
-    }
-  }*/
 
 }
 
