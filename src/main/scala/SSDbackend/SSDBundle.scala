@@ -36,15 +36,19 @@ class BypassPkt extends Bundle {
   val decodePkt = new decodePkt
   val BypassCtl = new BypassCtl
 }
-class FuPkt extends Bundle {
+class FuPkt extends NutCoreBundle {
   val rs1 = Output(UInt(64.W))
   val rs2 = Output(UInt(64.W))
   val rd = Output(UInt(64.W))
   val fuOpType = Output(UInt(7.W))
   val offset = Output(UInt(64.W))
-  //tmp
-  val pc = Output(UInt(64.W))
+  //for difftest
   val instr = Output(UInt(64.W))
-
+  //for redirect
+  val pc = Output(UInt(VAddrBits.W))
+  val pnpc = Output(UInt(VAddrBits.W))
+  val brIdx = Output(UInt(4.W))
+  val isRVC = Output(Bool())
+  val isBranch = Output(Bool())
 }
 

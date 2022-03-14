@@ -1,6 +1,6 @@
 package SSDbackend
 
-import chisel3._
+import chisel3.{Mux, _}
 import chisel3.util._
 import difftest._
 import utils.{PipelineConnect, SignExt}
@@ -8,9 +8,10 @@ import nutcore._
 import chisel3.util.experimental.BoringUtils
 
 
-class SSDbackend extends Module with hasBypassConst {
+class SSDbackend extends NutCoreModule with hasBypassConst {
   val io = IO(new Bundle{
     val in = Vec(2, Flipped(Decoupled(new DecodeIO)))
+    val redirectOut = new RedirectIO
   })
   def BypassMux(sel:Bool,BypassCtl:Vec[Bool],BypassDataPort:Vec[UInt],rdata:UInt):UInt ={
     Mux(sel,Mux1H(BypassCtl,BypassDataPort),rdata)
@@ -39,7 +40,6 @@ class SSDbackend extends Module with hasBypassConst {
   memStall := false.B
   Bypass.io.in <> io.in
   Bypass.io.memStall := memStall
-  Bypass.io.flush := VecInit(Seq.fill(4)(false.B))
   val issueStall = VecInit(false.B,false.B)
   issueStall := Bypass.io.issueStall
   val BypassPkt = Wire(Vec(10,new BypassPkt))
@@ -61,21 +61,47 @@ class SSDbackend extends Module with hasBypassConst {
   //ALU & SUB_ALU
   val ALU_0 = Module(new ALU)
   val ALU_1 = Module(new ALU)
-  val ALU_4 = Module(new ALU)
-  val ALU_5 = Module(new ALU)
+  val ALU_6 = Module(new ALU)
+  val ALU_7 = Module(new ALU)
+  val Redirect0 = Wire(new RedirectIO)
+  val Redirect1 = Wire(new RedirectIO)
+  val Redirect6 = Wire(new RedirectIO)
+  val Redirect7 = Wire(new RedirectIO)
+  val ALUList = List(ALU_0,ALU_1,ALU_6,ALU_7)
+  val pipeOut2ALUList = List(pipeOut(0),pipeOut(1),pipeOut(6),pipeOut(7))
+  val ALURedirectList = List(Redirect0,Redirect1,Redirect6,Redirect7)
+  ALURedirectList.foreach{case i => dontTouch(i)}
+  
   //alu io
   ALU_0.io.cfIn := 0.U.asTypeOf(new CtrlFlowIO)
   ALU_1.io.cfIn := 0.U.asTypeOf(new CtrlFlowIO)
-  ALU_4.io.cfIn := 0.U.asTypeOf(new CtrlFlowIO)
-  ALU_5.io.cfIn := 0.U.asTypeOf(new CtrlFlowIO)
-  ALU_0.io.offset := pipeOut(0).bits.offset
-  ALU_1.io.offset := pipeOut(1).bits.offset
-  ALU_4.io.offset := pipeOut(4).bits.offset
-  ALU_5.io.offset := pipeOut(5).bits.offset
-  ALU_0.io.out.ready := true.B
-  ALU_1.io.out.ready := true.B
-  ALU_4.io.out.ready := true.B
-  ALU_5.io.out.ready := true.B
+  ALU_6.io.cfIn := 0.U.asTypeOf(new CtrlFlowIO)
+  ALU_7.io.cfIn := 0.U.asTypeOf(new CtrlFlowIO)
+
+  (ALUList zip pipeOut2ALUList).foreach{ case(a,b) =>
+    a.io.offset := b.bits.offset
+    a.io.out.ready := true.B
+    a.io.cfIn.pc := b.bits.pc
+    a.io.cfIn.pnpc := b.bits.pnpc
+    a.io.cfIn.brIdx := b.bits.brIdx
+    a.io.cfIn.isRVC := b.bits.isRVC
+    a.io.cfIn.isBranch := b.bits.isBranch
+  }
+  (ALURedirectList zip ALUList).foreach{ case(a,b) =>
+    a := b.io.redirect
+  }
+  val flushList = List(0,1,2,3)
+  (flushList zip ALURedirectList).foreach{ case(a,b) =>
+    Bypass.io.flush(a) := b.valid
+    dontTouch(b.valid)
+  }
+
+  io.redirectOut := Mux(Redirect0.valid,Redirect0,
+                               Mux(Redirect1.valid,Redirect1,
+                               Mux(Redirect6.valid,Redirect6,
+                               Mux(Redirect7.valid,Redirect7,0.U.asTypeOf(new RedirectIO)))))
+
+
 
   val aluResult = Wire(Vec(4,UInt(64.W)))
   val aluValid = VecInit(false.B,false.B,false.B,false.B)
@@ -88,8 +114,8 @@ class SSDbackend extends Module with hasBypassConst {
 
   aluResult(0) := ALU_0.access(aluValid(0),pipeOut(0).bits.rs1,pipeOut(0).bits.rs2,pipeOut(0).bits.fuOpType)
   aluResult(1) := ALU_1.access(aluValid(1),pipeOut(1).bits.rs1,pipeOut(1).bits.rs2,pipeOut(1).bits.fuOpType)
-  aluResult(2) := ALU_4.access(aluValid(2),pipeOut(6).bits.rs1,pipeOut(6).bits.rs2,pipeOut(6).bits.fuOpType)
-  aluResult(3) := ALU_5.access(aluValid(3),pipeOut(7).bits.rs1,pipeOut(7).bits.rs2,pipeOut(7).bits.fuOpType)
+  aluResult(2) := ALU_6.access(aluValid(2),pipeOut(6).bits.rs1,pipeOut(6).bits.rs2,pipeOut(6).bits.fuOpType)
+  aluResult(3) := ALU_7.access(aluValid(3),pipeOut(7).bits.rs1,pipeOut(7).bits.rs2,pipeOut(7).bits.fuOpType)
 
 
   //Bypass signal and data port
@@ -133,13 +159,6 @@ class SSDbackend extends Module with hasBypassConst {
   e0ByapssRs2(1) := BypassMux(ByPassEna(3), BypassPktE0(1).bits.BypassCtl.rs2bypasse0,ByapssPortE0, regfile.io.readPorts(3).data)
  //myDebug(pipeIn(0).bits.pc === "h8000003c".U,"pipeIn(0) pc: %x, rs1Bypasse0: %b,rs1Bypass data: %x",pipeIn(0).bits.pc,BypassPktE0(0).bits.BypassCtl.rs1bypasse0.asUInt,e0ByapssRs1(0))
 
-  pipeIn(0).valid := io.in(1).valid
-  pipeIn(1).valid := io.in(0).valid
-  io.in(0).ready := pipeIn(1).ready
-  io.in(1).ready := pipeIn(0).ready
-  dontTouch(io.in(0).ready)
-  dontTouch(io.in(1).ready)
-
   pipeIn(0).bits.rd := io.in(1).bits.ctrl.rfDest
   pipeIn(1).bits.rd := io.in(0).bits.ctrl.rfDest
   pipeIn(0).bits.rs1 := Mux(io.in(1).bits.ctrl.src1Type === SrcType.pc,
@@ -151,20 +170,32 @@ class SSDbackend extends Module with hasBypassConst {
   pipeIn(1).bits.rs2 := Mux(io.in(0).bits.ctrl.src2Type =/= SrcType.reg,
     io.in(0).bits.data.imm,e0ByapssRs2(1))
 
-  //myDebug(true.B,"debugTest %b\n",BypassPktE0(1).bits.BypassCtl.rs1bypasse0.asUInt)
+  for(i <-0 to 1){
+    pipeIn(i).valid := io.in(1-i).valid
+    io.in(i).ready := pipeIn(1-i).ready
+    pipeIn(i).bits.fuOpType := io.in(1-i).bits.ctrl.fuOpType
+    pipeIn(i).bits.offset := io.in(1-i).bits.data.imm
+    pipeIn(i).bits.instr := io.in(1-i).bits.cf.instr
+    pipeIn(i).bits.pc := io.in(1-i).bits.cf.pc
+    pipeIn(i).bits.pnpc := io.in(1-i).bits.cf.pnpc
+    pipeIn(i).bits.isRVC := io.in(1-i).bits.cf.isRVC
+    pipeIn(i).bits.brIdx := io.in(1-i).bits.cf.brIdx
+    pipeIn(i).bits.isBranch := io.in(1-i).bits.cf.isBranch
+    dontTouch(io.in(i).ready)
+  }
 
-  pipeIn(0).bits.fuOpType := io.in(1).bits.ctrl.fuOpType
-  pipeIn(1).bits.fuOpType := io.in(0).bits.ctrl.fuOpType
-  pipeIn(0).bits.offset := io.in(1).bits.data.imm
-  pipeIn(1).bits.offset := io.in(0).bits.data.imm
-  pipeIn(0).bits.pc := io.in(1).bits.cf.pc
-  pipeIn(1).bits.pc := io.in(0).bits.cf.pc
-  pipeIn(0).bits.instr := io.in(1).bits.cf.instr
-  pipeIn(1).bits.instr := io.in(0).bits.cf.instr
   for(i <- 2 to 9 ){
-    pipeIn(i).bits := pipeOut(i - 2).bits
-    pipeIn(i).valid := pipeOut(i - 2).valid
-    pipeOut(i - 2).ready := pipeIn(i).ready
+//    if(i == 2 || i == 8){
+//      pipeIn(i).bits := pipeOut(i - 2).bits
+//      pipeOut(i - 2).ready := pipeIn(i).ready
+//      pipeIn(2).valid := pipeOut(0).valid && !pipeFlush(1) //when flush stage1, stage0 is invalid for next stage
+//      pipeIn(8).valid := pipeOut(6).valid && !pipeFlush(7) //when flush stage7, stage6 is invalid for next stage
+//    }
+//   else {
+      pipeIn(i).bits := pipeOut(i - 2).bits
+      pipeIn(i).valid := pipeOut(i - 2).valid
+      pipeOut(i - 2).ready := pipeIn(i).ready
+//    }
   }
   pipeOut(8).ready := true.B
   pipeOut(9).ready := true.B
@@ -224,18 +255,18 @@ class SSDbackend extends Module with hasBypassConst {
   //e1 -e5 register
   val pipeRegStage0 = Module(new stallPointConnect(new FuPkt))
   val pipeRegStage1 = Module(new stallPointConnect(new FuPkt))
-  val pipeRegStage4 = Module(new stallPointConnect(new FuPkt))
-  val pipeRegStage5 = Module(new stallPointConnect(new FuPkt))
   val pipeRegStage2 = Module(new normalPipeConnect(new FuPkt))
   val pipeRegStage3 = Module(new normalPipeConnect(new FuPkt))
-  val pipeRegStage6 = Module(new normalPipeConnect(new FuPkt))
-  val pipeRegStage7 = Module(new normalPipeConnect(new FuPkt))
+  val pipeRegStage4 = Module(new normalPipeConnect(new FuPkt))
+  val pipeRegStage5 = Module(new normalPipeConnect(new FuPkt))
+  val pipeRegStage6 = Module(new stallPointConnect(new FuPkt))
+  val pipeRegStage7 = Module(new stallPointConnect(new FuPkt))
   val pipeRegStage8 = Module(new normalPipeConnect(new FuPkt))
   val pipeRegStage9 = Module(new normalPipeConnect(new FuPkt))
 
-  val stallStageList = List(pipeRegStage0,pipeRegStage1,pipeRegStage4,pipeRegStage5)
-  val stallList = List(0,1,4,5)
-  (stallStageList zip stallList).foreach{case (a,b) =>
+  val stallStageList = List(pipeRegStage0,pipeRegStage1,pipeRegStage6,pipeRegStage7)
+  val stallIndexList = List(0,1,6,7)
+  (stallStageList zip stallIndexList).foreach{case (a,b) =>
     a.io.left <> pipeIn(b)
     a.io.right <> pipeOut(b)
     a.io.rightOutFire <> pipeFire(b)
@@ -243,14 +274,14 @@ class SSDbackend extends Module with hasBypassConst {
   }
   pipeRegStage0.io.isStall := issueStall(0)
   pipeRegStage1.io.isStall := issueStall(1)
-  pipeRegStage4.io.isStall := memStall
-  pipeRegStage5.io.isStall := memStall
+  pipeRegStage6.io.isStall := memStall
+  pipeRegStage7.io.isStall := memStall
 
 
-  val normalStageList = List(pipeRegStage2,pipeRegStage3,pipeRegStage6,pipeRegStage7,pipeRegStage8,pipeRegStage9)
-  val normalList = List(2,3,6,7,8,9)
+  val normalStageList = List(pipeRegStage2,pipeRegStage3,pipeRegStage4,pipeRegStage5,pipeRegStage8,pipeRegStage9)
+  val normalIndexList = List(2,3,4,5,8,9)
 
-  (normalStageList zip normalList).foreach{case (a,b) =>
+  (normalStageList zip normalIndexList).foreach{case (a,b) =>
     a.io.left <> pipeIn(b)
     a.io.right <> pipeOut(b)
     a.io.rightOutFire <> pipeFire(b)
@@ -264,7 +295,7 @@ class SSDbackend extends Module with hasBypassConst {
   dt_ic1.io.coreid   := 0.U
   dt_ic1.io.index    := 0.U
   dt_ic1.io.valid    := RegNext(pipeOut(9).valid && pipeOut(9).bits.pc =/= 0.U)
-  dt_ic1.io.pc       := RegNext(pipeOut(9).bits.pc)
+  dt_ic1.io.pc       := RegNext(Cat(0.U((64-VAddrBits).W),pipeOut(9).bits.pc))
   dt_ic1.io.instr    := RegNext(pipeOut(9).bits.instr)
   dt_ic1.io.special  := 0.U
   dt_ic1.io.skip     := false.B
@@ -280,7 +311,7 @@ class SSDbackend extends Module with hasBypassConst {
   dt_ic0.io.index    := 1.U
 
   dt_ic0.io.valid    := RegNext(pipeOut(8).valid && pipeOut(8).bits.pc =/= 0.U)
-  dt_ic0.io.pc       := RegNext(pipeOut(8).bits.pc)
+  dt_ic0.io.pc       := RegNext(Cat(0.U((64-VAddrBits).W),pipeOut(8).bits.pc))
   dt_ic0.io.instr    := RegNext(pipeOut(8).bits.instr)
   dt_ic0.io.special  := 0.U
   dt_ic0.io.skip     := false.B
@@ -330,7 +361,7 @@ class SSDbackend extends Module with hasBypassConst {
   dt_te.io.coreid   := 0.U
   dt_te.io.valid    := RegNext(pipeOut(8).bits.instr === "h0000006b".U) || RegNext(pipeOut(9).bits.instr === "h0000006b".U)
   dt_te.io.code     := rf_a0(2, 0)
-  dt_te.io.pc       := Mux(RegNext(pipeOut(8).bits.instr === "h0000006b".U),RegNext(pipeOut(8).bits.pc),RegNext(pipeOut(9).bits.pc))
+  dt_te.io.pc       := Mux(RegNext(pipeOut(8).bits.instr === "h0000006b".U),RegNext(Cat(0.U((64-VAddrBits).W),pipeOut(8).bits.pc)),RegNext(Cat(0.U((64-VAddrBits).W),pipeOut(9).bits.pc)))
   dt_te.io.cycleCnt := cycle_cnt
   dt_te.io.instrCnt := instr_cnt
 

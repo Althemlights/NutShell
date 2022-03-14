@@ -118,7 +118,7 @@ class NutCore(implicit val p: NutCoreConfig) extends NutCoreModule {
     PipelineVector2Connect(new DecodeIO, frontendTmp, frontendTmp, backend.io.in(0), backend.io.in(1), frontend.io.flushVec(1), 16)
 
     backend.io.flush := frontend.io.flushVec(2)
-    frontend.io.redirect <> backend.io.redirect
+    //frontend.io.redirect <> backend.io.redirect
 
     val dmemXbar = Module(new SimpleBusAutoIDCrossbarNto1(4, userBits = if (HasDcache) DCacheUserBundleWidth else 0))
 
@@ -169,7 +169,7 @@ class NutCore(implicit val p: NutCoreConfig) extends NutCoreModule {
     io.dmem <> Cache(in = dmemXbar.io.out, mmio = mmioXbar.io.in.drop(1), flush = "b00".U, empty = dtlb.io.cacheEmpty, enable = HasDcache)(CacheConfig(ro = false, name = "dcache"))
 
     // redirect
-    frontend.io.redirect <> backend.io.redirect
+    //frontend.io.redirect <> backend.io.redirect
     backend.io.flush := frontend.io.flushVec(3,2)
 
     // Make DMA access through L1 DCache to keep coherence
@@ -180,6 +180,7 @@ class NutCore(implicit val p: NutCoreConfig) extends NutCoreModule {
   //SSDcore backend
   val SSDbackend = Module(new SSDbackend)
   SSDbackend.io.in <> frontend.io.out
+  frontend.io.redirect <> SSDbackend.io.redirectOut
 
   Debug("------------------------ BACKEND ------------------------\n")
 }
