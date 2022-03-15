@@ -48,7 +48,7 @@ class FuPkt extends NutCoreBundle {
   val pc = Output(UInt(VAddrBits.W))
   val pnpc = Output(UInt(VAddrBits.W))
   val brIdx = Output(UInt(4.W))
-  val isRVC = Output(Bool())
-  val isBranch = Output(Bool())
+  val isRVC = Output(Bool())  //not use
+  val isBranch = Output(Bool()) // not use
 }
 
