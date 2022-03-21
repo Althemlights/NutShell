@@ -79,7 +79,7 @@ sealed trait HasCacheConst {
   def getMetaIdx(addr: UInt) = addr.asTypeOf(addrBundle).index
   def getDataIdx(addr: UInt) = Cat(addr.asTypeOf(addrBundle).index, addr.asTypeOf(addrBundle).wordIndex)
 
-  def isSameWord(a1: UInt, a2: UInt) = ((a1 >> 2) === (a2 >> 2))
+  def isSameWord(a1: UInt, a2: UInt) = ((a1 >> 2) == (a2 >> 2))
   def isSetConflict(a1: UInt, a2: UInt) = (a1.asTypeOf(addrBundle).index === a2.asTypeOf(addrBundle).index)
 }
 
@@ -189,6 +189,7 @@ sealed class CacheStage2(implicit val cacheConfig: CacheConfig) extends CacheMod
     metaWay(i) := Mux(pickForwardMeta && w, forwardMeta.data, io.metaReadResp(i))
   }
 
+
   val hitVec = VecInit(metaWay.map(m => m.valid && (m.tag === addr.tag) && io.in.valid)).asUInt
   val victimWaymask = if (Ways > 1) (1.U << LFSR64()(log2Up(Ways)-1,0)) else "b1".U
    
@@ -234,7 +235,7 @@ sealed class CacheStage2(implicit val cacheConfig: CacheConfig) extends CacheMod
 }
 
 // writeback
-sealed class CacheStage3(implicit val cacheConfig: CacheConfig) extends CacheModule {
+sealed class CacheStage3(implicit val cacheConfig: CacheConfig) extends CacheModule   {
   class CacheStage3IO extends Bundle {
     val in = Flipped(Decoupled(new Stage2IO))
     val out = Decoupled(new SimpleBusRespBundle(userBits = userBits, idBits = idBits))
