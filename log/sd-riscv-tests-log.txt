@@ -1,6 +1,6 @@
 [1;34m[src/device/io/mmio.c,18,add_mmio_map] Add mmio map 'flash' at [0x0000000010000000, 0x00000000100000ff][0m
 sh: 1: spike-dasm: not found
-Emu compiled at Mar 15 2022, 16:59:54
+Emu compiled at Mar 23 2022, 17:09:35
 The image is /home/jy/oscpu/bin/non-output/riscv-tests/sd-riscv-tests.bin
 Using simulated 4096MB RAM
 --diff is not given, try to use $(NEMU_HOME)/build/riscv64-nemu-interpreter-so by default
@@ -60,14 +60,14 @@ commit inst [30]: pc 0000000000 inst 00000000 wen 0 dst 00000000 data 0000000000
 commit inst [31]: pc 0000000000 inst 00000000 wen 0 dst 00000000 data 0000000000000000
 
 ==============  REF Regs  ==============
-  $0: 0x0000000000000000   ra: 0x0000000080000690   sp: 0x00aa00aa00aa00aa   gp: 0x2b8c141f4e5fae34 
-  tp: 0xbb2006c5b9db183d   t0: 0x1151055de6a55abd   t1: 0x7ea103f6b744e0ce   t2: 0x8a4ed93a98435e45 
-  s0: 0xdb95a98bd881693a   s1: 0xdae441be395e5332   a0: 0xe8e7ac31eacd0447   a1: 0x6b517d24ba441c49 
-  a2: 0x4328ff93adb6753c   a3: 0xb661c0355ae37a5a   a4: 0x00aa00aa00aa00aa   a5: 0x8a8a30812f940fea 
-  a6: 0x5bed4960ca73f1a6   a7: 0x05beb36960df5c4a   s2: 0xe320f45a4bb8aa0c   s3: 0x39506b1f1ddf55ab 
-  s4: 0xab72efddfa5a3058   s5: 0xb404033a9da8630c   s6: 0xe1555b7b4951c31d   s7: 0xaa9b0de232c51ae8 
-  s8: 0xcf3320e6961fe7b6   s9: 0xcb44c30893d7a5eb  s10: 0x9c2b7512e64076d0  s11: 0x0e075dd2b8d455c3 
-  t3: 0xbc27267e5244ae00   t4: 0xbb217411e7bc287b   t5: 0x424746b85c08ff8e   t6: 0x6308a655aaaae533 
+  $0: 0x0000000000000000   ra: 0x0000000080000690   sp: 0x00aa00aa00aa00aa   gp: 0x3b2de01a8ff4f4a8 
+  tp: 0xf6f2d5da70d1e1a5   t0: 0x0fb9825aace0029a   t1: 0x89652abc0e7f0eb4   t2: 0xe86fe12e2c2fd4d9 
+  s0: 0xfc9445f29a89e9fe   s1: 0xd134ed2823228964   a0: 0xecc9071ce089c7f0   a1: 0x34af99dbf8e83964 
+  a2: 0xe2c88397514f4a44   a3: 0x75fdcd3604c9ec50   a4: 0x00aa00aa00aa00aa   a5: 0x058fb9faf3b37876 
+  a6: 0x7396799f0624457b   a7: 0x4c8a9229fe383d5a   s2: 0xfe702834fdcb5572   s3: 0x304c18e759bf8c68 
+  s4: 0x24b6c0aa96e7b84e   s5: 0x7de042846bc4ad31   s6: 0x5e4d52289cb929f0   s7: 0x72dd016bd7b24448 
+  s8: 0xbe6ce06db9fbc70b   s9: 0x15b565c2e9548bf9  s10: 0xc04925c54144bd9c  s11: 0x863088faaefbbbb5 
+  t3: 0x39197ec63f45fa1d   t4: 0x2a943988d8c80868   t5: 0x2be91e567f64032c   t6: 0xf84d6a8e3448e85e 
  ft0: 0x0553839bffd503b7  ft1: 0x0553839301039393  ft2: 0x00b3839300d39393  ft3: 0xa003839300c39393 
  ft4: 0x44771c6300700193  ft5: 0x4d80809300000097  ft6: 0x0551011b00550137  ft7: 0x00b1011300d11113 
  fs0: 0xa011011300c11113  fs1: 0xaa01011300c11113  fa0: 0xff80b703fe20bc23  fa1: 0x0553839b005503b7 
@@ -94,8 +94,8 @@ privilege mode:3  pmp: below
 priviledgeMode: 3
      a4 different at pc = 0x0080000020, right= 0x00aa00aa00aa00aa, wrong = 0x0000000000000000
 Core 0: [31mABORT at pc = 0x80000020
-[0m[35mtotal guest instructions = 12
-[0m[35minstrCnt = 12, cycleCnt = 541, IPC = 0.022181
+[0m[35mtotal guest instructions = 8
+[0m[35minstrCnt = 8, cycleCnt = 541, IPC = 0.014787
 [0m[34mSeed=0 Guest cycle spent: 542 (this will be different from cycleCnt if emu loads a snapshot)
-[0m[34mHost time spent: 7ms
+[0m[34mHost time spent: 8ms
 [0m

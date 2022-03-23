@@ -174,6 +174,8 @@ sealed class CacheStage2(implicit val cacheConfig: CacheConfig) extends CacheMod
 
   val req = io.in.bits.req
   val addr = req.addr.asTypeOf(addrBundle)
+  BoringUtils.addSource(addr,"cacheStage2Raddr")
+  BoringUtils.addSource(io.in.bits.req.size,"cacheStage2Size")
 
   val isForwardMeta = io.in.valid && io.metaWriteBus.req.valid && io.metaWriteBus.req.bits.setIdx === getMetaIdx(req.addr)
   val isForwardMetaReg = RegInit(false.B)
