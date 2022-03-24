@@ -10,9 +10,10 @@ trait HasStoreBufferConst{
 }
 
 class StoreBufferEntry extends NutCoreBundle{
-  val cmd      = Output(SimpleBusCmd())
+  val isStore  = Output(Bool())
   val paddr    = Output(UInt(PAddrBits.W))
   val data     = Output(UInt(XLEN.W))
+  val mask     = Output(UInt((XLEN / 8).W))
   val size     = Output(UInt(2.W))
 }
 
@@ -24,7 +25,7 @@ class StoreBufferIO extends NutCoreBundle with HasStoreBufferConst {
   val isFull = Output(Bool())     // StoreBufferSize - 2, for store inst in pipeline stage 4, 5
   val isEmpty = Output(Bool())
   val snapshotena = Input(Bool())
-  val snapshot = Output(Vec(StoreBufferSize, new StoreBufferEntry))
+  val snapshot = Vec(StoreBufferSize, new StoreBufferEntry)
 }
 
 class StoreBuffer extends NutCoreModule with HasStoreBufferConst{

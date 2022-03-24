@@ -6,6 +6,7 @@ import nutcore._
 import chisel3.util._
 import _root_.utils.{LookupTree, SignExt}
 import chisel3.util.experimental.BoringUtils
+import utils._
 
 //class FunctionUnitIO extends NutCoreBundle {
 //  val in = Flipped(Decoupled(new Bundle {
@@ -35,54 +36,6 @@ class SSDLSU extends  NutCoreModule with HasStoreBufferConst{
     this.func := func
     io.out.bits
   }
-
-  val addr = src1 + src2
-  val wdata = src2
-  val isStore = valid && LSUOpType.isStore(func)
-
-
-  //store pipeline
-  val storePipeIn = Wire(Vec(4,Flipped(Decoupled(new StoreBufferEntry))))
-  val storePipeOut = Wire(Vec(4,Decoupled(new StoreBufferEntry)))
-  val storePipeStage0 = Module(new stallPointConnect(new StoreBufferEntry))
-  val storePipeStage1 = Module(new normalPipeConnect(new StoreBufferEntry))
-  val storePipeStage2 = Module(new stallPointConnect(new StoreBufferEntry))
-  val storePipeStage3 = Module(new normalPipeConnect(new StoreBufferEntry))
-
-  storePipeIn(0).valid := isStore
-  storePipeOut(3).ready := storeBuffer.io.in.ready
-  storePipeStage2.io.isStall := memStall
-  storePipeStage0.io.isStall := issueStall
-
-  for(i <- 1 to 3){
-    storePipeIn(i).bits := storePipeOut(i-1).bits
-    storePipeIn(i).valid := storePipeOut(i-1).bits
-    storePipeOut(i-1).ready := storePipeIn(i).ready
-  }
-  val storePipeList0 = List(storePipeStage0,storePipeStage2)
-  val pipeIndexList0 = List(0,2)
-  (storePipeList0 zip pipeIndexList0).foreach{ case(a,b) =>
-    a.io.left <> storePipeIn(b)
-    a.io.right <> storePipeOut(b)
-    a.io.rightOutFire <> storePipeOut(b).fire()
-    a.io.isFlush <> flush
-  }
-  val storePipeList1 = List(storePipeStage1,storePipeStage3)
-  val pipeIndexList1 = List(1,3)
-  (storePipeList1 zip pipeIndexList1).foreach{ case(a,b) =>
-    a.io.left <> storePipeIn(b)
-    a.io.right <> storePipeOut(b)
-    a.io.rightOutFire <> storePipeOut(b).fire()
-    a.io.isFlush <> flush
-  }
-  //store buffer
-  val storeBuffer = Module(new StoreBuffer)
-  storeBuffer.io.in <> storePipeStage3.io.right
-  //cache
-  io.dmem <> Cache(in = cacheIn, mmio = io.mmio, flush = Cat(io.flush,io.flush), empty = DontCare, enable = HasDcache)(CacheConfig(ro = false, name = "dcache"))
-  //load/store issue ctrl (issue to DCache)
-  val cacheIn = Wire(Flipped(new SimpleBusUC(addrBits = PAddrBits)))
-
   def genWmask(addr: UInt, sizeEncode: UInt): UInt = {
     LookupTree(sizeEncode, List(
       "b00".U -> 0x1.U, //0001 << addr(2:0)
@@ -100,28 +53,80 @@ class SSDLSU extends  NutCoreModule with HasStoreBufferConst{
     ))
   }
 
-  val StoreCacheIn = Wire(Decoupled(new SimpleBusReqBundle))
-  val LoadCacheIn = Wire(Decoupled(new SimpleBusReqBundle))
-  StoreCacheIn.bits.apply(
-    addr = storeBuffer.io.out.bits.PAddrBits,
-    size = storeBuffer.io.out.bits.size,
-    wdata = genWdata(storeBuffer.io.out.bits.data, storeBuffer.io.out.bits.size),
-    wmask = genWmask(storeBuffer.io.out.bits.PAddrBits, storeBuffer.io.out.bits.size),
-    cmd = SimpleBusCmd.write
-  )
-  StoreCacheIn.valid := !storeBuffer.io.out.valid && !LoadCacheIn.valid || storeBuffer.io.isFull
-
-
+  val addr = src1 + src2
+  val wdata = src2
   val size = func(1,0)
+  val isStore = valid && LSUOpType.isStore(func)
+
   val reqAddr  = addr(PAddrBits-1,0)
   val reqWdata = genWdata(wdata, size)
   val reqWmask = genWmask(addr, size)
+
+
+  //store pipeline
+  val storePipeIn = Wire(Vec(3,Flipped(Decoupled(new StoreBufferEntry))))
+  val storePipeOut = Wire(Vec(3,Decoupled(new StoreBufferEntry)))
+  val storePipeStage0 = Module(new stallPointConnect(new StoreBufferEntry))
+  val storePipeStage1 = Module(new normalPipeConnect(new StoreBufferEntry))
+  val storePipeStage2 = Module(new stallPointConnect(new StoreBufferEntry))
+
+  storePipeIn(0).valid := valid
+  storePipeIn(0).bits.isStore := isStore
+  storePipeIn(0).bits.paddr := reqAddr
+  storePipeIn(0).bits.data := reqWdata
+  storePipeIn(0).bits.size := size
+  storePipeIn(0).bits.mask := reqWmask
+  storePipeOut(2).ready := storeBuffer.io.in.ready
+  storePipeStage2.io.isStall := memStall
+  storePipeStage0.io.isStall := issueStall
+
+  for(i <- 1 to 2){
+    storePipeIn(i).bits := storePipeOut(i-1).bits
+    storePipeIn(i).valid := storePipeOut(i-1).bits
+    storePipeOut(i-1).ready := storePipeIn(i).ready
+  }
+  val storePipeList0 = List(storePipeStage0,storePipeStage2)
+  val pipeIndexList0 = List(0,2)
+  (storePipeList0 zip pipeIndexList0).foreach{ case(a,b) =>
+    a.io.left <> storePipeIn(b)
+    a.io.right <> storePipeOut(b)
+    a.io.rightOutFire <> storePipeOut(b).fire()
+    a.io.isFlush <> flush
+  }
+  val storePipeList1 = List(storePipeStage1,storePipeStage3)
+  val pipeIndexList1 = List(1)
+  (storePipeList1 zip pipeIndexList1).foreach{ case(a,b) =>
+    a.io.left <> storePipeIn(b)
+    a.io.right <> storePipeOut(b)
+    a.io.rightOutFire <> storePipeOut(b).fire()
+    a.io.isFlush <> flush
+  }
+  //store buffer
+  val storeBuffer = Module(new StoreBuffer)
+  val snapshot = storeBuffer.io.snapshot
+  storeBuffer.io.in <> storePipeStage3.io.right
+  //cache
+  io.dmem <> Cache(in = cacheIn, mmio = io.mmio, flush = Cat(io.flush,io.flush), empty = DontCare, enable = HasDcache)(CacheConfig(ro = false, name = "dcache"))
+  //load/store issue ctrl (issue to DCache)
+  val cacheIn = Wire(Flipped(new SimpleBusUC(addrBits = PAddrBits)))
+
+
+  val StoreCacheIn = Wire(Decoupled(new SimpleBusReqBundle))
+  val LoadCacheIn = Wire(Decoupled(new SimpleBusReqBundle))
+  StoreCacheIn.bits.apply(
+    addr = storeBuffer.io.out.bits.paddr,
+    size = storeBuffer.io.out.bits.size,
+    wdata = storeBuffer.io.out.bits.data,
+    wmask = storeBuffer.io.out.bits.mask,
+    cmd = SimpleBusCmd.write
+  )
+  StoreCacheIn.valid := !storeBuffer.io.out.valid && !LoadCacheIn.valid || storeBuffer.io.isFull
 
   LoadCacheIn.bits.apply(
     addr = reqAddr,
     size = size,
     wdata = 0.U, // not used in load
-    wmask = reqWmask.U, // for partical check
+    wmask = reqWmask, // for partical check
     cmd = SimpleBusCmd.read
   )
 
@@ -132,27 +137,65 @@ class SSDLSU extends  NutCoreModule with HasStoreBufferConst{
   cacheInArbiter.io.in(1) <> LoadCacheIn
   cacheInArbiter.io.out <> cacheIn
 
-
-  //storeBuffer & store pipeStage3 hit check
-  val cacheStage2Raddr = Wire(UInt(PAddrBits.W))
-  BoringUtils.addSink(cacheStage2RaDDR,"cacheStage2Raddr")
+  //store buffer pointer
   val readAddr, writeAddr, headAddr, tailAddr = Wire(UInt(log2Up(StoreBufferSize).W))
   val readFlag, writeFlag = Wire(UInt(1.W))
-  val AddrHitVec = Wire(Vec(Ulog2Up(StoreBufferSize),Bool()))
-  val maskHitVec = Wire(Vec(Ulog2Up(StoreBufferSize),Bool()))
-  val storeHit = Wire(Bool())
   Cat(readFlag,readAddr) := storeBuffer.io.readPtr
   Cat(writeFlag,writeAddr) := storeBuffer.io.writePtr
   headAddr := Mux(readFlag =/= writeFlag,Cat(1.U,writeAddr),Cat(0.U,writeAddr))
   tailAddr := Cat(0.U,writeAddr)
 
+  //storeBuffer hit check
+  val cacheStage2Raddr = Wire(UInt(PAddrBits.W))
+  val cacheStage2Size = Wire(UInt(2.W))
+  val cacheStage2Mask = genWmask(cacheStage2Raddr,cacheStage2Size)
+  BoringUtils.addSink(cacheStage2Raddr,"cacheStage2Raddr")
+  BoringUtils.addSink(cacheStage2Size,"cacheStage2Size")
+
+  val storeHit = Wire(Bool())
+  val addrHitVec = Wire(Vec(StoreBufferSize,Bool()))
+  val partialHitVec = Wire(Vec(StoreBufferSize,Bool()))
+  val fullHitVec = Wire(Vec(StoreBufferSize,Bool()))
+  val addrHit = Wire(Bool())
+  val partialHit = Wire(Bool())
+  val fullHit = Wire(Bool())
+  val SBMaskHitVec = Wire(Vec(StoreBufferSize,UInt(8.W))) // load need and store buffer have
+  val SBMaskMissVec = Wire(Vec(StoreBufferSize,UInt(8.W))) //load need but store buffer doesnt have
+  val SBMaskHit = Wire(Vec(StoreBufferSize,Bool()))  // each byte hit or miss
+  val SBMaskMiss = Wire(Vec(StoreBufferSize,Bool()))
+  val storeDataVec = Wire(Vec(StoreBufferSize,UInt(XLEN.W)))
+  val SBhitData = Wire(0.U(XLEN.W))
+  val SBhitMask = Wire(0.U(XLEN/8.W))
+
   for(i <- 0 to StoreBufferSize-1){
-    if(i > tailAddr && i < headAddr){
-      AddrHitVec(i) := storeBuffer.io.snapshot(i).paddr(PAddrBits,3) === cacheStage2Raddr((PAddrBits,3))
-      maskHitVec(i) := storeBuffer.io.snapshot(i).(PAddrBits,3) === cacheStage2Raddr((PAddrBits,3))cacheStage2Size.}cacheStage2Size
+    SBMaskHitVec(i) := cacheStage2Mask & snapshot(i).mask
+    SBMaskMissVec(i) := cacheStage2Mask & ~snapshot(i).mask
+    SBMaskHit(i) := SBMaskHitVec(i).orR
+    SBMaskMiss(i) := SBMaskMissVec(i).orR
+    partialHitVec(i) := SBMaskHit(i) && SBMaskMiss(i)
+    fullHitVec(i) := SBMaskHit(i) && !SBMaskMiss(i)
+    storeDataVec(i) := snapshot(i).data & MaskExpand(cacheStage2Mask) & MaskExpand(snapshot(i).mask)
   }
-  storeHit := storeHitVec.orR
-  // check partical hit or whole hit
+  //store buffer hit data process
+  def hitCheck(headAddr:UInt, tailAddr:UInt, vecChecked:UInt):Bool ={
+    val outVec = Wire(VecInit(Seq.fill(StoreBufferSize)(false.B)))
+    for(i <- 0 to StoreBufferSize*2-1){
+      if(i.U < headAddr && i.U >= tailAddr){
+        outVec(i.U(log2Up(StoreBufferSize)-1)) :=  vecChecked(i.U(log2Up(StoreBufferSize)-1))
+      }
+    }
+    outVec.asUInt.orR
+  }
+  addrHit := hitCheck(headAddr,tailAddr,addrHitVec) && storePipeOut(1).valid && !storePipeOut(1).bits.isStore
+  partialHit := hitCheck(headAddr,tailAddr,partialHitVec)
+  fullHit := hitCheck(headAddr,tailAddr,fullHitVec)
+  SBhitData := Mux1H(addrHitVec,storeDataVec)
+  SBhitMask := Mux1H(addrHitVec,SBMaskHitVec)
+
+  BoringUtils.addSource(RegEnable(addrHit,addrHit),"storeBufferHit")
+  BoringUtils.addSource(RegEnable(fullHit,addrHit),"fullHit")
+  BoringUtils.addSource(RegEnable(SBhitData,addrHit),"storeBufferHitData")
+  BoringUtils.addSource(RegEnable(SBhitMask,addrHit),"storeBufferHitMask")
 
   //LSU out
   io.in.ready := storePipeIn(0).ready || LoadCacheIn.ready
