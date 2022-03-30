@@ -11,10 +11,9 @@ trait HasStoreBufferConst{
 }
 
 class StoreBufferEntry extends NutCoreBundle{
-  val isStore  = Output(Bool())
   val paddr    = Output(UInt(PAddrBits.W))
   val data     = Output(UInt(XLEN.W))
-  val mask     = Output(UInt((XLEN / 8).W))
+  val mask     = Output(UInt((XLEN/8).W))
   val size     = Output(UInt(2.W))
 }
 
@@ -42,11 +41,10 @@ class StoreBuffer extends NutCoreModule with HasStoreBufferConst{
   //StoreBuffer Memory
   val StoreBuffer = Reg(VecInit(Seq.fill(StoreBufferSize)(0.U.asTypeOf(new StoreBufferEntry))))
   when(writeFire && !io.isFull){
-    StoreBuffer(mergeAddr).isStore := writeAddr
-    StoreBuffer(mergeAddr).data := writeData
-    StoreBuffer(mergeAddr).paddr := io.in.bits.paddr
-    StoreBuffer(mergeAddr).data := writeMask
-    StoreBuffer(mergeAddr).data := io.in.bits.size
+    StoreBuffer(FinalwriteAddr).data := writeData
+    StoreBuffer(FinalwriteAddr).paddr:= io.in.bits.paddr
+    StoreBuffer(FinalwriteAddr).mask := writeMask
+    StoreBuffer(FinalwriteAddr).data := io.in.bits.size
 
   }
   io.out.bits := Mux(!io.isEmpty && readFire,StoreBuffer(readFire.asUInt),0.U.asTypeOf(new StoreBufferEntry))
@@ -73,27 +71,28 @@ class StoreBuffer extends NutCoreModule with HasStoreBufferConst{
   val mergeAddr = Wire(0.U(log2Up(StoreBufferSize).W))
   val mergeData = Wire(0.U(XLEN.W))
   val mergeMask = Wire(0.U((XLEN/8).W))
-  val writeAddr = Wire(0.U(log2Up(StoreBufferSize).W))
+  val FinalwriteAddr = Wire(0.U(log2Up(StoreBufferSize).W))
   val writeData = Wire(0.U(XLEN.W))
   val writeMask = Wire(0.U((XLEN/8).W))
   val SBDataVec = Wire(Vec(StoreBufferSize,0.U(XLEN.W)))
-  val SBMaskVec = Wire(Vec(StoreBufferSize,0.U(XLEN/8.W)))
+  val SBMaskVec = Wire(Vec(StoreBufferSize,0.U((XLEN/8).W)))
   for(i <- 0 to StoreBufferSize-1){
     SBDataVec(i) := StoreBuffer(i).data
-    SBMaskVec(i) := StoreBuffer(i).mask}
+    SBMaskVec(i) := StoreBuffer(i).mask
+  }
   merge := mergeHit.asUInt.orR
   mergeAddr := Mux1H(mergeHit,Vec(0 to StoreBufferSize-1))
-  mergeData := (io.in.bits.data & MaskExpand(io.in.bits.mask)) | (Mux1H(mergeHit,SBDataVec) & MaskExpand(Mux1H(mergeHit,SBMaskVec)) & ~MaskExpand(io.in.bits.mask))
-  mergeMask := io.in.bits.mask | (Mux1H(mergeHit,SBMaskVec) & ~io.in.bits.mask)
-  writeAddr := Mux(merge,mergeAddr,writeAddr)
+  mergeData := MergeData(io.in.bits.data,Mux1H(mergeHit,SBDataVec),io.in.bits.mask,Mux1H(mergeHit,SBMaskVec))
+  mergeMask := io.in.bits.mask | Mux1H(mergeHit,SBMaskVec)
+  FinalwriteAddr := Mux(merge,mergeAddr,writeAddr)
   writeData := Mux(merge,mergeData,io.in.bits.data)
   writeMask := Mux(merge,mergeMask,io.in.bits.mask)
 
   for(i <- 0 to 2*StoreBufferSize-1){
     when(i.U < io.writePtr && i.U >= io.readPtr && !readFire){
-      mergeHit(i.U(log2Up(StoreBufferSize)-1,0)) := StoreBuffer(i.U(log2Up(StoreBufferSize)-1,0)).paddr === io.in.bits.paddr && writeFire
+      mergeHit(i.U(log2Up(StoreBufferSize)-1,0)) := StoreBuffer(i.U(log2Up(StoreBufferSize)-1,0)).paddr(StoreBufferSize-1,3) === io.in.bits.paddr(StoreBufferSize-1,3) && writeFire
     }.elsewhen(i.U < io.writePtr && i.U > io.readPtr && readFire){
-      mergeHit(i.U(log2Up(StoreBufferSize)-1,0)) := StoreBuffer(i.U(log2Up(StoreBufferSize)-1,0)).paddr === io.in.bits.paddr && writeFire
+      mergeHit(i.U(log2Up(StoreBufferSize)-1,0)) := StoreBuffer(i.U(log2Up(StoreBufferSize)-1,0)).paddr(StoreBufferSize-1,3) === io.in.bits.paddr(StoreBufferSize-1,3) && writeFire
     }.otherwise(){
       mergeHit(i.U(log2Up(StoreBufferSize)-1,0)) := false.B
     }
@@ -105,4 +104,10 @@ class StoreBuffer extends NutCoreModule with HasStoreBufferConst{
   io.writePtr := Cat(writeFlag,writeAddr)
   io.readPtr := Cat(readFlag,readAddr)
 
+}
+
+object MergeData{
+  def applay(data: UInt, beMergedData: UInt, dataMask: UInt, beMergedDataMask: UInt)={
+    data & MaskExpand(dataMask) | beMergedData & MaskExpand(beMergedDataMask) & ~dataMask
+  }
 }

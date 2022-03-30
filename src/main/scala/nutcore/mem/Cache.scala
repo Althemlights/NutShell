@@ -268,7 +268,15 @@ sealed class CacheStage3(implicit val cacheConfig: CacheConfig) extends CacheMod
   val hitReadBurst = hit && req.isReadBurst()
   val meta = Mux1H(io.in.bits.waymask, io.in.bits.metas)
   assert(!(mmio && hit), "MMIO request should not hit in cache")
+  //something added
+  val addrHit = Wire(Bool())       //just means an address hit, not a data hit
+  val fullHit = Wire(Bool())       //Contains all the data you need
+  val storeHit = Wire(Bool())      //hit in store pipe or store buffer
+  BoringUtils.addSink(addrHit,"addrHit")
+  BoringUtils.addSink(fullHit,"fullHit")
+  BoringUtils.addSource(state =/= s_idle,"memStall")
 
+  storeHit := addrHit && fullHit
 
   // this is ugly
   if (cacheName == "dcache") {
@@ -361,14 +369,14 @@ sealed class CacheStage3(implicit val cacheConfig: CacheConfig) extends CacheMod
       alreadyOutFire := false.B
 
       when (probe) {
-        when (io.cohResp.fire()) {
+        when(io.cohResp.fire()) {
           state := Mux(hit, s_release, s_idle)
           readBeatCnt.value := addr.wordIndex
         }
-      } .elsewhen (hitReadBurst && io.out.ready) {
+      }.elsewhen (hitReadBurst && io.out.ready) {
         state := s_release
         readBeatCnt.value := Mux(addr.wordIndex === (LineBeats - 1).U, 0.U, (addr.wordIndex + 1.U))
-      } .elsewhen ((miss || mmio) && !io.flush) {
+      } .elsewhen ((miss && !storeHit || mmio) && !io.flush) {
         state := Mux(mmio, s_mmioReq, Mux(!ro.B && meta.dirty, s_memWriteReq, s_memReadReq))
       }
     }
@@ -457,7 +465,7 @@ sealed class CacheStage3(implicit val cacheConfig: CacheConfig) extends CacheMod
   // is totally handled. We use io.isFinish to indicate when the
   // request really ends.
   io.isFinish := Mux(probe, io.cohResp.fire() && Mux(miss, state === s_idle, (state === s_release) && releaseLast),
-    Mux(hit || req.isWrite(), io.out.fire(), (state === s_wait_resp) && (io.out.fire() || alreadyOutFire))
+    Mux(hit || req.isWrite(), io.out.fire(), (state === s_wait_resp) && (io.out.fire() || alreadyOutFire)) || addrHit && fullHit
   )
 
   io.in.ready := io.out.ready && (state === s_idle && !hitReadBurst) && !miss && !probe

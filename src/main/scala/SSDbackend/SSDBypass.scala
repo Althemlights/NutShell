@@ -117,8 +117,11 @@ class DecodeIO2BypassPkt extends Module {
       )
 
     //issue stall
-  io.issueStall(0) := (io.in(0).bits.ctrl.rfSrc1 === i1decodePkt.rd && i0rs1valid || io.in(0).bits.ctrl.rfSrc2 === i1decodePkt.rd && i0rs2valid) &&
-    i1decodePkt.rdvalid && i1decodePkt.alu && io.out1.bits.decodePkt.subalu
+  io.issueStall(0) := (io.in(0).bits.ctrl.rfSrc1 === i1decodePkt.rd && i0rs1valid ||
+    io.in(0).bits.ctrl.rfSrc2 === i1decodePkt.rd && i0rs2valid) && i1decodePkt.rdvalid && i1decodePkt.alu && io.out1.bits.decodePkt.subalu ||
+    (i0decodePkt.load || i0decodePkt.store) && (io.in(1).bits.cf.isBranch || (i1decodePkt.load || i1decodePkt.store)) ||
+    (i1decodePkt.load || i1decodePkt.store) && io.in(0).bits.cf.isBranch
+
   io.issueStall(1) := false.B
   dontTouch(io.issueStall)
 

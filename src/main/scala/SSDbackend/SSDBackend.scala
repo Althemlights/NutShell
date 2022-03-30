@@ -1,5 +1,6 @@
 package SSDbackend
 
+import bus.simplebus.SimpleBusUC
 import chisel3.{Mux, _}
 import chisel3.util._
 import difftest._
@@ -14,6 +15,8 @@ class SSDbackend extends NutCoreModule with hasBypassConst {
   val io = IO(new Bundle{
     val in = Vec(2, Flipped(Decoupled(new DecodeIO)))
     val redirectOut = new RedirectIO
+    val dmem = new SimpleBusUC(addrBits = PAddrBits) // without dtlb
+    val mmio = new SimpleBusUC
   })
   def BypassMux(sel:Bool,BypassCtl:Vec[Bool],BypassDataPort:Vec[UInt],rdata:UInt):UInt ={
     Mux(sel,Mux1H(BypassCtl,BypassDataPort),rdata)
@@ -39,7 +42,7 @@ class SSDbackend extends NutCoreModule with hasBypassConst {
 
   //Bypass
   val memStall = Wire(Bool())
-  memStall := false.B
+  memStall := LSU.io.memStall
   Bypass.io.in <> io.in
   Bypass.io.memStall := memStall
   val issueStall = VecInit(false.B,false.B)
@@ -57,9 +60,6 @@ class SSDbackend extends NutCoreModule with hasBypassConst {
   BypassPktE0(1).ready := pipeIn(1).ready
 
   //decode & issue & e0bypass
-  //FuDataOut
-  val LSUData = 0.U(64.W)
-  val MDUData = 0.U(64.W)
   //ALU & SUB_ALU
   val ALU_0 = Module(new ALU)
   val ALU_1 = Module(new ALU)
@@ -106,7 +106,6 @@ class SSDbackend extends NutCoreModule with hasBypassConst {
 
 
 
-//  val aluResult = Wire(Vec(4,UInt(64.W)))
   val aluValid = VecInit(false.B,false.B,false.B,false.B)
   aluValid := Seq(
     pipeOut(0).valid && BypassPkt(0).decodePkt.alu && !BypassPkt(0).decodePkt.subalu,
@@ -120,7 +119,18 @@ class SSDbackend extends NutCoreModule with hasBypassConst {
   ALU_6.access(aluValid(2),pipeOut(6).bits.rs1,pipeOut(6).bits.rs2,pipeOut(6).bits.fuOpType)
   ALU_7.access(aluValid(3),pipeOut(7).bits.rs1,pipeOut(7).bits.rs2,pipeOut(7).bits.fuOpType)
 
-
+  //LSU
+  val LSU = Module(new SSDLSU)
+  io.dmem <> LSU.io.dmem
+  io.mmio <> LSU.io.mmio
+  LSU.io.flush := Redirect6.valid || Redirect7.valid
+  val i0LSUValid = BypassPktE0(0).valid && (BypassPktE0(0).bits.decodePkt.load || BypassPktE0(0).bits.decodePkt.store)
+  val i1LSUValid = BypassPktE0(1).valid && (BypassPktE0(1).bits.decodePkt.load || BypassPktE0(1).bits.decodePkt.store)
+  val LSUValid = Mux(i1LSUValid,true.B,i0LSUValid)
+  val LSUsrc1 = Mux(i1LSUValid,io.in(0).bits.data.src1,io.in(1).bits.data.src1)
+  val LSUsrc2 = Mux(i1LSUValid,io.in(0).bits.data.src2,io.in(1).bits.data.src2)
+  val LSUfunc = Mux(i1LSUValid,io.in(0).bits.ctrl.fuOpType,io.in(1).bits.ctrl.fuOpType)
+  LSU.access(LSUValid,LSUsrc1,LSUsrc2,LSUfunc)
   //Bypass signal and data port
   val ByPassEna = Wire(Vec(12,Bool()))
   ByPassEna := Seq(
@@ -143,13 +153,13 @@ class SSDbackend extends NutCoreModule with hasBypassConst {
 
   val ByapssPortE0 = Wire(Vec(E0BypaaPort,UInt(64.W)))
   ByapssPortE0 := Seq(ALU_0.io.out.bits,ALU_1.io.out.bits,pipeOut(2).bits.rd,pipeOut(3).bits.rd,
-    pipeOut(4).bits.rd,pipeOut(5).bits.rd,0.U,0.U,
+    pipeOut(4).bits.rd,pipeOut(5).bits.rd,LSU.io.out.bits,0.U,
     ALU_6.io.out.bits,ALU_7.io.out.bits,pipeOut(8).bits.rd,pipeOut(9).bits.rd)
 
   val ByapssPortE2 = Wire(Vec(E2BypaaPort,UInt(64.W)))
   ByapssPortE2 := Seq(pipeOut(8).bits.rd,pipeOut(9).bits.rd)
   val ByapssPortE3 = Wire(Vec(E3BypaaPort,UInt(64.W)))
-  ByapssPortE3 := Seq(pipeOut(5).bits.rd,pipeIn(8).bits.rd,pipeIn(9).bits.rd,pipeOut(8).bits.rd,pipeOut(9).bits.rd)
+  ByapssPortE3 := Seq(Mux(BypassPkt(5).decodePkt.load,LSU.io.out.bits,pipeOut(5).bits.rd),pipeIn(8).bits.rd,pipeIn(9).bits.rd,pipeOut(8).bits.rd,pipeOut(9).bits.rd)
 
   //decode & issue
   //rs1 data type: pc, regfile or bypassa
