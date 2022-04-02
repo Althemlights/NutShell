@@ -1,17 +1,17 @@
 /**************************************************************************************
 * Copyright (c) 2020 Institute of Computing Technology, CAS
 * Copyright (c) 2020 University of Chinese Academy of Sciences
-* 
-* NutShell is licensed under Mulan PSL v2.
-* You can use this software according to the terms and conditions of the Mulan PSL v2. 
-* You may obtain a copy of Mulan PSL v2 at:
-*             http://license.coscl.org.cn/MulanPSL2 
-* 
-* THIS SOFTWARE IS PROVIDED ON AN "AS IS" BASIS, WITHOUT WARRANTIES OF ANY KIND, EITHER 
-* EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO NON-INFRINGEMENT, MERCHANTABILITY OR 
-* FIT FOR A PARTICULAR PURPOSE.  
 *
-* See the Mulan PSL v2 for more details.  
+* NutShell is licensed under Mulan PSL v2.
+* You can use this software according to the terms and conditions of the Mulan PSL v2.
+* You may obtain a copy of Mulan PSL v2 at:
+*             http://license.coscl.org.cn/MulanPSL2
+*
+* THIS SOFTWARE IS PROVIDED ON AN "AS IS" BASIS, WITHOUT WARRANTIES OF ANY KIND, EITHER
+* EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO NON-INFRINGEMENT, MERCHANTABILITY OR
+* FIT FOR A PARTICULAR PURPOSE.
+*
+* See the Mulan PSL v2 for more details.
 ***************************************************************************************/
 
 package nutcore
@@ -50,7 +50,7 @@ sealed trait HasCacheConst {
   val hasCoh = !ro
   val hasCohInt = (if (hasCoh) 1 else 0)
   val hasPrefetch = cacheName == "l2cache"
-	
+
   val cacheLevel = cacheConfig.cacheLevel
   val TotalSize = cacheConfig.totalSize
   val Ways = cacheConfig.ways
@@ -174,8 +174,10 @@ sealed class CacheStage2(implicit val cacheConfig: CacheConfig) extends CacheMod
 
   val req = io.in.bits.req
   val addr = req.addr.asTypeOf(addrBundle)
-  BoringUtils.addSource(addr,"cacheStage2Raddr")
-  BoringUtils.addSource(io.in.bits.req.size,"cacheStage2Size")
+  if (cacheName == "dcache") {
+    //BoringUtils.addSource(req.addr,"cacheStage2Raddr")
+    //BoringUtils.addSource(io.in.bits.req.size,"cacheStage2Size")
+  }
 
   val isForwardMeta = io.in.valid && io.metaWriteBus.req.valid && io.metaWriteBus.req.bits.setIdx === getMetaIdx(req.addr)
   val isForwardMetaReg = RegInit(false.B)
@@ -194,13 +196,13 @@ sealed class CacheStage2(implicit val cacheConfig: CacheConfig) extends CacheMod
 
   val hitVec = VecInit(metaWay.map(m => m.valid && (m.tag === addr.tag) && io.in.valid)).asUInt
   val victimWaymask = if (Ways > 1) (1.U << LFSR64()(log2Up(Ways)-1,0)) else "b1".U
-   
+
   val invalidVec = VecInit(metaWay.map(m => !m.valid)).asUInt
   val hasInvalidWay = invalidVec.orR
   val refillInvalidWaymask = Mux(invalidVec >= 8.U, "b1000".U,
     Mux(invalidVec >= 4.U, "b0100".U,
     Mux(invalidVec >= 2.U, "b0010".U, "b0001".U)))
-  
+
   // val waymask = Mux(io.out.bits.hit, hitVec, victimWaymask)
   val waymask = Mux(io.out.bits.hit, hitVec, Mux(hasInvalidWay, refillInvalidWaymask, victimWaymask))
   when(PopCount(waymask) > 1.U){
@@ -269,18 +271,17 @@ sealed class CacheStage3(implicit val cacheConfig: CacheConfig) extends CacheMod
   val meta = Mux1H(io.in.bits.waymask, io.in.bits.metas)
   assert(!(mmio && hit), "MMIO request should not hit in cache")
   //something added
-  val addrHit = Wire(Bool())       //just means an address hit, not a data hit
-  val fullHit = Wire(Bool())       //Contains all the data you need
-  val storeHit = Wire(Bool())      //hit in store pipe or store buffer
-  BoringUtils.addSink(addrHit,"addrHit")
-  BoringUtils.addSink(fullHit,"fullHit")
-  BoringUtils.addSource(state =/= s_idle,"memStall")
+  val addrHit = WireInit(false.B)       //just means an address hit, not a data hit
+  val fullHit = WireInit(false.B)       //Contains all the data you need
+  val storeHit = WireInit(false.B)      //hit in store pipe or store buffer
 
   storeHit := addrHit && fullHit
 
   // this is ugly
   if (cacheName == "dcache") {
-    BoringUtils.addSource(mmio, "lsuMMIO")
+    //BoringUtils.addSource(mmio, "lsuMMIO")
+    BoringUtils.addSink(addrHit,"addrHit")
+    BoringUtils.addSink(fullHit,"fullHit")
   }
 
   val useForwardData = io.in.bits.isForwardData && io.in.bits.waymask === io.in.bits.forwardData.waymask.getOrElse("b1".U)
@@ -306,6 +307,10 @@ sealed class CacheStage3(implicit val cacheConfig: CacheConfig) extends CacheMod
   val s_idle :: s_memReadReq :: s_memReadResp :: s_memWriteReq :: s_memWriteResp :: s_mmioReq :: s_mmioResp :: s_wait_resp :: s_release :: Nil = Enum(9)
   val state = RegInit(s_idle)
   val needFlush = RegInit(false.B)
+  if (cacheName == "dcache") {
+    //BoringUtils.addSource(state =/= s_idle,"memStall")
+  }
+
 
   when (io.flush && (state =/= s_idle)) { needFlush := true.B }
   when (io.out.fire() && needFlush) { needFlush := false.B }
@@ -481,7 +486,7 @@ sealed class CacheStage3(implicit val cacheConfig: CacheConfig) extends CacheMod
   Debug(" DHW: (%d, %d), data:%x setIdx:%x MHW:(%d, %d)\n", dataHitWriteBus.req.valid, dataHitWriteBus.req.ready, dataHitWriteBus.req.bits.data.asUInt, dataHitWriteBus.req.bits.setIdx, metaHitWriteBus.req.valid, metaHitWriteBus.req.ready)
   Debug(" DreadCache: %x \n", io.in.bits.datas.asUInt)
   Debug(" useFD:%d isFD:%d FD:%x DreadArray:%x dataRead:%x inwaymask:%x FDwaymask:%x \n", useForwardData, io.in.bits.isForwardData, io.in.bits.forwardData.data.data, dataReadArray, dataRead, io.in.bits.waymask, io.in.bits.forwardData.waymask.getOrElse("b1".U))
-  Debug(io.dataWriteBus.req.fire(), "[WB] waymask: %b data:%x setIdx:%x\n", 
+  Debug(io.dataWriteBus.req.fire(), "[WB] waymask: %b data:%x setIdx:%x\n",
     io.dataWriteBus.req.bits.waymask.get.asUInt, io.dataWriteBus.req.bits.data.asUInt, io.dataWriteBus.req.bits.setIdx)
   Debug((state === s_memWriteReq) && io.mem.req.fire(), "[COUTW] cnt %x addr %x data %x cmd %x size %x wmask %x tag %x idx %x waymask %b \n", writeBeatCnt.value, io.mem.req.bits.addr, io.mem.req.bits.wdata, io.mem.req.bits.cmd, io.mem.req.bits.size, io.mem.req.bits.wmask, addr.tag, getMetaIdx(req.addr), io.in.bits.waymask)
   Debug((state === s_memReadReq) && io.mem.req.fire(), "[COUTR] addr %x tag %x idx %x waymask %b \n", io.mem.req.bits.addr, addr.tag, getMetaIdx(req.addr), io.in.bits.waymask)
@@ -551,9 +556,9 @@ class Cache(implicit val cacheConfig: CacheConfig) extends CacheModule with HasC
   s2.io.metaWriteBus := s3.io.metaWriteBus
 
   if (EnableOutOfOrderExec) {
-    BoringUtils.addSource(s3.io.out.fire() && s3.io.in.bits.hit, "perfCntCondM" + cacheName + "Hit")
-    BoringUtils.addSource(s3.io.in.valid && !s3.io.in.bits.hit, "perfCntCondM" + cacheName + "Loss")
-    BoringUtils.addSource(s1.io.in.fire(), "perfCntCondM" + cacheName + "Req")
+    //BoringUtils.addSource(s3.io.out.fire() && s3.io.in.bits.hit, "perfCntCondM" + cacheName + "Hit")
+    //BoringUtils.addSource(s3.io.in.valid && !s3.io.in.bits.hit, "perfCntCondM" + cacheName + "Loss")
+    //BoringUtils.addSource(s1.io.in.fire(), "perfCntCondM" + cacheName + "Req")
   }
   // io.in.dump(cacheName + ".in")
   Debug("InReq(%d, %d) InResp(%d, %d) \n", io.in.req.valid, io.in.req.ready, io.in.resp.valid, io.in.resp.ready)
@@ -571,7 +576,7 @@ class Cache_fake(implicit val cacheConfig: CacheConfig) extends CacheModule with
   val ismmio = AddressSpace.isMMIO(io.in.req.bits.addr)
   val ismmioRec = RegEnable(ismmio, io.in.req.fire())
   if (cacheConfig.name == "dcache") {
-    BoringUtils.addSource(ismmio, "lsuMMIO")
+    //BoringUtils.addSource(ismmio, "lsuMMIO")
   }
 
   val needFlush = RegInit(false.B)
@@ -627,7 +632,7 @@ class Cache_fake(implicit val cacheConfig: CacheConfig) extends CacheModule with
     wdata = wdata, wmask = wmask)
   io.out.mem.req.valid := (state === s_memReq)
   io.out.mem.resp.ready := true.B
-  
+
   io.mmio.req.bits.apply(addr = reqaddr,
     cmd = cmd, size = size,
     wdata = wdata, wmask = wmask)
@@ -661,7 +666,7 @@ class Cache_dummy(implicit val cacheConfig: CacheConfig) extends CacheModule wit
   val memuser = RegEnable(io.in.req.bits.user.getOrElse(0.U), io.in.req.fire())
   io.in.resp.bits.user.zip(if (userBits > 0) Some(memuser) else None).map { case (o,i) => o := i }
 
-  io.out.mem.req.bits.apply( 
+  io.out.mem.req.bits.apply(
     addr = io.in.req.bits.addr,
     cmd = io.in.req.bits.cmd,
     size = io.in.req.bits.size,
@@ -678,10 +683,10 @@ class Cache_dummy(implicit val cacheConfig: CacheConfig) extends CacheModule wit
 
 object Cache {
   def apply(in: SimpleBusUC, mmio: Seq[SimpleBusUC], flush: UInt, empty: Bool, enable: Boolean = true)(implicit cacheConfig: CacheConfig) = {
-    val cache = if (enable) Module(new Cache) 
-                else (if (Settings.get("IsRV32")) 
-                        (if (cacheConfig.name == "dcache") Module(new Cache_fake) else Module(new Cache_dummy)) 
-                      else 
+    val cache = if (enable) Module(new Cache)
+                else (if (Settings.get("IsRV32"))
+                        (if (cacheConfig.name == "dcache") Module(new Cache_fake) else Module(new Cache_dummy))
+                      else
                         (Module(new Cache_fake)))
     cache.io.flush := flush
     cache.io.in <> in

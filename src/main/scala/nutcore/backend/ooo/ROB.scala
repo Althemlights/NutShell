@@ -420,8 +420,8 @@ class ROB(implicit val p: NutCoreConfig) extends NutCoreModule with HasInstrType
     (0 until robWidth).map(j => valid(i)(j) && store(i)(j)).reduce(_ || _)
   })).asUInt) 
   // TODO: use a single bit in rob misc field to save "isload"
-  BoringUtils.addSource(robLoadInstVec, "ROBLoadInstVec")
-  BoringUtils.addSource(robStoreInstVec, "ROBStoreInstVec")
+  //BoringUtils.addSource(robLoadInstVec, "ROBLoadInstVec")
+  //BoringUtils.addSource(robStoreInstVec, "ROBStoreInstVec")
 
   // reset headptr when mis-prediction recovery is triggered
   when(io.mispredictRec.valid && io.mispredictRec.redirect.valid){
@@ -492,8 +492,8 @@ class ROB(implicit val p: NutCoreConfig) extends NutCoreModule with HasInstrType
   }
 
   val retireMultiTerms = retireATerm && valid(ringBufferTail)(0) && valid(ringBufferTail)(1) && !instRedirect(0)
-  BoringUtils.addSource(retireATerm, "perfCntCondMinstret")
-  BoringUtils.addSource(retireMultiTerms, "perfCntCondMultiCommit")
+  //BoringUtils.addSource(retireATerm, "perfCntCondMinstret")
+  //BoringUtils.addSource(retireMultiTerms, "perfCntCondMultiCommit")
   
 /*  if (!p.FPGAPlatform) {
     for (i <- 0 until RetireWidth) {
@@ -520,11 +520,11 @@ class ROB(implicit val p: NutCoreConfig) extends NutCoreModule with HasInstrType
       difftest_wb.io.data := RegNext(io.wb(i).rfData)
     }
   } else {
-    BoringUtils.addSource(retireATerm, "ilaWBUvalid")
-    BoringUtils.addSource(SignExt(decode(ringBufferTail)(0).cf.pc, AddrBits), "ilaWBUpc")
-    BoringUtils.addSource(io.wb(0).rfWen, "ilaWBUrfWen")
-    BoringUtils.addSource(io.wb(0).rfDest, "ilaWBUrfDest")
-    BoringUtils.addSource(io.wb(0).rfData, "ilaWBUrfData")
+    //BoringUtils.addSource(retireATerm, "ilaWBUvalid")
+    //BoringUtils.addSource(SignExt(decode(ringBufferTail)(0).cf.pc, AddrBits), "ilaWBUpc")
+    //BoringUtils.addSource(io.wb(0).rfWen, "ilaWBUrfWen")
+    //BoringUtils.addSource(io.wb(0).rfDest, "ilaWBUrfDest")
+    //BoringUtils.addSource(io.wb(0).rfData, "ilaWBUrfData")
   }*/
 
   Debug(io.empty, "empty\n")
@@ -534,7 +534,7 @@ class ROB(implicit val p: NutCoreConfig) extends NutCoreModule with HasInstrType
   // sim pref counter
   val retireBruInst = (retireATerm && (decode(ringBufferTail)(0).ctrl.fuType === FuType.bru || decode(ringBufferTail)(1).ctrl.fuType === FuType.bru))
   val retireBruInstRedirect = retireBruInst && (redirect(ringBufferTail)(0).valid || redirect(ringBufferTail)(1).valid)
-  BoringUtils.addSource(retireBruInst, "perfCntCondMbruCmt")
-  BoringUtils.addSource(retireBruInstRedirect, "perfCntCondMbruCmtWrong")
+  //BoringUtils.addSource(retireBruInst, "perfCntCondMbruCmt")
+  //BoringUtils.addSource(retireBruInstRedirect, "perfCntCondMbruCmtWrong")
 
 }

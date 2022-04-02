@@ -55,9 +55,9 @@ class UnpipelinedLSU extends NutCoreModule with HasLSUConst {
     val lrReq   = valid & LSUOpType.isLR(func)
     val scReq   = valid & LSUOpType.isSC(func)
     if (Settings.get("HasDTLB")) {
-      BoringUtils.addSource(amoReq, "ISAMO")
+      //BoringUtils.addSource(amoReq, "ISAMO")
     }
-    BoringUtils.addSource(amoReq, "ISAMO2")
+    //BoringUtils.addSource(amoReq, "ISAMO2")
 
     val aq = io.instr(26)
     val rl = io.instr(25)
@@ -72,9 +72,9 @@ class UnpipelinedLSU extends NutCoreModule with HasLSUConst {
     val setLrAddr = Wire(UInt(AddrBits.W))
     val lr = WireInit(Bool(), false.B)
     val lrAddr = WireInit(UInt(AddrBits.W), DontCare)
-    BoringUtils.addSource(setLr, "set_lr")
-    BoringUtils.addSource(setLrVal, "set_lr_val")
-    BoringUtils.addSource(setLrAddr, "set_lr_addr")
+    //BoringUtils.addSource(setLr, "set_lr")
+    //BoringUtils.addSource(setLrVal, "set_lr_val")
+    //BoringUtils.addSource(setLrAddr, "set_lr_addr")
     BoringUtils.addSink(lr, "lr")
     BoringUtils.addSink(lrAddr, "lr_addr")
 
@@ -424,15 +424,15 @@ class LSExecUnit extends NutCoreModule {
 
   val isAMO = WireInit(false.B)
   BoringUtils.addSink(isAMO, "ISAMO2")
-  BoringUtils.addSource(addr, "LSUADDR")
+  //BoringUtils.addSource(addr, "LSUADDR")
 
   io.loadAddrMisaligned :=  valid && !isStore && !isAMO && !addrAligned
   io.storeAddrMisaligned := valid && (isStore || isAMO) && !addrAligned
 
   Debug(io.loadAddrMisaligned || io.storeAddrMisaligned, "misaligned addr detected\n")
 
-  BoringUtils.addSource(dmem.isRead() && dmem.req.fire(), "perfCntCondMloadInstr")
-  BoringUtils.addSource(BoolStopWatch(dmem.isRead(), dmem.resp.fire()), "perfCntCondMloadStall")
-  BoringUtils.addSource(BoolStopWatch(dmem.isWrite(), dmem.resp.fire()), "perfCntCondMstoreStall")
-  BoringUtils.addSource(io.isMMIO, "perfCntCondMmmioInstr")
+  //BoringUtils.addSource(dmem.isRead() && dmem.req.fire(), "perfCntCondMloadInstr")
+  //BoringUtils.addSource(BoolStopWatch(dmem.isRead(), dmem.resp.fire()), "perfCntCondMloadStall")
+  //BoringUtils.addSource(BoolStopWatch(dmem.isWrite(), dmem.resp.fire()), "perfCntCondMstoreStall")
+  //BoringUtils.addSource(io.isMMIO, "perfCntCondMmmioInstr")
 }

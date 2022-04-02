@@ -16,7 +16,7 @@ class SSDbackend extends NutCoreModule with hasBypassConst {
     val in = Vec(2, Flipped(Decoupled(new DecodeIO)))
     val redirectOut = new RedirectIO
     val dmem = new SimpleBusUC(addrBits = PAddrBits) // without dtlb
-    val mmio = new SimpleBusUC
+    //val mmio = new SimpleBusUC
   })
   def BypassMux(sel:Bool,BypassCtl:Vec[Bool],BypassDataPort:Vec[UInt],rdata:UInt):UInt ={
     Mux(sel,Mux1H(BypassCtl,BypassDataPort),rdata)
@@ -42,7 +42,6 @@ class SSDbackend extends NutCoreModule with hasBypassConst {
 
   //Bypass
   val memStall = Wire(Bool())
-  memStall := LSU.io.memStall
   Bypass.io.in <> io.in
   Bypass.io.memStall := memStall
   val issueStall = VecInit(false.B,false.B)
@@ -122,7 +121,9 @@ class SSDbackend extends NutCoreModule with hasBypassConst {
   //LSU
   val LSU = Module(new SSDLSU)
   io.dmem <> LSU.io.dmem
-  io.mmio <> LSU.io.mmio
+  LSU.io.out.ready := !(Redirect6.valid || Redirect7.valid)
+  //io.mmio <> LSU.io.mmio
+  memStall := LSU.io.memStall
   LSU.io.flush := Redirect6.valid || Redirect7.valid
   val i0LSUValid = BypassPktE0(0).valid && (BypassPktE0(0).bits.decodePkt.load || BypassPktE0(0).bits.decodePkt.store)
   val i1LSUValid = BypassPktE0(1).valid && (BypassPktE0(1).bits.decodePkt.load || BypassPktE0(1).bits.decodePkt.store)
@@ -311,33 +312,33 @@ class SSDbackend extends NutCoreModule with hasBypassConst {
     BypassPkt(9).BypassCtl.rs1bypasse3.asUInt.orR.asUInt + BypassPkt(9).BypassCtl.rs2bypasse3.asUInt.orR.asUInt
   }
 
-  BoringUtils.addSource(io.in(1).valid && io.in(1).ready,"perfCntI0Issue")
-  BoringUtils.addSource(io.in(0).valid && io.in(0).ready,"perfCntI1Issue")
-  BoringUtils.addSource(!io.in(1).ready,"perfCntI0Stall")
-  BoringUtils.addSource(!io.in(0).ready,"perfCntI1Stall")
-  BoringUtils.addSource(BypassPkt(8).BypassCtl.rs1bypasse0.asUInt.orR || BypassPkt(8).BypassCtl.rs2bypasse0.asUInt.orR ||
-    BypassPkt(9).BypassCtl.rs1bypasse0.asUInt.orR || BypassPkt(9).BypassCtl.rs2bypasse0.asUInt.orR,"perfCntE0Bypass")
-  BoringUtils.addSource(BypassPkt(8).BypassCtl.rs1bypasse2.asUInt.orR || BypassPkt(8).BypassCtl.rs2bypasse2.asUInt.orR ||
-    BypassPkt(9).BypassCtl.rs1bypasse2.asUInt.orR || BypassPkt(9).BypassCtl.rs2bypasse2.asUInt.orR,"perfCntE2Bypass")
-  BoringUtils.addSource(BypassPkt(8).BypassCtl.rs1bypasse3.asUInt.orR || BypassPkt(8).BypassCtl.rs2bypasse3.asUInt.orR ||
-    BypassPkt(9).BypassCtl.rs1bypasse3.asUInt.orR || BypassPkt(9).BypassCtl.rs2bypasse3.asUInt.orR,"perfCntE3Bypass")
+  //BoringUtils.addSource(io.in(1).valid && io.in(1).ready,"perfCntI0Issue")
+  //BoringUtils.addSource(io.in(0).valid && io.in(0).ready,"perfCntI1Issue")
+  //BoringUtils.addSource(!io.in(1).ready,"perfCntI0Stall")
+  //BoringUtils.addSource(!io.in(0).ready,"perfCntI1Stall")
+  //BoringUtils.addSource(BypassPkt(8).BypassCtl.rs1bypasse0.asUInt.orR || BypassPkt(8).BypassCtl.rs2bypasse0.asUInt.orR ||
+    //BypassPkt(9).BypassCtl.rs1bypasse0.asUInt.orR || BypassPkt(9).BypassCtl.rs2bypasse0.asUInt.orR,"perfCntE0Bypass")
+  //BoringUtils.addSource(BypassPkt(8).BypassCtl.rs1bypasse2.asUInt.orR || BypassPkt(8).BypassCtl.rs2bypasse2.asUInt.orR ||
+    //BypassPkt(9).BypassCtl.rs1bypasse2.asUInt.orR || BypassPkt(9).BypassCtl.rs2bypasse2.asUInt.orR,"perfCntE2Bypass")
+  //BoringUtils.addSource(BypassPkt(8).BypassCtl.rs1bypasse3.asUInt.orR || BypassPkt(8).BypassCtl.rs2bypasse3.asUInt.orR ||
+    //BypassPkt(9).BypassCtl.rs1bypasse3.asUInt.orR || BypassPkt(9).BypassCtl.rs2bypasse3.asUInt.orR,"perfCntE3Bypass")
 
   val SSDcoretrap = WireInit(false.B)
-  BoringUtils.addSource(pipeOut(8).bits.instr === "h0000006b".U || pipeOut(9).bits.instr === "h0000006b".U,"SSDcoretrap")
+  //BoringUtils.addSource(pipeOut(8).bits.instr === "h0000006b".U || pipeOut(9).bits.instr === "h0000006b".U,"SSDcoretrap")
   BoringUtils.addSink(SSDcoretrap,"SSDcoretrap")
 
-  SSDCorePerfCntList.map { case (name, (addr, boringId)) =>
-    BoringUtils.addSink(perfCntCond(addr), boringId)}
-
-  if (SSDCoreConfig().EnablePerfCnt) {
-    when(RegNext(RegNext(SSDcoretrap))) {
-      printf("======== SSDCorePerfCnt =========\n")
-      SSDCorePerfCntList.map { case (name, (addr, boringId)) =>
-        printf("%d <- " + name + "\n", perfCnts(addr))
-      }
-      printf("=================================\n")
-    }
-  }
+//  SSDCorePerfCntList.map { case (name, (addr, boringId)) =>
+//    BoringUtils.addSink(perfCntCond(addr), boringId)}
+//
+//  if (SSDCoreConfig().EnablePerfCnt) {
+//    when(RegNext(RegNext(SSDcoretrap))) {
+//      printf("======== SSDCorePerfCnt =========\n")
+//      SSDCorePerfCntList.map { case (name, (addr, boringId)) =>
+//        printf("%d <- " + name + "\n", perfCnts(addr))
+//      }
+//      printf("=================================\n")
+//    }
+//  }
   /* ----- Difftest ----- */
 
   val dt_ic1 = Module(new DifftestInstrCommit)

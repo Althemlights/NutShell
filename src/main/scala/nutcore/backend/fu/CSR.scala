@@ -341,7 +341,7 @@ class CSR(implicit val p: NutCoreConfig) extends NutCoreModule with HasCSRConst{
   val scounteren = RegInit(UInt(XLEN.W), 0.U)
 
   if (Settings.get("HasDTLB")) {
-    BoringUtils.addSource(satp, "CSRSATP")
+    //BoringUtils.addSource(satp, "CSRSATP")
   }
 
   // User-Level CSRs
@@ -356,8 +356,8 @@ class CSR(implicit val p: NutCoreConfig) extends NutCoreModule with HasCSRConst{
   BoringUtils.addSink(setLr, "set_lr")
   BoringUtils.addSink(setLrVal, "set_lr_val")
   BoringUtils.addSink(setLrAddr, "set_lr_addr")
-  BoringUtils.addSource(lr, "lr")
-  BoringUtils.addSource(lrAddr, "lr_addr")
+  //BoringUtils.addSource(lr, "lr")
+  //BoringUtils.addSource(lrAddr, "lr_addr")
 
   when(setLr){
     lr := setLrVal
@@ -603,7 +603,7 @@ class CSR(implicit val p: NutCoreConfig) extends NutCoreModule with HasCSRConst{
   val intrVecEnable = Wire(Vec(12, Bool()))
   intrVecEnable.zip(ideleg.asBools).map{case(x,y) => x := priviledgedEnableDetect(y)}
   val intrVec = mie(11,0) & mipRaiseIntr.asUInt & intrVecEnable.asUInt
-  BoringUtils.addSource(intrVec, "intrVecIDU")
+  //BoringUtils.addSource(intrVec, "intrVecIDU")
   // val intrNO = PriorityEncoder(intrVec)
   
   val intrNO = IntPriority.foldRight(0.U)((i: Int, sum: UInt) => Mux(io.cfIn.intrVec(i), i.U, sum))
@@ -849,7 +849,7 @@ class CSR(implicit val p: NutCoreConfig) extends NutCoreModule with HasCSRConst{
     when(true.B) { perfCnts(0xb65 & 0x7f) := perfCnts(0xb66 & 0x7f) + pendingSReq } 
   }
 
-  BoringUtils.addSource(WireInit(true.B), "perfCntCondMcycle")
+  //BoringUtils.addSource(WireInit(true.B), "perfCntCondMcycle")
   perfCntList.map { case (name, (addr, boringId)) => {
     BoringUtils.addSink(perfCntCond(addr & 0x7f), boringId)
     if (!hasPerfCnt) {

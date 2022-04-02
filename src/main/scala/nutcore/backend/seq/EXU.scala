@@ -123,11 +123,11 @@ class EXU(implicit val p: NutCoreConfig) extends NutCoreModule {
   io.forward.fuType := io.in.bits.ctrl.fuType
 
   val isBru = ALUOpType.isBru(fuOpType)
-  BoringUtils.addSource(alu.io.out.fire() && !isBru, "perfCntCondMaluInstr")
-  BoringUtils.addSource(alu.io.out.fire() && isBru, "perfCntCondMbruInstr")
-  BoringUtils.addSource(lsu.io.out.fire(), "perfCntCondMlsuInstr")
-  BoringUtils.addSource(mdu.io.out.fire(), "perfCntCondMmduInstr")
-  BoringUtils.addSource(csr.io.out.fire(), "perfCntCondMcsrInstr")
+  //BoringUtils.addSource(alu.io.out.fire() && !isBru, "perfCntCondMaluInstr")
+  //BoringUtils.addSource(alu.io.out.fire() && isBru, "perfCntCondMbruInstr")
+  //BoringUtils.addSource(lsu.io.out.fire(), "perfCntCondMlsuInstr")
+  //BoringUtils.addSource(mdu.io.out.fire(), "perfCntCondMmduInstr")
+  //BoringUtils.addSource(csr.io.out.fire(), "perfCntCondMcsrInstr")
 
   if (!p.FPGAPlatform) {
     val cycleCnt = WireInit(0.U(64.W))
@@ -136,7 +136,7 @@ class EXU(implicit val p: NutCoreConfig) extends NutCoreModule {
 
     BoringUtils.addSink(cycleCnt, "simCycleCnt")
     BoringUtils.addSink(instrCnt, "simInstrCnt")
-    BoringUtils.addSource(nutcoretrap, "nutcoretrap")
+    //BoringUtils.addSource(nutcoretrap, "nutcoretrap")
 
 /*    val difftest = Module(new DifftestTrapEvent)
     difftest.io.clock    := clock

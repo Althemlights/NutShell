@@ -383,8 +383,8 @@ class Backend_ooo(implicit val p: NutCoreConfig) extends NutCoreModule with HasR
   // lsu.io.instr := lsuUop.decode.cf.instr
   io.dmem <> lsu.io.dmem
   io.dtlb <> lsu.io.dtlb
-  BoringUtils.addSource(io.memMMU.dmem.loadPF, "loadPF") // FIXIT: this is nasty
-  BoringUtils.addSource(io.memMMU.dmem.storePF, "storePF") // FIXIT: this is nasty
+  //BoringUtils.addSource(io.memMMU.dmem.loadPF, "loadPF") // FIXIT: this is nasty
+  //BoringUtils.addSource(io.memMMU.dmem.storePF, "storePF") // FIXIT: this is nasty
   lsu.io.out.ready := true.B //TODO
   lsucommit.decode := lsu.io.uopOut.decode
   lsucommit.isMMIO := lsu.io.isMMIO
@@ -585,28 +585,28 @@ class Backend_ooo(implicit val p: NutCoreConfig) extends NutCoreModule with HasR
 
   // Performance Counter
 
-  BoringUtils.addSource(alu1.io.out.fire(), "perfCntCondMaluInstr")
-  BoringUtils.addSource(bru.io.out.fire(), "perfCntCondMbruInstr")
-  BoringUtils.addSource(lsu.io.out.fire(), "perfCntCondMlsuInstr")
-  BoringUtils.addSource(mdu.io.out.fire(), "perfCntCondMmduInstr")
-  BoringUtils.addSource(!rob.io.in(0).ready, "perfCntCondMrobFull")
-  BoringUtils.addSource(!alu1rs.io.in.ready, "perfCntCondMalu1rsFull")
-  BoringUtils.addSource(!alu2rs.io.in.ready, "perfCntCondMalu2rsFull")
-  BoringUtils.addSource(!brurs.io.in.ready, "perfCntCondMbrursFull")
-  BoringUtils.addSource(!lsurs.io.in.ready, "perfCntCondMlsursFull")
-  BoringUtils.addSource(!mdurs.io.in.ready, "perfCntCondMmdursFull")
-  BoringUtils.addSource(lsurs.io.out.fire(), "perfCntCondMlsuIssue")
-  BoringUtils.addSource(mdurs.io.out.fire(), "perfCntCondMmduIssue")
-  BoringUtils.addSource(rob.io.empty, "perfCntCondMrobEmpty")
-  BoringUtils.addSource(cmtStrHaz(0), "perfCntCondMcmtCnt0")
-  BoringUtils.addSource(cmtStrHaz(1), "perfCntCondMcmtCnt1")
-  BoringUtils.addSource(cmtStrHaz(2), "perfCntCondMcmtCnt2")
-  BoringUtils.addSource(cmtStrHaz(3), "perfCntCondMcmtStrHaz1")
-  BoringUtils.addSource(cmtStrHaz(4), "perfCntCondMcmtStrHaz2")
-  BoringUtils.addSource(alu2.io.out.fire(), "perfCntCondMaluInstr2")
-  BoringUtils.addSource(!(rob.io.in(0).fire() | rob.io.in(1).fire()), "perfCntCondMdispatch0")
-  BoringUtils.addSource(rob.io.in(0).fire() ^ rob.io.in(1).fire(), "perfCntCondMdispatch1")
-  BoringUtils.addSource(rob.io.in(0).fire() & rob.io.in(1).fire(), "perfCntCondMdispatch2")
+  //BoringUtils.addSource(alu1.io.out.fire(), "perfCntCondMaluInstr")
+  //BoringUtils.addSource(bru.io.out.fire(), "perfCntCondMbruInstr")
+  //BoringUtils.addSource(lsu.io.out.fire(), "perfCntCondMlsuInstr")
+  //BoringUtils.addSource(mdu.io.out.fire(), "perfCntCondMmduInstr")
+  //BoringUtils.addSource(!rob.io.in(0).ready, "perfCntCondMrobFull")
+  //BoringUtils.addSource(!alu1rs.io.in.ready, "perfCntCondMalu1rsFull")
+  //BoringUtils.addSource(!alu2rs.io.in.ready, "perfCntCondMalu2rsFull")
+  //BoringUtils.addSource(!brurs.io.in.ready, "perfCntCondMbrursFull")
+  //BoringUtils.addSource(!lsurs.io.in.ready, "perfCntCondMlsursFull")
+  //BoringUtils.addSource(!mdurs.io.in.ready, "perfCntCondMmdursFull")
+  //BoringUtils.addSource(lsurs.io.out.fire(), "perfCntCondMlsuIssue")
+  //BoringUtils.addSource(mdurs.io.out.fire(), "perfCntCondMmduIssue")
+  //BoringUtils.addSource(rob.io.empty, "perfCntCondMrobEmpty")
+  //BoringUtils.addSource(cmtStrHaz(0), "perfCntCondMcmtCnt0")
+  //BoringUtils.addSource(cmtStrHaz(1), "perfCntCondMcmtCnt1")
+  //BoringUtils.addSource(cmtStrHaz(2), "perfCntCondMcmtCnt2")
+  //BoringUtils.addSource(cmtStrHaz(3), "perfCntCondMcmtStrHaz1")
+  //BoringUtils.addSource(cmtStrHaz(4), "perfCntCondMcmtStrHaz2")
+  //BoringUtils.addSource(alu2.io.out.fire(), "perfCntCondMaluInstr2")
+  //BoringUtils.addSource(!(rob.io.in(0).fire() | rob.io.in(1).fire()), "perfCntCondMdispatch0")
+  //BoringUtils.addSource(rob.io.in(0).fire() ^ rob.io.in(1).fire(), "perfCntCondMdispatch1")
+  //BoringUtils.addSource(rob.io.in(0).fire() & rob.io.in(1).fire(), "perfCntCondMdispatch2")
 
   val inst1RSfull = !LookupTree(io.in(0).bits.ctrl.fuType, List(
     FuType.bru -> brurs.io.in.ready,
@@ -625,19 +625,19 @@ class Backend_ooo(implicit val p: NutCoreConfig) extends NutCoreModule with HasR
     FuType.mou -> csrrs.io.in.ready
   ))
   val dispatchConflict = bruCnt > 1.U || lsuCnt > 1.U || mduCnt > 1.U || csrCnt > 1.U
-  BoringUtils.addSource(io.in(0).valid && (hasBlockInst(0) && !pipeLineEmpty || blockReg), "perfCntCondMdp1StBlk")
-  BoringUtils.addSource(io.in(0).valid && inst1RSfull, "perfCntCondMdp1StRSf")
-  BoringUtils.addSource(io.in(0).valid && !rob.io.in(0).ready, "perfCntCondMdp1StROBf")
-  BoringUtils.addSource(dispatchConflict, "perfCntCondMdp1StConf")
-  BoringUtils.addSource(io.in(0).valid && !instCango(0), "perfCntCondMdp1StCnt")
+  //BoringUtils.addSource(io.in(0).valid && (hasBlockInst(0) && !pipeLineEmpty || blockReg), "perfCntCondMdp1StBlk")
+  //BoringUtils.addSource(io.in(0).valid && inst1RSfull, "perfCntCondMdp1StRSf")
+  //BoringUtils.addSource(io.in(0).valid && !rob.io.in(0).ready, "perfCntCondMdp1StROBf")
+  //BoringUtils.addSource(dispatchConflict, "perfCntCondMdp1StConf")
+  //BoringUtils.addSource(io.in(0).valid && !instCango(0), "perfCntCondMdp1StCnt")
 
-  BoringUtils.addSource(io.in(1).valid && (hasBlockInst(0) || hasBlockInst(1) || blockReg), "perfCntCondMdp2StBlk")
-  BoringUtils.addSource(io.in(1).valid && inst2RSfull, "perfCntCondMdp2StRSf")
-  BoringUtils.addSource(io.in(1).valid && !rob.io.in(1).ready, "perfCntCondMdp2StROBf")
-  BoringUtils.addSource(dispatchConflict, "perfCntCondMdp2StConf")
-  BoringUtils.addSource(io.in(1).valid && !instCango(0), "perfCntCondMdp2StSeq")
-  BoringUtils.addSource(io.in(1).valid && !instCango(1), "perfCntCondMdp2StCnt")
-  BoringUtils.addSource(!io.in(0).valid, "perfCntCondMdpNoInst")
+  //BoringUtils.addSource(io.in(1).valid && (hasBlockInst(0) || hasBlockInst(1) || blockReg), "perfCntCondMdp2StBlk")
+  //BoringUtils.addSource(io.in(1).valid && inst2RSfull, "perfCntCondMdp2StRSf")
+  //BoringUtils.addSource(io.in(1).valid && !rob.io.in(1).ready, "perfCntCondMdp2StROBf")
+  //BoringUtils.addSource(dispatchConflict, "perfCntCondMdp2StConf")
+  //BoringUtils.addSource(io.in(1).valid && !instCango(0), "perfCntCondMdp2StSeq")
+  //BoringUtils.addSource(io.in(1).valid && !instCango(1), "perfCntCondMdp2StCnt")
+  //BoringUtils.addSource(!io.in(0).valid, "perfCntCondMdpNoInst")
 
 /*  if (!p.FPGAPlatform) {
     val difftestGpr = Module(new DifftestArchIntRegState)
@@ -653,7 +653,7 @@ class Backend_ooo(implicit val p: NutCoreConfig) extends NutCoreModule with HasR
 
     BoringUtils.addSink(cycleCnt, "simCycleCnt")
     BoringUtils.addSink(instrCnt, "simInstrCnt")
-    BoringUtils.addSource(nutcoretrap, "nutcoretrap")
+    //BoringUtils.addSource(nutcoretrap, "nutcoretrap")
 
     val difftest = Module(new DifftestTrapEvent)
     difftest.io.clock    := clock

@@ -114,14 +114,14 @@ class NutShell(implicit val p: NutCoreConfig) extends Module with HasSoCParamete
   clint.io.in <> mmioXbar.io.out(1).toAXI4Lite()
   val mtipSync = clint.io.extra.get.mtip
   val msipSync = clint.io.extra.get.msip
-  BoringUtils.addSource(mtipSync, "mtip")
-  BoringUtils.addSource(msipSync, "msip")
+  //BoringUtils.addSource(mtipSync, "mtip")
+  //BoringUtils.addSource(msipSync, "msip")
 
   val plic = Module(new AXI4PLIC(nrIntr = Settings.getInt("NrExtIntr"), nrHart = 1))
   plic.io.in <> mmioXbar.io.out(2).toAXI4Lite()
   plic.io.extra.get.intrVec := RegNext(RegNext(io.meip))
   val meipSync = plic.io.extra.get.meip(0)
-  BoringUtils.addSource(meipSync, "meip")
+  //BoringUtils.addSource(meipSync, "meip")
   
 
   // ILA

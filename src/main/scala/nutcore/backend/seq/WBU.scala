@@ -52,9 +52,9 @@ class WBU(implicit val p: NutCoreConfig) extends NutCoreModule{
 
   Debug(io.in.valid, "[COMMIT] pc = 0x%x inst %x wen %x wdst %x wdata %x mmio %x intrNO %x\n", io.in.bits.decode.cf.pc, io.in.bits.decode.cf.instr, io.wb.rfWen, io.wb.rfDest, io.wb.rfData, io.in.bits.isMMIO, io.in.bits.intrNO)
 
-  val falseWire = WireInit(false.B) // make BoringUtils.addSource happy
-  BoringUtils.addSource(io.in.valid, "perfCntCondMinstret")
-  BoringUtils.addSource(falseWire, "perfCntCondMultiCommit")
+  val falseWire = WireInit(false.B) // make //BoringUtils.addSource happy
+  //BoringUtils.addSource(io.in.valid, "perfCntCondMinstret")
+  //BoringUtils.addSource(falseWire, "perfCntCondMultiCommit")
   
 /*  if (!p.FPGAPlatform) {
     val difftest_commit = Module(new DifftestInstrCommit)
@@ -88,10 +88,10 @@ class WBU(implicit val p: NutCoreConfig) extends NutCoreModule{
     //   printf("DUT commit branch %x\n", runahead_commit.io.pc)
     // }
   } else {
-    BoringUtils.addSource(io.in.valid, "ilaWBUvalid")
-    BoringUtils.addSource(io.in.bits.decode.cf.pc, "ilaWBUpc")
-    BoringUtils.addSource(io.wb.rfWen, "ilaWBUrfWen")
-    BoringUtils.addSource(io.wb.rfDest, "ilaWBUrfDest")
-    BoringUtils.addSource(io.wb.rfData, "ilaWBUrfData")
+    //BoringUtils.addSource(io.in.valid, "ilaWBUvalid")
+    //BoringUtils.addSource(io.in.bits.decode.cf.pc, "ilaWBUpc")
+    //BoringUtils.addSource(io.wb.rfWen, "ilaWBUrfWen")
+    //BoringUtils.addSource(io.wb.rfDest, "ilaWBUrfDest")
+    //BoringUtils.addSource(io.wb.rfData, "ilaWBUrfData")
   }*/
 }

@@ -145,9 +145,9 @@ class EmbeddedTLB(implicit val tlbConfig: TLBConfig) extends TlbModule with HasT
     val alreadyOutFinish = RegEnable(true.B, init=false.B, tlbExec.io.out.valid && !tlbExec.io.out.ready)
     when(alreadyOutFinish && tlbExec.io.out.fire()) { alreadyOutFinish := false.B}
     val tlbFinish = (tlbExec.io.out.valid && !alreadyOutFinish) || tlbExec.io.pf.isPF()
-    BoringUtils.addSource(tlbFinish, "DTLBFINISH")
-    BoringUtils.addSource(io.csrMMU.isPF(), "DTLBPF")
-    BoringUtils.addSource(vmEnable, "DTLBENABLE")
+//    BoringUtils.addSource(tlbFinish, "DTLBFINISH")
+//    BoringUtils.addSource(io.csrMMU.isPF(), "DTLBPF")
+//    BoringUtils.addSource(vmEnable, "DTLBENABLE")
   }
 
   // instruction page fault
@@ -412,6 +412,8 @@ class EmbeddedTLB_fake(implicit val tlbConfig: TLBConfig) extends TlbModule with
   io.csrMMU.storePF := false.B
   io.csrMMU.addr := io.in.req.bits.addr
   io.ipf := false.B
+  io.mem := DontCare
+
 }
 
 
@@ -429,6 +431,7 @@ object EmbeddedTLB {
       tlb.io.in <> in
       tlb.io.flush := flush
       tlb.io.csrMMU <> csrMMU
+      tlb.io.mem <> mem
       mem := DontCare
       tlb
     }

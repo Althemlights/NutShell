@@ -50,11 +50,11 @@ class MOU extends NutCoreModule {
   io.redirect.valid := valid
   io.redirect.rtype := 0.U
   val flushICache = valid && (func === MOUOpType.fencei)
-  BoringUtils.addSource(flushICache, "MOUFlushICache")
+  //BoringUtils.addSource(flushICache, "MOUFlushICache")
   Debug(flushICache, "Flush I$ at %x\n", io.cfIn.pc)
 
   val flushTLB = valid && (func === MOUOpType.sfence_vma)
-  BoringUtils.addSource(flushTLB, "MOUFlushTLB")
+  //BoringUtils.addSource(flushTLB, "MOUFlushTLB")
   Debug(flushTLB, "Sfence.vma at %x\n", io.cfIn.pc)
 
   io.out.bits := 0.U
