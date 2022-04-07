@@ -1,6 +1,6 @@
 [1;34m[src/device/io/mmio.c,18,add_mmio_map] Add mmio map 'flash' at [0x0000000010000000, 0x00000000100000ff][0m
 sh: 1: spike-dasm: not found
-Emu compiled at Apr  6 2022, 21:23:38
+Emu compiled at Apr  7 2022, 21:30:22
 The image is /home/jy/oscpu/bin/non-output/riscv-tests/sb-riscv-tests.bin
 Using simulated 4096MB RAM
 --diff is not given, try to use $(NEMU_HOME)/build/riscv64-nemu-interpreter-so by default
@@ -11,12 +11,12 @@ The first instruction of core 0 has commited. Difftest enabled.
 commit group [00]: pc 0080000000 cmtcnt 2
 commit group [01]: pc 0080000008 cmtcnt 1
 commit group [02]: pc 008000000c cmtcnt 1
-commit group [03]: pc 0080000010 cmtcnt 2 <--
-commit group [04]: pc 0000000000 cmtcnt 0
-commit group [05]: pc 0000000000 cmtcnt 0
-commit group [06]: pc 0000000000 cmtcnt 0
-commit group [07]: pc 0000000000 cmtcnt 0
-commit group [08]: pc 0000000000 cmtcnt 0
+commit group [03]: pc 0080000010 cmtcnt 2
+commit group [04]: pc 0080000018 cmtcnt 2
+commit group [05]: pc 0080000020 cmtcnt 2
+commit group [06]: pc 0080000028 cmtcnt 1
+commit group [07]: pc 008000002c cmtcnt 1
+commit group [08]: pc 0080000030 cmtcnt 2 <--
 commit group [09]: pc 0000000000 cmtcnt 0
 commit group [10]: pc 0000000000 cmtcnt 0
 commit group [11]: pc 0000000000 cmtcnt 0
@@ -30,16 +30,16 @@ commit inst [00]: pc 0080000000 inst 00000097 wen 1 dst 00000001 data 0000000080
 commit inst [01]: pc 0080000004 inst 45008093 wen 1 dst 00000001 data 0000000080000000
 commit inst [02]: pc 0080000008 inst faa00113 wen 1 dst 00000002 data ffffffffffffffaa
 commit inst [03]: pc 008000000c inst 00208023 wen 0 dst 00000000 data 0000000000000000
-commit inst [04]: pc 0080000010 inst 00008703 wen 1 dst 0000000e data efefefefefefefef
-commit inst [05]: pc 0080000014 inst faa00393 wen 1 dst 00000007 data ffffffffffffffaa <--
-commit inst [06]: pc 0000000000 inst 00000000 wen 0 dst 00000000 data 0000000000000000
-commit inst [07]: pc 0000000000 inst 00000000 wen 0 dst 00000000 data 0000000000000000
-commit inst [08]: pc 0000000000 inst 00000000 wen 0 dst 00000000 data 0000000000000000
-commit inst [09]: pc 0000000000 inst 00000000 wen 0 dst 00000000 data 0000000000000000
-commit inst [10]: pc 0000000000 inst 00000000 wen 0 dst 00000000 data 0000000000000000
-commit inst [11]: pc 0000000000 inst 00000000 wen 0 dst 00000000 data 0000000000000000
-commit inst [12]: pc 0000000000 inst 00000000 wen 0 dst 00000000 data 0000000000000000
-commit inst [13]: pc 0000000000 inst 00000000 wen 0 dst 00000000 data 0000000000000000
+commit inst [04]: pc 0080000010 inst 00008703 wen 1 dst 0000000e data ffffffffffffffaa
+commit inst [05]: pc 0080000014 inst faa00393 wen 1 dst 00000007 data ffffffffffffffaa
+commit inst [06]: pc 0080000018 inst 00200193 wen 1 dst 00000003 data 0000000000000002
+commit inst [07]: pc 008000001c inst 3c771c63 wen 0 dst 00000000 data 0000000000000000
+commit inst [08]: pc 0080000020 inst 00000097 wen 1 dst 00000001 data 0000000080000020
+commit inst [09]: pc 0080000024 inst 43008093 wen 1 dst 00000001 data 0000000080000020
+commit inst [10]: pc 0080000028 inst 00000113 wen 1 dst 00000002 data 0000000000000000
+commit inst [11]: pc 008000002c inst 002080a3 wen 0 dst 00000000 data 0000000000000000
+commit inst [12]: pc 0080000030 inst 00108703 wen 1 dst 0000000e data efefefefefef00ef
+commit inst [13]: pc 0080000034 inst 00000393 wen 1 dst 00000007 data 0000000000000000 <--
 commit inst [14]: pc 0000000000 inst 00000000 wen 0 dst 00000000 data 0000000000000000
 commit inst [15]: pc 0000000000 inst 00000000 wen 0 dst 00000000 data 0000000000000000
 commit inst [16]: pc 0000000000 inst 00000000 wen 0 dst 00000000 data 0000000000000000
@@ -60,14 +60,14 @@ commit inst [30]: pc 0000000000 inst 00000000 wen 0 dst 00000000 data 0000000000
 commit inst [31]: pc 0000000000 inst 00000000 wen 0 dst 00000000 data 0000000000000000
 
 ==============  REF Regs  ==============
-  $0: 0x0000000000000000   ra: 0x0000000080000450   sp: 0xffffffffffffffaa   gp: 0x678d60455f8d2c8d 
-  tp: 0x47e26698d035768e   t0: 0x48962fe551b65b1e   t1: 0xb23d59a50aafdf21   t2: 0xffffffffffffffaa 
-  s0: 0xc5c736b04bf007d7   s1: 0x4c6f09c3e239678b   a0: 0x02d0155678dac424   a1: 0x988f2f95aba3c3ef 
-  a2: 0x34cce484bac9e74c   a3: 0x8cab6e697e1decb7   a4: 0xffffffffffffffaa   a5: 0x3a212caf110f3604 
-  a6: 0xfcce25b7ab139c6a   a7: 0x06cf420f17948f63   s2: 0x785e855ec41363dd   s3: 0x31603d1b8247c96d 
-  s4: 0x4d09a824069a8b32   s5: 0x27952c0e91ac55a3   s6: 0xbb29ac834851233e   s7: 0xdf8ba668ad202545 
-  s8: 0xc1315413a981515b   s9: 0x041bbe9e8d235b31  s10: 0x01755294bba2f68d  s11: 0xd2d7090bb8df39fd 
-  t3: 0xe1d8eb07db4ac2bd   t4: 0x40790328a498b0ef   t5: 0x1c6a2f2ce11044de   t6: 0x5c97d52a714ec403 
+  $0: 0x0000000000000000   ra: 0x0000000080000450   sp: 0x0000000000000000   gp: 0x0000000000000002 
+  tp: 0x31603d1b8247c96d   t0: 0x4d09a824069a8b32   t1: 0x27952c0e91ac55a3   t2: 0x0000000000000000 
+  s0: 0xdf8ba668ad202545   s1: 0xc1315413a981515b   a0: 0x041bbe9e8d235b31   a1: 0x01755294bba2f68d 
+  a2: 0xd2d7090bb8df39fd   a3: 0xe1d8eb07db4ac2bd   a4: 0x0000000000000000   a5: 0x1c6a2f2ce11044de 
+  a6: 0x5c97d52a714ec403   a7: 0x475ed0c165a96926   s2: 0xddaca4dc8a6c6314   s3: 0x01d49e4755769723 
+  s4: 0xca4f01bab15e6a1a   s5: 0xff09bfcd017a5f12   s6: 0xe59b4675b59e5c0c   s7: 0x1b346c5f00ecd3ac 
+  s8: 0xef4febfb677d2a81   s9: 0xdeeb029288b89261  s10: 0x90013239ac476dcf  s11: 0x7df676c095b6a17a 
+  t3: 0xda4110495a125af8   t4: 0xa92818100977faca   t5: 0x556441be3fb9245e   t6: 0x47623bfb4fcb8ba6 
  ft0: 0xfcc0009300000213  ft1: 0x2801011300000117  ft2: 0x0000001300000013  ft3: 0x0021070300110123 
  ft4: 0x20771463fcc00393  ft5: 0x0020029300120213  ft6: 0x00f00193fc521ae3  ft7: 0xfbc0009300000213 
  fs0: 0x0000011700000013  fs1: 0x001101a324410113  fa0: 0xfbc0039300310703  fa1: 0x001202131c771a63 
@@ -76,7 +76,7 @@ commit inst [31]: pc 0000000000 inst 00000000 wen 0 dst 00000000 data 0000000000
  fs4: 0x0000021301100193  fs5: 0x00000013fab00093  fs6: 0x0000011700000013  fs7: 0x001102a31d410113 
  fs8: 0xfab0039300510703  fs9: 0x0012021316771263 fs10: 0xfc521ae300200293 fs11: 0x0000021301200193 
  ft8: 0x1a81011300000117  ft9: 0x0011002303300093 ft10: 0x0330039300010703 ft11: 0x0012021312771a63 
-pc: 0x0000000080000018 mstatus: 0x0000000000000000 mcause: 0x0000000000000000 mepc: 0x0000000000000000
+pc: 0x0000000080000038 mstatus: 0x0000000000000000 mcause: 0x0000000000000000 mepc: 0x0000000000000000
                        sstatus: 0x0000000000000000 scause: 0x0000000000000000 sepc: 0x0000000000000000
 satp: 0x0000000000000000
 mip: 0x0000000000000000 mie: 0x0000000000000000 mscratch: 0x0000000000000000 sscratch: 0x0000000000000000
@@ -92,10 +92,10 @@ privilege mode:3  pmp: below
 12: cfg:0x00 addr:0x0000000000000000|13: cfg:0x00 addr:0x0000000000000000
 14: cfg:0x00 addr:0x0000000000000000|15: cfg:0x00 addr:0x0000000000000000
 priviledgeMode: 3
-     a4 different at pc = 0x0080000010, right= 0xffffffffffffffaa, wrong = 0xefefefefefefefef
-Core 0: [31mABORT at pc = 0x80000010
-[0m[35mtotal guest instructions = 4
-[0m[35minstrCnt = 4, cycleCnt = 547, IPC = 0.007313
-[0m[34mSeed=0 Guest cycle spent: 548 (this will be different from cycleCnt if emu loads a snapshot)
-[0m[34mHost time spent: 6ms
+     a4 different at pc = 0x0080000030, right= 0x0000000000000000, wrong = 0xefefefefefef00ef
+Core 0: [31mABORT at pc = 0x80000030
+[0m[35mtotal guest instructions = 12
+[0m[35minstrCnt = 12, cycleCnt = 561, IPC = 0.021390
+[0m[34mSeed=0 Guest cycle spent: 562 (this will be different from cycleCnt if emu loads a snapshot)
+[0m[34mHost time spent: 11ms
 [0m
