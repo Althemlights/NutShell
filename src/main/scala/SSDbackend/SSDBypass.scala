@@ -28,6 +28,7 @@ class DecodeIO2BypassPkt extends Module {
     val in = Vec(2, Flipped(Decoupled(new DecodeIO)))
     val BypassPktTable = Input(Vec(10, new BypassPkt))
     val BypassPktValid = Input(Vec(10, Bool()))
+    val dmemReady = Input(Bool())
     val issueStall = Output(Vec(2, Bool()))
     val out0 = Decoupled(new BypassPkt)
     val out1 = Decoupled(new BypassPkt)
@@ -35,10 +36,12 @@ class DecodeIO2BypassPkt extends Module {
   //生成 BypassPkt， 以及issue stall 信号
   val i0decodePkt = Wire(new decodePkt)
   val i1decodePkt = Wire(new decodePkt)
+  val i0BypassCtlPkt = io.out0.bits.BypassCtl
+  val i1BypassCtlPkt = io.out1.bits.BypassCtl
   DecodeIO2decodePkt(io.in(0).bits, i0decodePkt)
   DecodeIO2decodePkt(io.in(1).bits, i1decodePkt)
   io.out0.bits.decodePkt := i0decodePkt
-  io.out1.bits.decodePkt := i1decodePkt //先简单连一下，之后再覆盖或补全其他输出信号
+  io.out1.bits.decodePkt := i1decodePkt
   io.out0.valid <> io.in(0).valid
   io.out1.valid <> io.in(1).valid
   io.in(0).ready <> io.out0.ready
@@ -99,14 +102,14 @@ class DecodeIO2BypassPkt extends Module {
     
 
     //merge decodePkt.subalu
-
+    val i0Hiti1Rs1 = Wire(Bool())
+    val i0Hiti1Rs2 = Wire(Bool())
     io.out0.bits.decodePkt.subalu :=
       (i0decodePkt.alu && i0rs1hitStage >= 0.U && i0rs1hitStage <= 3.U && (io.BypassPktTable(i0rs1hitStage).decodePkt.mul || io.BypassPktTable(i0rs1hitStage).decodePkt.load)
       || i0decodePkt.alu && i0rs2hitStage >= 0.U && i0rs2hitStage <= 3.U && (io.BypassPktTable(i0rs2hitStage).decodePkt.mul || io.BypassPktTable(i0rs2hitStage).decodePkt.load)
       || i0decodePkt.alu && i0rs1hitStage >= 0.U && i0rs1hitStage <= 5.U && io.BypassPktTable(i0rs1hitStage).decodePkt.subalu
       || i0decodePkt.alu && i0rs2hitStage >= 0.U && i0rs2hitStage <= 5.U && io.BypassPktTable(i0rs2hitStage).decodePkt.subalu
-      || i0decodePkt.alu && i1decodePkt.alu && !io.out1.bits.decodePkt.subalu &&
-        (io.in(0).bits.ctrl.rfSrc1 === i1decodePkt.rd && i0rs1valid || io.in(0).bits.ctrl.rfSrc2 === i1decodePkt.rd && i0rs2valid) && i1decodePkt.rdvalid
+      ||i0Hiti1Rs1 || i0Hiti1Rs2
       )
 
     io.out1.bits.decodePkt.subalu :=
@@ -120,9 +123,15 @@ class DecodeIO2BypassPkt extends Module {
   io.issueStall(0) := (io.in(0).bits.ctrl.rfSrc1 === i1decodePkt.rd && i0rs1valid ||
     io.in(0).bits.ctrl.rfSrc2 === i1decodePkt.rd && i0rs2valid) && i1decodePkt.rdvalid && i1decodePkt.alu && io.out1.bits.decodePkt.subalu ||
     (i0decodePkt.load || i0decodePkt.store) && (io.in(1).bits.cf.isBranch || (i1decodePkt.load || i1decodePkt.store)) ||
-    (i1decodePkt.load || i1decodePkt.store) && io.in(0).bits.cf.isBranch
+    (i1decodePkt.load || i1decodePkt.store) && io.in(0).bits.cf.isBranch ||
+    (i0decodePkt.load || i0decodePkt.store) && !(i0rs1valid && i0BypassCtlPkt.rs1bypasse0.asUInt.orR || i0rs2valid && i0BypassCtlPkt.rs2bypasse0.asUInt.orR) ||
+    i0decodePkt.load && !io.dmemReady ||
+    io.issueStall(1)
 
-  io.issueStall(1) := false.B
+  io.issueStall(1) := (i1decodePkt.load || i1decodePkt.store) &&
+    !(i1rs1valid && !i1BypassCtlPkt.rs1bypasse2.asUInt.orR && !i1BypassCtlPkt.rs1bypasse3.asUInt.orR
+      || i1rs2valid && !i1BypassCtlPkt.rs2bypasse0.asUInt.orR && !i1BypassCtlPkt.rs1bypasse3.asUInt.orR) ||
+    i1decodePkt.load && !io.dmemReady
   dontTouch(io.issueStall)
 
   val cond = Wire(Bool())
@@ -136,8 +145,6 @@ class DecodeIO2BypassPkt extends Module {
     for (i <- 0 to 9) Valid(i) := io.BypassPktValid(i)
 
     //BypassPkt out0
-  val i0Hiti1Rs1 = Wire(Bool())
-  val i0Hiti1Rs2 = Wire(Bool())
   i0Hiti1Rs1 := io.in(0).bits.ctrl.rfSrc1 === i1decodePkt.rd && i0rs1valid && i1decodePkt.rdvalid && (i1decodePkt.mul || i1decodePkt.load || i1decodePkt.alu && !io.out1.bits.decodePkt.subalu)
   i0Hiti1Rs2 := io.in(0).bits.ctrl.rfSrc2 === i1decodePkt.rd && i0rs2valid && i1decodePkt.rdvalid && (i1decodePkt.mul || i1decodePkt.load || i1decodePkt.alu && !io.out1.bits.decodePkt.subalu)
 
@@ -293,11 +300,11 @@ object DecodeIO2decodePkt {
     out.rd <> in.ctrl.rfDest
     out.rdvalid <> in.ctrl.rfWen
     out.alu := in.ctrl.fuType === FuType.alu || in.ctrl.fuType === FuType.bru
-    //下面的就先置零，subalu 会在其他模块覆盖掉
+    //subalu 会在其他模块覆盖掉
     out.mul := false.B
     out.div := false.B
-    out.load := false.B
-    out.store := false.B
+    out.load := LSUOpType.isLoad(in.ctrl.fuOpType) && in.ctrl.fuType === FuType.lsu
+    out.store := LSUOpType.isStore(in.ctrl.fuOpType)
     out.subalu := false.B
   }
 }
@@ -341,6 +348,7 @@ class Bypass extends Module{
   val io = IO(new Bundle {
     val in = Vec(2,Flipped(Decoupled(new DecodeIO)))
     val memStall = Input(Bool())
+    val dmemReady = Input(Bool())
     val flush = Input(Vec(4,Bool()))
     val issueStall = Output(Vec(2,Bool()))
     val pipeFlush = Output(Vec(10,Bool()))
@@ -386,6 +394,7 @@ class Bypass extends Module{
   PipelineCtl.io.memStall <> io.memStall
   DecodeIO2BypassPkt.io.BypassPktTable := BypassPkt
   DecodeIO2BypassPkt.io.BypassPktValid := BypassPktValid
+  DecodeIO2BypassPkt.io.dmemReady := io.dmemReady
   io.BypassPkt := BypassPkt
   io.BypassPktValid := BypassPktValid
   DecodeIO2BypassPkt.io.in(0) <> io.in(1)

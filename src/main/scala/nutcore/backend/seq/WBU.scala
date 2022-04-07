@@ -95,3 +95,6 @@ class WBU(implicit val p: NutCoreConfig) extends NutCoreModule{
     //BoringUtils.addSource(io.wb.rfData, "ilaWBUrfData")
   }*/
 }
+
+
+

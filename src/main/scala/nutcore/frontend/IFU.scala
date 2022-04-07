@@ -252,8 +252,8 @@ class IFU_ooo extends NutCoreModule with HasResetVector {
     // TODO: update BPU
   }
 
-  BoringUtils.addSource(BoolStopWatch(io.imem.req.valid, io.imem.resp.fire()), "perfCntCondMimemStall")
-  BoringUtils.addSource(io.flushVec.orR, "perfCntCondMifuFlush")
+  //BoringUtils.addSource(BoolStopWatch(io.imem.req.valid, io.imem.resp.fire()), "perfCntCondMimemStall")
+  //BoringUtils.addSource(io.flushVec.orR, "perfCntCondMifuFlush")
 }
 
 class IFU_embedded extends NutCoreModule with HasResetVector {
@@ -302,8 +302,8 @@ class IFU_embedded extends NutCoreModule with HasResetVector {
   Debug(io.imem.req.fire(), "[IFI] pc=%x user=%x redirect %x npc %x pc %x pnpc %x\n", io.imem.req.bits.addr, io.imem.req.bits.user.getOrElse(0.U), io.redirect.valid, npc, pc, bpu.io.out.target)
   Debug(io.out.fire(), "[IFO] pc=%x user=%x inst=%x npc=%x ipf %x\n", io.out.bits.pc, io.imem.resp.bits.user.get, io.out.bits.instr, io.out.bits.pnpc, io.ipf)
 
-  BoringUtils.addSource(BoolStopWatch(io.imem.req.valid, io.imem.resp.fire()), "perfCntCondMimemStall")
-  BoringUtils.addSource(io.flushVec.orR, "perfCntCondMifuFlush")
+  //BoringUtils.addSource(BoolStopWatch(io.imem.req.valid, io.imem.resp.fire()), "perfCntCondMimemStall")
+  //BoringUtils.addSource(io.flushVec.orR, "perfCntCondMifuFlush")
 }
 
 class IFU_inorder extends NutCoreModule with HasResetVector {
@@ -390,6 +390,6 @@ class IFU_inorder extends NutCoreModule with HasResetVector {
   io.out.bits.exceptionVec(instrPageFault) := io.ipf
   io.out.valid := io.imem.resp.valid && !io.flushVec(0)
 
-  BoringUtils.addSource(BoolStopWatch(io.imem.req.valid, io.imem.resp.fire()), "perfCntCondMimemStall")
-  BoringUtils.addSource(io.flushVec.orR, "perfCntCondMifuFlush")
+  //BoringUtils.addSource(BoolStopWatch(io.imem.req.valid, io.imem.resp.fire()), "perfCntCondMimemStall")
+  //BoringUtils.addSource(io.flushVec.orR, "perfCntCondMifuFlush")
 }

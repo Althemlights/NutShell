@@ -134,11 +134,11 @@ class NutShell(implicit val p: NutCoreConfig) extends Module with HasSoCParamete
 
     val dummy = WireInit(0.U.asTypeOf(new ILABundle))
     val ila = io.ila.getOrElse(dummy)
-    BoringUtilsConnect(ila.WBUpc      ,"ilaWBUpc")
-    BoringUtilsConnect(ila.WBUvalid   ,"ilaWBUvalid")
-    BoringUtilsConnect(ila.WBUrfWen   ,"ilaWBUrfWen")
-    BoringUtilsConnect(ila.WBUrfDest  ,"ilaWBUrfDest")
-    BoringUtilsConnect(ila.WBUrfData  ,"ilaWBUrfData")
-    BoringUtilsConnect(ila.InstrCnt   ,"ilaInstrCnt")
+//    BoringUtilsConnect(ila.WBUpc      ,"ilaWBUpc")
+//    BoringUtilsConnect(ila.WBUvalid   ,"ilaWBUvalid")
+//    BoringUtilsConnect(ila.WBUrfWen   ,"ilaWBUrfWen")
+//    BoringUtilsConnect(ila.WBUrfDest  ,"ilaWBUrfDest")
+//    BoringUtilsConnect(ila.WBUrfData  ,"ilaWBUrfData")
+//    BoringUtilsConnect(ila.InstrCnt   ,"ilaInstrCnt")
   }
 }

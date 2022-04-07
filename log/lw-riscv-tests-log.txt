@@ -1,6 +1,6 @@
 [1;34m[src/device/io/mmio.c,18,add_mmio_map] Add mmio map 'flash' at [0x0000000010000000, 0x00000000100000ff][0m
 sh: 1: spike-dasm: not found
-Emu compiled at Mar 23 2022, 17:09:35
+Emu compiled at Apr  6 2022, 21:23:38
 The image is /home/jy/oscpu/bin/non-output/riscv-tests/lw-riscv-tests.bin
 Using simulated 4096MB RAM
 --diff is not given, try to use $(NEMU_HOME)/build/riscv64-nemu-interpreter-so by default
@@ -26,9 +26,9 @@ commit group [14]: pc 0000000000 cmtcnt 0
 commit group [15]: pc 0000000000 cmtcnt 0
 
 ============== Commit Instr Trace ==============
-commit inst [00]: pc 0080000000 inst 00000097 wen 1 dst 00000001 data 00000000800002d0
-commit inst [01]: pc 0080000004 inst 2d008093 wen 1 dst 00000001 data 00000000800002d0
-commit inst [02]: pc 0080000008 inst 0000a703 wen 1 dst 0000000e data 0000000000000000
+commit inst [00]: pc 0080000000 inst 00000097 wen 1 dst 00000001 data 0000000080000000
+commit inst [01]: pc 0080000004 inst 2d008093 wen 1 dst 00000001 data 0000000080000000
+commit inst [02]: pc 0080000008 inst 0000a703 wen 1 dst 0000000e data ff00ff0000ff00ff
 commit inst [03]: pc 008000000c inst 00ff03b7 wen 1 dst 00000007 data 0000000000ff0000 <--
 commit inst [04]: pc 0000000000 inst 00000000 wen 0 dst 00000000 data 0000000000000000
 commit inst [05]: pc 0000000000 inst 00000000 wen 0 dst 00000000 data 0000000000000000
@@ -60,14 +60,14 @@ commit inst [30]: pc 0000000000 inst 00000000 wen 0 dst 00000000 data 0000000000
 commit inst [31]: pc 0000000000 inst 00000000 wen 0 dst 00000000 data 0000000000000000
 
 ==============  REF Regs  ==============
-  $0: 0x0000000000000000   ra: 0x00000000800002d0   sp: 0x8f4b0baa9038d637   gp: 0x3b2de01a8ff4f4a8 
-  tp: 0xf6f2d5da70d1e1a5   t0: 0x0fb9825aace0029a   t1: 0x89652abc0e7f0eb4   t2: 0x0000000000ff0000 
-  s0: 0xfc9445f29a89e9fe   s1: 0xd134ed2823228964   a0: 0xecc9071ce089c7f0   a1: 0x34af99dbf8e83964 
-  a2: 0xe2c88397514f4a44   a3: 0x75fdcd3604c9ec50   a4: 0x0000000000ff00ff   a5: 0x058fb9faf3b37876 
-  a6: 0x7396799f0624457b   a7: 0x4c8a9229fe383d5a   s2: 0xfe702834fdcb5572   s3: 0x304c18e759bf8c68 
-  s4: 0x24b6c0aa96e7b84e   s5: 0x7de042846bc4ad31   s6: 0x5e4d52289cb929f0   s7: 0x72dd016bd7b24448 
-  s8: 0xbe6ce06db9fbc70b   s9: 0x15b565c2e9548bf9  s10: 0xc04925c54144bd9c  s11: 0x863088faaefbbbb5 
-  t3: 0x39197ec63f45fa1d   t4: 0x2a943988d8c80868   t5: 0x2be91e567f64032c   t6: 0xf84d6a8e3448e85e 
+  $0: 0x0000000000000000   ra: 0x00000000800002d0   sp: 0xb7e1ce94f3632551   gp: 0x678d60455f8d2c8d 
+  tp: 0x47e26698d035768e   t0: 0x48962fe551b65b1e   t1: 0xb23d59a50aafdf21   t2: 0x0000000000ff0000 
+  s0: 0xc5c736b04bf007d7   s1: 0x4c6f09c3e239678b   a0: 0x02d0155678dac424   a1: 0x988f2f95aba3c3ef 
+  a2: 0x34cce484bac9e74c   a3: 0x8cab6e697e1decb7   a4: 0x0000000000ff00ff   a5: 0x3a212caf110f3604 
+  a6: 0xfcce25b7ab139c6a   a7: 0x06cf420f17948f63   s2: 0x785e855ec41363dd   s3: 0x31603d1b8247c96d 
+  s4: 0x4d09a824069a8b32   s5: 0x27952c0e91ac55a3   s6: 0xbb29ac834851233e   s7: 0xdf8ba668ad202545 
+  s8: 0xc1315413a981515b   s9: 0x041bbe9e8d235b31  s10: 0x01755294bba2f68d  s11: 0xd2d7090bb8df39fd 
+  t3: 0xe1d8eb07db4ac2bd   t4: 0x40790328a498b0ef   t5: 0x1c6a2f2ce11044de   t6: 0x5c97d52a714ec403 
  ft0: 0x0040a70311008093  ft1: 0xff03839b0ff013b7  ft2: 0x001202130a771a63  ft3: 0xfe5210e300200293 
  ft4: 0x0000021301000193  ft5: 0x0e80809300000097  ft6: 0x0040a70300000013  ft7: 0x00f3839bf00ff3b7 
  fs0: 0x0012021308771263  fs1: 0xfc521ee300200293  fa0: 0x0000021301100193  fa1: 0x0b00809300000097 
@@ -92,10 +92,10 @@ privilege mode:3  pmp: below
 12: cfg:0x00 addr:0x0000000000000000|13: cfg:0x00 addr:0x0000000000000000
 14: cfg:0x00 addr:0x0000000000000000|15: cfg:0x00 addr:0x0000000000000000
 priviledgeMode: 3
-     a4 different at pc = 0x0080000008, right= 0x0000000000ff00ff, wrong = 0x0000000000000000
+     a4 different at pc = 0x0080000008, right= 0x0000000000ff00ff, wrong = 0xff00ff0000ff00ff
 Core 0: [31mABORT at pc = 0x80000008
 [0m[35mtotal guest instructions = 2
-[0m[35minstrCnt = 2, cycleCnt = 536, IPC = 0.003731
-[0m[34mSeed=0 Guest cycle spent: 537 (this will be different from cycleCnt if emu loads a snapshot)
-[0m[34mHost time spent: 11ms
+[0m[35minstrCnt = 2, cycleCnt = 547, IPC = 0.003656
+[0m[34mSeed=0 Guest cycle spent: 548 (this will be different from cycleCnt if emu loads a snapshot)
+[0m[34mHost time spent: 6ms
 [0m

@@ -39,10 +39,8 @@ class stallPointConnect[T <: Data](gen : T) extends Module {
   val valid = RegInit(false.B)
   when (rightOutFire) { valid := false.B }
   when (left.valid && right.ready && !isStall) { valid := true.B }
-  when (isStall) { valid := false.B }
   when (isFlush) { valid := false.B }
 
-  //stall时将left.ready拉低，并在该级插入气泡
   left.ready := right.ready && !isStall
   right.bits := RegEnable(left.bits, left.valid && left.ready)
   right.valid := valid //&& !isFlush

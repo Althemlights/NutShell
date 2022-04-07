@@ -431,7 +431,7 @@ object EmbeddedTLB {
       tlb.io.in <> in
       tlb.io.flush := flush
       tlb.io.csrMMU <> csrMMU
-      tlb.io.mem <> mem
+      //tlb.io.mem <> mem
       mem := DontCare
       tlb
     }

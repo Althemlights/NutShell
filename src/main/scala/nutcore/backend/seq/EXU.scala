@@ -134,8 +134,8 @@ class EXU(implicit val p: NutCoreConfig) extends NutCoreModule {
     val instrCnt = WireInit(0.U(64.W))
     val nutcoretrap = io.in.bits.ctrl.isNutCoreTrap && io.in.valid
 
-    BoringUtils.addSink(cycleCnt, "simCycleCnt")
-    BoringUtils.addSink(instrCnt, "simInstrCnt")
+    //BoringUtils.addSink(cycleCnt, "simCycleCnt")
+    //BoringUtils.addSink(instrCnt, "simInstrCnt")
     //BoringUtils.addSource(nutcoretrap, "nutcoretrap")
 
 /*    val difftest = Module(new DifftestTrapEvent)
@@ -147,4 +147,31 @@ class EXU(implicit val p: NutCoreConfig) extends NutCoreModule {
     difftest.io.cycleCnt := cycleCnt
     difftest.io.instrCnt := instrCnt*/
   }
+}
+
+class EXU_fake(implicit val p: NutCoreConfig) extends NutCoreModule {
+  val io = IO(new Bundle {
+    val in = Flipped(Decoupled(new DecodeIO))
+    val out = Decoupled(new CommitIO)
+    val flush = Input(Bool())
+    val dmem = new SimpleBusUC(addrBits = VAddrBits)
+    val forward = new ForwardIO
+    val memMMU = Flipped(new MemMMUIO)
+  })
+  io.in.ready := false.B
+  io.out.valid := false.B
+  io.out.bits := 0.U.asTypeOf(new CommitIO)
+  io.dmem.req.valid := false.B
+  io.dmem.req.bits := DontCare
+  io.dmem.resp.ready := false.B
+  io.forward := 0.U.asTypeOf(new ForwardIO)
+
+  io.memMMU.dmem.priviledgeMode := 3.U(2.W)
+  io.memMMU.dmem.status_mxr := false.B
+  io.memMMU.dmem.status_sum := false.B
+
+  io.memMMU.imem.priviledgeMode := 3.U(2.W)
+  io.memMMU.imem.status_mxr := false.B
+  io.memMMU.imem.status_sum := false.B
+
 }

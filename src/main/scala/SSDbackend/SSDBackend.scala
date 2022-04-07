@@ -15,7 +15,7 @@ class SSDbackend extends NutCoreModule with hasBypassConst {
   val io = IO(new Bundle{
     val in = Vec(2, Flipped(Decoupled(new DecodeIO)))
     val redirectOut = new RedirectIO
-    val dmem = new SimpleBusUC(addrBits = PAddrBits) // without dtlb
+    val dmem = new SimpleBusUC(addrBits = VAddrBits) // without dtlb
     //val mmio = new SimpleBusUC
   })
   def BypassMux(sel:Bool,BypassCtl:Vec[Bool],BypassDataPort:Vec[UInt],rdata:UInt):UInt ={
@@ -32,6 +32,18 @@ class SSDbackend extends NutCoreModule with hasBypassConst {
   val pipeFire = Wire(Vec(10,Bool()))
   val pipeFlush = Wire(Vec(10,Bool()))
 
+  //e1 -e5 register
+  val pipeRegStage0 = Module(new stallPointConnect(new FuPkt)).suggestName("pipeStage0")
+  val pipeRegStage1 = Module(new stallPointConnect(new FuPkt)).suggestName("pipeStage1")
+  val pipeRegStage2 = Module(new normalPipeConnect(new FuPkt)).suggestName("pipeStage2")
+  val pipeRegStage3 = Module(new normalPipeConnect(new FuPkt)).suggestName("pipeStage3")
+  val pipeRegStage4 = Module(new normalPipeConnect(new FuPkt)).suggestName("pipeStage4")
+  val pipeRegStage5 = Module(new normalPipeConnect(new FuPkt)).suggestName("pipeStage5")
+  val pipeRegStage6 = Module(new stallPointConnect(new FuPkt)).suggestName("pipeStage6")
+  val pipeRegStage7 = Module(new stallPointConnect(new FuPkt)).suggestName("pipeStage7")
+  val pipeRegStage8 = Module(new normalPipeConnect(new FuPkt)).suggestName("pipeStage8")
+  val pipeRegStage9 = Module(new normalPipeConnect(new FuPkt)).suggestName("pipeStage9")
+
   pipeFlush := Bypass.io.pipeFlush
   for(i <- 0 to 3){
     pipeFire(2*i) := pipeOut(2*i).valid && pipeIn(2*i+2).ready
@@ -44,10 +56,12 @@ class SSDbackend extends NutCoreModule with hasBypassConst {
   val memStall = Wire(Bool())
   Bypass.io.in <> io.in
   Bypass.io.memStall := memStall
+  Bypass.io.dmemReady := io.dmem.req.ready
   val issueStall = VecInit(false.B,false.B)
   issueStall := Bypass.io.issueStall
   val BypassPkt = Wire(Vec(10,new BypassPkt))
   val BypassPktE0 = Wire(Vec(2,Decoupled(new BypassPkt)))
+  dontTouch(BypassPktE0)
   val BypassPktValid = Wire(Vec(10,Bool()))
   BypassPkt := Bypass.io.BypassPkt
   BypassPktE0 := Bypass.io.decodeBypassPkt
@@ -125,13 +139,12 @@ class SSDbackend extends NutCoreModule with hasBypassConst {
   //io.mmio <> LSU.io.mmio
   memStall := LSU.io.memStall
   LSU.io.flush := Redirect6.valid || Redirect7.valid
-  val i0LSUValid = BypassPktE0(0).valid && (BypassPktE0(0).bits.decodePkt.load || BypassPktE0(0).bits.decodePkt.store)
-  val i1LSUValid = BypassPktE0(1).valid && (BypassPktE0(1).bits.decodePkt.load || BypassPktE0(1).bits.decodePkt.store)
-  val LSUValid = Mux(i1LSUValid,true.B,i0LSUValid)
-  val LSUsrc1 = Mux(i1LSUValid,io.in(0).bits.data.src1,io.in(1).bits.data.src1)
-  val LSUsrc2 = Mux(i1LSUValid,io.in(0).bits.data.src2,io.in(1).bits.data.src2)
-  val LSUfunc = Mux(i1LSUValid,io.in(0).bits.ctrl.fuOpType,io.in(1).bits.ctrl.fuOpType)
-  LSU.access(LSUValid,LSUsrc1,LSUsrc2,LSUfunc)
+  val i0LSUValid = BypassPktValid(0) && (BypassPkt(0).decodePkt.load || BypassPkt(0).decodePkt.store)
+  val i1LSUValid = BypassPktValid(1) && (BypassPkt(1).decodePkt.load || BypassPkt(1).decodePkt.store)
+  dontTouch(i0LSUValid)
+  dontTouch(i1LSUValid)
+  val LSUValid = i0LSUValid || i1LSUValid
+  val LSUfunc = Mux(i1LSUValid,pipeRegStage1.right.bits.fuOpType,pipeRegStage0.right.bits.fuOpType)
   //Bypass signal and data port
   val ByPassEna = Wire(Vec(12,Bool()))
   ByPassEna := Seq(
@@ -160,7 +173,7 @@ class SSDbackend extends NutCoreModule with hasBypassConst {
   val ByapssPortE2 = Wire(Vec(E2BypaaPort,UInt(64.W)))
   ByapssPortE2 := Seq(pipeOut(8).bits.rd,pipeOut(9).bits.rd)
   val ByapssPortE3 = Wire(Vec(E3BypaaPort,UInt(64.W)))
-  ByapssPortE3 := Seq(Mux(BypassPkt(5).decodePkt.load,LSU.io.out.bits,pipeOut(5).bits.rd),pipeIn(8).bits.rd,pipeIn(9).bits.rd,pipeOut(8).bits.rd,pipeOut(9).bits.rd)
+  ByapssPortE3 := Seq(Mux(BypassPkt(5).decodePkt.load || BypassPkt(5).decodePkt.load,LSU.io.out.bits,pipeOut(5).bits.rd),pipeIn(8).bits.rd,pipeIn(9).bits.rd,pipeOut(8).bits.rd,pipeOut(9).bits.rd)
 
   //decode & issue
   //rs1 data type: pc, regfile or bypassa
@@ -172,6 +185,9 @@ class SSDbackend extends NutCoreModule with hasBypassConst {
   e0ByapssRs2(0) := BypassMux(ByPassEna(1), BypassPktE0(0).bits.BypassCtl.rs2bypasse0,ByapssPortE0, regfile.io.readPorts(1).data)
   e0ByapssRs2(1) := BypassMux(ByPassEna(3), BypassPktE0(1).bits.BypassCtl.rs2bypasse0,ByapssPortE0, regfile.io.readPorts(3).data)
  //myDebug(pipeIn(0).bits.pc === "h8000003c".U,"pipeIn(0) pc: %x, rs1Bypasse0: %b,rs1Bypass data: %x",pipeIn(0).bits.pc,BypassPktE0(0).bits.BypassCtl.rs1bypasse0.asUInt,e0ByapssRs1(0))
+  val LSUsrc1 = Mux(i1LSUValid,pipeRegStage1.right.bits.rs1,pipeRegStage0.right.bits.rs1)
+  val LSUsrc2 = Mux(i1LSUValid,pipeRegStage1.right.bits.rs2,pipeRegStage0.right.bits.rs2)
+  LSU.access(LSUValid,LSUsrc1,LSUsrc2,LSUfunc)
 
   pipeIn(0).bits.rd := io.in(1).bits.ctrl.rfDest
   pipeIn(1).bits.rd := io.in(0).bits.ctrl.rfDest
@@ -221,7 +237,7 @@ class SSDbackend extends NutCoreModule with hasBypassConst {
   pipeIn(6).bits.rd := pipeOut(4).bits.rd  //加入其他Fu后要修改
   pipeIn(6).bits.rs1 := BypassMux(ByPassEna(8), BypassPkt(4).BypassCtl.rs1bypasse3,ByapssPortE3, pipeOut(4).bits.rs1)
   pipeIn(6).bits.rs2 := BypassMux(ByPassEna(9), BypassPkt(4).BypassCtl.rs2bypasse3,ByapssPortE3, pipeOut(4).bits.rs2)
-  pipeIn(7).bits.rd := pipeOut(5).bits.rd
+  pipeIn(7).bits.rd := Mux(BypassPkt(5).decodePkt.load,LSU.io.out.bits,pipeOut(5).bits.rd)
   pipeIn(7).bits.rs1 := BypassMux(ByPassEna(10), BypassPkt(5).BypassCtl.rs1bypasse3,ByapssPortE3, pipeOut(5).bits.rs1)
   pipeIn(7).bits.rs2 := BypassMux(ByPassEna(11), BypassPkt(5).BypassCtl.rs2bypasse3,ByapssPortE3, pipeOut(5).bits.rs2)
 
@@ -248,20 +264,10 @@ class SSDbackend extends NutCoreModule with hasBypassConst {
   regfile.io.readPorts(2).addr := io.in(0).bits.ctrl.rfSrc1
   regfile.io.readPorts(3).addr := io.in(0).bits.ctrl.rfSrc2
 
-  //e1 -e5 register
-  val pipeRegStage0 = Module(new stallPointConnect(new FuPkt))
-  val pipeRegStage1 = Module(new stallPointConnect(new FuPkt))
-  val pipeRegStage2 = Module(new normalPipeConnect(new FuPkt))
-  val pipeRegStage3 = Module(new normalPipeConnect(new FuPkt))
-  val pipeRegStage4 = Module(new stallPointConnect(new FuPkt))
-  val pipeRegStage5 = Module(new stallPointConnect(new FuPkt))
-  val pipeRegStage6 = Module(new normalPipeConnect(new FuPkt))
-  val pipeRegStage7 = Module(new normalPipeConnect(new FuPkt))
-  val pipeRegStage8 = Module(new normalPipeConnect(new FuPkt))
-  val pipeRegStage9 = Module(new normalPipeConnect(new FuPkt))
+  // pipe connect
 
-  val stallStageList = List(pipeRegStage0,pipeRegStage1,pipeRegStage4,pipeRegStage5)
-  val stallIndexList = List(0,1,4,5)
+  val stallStageList = List(pipeRegStage0,pipeRegStage1,pipeRegStage6,pipeRegStage7)
+  val stallIndexList = List(0,1,6,7)
   (stallStageList zip stallIndexList).foreach{case (a,b) =>
     a.io.left <> pipeIn(b)
     a.io.right <> pipeOut(b)
@@ -270,12 +276,12 @@ class SSDbackend extends NutCoreModule with hasBypassConst {
   }
   pipeRegStage0.io.isStall := issueStall(0)
   pipeRegStage1.io.isStall := issueStall(1)
-  pipeRegStage4.io.isStall := memStall
-  pipeRegStage5.io.isStall := memStall
+  pipeRegStage6.io.isStall := memStall
+  pipeRegStage7.io.isStall := memStall
 
 
-  val normalStageList = List(pipeRegStage2,pipeRegStage3,pipeRegStage6,pipeRegStage7,pipeRegStage8,pipeRegStage9)
-  val normalIndexList = List(2,3,6,7,8,9)
+  val normalStageList = List(pipeRegStage2,pipeRegStage3,pipeRegStage4,pipeRegStage5,pipeRegStage8,pipeRegStage9)
+  val normalIndexList = List(2,3,4,5,8,9)
 
   (normalStageList zip normalIndexList).foreach{case (a,b) =>
     a.io.left <> pipeIn(b)
@@ -442,6 +448,8 @@ class SSDbackend extends NutCoreModule with hasBypassConst {
   dt_irs.io.clock  := clock
   dt_irs.io.coreid := 0.U
   dt_irs.io.gpr := regfile.io.debugPorts
+
+
 
 
 }

@@ -33,97 +33,98 @@ class StoreBufferIO extends NutCoreBundle with HasStoreBufferConst {
   val snapshot = Vec(StoreBufferSize, new StoreBufferEntry)
 }
 
-//class StoreBuffer extends NutCoreModule with HasStoreBufferConst{
-//  val io = IO(new StoreBufferIO)
-//
-//  //Ready, Valid & Fire
-//  io.in.ready := !io.isFull
-//  io.out.valid := !io.isEmpty
-//  val writeFire = Wire(Bool())
-//  val readFire = Wire(Bool())
-//  readFire := io.out.fire()
-//  //StoreBuffer Memory
-//  val StoreBuffer = RegInit(VecInit(Seq.fill(8)(0.U.asTypeOf( new StoreBufferEntry))))
-//  //merge reference signal
-//  val merge = Wire(Bool())
-//  val mergeHit = WireInit(VecInit(Seq.fill(StoreBufferSize)(false.B)))
-//  val mergeAddr = WireInit(0.U(log2Up(StoreBufferSize).W))
-//  val addrIndex = Wire(Vec(StoreBufferSize,UInt((log2Up(StoreBufferSize).W))))
-//  for(i <- 0 to StoreBufferSize-1){addrIndex(i) := i.U}
-//  val mergeData = WireInit(0.U(XLEN.W))
-//  val mergeMask = WireInit(0.U((XLEN/8).W))
-//  val FinalwriteAddr = WireInit(0.U(log2Up(StoreBufferSize).W))
-//  val writeData = WireInit(0.U(XLEN.W))
-//  val writeMask = WireInit(0.U((XLEN/8).W))
-//  val SBDataVec = Wire(Vec(StoreBufferSize,UInt(XLEN.W)))
-//  val SBMaskVec = Wire(Vec(StoreBufferSize,UInt((XLEN/8).W)))
-//
-//  when(writeFire && !io.isFull){
-//    StoreBuffer(FinalwriteAddr).data := writeData
-//    StoreBuffer(FinalwriteAddr).paddr:= io.in.bits.paddr
-//    StoreBuffer(FinalwriteAddr).mask := writeMask
-//    StoreBuffer(FinalwriteAddr).data := io.in.bits.size
-//
-//  }
-//  io.out.bits := Mux(!io.isEmpty && readFire,StoreBuffer(readFire.asUInt),0.U.asTypeOf(new StoreBufferEntry))
-//  //Pointer Counter
-//  val writeAddr = RegInit(0.U(log2Up(StoreBufferSize).W))
-//  val writeFlag = RegInit(0.U(1.W))
-//  val readAddr = RegInit(0.U(log2Up(StoreBufferSize).W))
-//  val readFlag = RegInit(0.U(1.W))
-//  when(writeFire && !merge || merge && mergeHit(readAddr)) {
-//    when(writeAddr =/= readAddr) {
-//      writeFlag := (Cat(writeFlag, writeAddr) + 1.U) (log2Up(StoreBufferSize))
-//      writeAddr := (Cat(writeFlag, writeAddr) + 1.U) (log2Up(StoreBufferSize) - 1, 0)
-//    }.elsewhen(writeFlag === readFlag) {
-//      writeFlag := (Cat(writeFlag, writeAddr) + 1.U) (log2Up(StoreBufferSize))
-//      writeAddr := (Cat(writeFlag, writeAddr) + 1.U) (log2Up(StoreBufferSize) - 1, 0)
-//    }
-//  }
-//  when(readFire) {
-//    when(writeAddr =/= readAddr) {
-//      readFlag := (Cat(readFlag, readAddr) + 1.U) (log2Up(StoreBufferSize))
-//      readAddr := (Cat(readFlag, readAddr) + 1.U) (log2Up(StoreBufferSize) - 1, 0)
-//    }.elsewhen(writeFlag =/= readFlag) {
-//      readFlag := (Cat(readFlag, readAddr) + 1.U) (log2Up(StoreBufferSize))
-//      readAddr := (Cat(readFlag, readAddr) + 1.U) (log2Up(StoreBufferSize) - 1, 0)
-//    }
-//  }
-//  //Flag Logic
-//  io.isFull := writeAddr === readAddr && writeFlag =/= readFlag
-//  io.isEmpty := writeAddr === readAddr && writeFlag === readFlag
-//
-//  //merge check & merge
-//  for(i <- 0 to StoreBufferSize-1){
-//    SBDataVec(i) := StoreBuffer(i).data
-//    SBMaskVec(i) := StoreBuffer(i).mask
-//  }
-//  merge := mergeHit.asUInt.orR
-//  mergeAddr := Mux1H(mergeHit,addrIndex)
-//  mergeData := MergeData(io.in.bits.data,Mux1H(mergeHit,SBDataVec),io.in.bits.mask,Mux1H(mergeHit,SBMaskVec))
-//  mergeMask := io.in.bits.mask | Mux1H(mergeHit,SBMaskVec)
-//  FinalwriteAddr := Mux(merge,mergeAddr,writeAddr)
-//  writeData := Mux(merge,mergeData,io.in.bits.data)
-//  writeMask := Mux(merge,mergeMask,io.in.bits.mask)
-//
-//  for(i <- 0 to 2*StoreBufferSize-1){
-//    when(i.U < io.writePtr && i.U >= io.readPtr && !readFire){
-//      mergeHit(i.U(log2Up(StoreBufferSize)-1,0)) := StoreBuffer(i.U(log2Up(StoreBufferSize)-1,0)).paddr(StoreBufferSize-1,3) === io.in.bits.paddr(StoreBufferSize-1,3) && writeFire
-//    }.elsewhen(i.U < io.writePtr && i.U > io.readPtr && readFire){
-//      mergeHit(i.U(log2Up(StoreBufferSize)-1,0)) := StoreBuffer(i.U(log2Up(StoreBufferSize)-1,0)).paddr(StoreBufferSize-1,3) === io.in.bits.paddr(StoreBufferSize-1,3) && writeFire
-//    }.otherwise{
-//      mergeHit(i.U(log2Up(StoreBufferSize)-1,0)) := false.B
-//    }
-//  }
-//  //snapshot
-//  val snapshotReg = RegInit(VecInit(Seq.fill(StoreBufferSize)(0.U.asTypeOf(new StoreBufferEntry))))
-//  when(io.snapshotena) { snapshotReg := StoreBuffer }
-//  //output
-//  io.writePtr := Cat(writeFlag,writeAddr)
-//  io.readPtr := Cat(readFlag,readAddr)
-//  io.snapshot := snapshotReg
-//
-//}
+class StoreBuffer extends NutCoreModule with HasStoreBufferConst{
+  val io = IO(new StoreBufferIO)
+
+  //Ready, Valid & Fire
+  io.in.ready := !io.isFull
+  io.out.valid := !io.isEmpty
+  val writeFire = Wire(Bool())
+  val readFire = Wire(Bool())
+  writeFire := io.in.valid && !io.isFull
+  readFire := io.out.fire()
+  //StoreBuffer Memory
+  val StoreBuffer = RegInit(VecInit(Seq.fill(8)(0.U.asTypeOf( new StoreBufferEntry))))
+  //merge reference signal
+  val merge = Wire(Bool())
+  val mergeHit = WireInit(VecInit(Seq.fill(StoreBufferSize)(false.B)))
+  val mergeAddr = WireInit(0.U(log2Up(StoreBufferSize).W))
+  val addrIndex = Wire(Vec(StoreBufferSize,UInt((log2Up(StoreBufferSize).W))))
+  for(i <- 0 to StoreBufferSize-1){addrIndex(i) := i.U}
+  val mergeData = WireInit(0.U(XLEN.W))
+  val mergeMask = WireInit(0.U((XLEN/8).W))
+  val FinalwriteAddr = WireInit(0.U(log2Up(StoreBufferSize).W))
+  val writeData = WireInit(0.U(XLEN.W))
+  val writeMask = WireInit(0.U((XLEN/8).W))
+  val SBDataVec = Wire(Vec(StoreBufferSize,UInt(XLEN.W)))
+  val SBMaskVec = Wire(Vec(StoreBufferSize,UInt((XLEN/8).W)))
+
+  when(writeFire && !io.isFull){
+    StoreBuffer(FinalwriteAddr).data := writeData
+    StoreBuffer(FinalwriteAddr).paddr:= io.in.bits.paddr
+    StoreBuffer(FinalwriteAddr).mask := writeMask
+    StoreBuffer(FinalwriteAddr).data := io.in.bits.size
+
+  }
+  io.out.bits := Mux(!io.isEmpty && readFire,StoreBuffer(readFire.asUInt),0.U.asTypeOf(new StoreBufferEntry))
+  //Pointer Counter
+  val writeAddr = RegInit(0.U(log2Up(StoreBufferSize).W))
+  val writeFlag = RegInit(0.U(1.W))
+  val readAddr = RegInit(0.U(log2Up(StoreBufferSize).W))
+  val readFlag = RegInit(0.U(1.W))
+  when(writeFire && !merge || merge && mergeHit(readAddr)) {
+    when(writeAddr =/= readAddr) {
+      writeFlag := (Cat(writeFlag, writeAddr) + 1.U) (log2Up(StoreBufferSize))
+      writeAddr := (Cat(writeFlag, writeAddr) + 1.U) (log2Up(StoreBufferSize) - 1, 0)
+    }.elsewhen(writeFlag === readFlag) {
+      writeFlag := (Cat(writeFlag, writeAddr) + 1.U) (log2Up(StoreBufferSize))
+      writeAddr := (Cat(writeFlag, writeAddr) + 1.U) (log2Up(StoreBufferSize) - 1, 0)
+    }
+  }
+  when(readFire) {
+    when(writeAddr =/= readAddr) {
+      readFlag := (Cat(readFlag, readAddr) + 1.U) (log2Up(StoreBufferSize))
+      readAddr := (Cat(readFlag, readAddr) + 1.U) (log2Up(StoreBufferSize) - 1, 0)
+    }.elsewhen(writeFlag =/= readFlag) {
+      readFlag := (Cat(readFlag, readAddr) + 1.U) (log2Up(StoreBufferSize))
+      readAddr := (Cat(readFlag, readAddr) + 1.U) (log2Up(StoreBufferSize) - 1, 0)
+    }
+  }
+  //Flag Logic
+  io.isFull := writeAddr === readAddr && writeFlag =/= readFlag
+  io.isEmpty := writeAddr === readAddr && writeFlag === readFlag
+
+  //merge check & merge
+  for(i <- 0 to StoreBufferSize-1){
+    SBDataVec(i) := StoreBuffer(i).data
+    SBMaskVec(i) := StoreBuffer(i).mask
+  }
+  merge := mergeHit.asUInt.orR
+  mergeAddr := Mux1H(mergeHit,addrIndex)
+  mergeData := MergeData(io.in.bits.data,Mux1H(mergeHit,SBDataVec),io.in.bits.mask,Mux1H(mergeHit,SBMaskVec))
+  mergeMask := io.in.bits.mask | Mux1H(mergeHit,SBMaskVec)
+  FinalwriteAddr := Mux(merge,mergeAddr,writeAddr)
+  writeData := Mux(merge,mergeData,io.in.bits.data)
+  writeMask := Mux(merge,mergeMask,io.in.bits.mask)
+
+  for(i <- 0 to 2*StoreBufferSize-1){
+    when(i.U < io.writePtr && i.U >= io.readPtr && !readFire){
+      mergeHit(i.U(log2Up(StoreBufferSize)-1,0)) := StoreBuffer(i.U(log2Up(StoreBufferSize)-1,0)).paddr(StoreBufferSize-1,3) === io.in.bits.paddr(StoreBufferSize-1,3) && writeFire
+    }.elsewhen(i.U < io.writePtr && i.U > io.readPtr && readFire){
+      mergeHit(i.U(log2Up(StoreBufferSize)-1,0)) := StoreBuffer(i.U(log2Up(StoreBufferSize)-1,0)).paddr(StoreBufferSize-1,3) === io.in.bits.paddr(StoreBufferSize-1,3) && writeFire
+    }.otherwise{
+      mergeHit(i.U(log2Up(StoreBufferSize)-1,0)) := false.B
+    }
+  }
+  //snapshot
+  val snapshotReg = RegInit(VecInit(Seq.fill(StoreBufferSize)(0.U.asTypeOf(new StoreBufferEntry))))
+  when(io.snapshotena) { snapshotReg := StoreBuffer }
+  //output
+  io.writePtr := Cat(writeFlag,writeAddr)
+  io.readPtr := Cat(readFlag,readAddr)
+  io.snapshot := snapshotReg
+
+}
 
 class StoreBuffer_fake extends NutCoreModule with HasStoreBufferConst {
   val io = IO(new StoreBufferIO)

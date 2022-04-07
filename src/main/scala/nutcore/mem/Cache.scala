@@ -175,8 +175,8 @@ sealed class CacheStage2(implicit val cacheConfig: CacheConfig) extends CacheMod
   val req = io.in.bits.req
   val addr = req.addr.asTypeOf(addrBundle)
   if (cacheName == "dcache") {
-    //BoringUtils.addSource(req.addr,"cacheStage2Raddr")
-    //BoringUtils.addSource(io.in.bits.req.size,"cacheStage2Size")
+    BoringUtils.addSource(req.addr,"cacheStage2Raddr")
+    BoringUtils.addSource(io.in.bits.req.size,"cacheStage2Size")
   }
 
   val isForwardMeta = io.in.valid && io.metaWriteBus.req.valid && io.metaWriteBus.req.bits.setIdx === getMetaIdx(req.addr)
@@ -307,9 +307,6 @@ sealed class CacheStage3(implicit val cacheConfig: CacheConfig) extends CacheMod
   val s_idle :: s_memReadReq :: s_memReadResp :: s_memWriteReq :: s_memWriteResp :: s_mmioReq :: s_mmioResp :: s_wait_resp :: s_release :: Nil = Enum(9)
   val state = RegInit(s_idle)
   val needFlush = RegInit(false.B)
-  if (cacheName == "dcache") {
-    //BoringUtils.addSource(state =/= s_idle,"memStall")
-  }
 
 
   when (io.flush && (state =/= s_idle)) { needFlush := true.B }
@@ -416,7 +413,11 @@ sealed class CacheStage3(implicit val cacheConfig: CacheConfig) extends CacheMod
     is (s_memWriteResp) { when (io.mem.resp.fire()) { state := s_memReadReq } }
     is (s_wait_resp) { when (io.out.fire() || needFlush || alreadyOutFire) { state := s_idle } }
   }
-
+  val loadProcessing = WireInit(false.B)
+  BoringUtils.addSink(loadProcessing,"loadProcessing")
+  if (cacheName == "dcache") {
+    BoringUtils.addSource((state =/= s_idle || miss) && !(alreadyOutFire || io.out.fire()) && loadProcessing,"memStall")
+  }
   val dataRefill = MaskData(io.mem.resp.bits.rdata, req.wdata, Mux(readingFirst, wordMask, 0.U(DataBits.W)))
   val dataRefillWriteBus = Wire(CacheDataArrayWriteBus).apply(
     valid = (state === s_memReadResp) && io.mem.resp.fire(), setIdx = Cat(addr.index, readBeatCnt.value),
@@ -567,6 +568,20 @@ class Cache(implicit val cacheConfig: CacheConfig) extends CacheModule with HasC
   when (s2.io.in.valid) { Debug(p"[${cacheName}.S2]: ${s2.io.in.bits.req}\n") }
   when (s3.io.in.valid) { Debug(p"[${cacheName}.S3]: ${s3.io.in.bits.req}\n") }
   //s3.io.mem.dump(cacheName + ".mem")
+
+
+//  if (cacheName == "dcache") {
+//    printf(p"cacheLevel = $cacheLevel")
+//    printf(p"TotalSize = $TotalSize")
+//    printf(p"Ways = $Ways")
+//    printf(p"LineSize = $LineSize")
+//    printf(p"LineBeats = $LineBeats")
+//    printf(p"Sets = 4Sets")
+//    printf(p"OffsetBits = $OffsetBits")
+//    printf(p"IndexBits = $IndexBits")
+//    printf(p"WordIndexBits = $WordIndexBits")
+//    printf(p"TagBits = $TagBits")
+//  }
 }
 
 class Cache_fake(implicit val cacheConfig: CacheConfig) extends CacheModule with HasCacheIO {
