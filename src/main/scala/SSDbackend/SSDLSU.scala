@@ -78,7 +78,6 @@ class SSDLSU extends  NutCoreModule with HasStoreBufferConst{
   val loadProcessing = RegInit(false.B)
   when(isLoad){loadProcessing := true.B}.elsewhen(io.out.fire()){loadProcessing := false.B}
   BoringUtils.addSource(loadProcessing,"loadProcessing")
-  io.NotReadyWhenReq := valid && !io.dmem.req.ready
 
   val reqAddr  = addr(VAddrBits-1,0)
   val reqWdata = genWdata(wdata, size)
@@ -92,6 +91,7 @@ class SSDLSU extends  NutCoreModule with HasStoreBufferConst{
   val lsuPipeStage4 = Module(new stallPointConnect(new storePipeEntry)).suggestName("memStage4")
   //cache signal
   val cacheIn = Wire(Decoupled(new SimpleBusReqBundle))
+  io.NotReadyWhenReq := !io.dmem.req.ready && cacheIn.valid && isLoad
   val StoreCacheIn = Wire(Decoupled(new SimpleBusReqBundle))
   val LoadCacheIn = Wire(Decoupled(new SimpleBusReqBundle))
   dontTouch(cacheIn)
@@ -169,8 +169,8 @@ class SSDLSU extends  NutCoreModule with HasStoreBufferConst{
   cacheInArbiter0.io.in(0) <> StoreCacheIn
   cacheInArbiter0.io.in(1) <> LoadCacheIn
   val cacheInArbiter1 = Module(new Arbiter((new SimpleBusReqBundle),2)) //store has high priority
-  cacheInArbiter1.io.in(0) <> StoreCacheIn
-  cacheInArbiter1.io.in(1) <> LoadCacheIn
+  cacheInArbiter1.io.in(0) <> LoadCacheIn
+  cacheInArbiter1.io.in(1) <> StoreCacheIn
   cacheIn.bits :=  Mux(storeBuffer.io.isFull,cacheInArbiter0.io.out.bits,cacheInArbiter1.io.out.bits)
   cacheIn.valid :=  Mux(storeBuffer.io.isFull,cacheInArbiter0.io.out.valid,cacheInArbiter1.io.out.valid)
   cacheInArbiter0.io.out.ready := cacheIn.ready

@@ -1,6 +1,6 @@
 [1;34m[src/device/io/mmio.c,18,add_mmio_map] Add mmio map 'flash' at [0x0000000010000000, 0x00000000100000ff][0m
 sh: 1: spike-dasm: not found
-Emu compiled at Apr  7 2022, 21:30:22
+Emu compiled at Apr  8 2022, 17:56:32
 The image is /home/jy/oscpu/bin/non-output/riscv-tests/sd-riscv-tests.bin
 Using simulated 4096MB RAM
 --diff is not given, try to use $(NEMU_HOME)/build/riscv64-nemu-interpreter-so by default
@@ -55,7 +55,7 @@ commit inst [25]: pc 0080000064 inst 00b10113 wen 1 dst 00000002 data fffaa00aa0
 commit inst [26]: pc 0080000068 inst 00c11113 wen 1 dst 00000002 data aa00aa00aa00b000
 commit inst [27]: pc 008000006c inst a0010113 wen 1 dst 00000002 data aa00aa00aa00aa00
 commit inst [28]: pc 0080000070 inst 0020b423 wen 0 dst 00000000 data 0000000000000000
-commit inst [29]: pc 0080000074 inst 0080b703 wen 1 dst 0000000e data 0000000000000003
+commit inst [29]: pc 0080000074 inst 0080b703 wen 1 dst 0000000e data deadbeefdeadbeef
 commit inst [30]: pc 0080000078 inst ffd503b7 wen 1 dst 00000007 data ffffffffffd50000 <--
 commit inst [31]: pc 0000000000 inst 00000000 wen 0 dst 00000000 data 0000000000000000
 
@@ -92,10 +92,10 @@ privilege mode:3  pmp: below
 12: cfg:0x00 addr:0x0000000000000000|13: cfg:0x00 addr:0x0000000000000000
 14: cfg:0x00 addr:0x0000000000000000|15: cfg:0x00 addr:0x0000000000000000
 priviledgeMode: 3
-     a4 different at pc = 0x0080000074, right= 0xaa00aa00aa00aa00, wrong = 0x0000000000000003
+     a4 different at pc = 0x0080000074, right= 0xaa00aa00aa00aa00, wrong = 0xdeadbeefdeadbeef
 Core 0: [31mABORT at pc = 0x80000074
 [0m[35mtotal guest instructions = 29
-[0m[35minstrCnt = 29, cycleCnt = 597, IPC = 0.048576
-[0m[34mSeed=0 Guest cycle spent: 598 (this will be different from cycleCnt if emu loads a snapshot)
-[0m[34mHost time spent: 12ms
+[0m[35minstrCnt = 29, cycleCnt = 594, IPC = 0.048822
+[0m[34mSeed=0 Guest cycle spent: 595 (this will be different from cycleCnt if emu loads a snapshot)
+[0m[34mHost time spent: 5ms
 [0m

@@ -123,6 +123,11 @@ class StoreBuffer extends NutCoreModule with HasStoreBufferConst{
   io.writePtr := Cat(writeFlag,writeAddr)
   io.readPtr := Cat(readFlag,readAddr)
   io.snapshot := snapshotReg
+  //for debug
+  val SBCounter = WireInit(0.U((log2Up(StoreBufferSize)+1).W))
+  when(writeFlag === readFlag){SBCounter := Cat(0.U(1.W),writeAddr) - Cat(0.U(1.W),readAddr)}
+    .otherwise{SBCounter := Cat(1.U(1.W),writeAddr) - Cat(0.U(1.W),readAddr)}
+  dontTouch(SBCounter)
 
 }
 

@@ -1,6 +1,6 @@
 [1;34m[src/device/io/mmio.c,18,add_mmio_map] Add mmio map 'flash' at [0x0000000010000000, 0x00000000100000ff][0m
 sh: 1: spike-dasm: not found
-Emu compiled at Apr  7 2022, 21:30:22
+Emu compiled at Apr  8 2022, 17:56:32
 The image is /home/jy/oscpu/bin/non-output/riscv-tests/sh-riscv-tests.bin
 Using simulated 4096MB RAM
 --diff is not given, try to use $(NEMU_HOME)/build/riscv64-nemu-interpreter-so by default
@@ -39,7 +39,7 @@ commit inst [09]: pc 0080000024 inst 4b008093 wen 1 dst 00000001 data 0000000080
 commit inst [10]: pc 0080000028 inst ffffb137 wen 1 dst 00000002 data ffffffffffffb000
 commit inst [11]: pc 008000002c inst a001011b wen 1 dst 00000002 data ffffffffffffb000
 commit inst [12]: pc 0080000030 inst 00209123 wen 0 dst 00000000 data 0000000000000000
-commit inst [13]: pc 0080000034 inst 00209703 wen 1 dst 0000000e data beefbeef0000beef
+commit inst [13]: pc 0080000034 inst 00209703 wen 1 dst 0000000e data ffffffffffffbeef
 commit inst [14]: pc 0080000038 inst ffffb3b7 wen 1 dst 00000007 data ffffffffffffb000 <--
 commit inst [15]: pc 0000000000 inst 00000000 wen 0 dst 00000000 data 0000000000000000
 commit inst [16]: pc 0000000000 inst 00000000 wen 0 dst 00000000 data 0000000000000000
@@ -92,10 +92,10 @@ privilege mode:3  pmp: below
 12: cfg:0x00 addr:0x0000000000000000|13: cfg:0x00 addr:0x0000000000000000
 14: cfg:0x00 addr:0x0000000000000000|15: cfg:0x00 addr:0x0000000000000000
 priviledgeMode: 3
-     a4 different at pc = 0x0080000034, right= 0xffffffffffffaa00, wrong = 0xbeefbeef0000beef
+     a4 different at pc = 0x0080000034, right= 0xffffffffffffaa00, wrong = 0xffffffffffffbeef
 Core 0: [31mABORT at pc = 0x80000034
 [0m[35mtotal guest instructions = 13
-[0m[35minstrCnt = 13, cycleCnt = 561, IPC = 0.023173
-[0m[34mSeed=0 Guest cycle spent: 562 (this will be different from cycleCnt if emu loads a snapshot)
-[0m[34mHost time spent: 8ms
+[0m[35minstrCnt = 13, cycleCnt = 558, IPC = 0.023297
+[0m[34mSeed=0 Guest cycle spent: 559 (this will be different from cycleCnt if emu loads a snapshot)
+[0m[34mHost time spent: 6ms
 [0m

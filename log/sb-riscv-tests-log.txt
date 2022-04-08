@@ -1,6 +1,6 @@
 [1;34m[src/device/io/mmio.c,18,add_mmio_map] Add mmio map 'flash' at [0x0000000010000000, 0x00000000100000ff][0m
 sh: 1: spike-dasm: not found
-Emu compiled at Apr  7 2022, 21:30:22
+Emu compiled at Apr  8 2022, 17:56:32
 The image is /home/jy/oscpu/bin/non-output/riscv-tests/sb-riscv-tests.bin
 Using simulated 4096MB RAM
 --diff is not given, try to use $(NEMU_HOME)/build/riscv64-nemu-interpreter-so by default
@@ -38,7 +38,7 @@ commit inst [08]: pc 0080000020 inst 00000097 wen 1 dst 00000001 data 0000000080
 commit inst [09]: pc 0080000024 inst 43008093 wen 1 dst 00000001 data 0000000080000020
 commit inst [10]: pc 0080000028 inst 00000113 wen 1 dst 00000002 data 0000000000000000
 commit inst [11]: pc 008000002c inst 002080a3 wen 0 dst 00000000 data 0000000000000000
-commit inst [12]: pc 0080000030 inst 00108703 wen 1 dst 0000000e data efefefefefef00ef
+commit inst [12]: pc 0080000030 inst 00108703 wen 1 dst 0000000e data ffffffffffffffef
 commit inst [13]: pc 0080000034 inst 00000393 wen 1 dst 00000007 data 0000000000000000 <--
 commit inst [14]: pc 0000000000 inst 00000000 wen 0 dst 00000000 data 0000000000000000
 commit inst [15]: pc 0000000000 inst 00000000 wen 0 dst 00000000 data 0000000000000000
@@ -92,10 +92,10 @@ privilege mode:3  pmp: below
 12: cfg:0x00 addr:0x0000000000000000|13: cfg:0x00 addr:0x0000000000000000
 14: cfg:0x00 addr:0x0000000000000000|15: cfg:0x00 addr:0x0000000000000000
 priviledgeMode: 3
-     a4 different at pc = 0x0080000030, right= 0x0000000000000000, wrong = 0xefefefefefef00ef
+     a4 different at pc = 0x0080000030, right= 0x0000000000000000, wrong = 0xffffffffffffffef
 Core 0: [31mABORT at pc = 0x80000030
 [0m[35mtotal guest instructions = 12
-[0m[35minstrCnt = 12, cycleCnt = 561, IPC = 0.021390
-[0m[34mSeed=0 Guest cycle spent: 562 (this will be different from cycleCnt if emu loads a snapshot)
+[0m[35minstrCnt = 12, cycleCnt = 558, IPC = 0.021505
+[0m[34mSeed=0 Guest cycle spent: 559 (this will be different from cycleCnt if emu loads a snapshot)
 [0m[34mHost time spent: 11ms
 [0m

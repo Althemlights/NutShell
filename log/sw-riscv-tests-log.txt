@@ -1,6 +1,6 @@
 [1;34m[src/device/io/mmio.c,18,add_mmio_map] Add mmio map 'flash' at [0x0000000010000000, 0x00000000100000ff][0m
 sh: 1: spike-dasm: not found
-Emu compiled at Apr  7 2022, 21:30:22
+Emu compiled at Apr  8 2022, 17:56:32
 The image is /home/jy/oscpu/bin/non-output/riscv-tests/sw-riscv-tests.bin
 Using simulated 4096MB RAM
 --diff is not given, try to use $(NEMU_HOME)/build/riscv64-nemu-interpreter-so by default
@@ -17,7 +17,7 @@ commit group [05]: pc 0080000024 cmtcnt 2
 commit group [06]: pc 008000002c cmtcnt 2
 commit group [07]: pc 0080000034 cmtcnt 1
 commit group [08]: pc 0080000038 cmtcnt 1
-commit group [09]: pc 008000003c cmtcnt 2 <--
+commit group [09]: pc 008000003c cmtcnt 1 <--
 commit group [10]: pc 0000000000 cmtcnt 0
 commit group [11]: pc 0000000000 cmtcnt 0
 commit group [12]: pc 0000000000 cmtcnt 0
@@ -41,8 +41,8 @@ commit inst [11]: pc 008000002c inst 4a808093 wen 1 dst 00000001 data 0000000080
 commit inst [12]: pc 0080000030 inst aa00b137 wen 1 dst 00000002 data ffffffffaa00b000
 commit inst [13]: pc 0080000034 inst a001011b wen 1 dst 00000002 data ffffffffaa00aa00
 commit inst [14]: pc 0080000038 inst 0020a223 wen 0 dst 00000000 data 0000000000000000
-commit inst [15]: pc 008000003c inst 0040a703 wen 1 dst 0000000e data deadbeef00000002
-commit inst [16]: pc 0080000040 inst aa00b3b7 wen 1 dst 00000007 data ffffffffaa00b000 <--
+commit inst [15]: pc 008000003c inst 0040a703 wen 1 dst 0000000e data ffffffffdeadbeef <--
+commit inst [16]: pc 0000000000 inst 00000000 wen 0 dst 00000000 data 0000000000000000
 commit inst [17]: pc 0000000000 inst 00000000 wen 0 dst 00000000 data 0000000000000000
 commit inst [18]: pc 0000000000 inst 00000000 wen 0 dst 00000000 data 0000000000000000
 commit inst [19]: pc 0000000000 inst 00000000 wen 0 dst 00000000 data 0000000000000000
@@ -61,7 +61,7 @@ commit inst [31]: pc 0000000000 inst 00000000 wen 0 dst 00000000 data 0000000000
 
 ==============  REF Regs  ==============
   $0: 0x0000000000000000   ra: 0x00000000800004d0   sp: 0xffffffffaa00aa00   gp: 0x0000000000000002 
-  tp: 0x31603d1b8247c96d   t0: 0x4d09a824069a8b32   t1: 0x27952c0e91ac55a3   t2: 0xffffffffaa00b000 
+  tp: 0x31603d1b8247c96d   t0: 0x4d09a824069a8b32   t1: 0x27952c0e91ac55a3   t2: 0x0000000000aa00aa 
   s0: 0xdf8ba668ad202545   s1: 0xc1315413a981515b   a0: 0x041bbe9e8d235b31   a1: 0x01755294bba2f68d 
   a2: 0xd2d7090bb8df39fd   a3: 0xe1d8eb07db4ac2bd   a4: 0xffffffffaa00aa00   a5: 0x1c6a2f2ce11044de 
   a6: 0x5c97d52a714ec403   a7: 0x475ed0c165a96926   s2: 0xddaca4dc8a6c6314   s3: 0x01d49e4755769723 
@@ -76,7 +76,7 @@ commit inst [31]: pc 0000000000 inst 00000000 wen 0 dst 00000000 data 0000000000
  fs4: 0x2681011300000117  fs5: 0x00c1270300112623  fs6: 0xbbc3839bcddab3b7  fs7: 0x0012021320771263 
  fs8: 0xfc5218e300200293  fs9: 0x0000021301000193 fs10: 0xabb0809bccddb0b7 fs11: 0x0000011700000013 
  ft8: 0x0000001322c10113  ft9: 0x0101270300112823 ft10: 0xabb3839bccddb3b7 ft11: 0x001202131c771263 
-pc: 0x0000000080000044 mstatus: 0x0000000000000000 mcause: 0x0000000000000000 mepc: 0x0000000000000000
+pc: 0x0000000080000040 mstatus: 0x0000000000000000 mcause: 0x0000000000000000 mepc: 0x0000000000000000
                        sstatus: 0x0000000000000000 scause: 0x0000000000000000 sepc: 0x0000000000000000
 satp: 0x0000000000000000
 mip: 0x0000000000000000 mie: 0x0000000000000000 mscratch: 0x0000000000000000 sscratch: 0x0000000000000000
@@ -92,10 +92,10 @@ privilege mode:3  pmp: below
 12: cfg:0x00 addr:0x0000000000000000|13: cfg:0x00 addr:0x0000000000000000
 14: cfg:0x00 addr:0x0000000000000000|15: cfg:0x00 addr:0x0000000000000000
 priviledgeMode: 3
-     a4 different at pc = 0x008000003c, right= 0xffffffffaa00aa00, wrong = 0xdeadbeef00000002
+     a4 different at pc = 0x008000003c, right= 0xffffffffaa00aa00, wrong = 0xffffffffdeadbeef
 Core 0: [31mABORT at pc = 0x8000003c
 [0m[35mtotal guest instructions = 15
-[0m[35minstrCnt = 15, cycleCnt = 597, IPC = 0.025126
-[0m[34mSeed=0 Guest cycle spent: 598 (this will be different from cycleCnt if emu loads a snapshot)
-[0m[34mHost time spent: 6ms
+[0m[35minstrCnt = 15, cycleCnt = 594, IPC = 0.025253
+[0m[34mSeed=0 Guest cycle spent: 595 (this will be different from cycleCnt if emu loads a snapshot)
+[0m[34mHost time spent: 4ms
 [0m

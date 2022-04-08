@@ -28,7 +28,6 @@ class DecodeIO2BypassPkt extends Module {
     val in = Vec(2, Flipped(Decoupled(new DecodeIO)))
     val BypassPktTable = Input(Vec(10, new BypassPkt))
     val BypassPktValid = Input(Vec(10, Bool()))
-    val dmemReady = Input(Bool())
     val issueStall = Output(Vec(2, Bool()))
     val out0 = Decoupled(new BypassPkt)
     val out1 = Decoupled(new BypassPkt)
@@ -127,13 +126,13 @@ class DecodeIO2BypassPkt extends Module {
     (i0decodePkt.load || i0decodePkt.store) &&
       (i0rs1valid && (i0BypassCtlPkt.rs1bypasse2.asUInt.orR || i0BypassCtlPkt.rs1bypasse3.asUInt.orR) ||
         i0rs2valid && (i0BypassCtlPkt.rs2bypasse2.asUInt.orR || i0BypassCtlPkt.rs2bypasse3.asUInt.orR)) ||
-    i0decodePkt.load && !io.dmemReady ||
+    /*i0decodePkt.load && !io.dmemReady ||*/
     io.issueStall(1)
 
   io.issueStall(1) := (i1decodePkt.load || i1decodePkt.store) &&
     (i1rs1valid && (i1BypassCtlPkt.rs1bypasse2.asUInt.orR || i1BypassCtlPkt.rs1bypasse3.asUInt.orR) ||
-    i1rs2valid && (i1BypassCtlPkt.rs2bypasse2.asUInt.orR || i1BypassCtlPkt.rs2bypasse3.asUInt.orR)) ||
-    i1decodePkt.load && !io.dmemReady
+    i1rs2valid && (i1BypassCtlPkt.rs2bypasse2.asUInt.orR || i1BypassCtlPkt.rs2bypasse3.asUInt.orR)) /*||
+    i1decodePkt.load && !io.dmemReady*/
   dontTouch(io.issueStall)
 
   val cond = Wire(Bool())
@@ -351,7 +350,6 @@ class Bypass extends Module{
     val in = Vec(2,Flipped(Decoupled(new DecodeIO)))
     val memStall = Input(Bool())
     val lsuStall = Input(Bool())
-    val dmemReady = Input(Bool())
     val flush = Input(Vec(4,Bool()))
     val issueStall = Output(Vec(2,Bool()))
     val pipeFlush = Output(Vec(10,Bool()))
@@ -397,7 +395,6 @@ class Bypass extends Module{
   PipelineCtl.io.memStall <> io.memStall
   DecodeIO2BypassPkt.io.BypassPktTable := BypassPkt
   DecodeIO2BypassPkt.io.BypassPktValid := BypassPktValid
-  DecodeIO2BypassPkt.io.dmemReady := io.dmemReady
   io.BypassPkt := BypassPkt
   io.BypassPktValid := BypassPktValid
   DecodeIO2BypassPkt.io.in(0) <> io.in(1)

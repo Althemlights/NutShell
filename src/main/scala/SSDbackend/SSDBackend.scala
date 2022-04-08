@@ -56,7 +56,6 @@ class SSDbackend extends NutCoreModule with hasBypassConst {
   val memStall = Wire(Bool())
   Bypass.io.in <> io.in
   Bypass.io.memStall := memStall
-  Bypass.io.dmemReady := io.dmem.req.ready
   val issueStall = VecInit(false.B,false.B)
   issueStall := Bypass.io.issueStall
   val BypassPkt = Wire(Vec(10,new BypassPkt))
