@@ -78,7 +78,7 @@ class SSDLSU extends  NutCoreModule with HasStoreBufferConst{
   val loadProcessing = RegInit(false.B)
   when(isLoad){loadProcessing := true.B}.elsewhen(io.out.fire()){loadProcessing := false.B}
   BoringUtils.addSource(loadProcessing,"loadProcessing")
-  io.NotReadyWhenReq := valid && !io.dmem.req.ready
+  io.NotReadyWhenReq := valid && !io.dmem.req.ready && cacheIn.valid
 
   val reqAddr  = addr(VAddrBits-1,0)
   val reqWdata = genWdata(wdata, size)
