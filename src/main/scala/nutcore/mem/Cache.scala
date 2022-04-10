@@ -174,10 +174,6 @@ sealed class CacheStage2(implicit val cacheConfig: CacheConfig) extends CacheMod
 
   val req = io.in.bits.req
   val addr = req.addr.asTypeOf(addrBundle)
-  if (cacheName == "dcache") {
-    BoringUtils.addSource(req.addr,"cacheStage2Raddr")
-    BoringUtils.addSource(io.in.bits.req.size,"cacheStage2Size")
-  }
 
   val isForwardMeta = io.in.valid && io.metaWriteBus.req.valid && io.metaWriteBus.req.bits.setIdx === getMetaIdx(req.addr)
   val isForwardMetaReg = RegInit(false.B)
@@ -270,18 +266,12 @@ sealed class CacheStage3(implicit val cacheConfig: CacheConfig) extends CacheMod
   val hitReadBurst = hit && req.isReadBurst()
   val meta = Mux1H(io.in.bits.waymask, io.in.bits.metas)
   assert(!(mmio && hit), "MMIO request should not hit in cache")
-  //something added
-  val addrHit = WireInit(false.B)       //just means an address hit, not a data hit
-  val fullHit = WireInit(false.B)       //Contains all the data you need
-  val storeHit = WireInit(false.B)      //hit in store pipe or store buffer
 
-  storeHit := addrHit && fullHit
+  val storeHit = WireInit(false.B)      //hit in store pipe or store buffer
 
   // this is ugly
   if (cacheName == "dcache") {
-    //BoringUtils.addSource(mmio, "lsuMMIO")
-    BoringUtils.addSink(addrHit,"addrHit")
-    BoringUtils.addSink(fullHit,"fullHit")
+    BoringUtils.addSink(storeHit,"storeHit")
   }
 
   val useForwardData = io.in.bits.isForwardData && io.in.bits.waymask === io.in.bits.forwardData.waymask.getOrElse("b1".U)
@@ -413,10 +403,9 @@ sealed class CacheStage3(implicit val cacheConfig: CacheConfig) extends CacheMod
     is (s_memWriteResp) { when (io.mem.resp.fire()) { state := s_memReadReq } }
     is (s_wait_resp) { when (io.out.fire() || needFlush || alreadyOutFire) { state := s_idle } }
   }
-  val loadProcessing = WireInit(false.B)
-  BoringUtils.addSink(loadProcessing,"loadProcessing")
+
   if (cacheName == "dcache") {
-    BoringUtils.addSource((state =/= s_idle || miss) && !(alreadyOutFire || io.out.fire()) && loadProcessing,"memStall")
+    BoringUtils.addSource((state =/= s_idle || miss) && !(alreadyOutFire || io.out.fire()) && io.in.bits.req.cmd === SimpleBusCmd.read ,"memStall")
   }
   val dataRefill = MaskData(io.mem.resp.bits.rdata, req.wdata, Mux(readingFirst, wordMask, 0.U(DataBits.W)))
   val dataRefillWriteBus = Wire(CacheDataArrayWriteBus).apply(
@@ -471,7 +460,7 @@ sealed class CacheStage3(implicit val cacheConfig: CacheConfig) extends CacheMod
   // is totally handled. We use io.isFinish to indicate when the
   // request really ends.
   io.isFinish := Mux(probe, io.cohResp.fire() && Mux(miss, state === s_idle, (state === s_release) && releaseLast),
-    Mux(hit || req.isWrite(), io.out.fire(), (state === s_wait_resp) && (io.out.fire() || alreadyOutFire)) || addrHit && fullHit
+    Mux(hit || req.isWrite(), io.out.fire(), (state === s_wait_resp) && (io.out.fire() || alreadyOutFire)) || storeHit
   )
 
   io.in.ready := io.out.ready && (state === s_idle && !hitReadBurst) && !miss && !probe
@@ -509,6 +498,7 @@ class Cache(implicit val cacheConfig: CacheConfig) extends CacheModule with HasC
     metaArray.reset := reset.asBool || flushICache
   }
 
+
   val arb = Module(new Arbiter(new SimpleBusReqBundle(userBits = userBits, idBits = idBits), hasCohInt + 1))
   arb.io.in(hasCohInt + 0) <> io.in.req
 
@@ -527,6 +517,13 @@ class Cache(implicit val cacheConfig: CacheConfig) extends CacheModule with HasC
   io.empty := !s2.io.in.valid && !s3.io.in.valid
 
   io.in.resp.valid := Mux(s3.io.out.valid && s3.io.out.bits.isPrefetch(), false.B, s3.io.out.valid || s3.io.dataReadRespToL1)
+
+  if (cacheName == "dcache") {
+    val s2NotReady = !arb.io.in(1).ready
+    val s3NotReady = !s3.io.in.ready
+    BoringUtils.addSource(s2NotReady,"s2NotReady")
+    BoringUtils.addSource(s3NotReady,"s3NotReady")
+  }
 
   if (hasCoh) {
     val cohReq = io.out.coh.req.bits

@@ -29,7 +29,6 @@ class StoreBufferIO extends NutCoreBundle with HasStoreBufferConst {
   val readPtr = Output(UInt((log2Up(StoreBufferSize)+1).W))
   val isFull = Output(Bool())     // StoreBufferSize - 2, for store inst in pipeline stage 4, 5
   val isEmpty = Output(Bool())
-  val snapshotena = Input(Bool())
   val snapshot = Vec(StoreBufferSize, new StoreBufferEntry)
 }
 
@@ -63,10 +62,9 @@ class StoreBuffer extends NutCoreModule with HasStoreBufferConst{
     StoreBuffer(FinalwriteAddr).data := writeData
     StoreBuffer(FinalwriteAddr).paddr:= io.in.bits.paddr
     StoreBuffer(FinalwriteAddr).mask := writeMask
-    StoreBuffer(FinalwriteAddr).data := io.in.bits.size
+    StoreBuffer(FinalwriteAddr).size := io.in.bits.size
 
   }
-  io.out.bits := Mux(!io.isEmpty && readFire,StoreBuffer(readFire.asUInt),0.U.asTypeOf(new StoreBufferEntry))
   //Pointer Counter
   val writeAddr = RegInit(0.U(log2Up(StoreBufferSize).W))
   val writeFlag = RegInit(0.U(1.W))
@@ -116,13 +114,17 @@ class StoreBuffer extends NutCoreModule with HasStoreBufferConst{
       mergeHit(i.U(log2Up(StoreBufferSize)-1,0)) := false.B
     }
   }
-  //snapshot
-  val snapshotReg = RegInit(VecInit(Seq.fill(StoreBufferSize)(0.U.asTypeOf(new StoreBufferEntry))))
-  when(io.snapshotena) { snapshotReg := StoreBuffer }
+
   //output
   io.writePtr := Cat(writeFlag,writeAddr)
   io.readPtr := Cat(readFlag,readAddr)
-  io.snapshot := snapshotReg
+  io.snapshot := StoreBuffer
+  io.out.bits := StoreBuffer(readAddr)
+  //for debug
+  val SBCounter = WireInit(0.U((log2Up(StoreBufferSize)+1).W))
+  when(writeFlag === readFlag){SBCounter := Cat(0.U(1.W),writeAddr) - Cat(0.U(1.W),readAddr)}
+    .otherwise{SBCounter := Cat(1.U(1.W),writeAddr) - Cat(0.U(1.W),readAddr)}
+  dontTouch(SBCounter)
 
 }
 

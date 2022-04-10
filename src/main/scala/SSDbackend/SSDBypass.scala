@@ -28,7 +28,6 @@ class DecodeIO2BypassPkt extends Module {
     val in = Vec(2, Flipped(Decoupled(new DecodeIO)))
     val BypassPktTable = Input(Vec(10, new BypassPkt))
     val BypassPktValid = Input(Vec(10, Bool()))
-    val dmemReady = Input(Bool())
     val issueStall = Output(Vec(2, Bool()))
     val out0 = Decoupled(new BypassPkt)
     val out1 = Decoupled(new BypassPkt)
@@ -127,13 +126,13 @@ class DecodeIO2BypassPkt extends Module {
     (i0decodePkt.load || i0decodePkt.store) &&
       (i0rs1valid && (i0BypassCtlPkt.rs1bypasse2.asUInt.orR || i0BypassCtlPkt.rs1bypasse3.asUInt.orR) ||
         i0rs2valid && (i0BypassCtlPkt.rs2bypasse2.asUInt.orR || i0BypassCtlPkt.rs2bypasse3.asUInt.orR)) ||
-    i0decodePkt.load && !io.dmemReady ||
+    /*i0decodePkt.load && !io.dmemReady ||*/
     io.issueStall(1)
 
   io.issueStall(1) := (i1decodePkt.load || i1decodePkt.store) &&
     (i1rs1valid && (i1BypassCtlPkt.rs1bypasse2.asUInt.orR || i1BypassCtlPkt.rs1bypasse3.asUInt.orR) ||
-    i1rs2valid && (i1BypassCtlPkt.rs2bypasse2.asUInt.orR || i1BypassCtlPkt.rs2bypasse3.asUInt.orR)) ||
-    i1decodePkt.load && !io.dmemReady
+    i1rs2valid && (i1BypassCtlPkt.rs2bypasse2.asUInt.orR || i1BypassCtlPkt.rs2bypasse3.asUInt.orR)) /*||
+    i1decodePkt.load && !io.dmemReady*/
   dontTouch(io.issueStall)
 
   val cond = Wire(Bool())
@@ -350,8 +349,8 @@ class Bypass extends Module{
   val io = IO(new Bundle {
     val in = Vec(2,Flipped(Decoupled(new DecodeIO)))
     val memStall = Input(Bool())
-    val lsuStall = Input(Bool())
-    val dmemReady = Input(Bool())
+    val lsuS2Stall = Input(Bool())
+    val lsuS3Stall = Input(Bool())
     val flush = Input(Vec(4,Bool()))
     val issueStall = Output(Vec(2,Bool()))
     val pipeFlush = Output(Vec(10,Bool()))
@@ -397,7 +396,6 @@ class Bypass extends Module{
   PipelineCtl.io.memStall <> io.memStall
   DecodeIO2BypassPkt.io.BypassPktTable := BypassPkt
   DecodeIO2BypassPkt.io.BypassPktValid := BypassPktValid
-  DecodeIO2BypassPkt.io.dmemReady := io.dmemReady
   io.BypassPkt := BypassPkt
   io.BypassPktValid := BypassPktValid
   DecodeIO2BypassPkt.io.in(0) <> io.in(1)
@@ -414,11 +412,13 @@ class Bypass extends Module{
   val pipeStage1 = Module(new stallPointConnect(new BypassPkt))
   val pipeStage2 = Module(new stallPointConnect(new BypassPkt))
   val pipeStage3 = Module(new stallPointConnect(new BypassPkt))
+  val pipeStage4 = Module(new stallPointConnect(new BypassPkt))
+  val pipeStage5 = Module(new stallPointConnect(new BypassPkt))
   val pipeStage6 = Module(new stallPointConnect(new BypassPkt))
   val pipeStage7 = Module(new stallPointConnect(new BypassPkt))
 
-  val stallStageList = List(pipeStage0,pipeStage1,pipeStage2,pipeStage3,pipeStage6,pipeStage7)
-  val stallList = List(0,1,2,3,6,7)
+  val stallStageList = List(pipeStage0,pipeStage1,pipeStage2,pipeStage3,pipeStage4,pipeStage5,pipeStage6,pipeStage7)
+  val stallList = List(0,1,2,3,4,5,6,7)
   (stallStageList zip stallList).foreach{case (a,b) =>
     a.io.left <> pipeIn(b)
     a.io.right <> pipeOut(b)
@@ -427,19 +427,19 @@ class Bypass extends Module{
   }
   pipeStage0.io.isStall := DecodeIO2BypassPkt.io.issueStall(0)
   pipeStage1.io.isStall := DecodeIO2BypassPkt.io.issueStall(1)
-  pipeStage2.io.isStall := io.lsuStall
-  pipeStage3.io.isStall := io.lsuStall
+  pipeStage2.io.isStall := io.lsuS2Stall
+  pipeStage3.io.isStall := io.lsuS2Stall
+  pipeStage4.io.isStall := io.lsuS3Stall
+  pipeStage5.io.isStall := io.lsuS3Stall
   pipeStage6.io.isStall := io.memStall
   pipeStage7.io.isStall := io.memStall
 
   //normal stage
-  val pipeStage4 = Module(new normalPipeConnect(new BypassPkt))
-  val pipeStage5 = Module(new normalPipeConnect(new BypassPkt))
   val pipeStage8 = Module(new normalPipeConnect(new BypassPkt))
   val pipeStage9 = Module(new normalPipeConnect(new BypassPkt))
 
-  val normalStageList = List(pipeStage4,pipeStage5,pipeStage8,pipeStage9)
-  val noralList = List(4,5,8,9)
+  val normalStageList = List(pipeStage8,pipeStage9)
+  val noralList = List(8,9)
 
   (normalStageList zip noralList).foreach{case (a,b) =>
     a.io.left <> pipeIn(b)
