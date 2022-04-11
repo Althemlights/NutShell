@@ -444,7 +444,7 @@ sealed class CacheStage3(implicit val cacheConfig: CacheConfig) extends CacheMod
       io.out.bits.cmd := req.cmd
     }
   } else {
-    io.out.bits.rdata := Mux(hit, dataRead, inRdataRegDemand)
+    io.out.bits.rdata := Mux(hit, dataRead,Mux(storeHit, 0.U(XLEN.W), inRdataRegDemand))
     io.out.bits.cmd := Mux(io.in.bits.req.isRead(), SimpleBusCmd.readLast, Mux(io.in.bits.req.isWrite(), SimpleBusCmd.writeResp, DontCare))//DontCare, added by lemover
   }
   io.out.bits.user.zip(req.user).map { case (o,i) => o := i }
@@ -452,7 +452,7 @@ sealed class CacheStage3(implicit val cacheConfig: CacheConfig) extends CacheMod
 
   io.out.valid := io.in.valid && Mux(req.isBurst() && (cacheLevel == 2).B,
     Mux(req.isWrite() && (hit || !hit && state === s_wait_resp), true.B, (state === s_memReadResp && io.mem.resp.fire() && req.cmd === SimpleBusCmd.readBurst)) || (respToL1Fire && respToL1Last && state === s_release),
-    Mux(probe, false.B, Mux(hit, true.B, Mux(req.isWrite() || mmio, state === s_wait_resp, afterFirstRead && !alreadyOutFire)))
+    Mux(probe, false.B, Mux(hit || storeHit, true.B, Mux(req.isWrite() || mmio, state === s_wait_resp, afterFirstRead && !alreadyOutFire)))
   )
 
   // With critical-word first, the pipeline registers between
@@ -460,7 +460,7 @@ sealed class CacheStage3(implicit val cacheConfig: CacheConfig) extends CacheMod
   // is totally handled. We use io.isFinish to indicate when the
   // request really ends.
   io.isFinish := Mux(probe, io.cohResp.fire() && Mux(miss, state === s_idle, (state === s_release) && releaseLast),
-    Mux(hit || req.isWrite(), io.out.fire(), (state === s_wait_resp) && (io.out.fire() || alreadyOutFire)) || storeHit
+    Mux(hit || req.isWrite() || storeHit, io.out.fire(), (state === s_wait_resp) && (io.out.fire() || alreadyOutFire))
   )
 
   io.in.ready := io.out.ready && (state === s_idle && !hitReadBurst) && !miss && !probe
@@ -519,9 +519,9 @@ class Cache(implicit val cacheConfig: CacheConfig) extends CacheModule with HasC
   io.in.resp.valid := Mux(s3.io.out.valid && s3.io.out.bits.isPrefetch(), false.B, s3.io.out.valid || s3.io.dataReadRespToL1)
 
   if (cacheName == "dcache") {
-    val s2NotReady = !arb.io.in(1).ready
+    //val s2NotReady = !arb.io.in(1).ready
     val s3NotReady = !s3.io.in.ready
-    BoringUtils.addSource(s2NotReady,"s2NotReady")
+    //BoringUtils.addSource(s2NotReady,"s2NotReady")
     BoringUtils.addSource(s3NotReady,"s3NotReady")
   }
 

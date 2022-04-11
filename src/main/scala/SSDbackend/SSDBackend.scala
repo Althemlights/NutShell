@@ -167,14 +167,14 @@ class SSDbackend extends NutCoreModule with hasBypassConst {
   )
 
   val ByapssPortE0 = Wire(Vec(E0BypaaPort,UInt(64.W)))
-  ByapssPortE0 := Seq(ALU_0.io.out.bits,ALU_1.io.out.bits,pipeOut(2).bits.rd,pipeOut(3).bits.rd,
-    pipeOut(4).bits.rd,pipeOut(5).bits.rd,LSU.io.out.bits,0.U,
-    ALU_6.io.out.bits,ALU_7.io.out.bits,pipeOut(8).bits.rd,pipeOut(9).bits.rd)
+  ByapssPortE0 := Seq(pipeIn(2).bits.rd,pipeIn(3).bits.rd,pipeIn(4).bits.rd,pipeIn(5).bits.rd,
+    pipeIn(6).bits.rd,pipeIn(7).bits.rd,LSU.io.out.bits,0.U,
+    pipeIn(8).bits.rd,pipeIn(9).bits.rd,pipeOut(8).bits.rd,pipeOut(9).bits.rd)
 
   val ByapssPortE2 = Wire(Vec(E2BypaaPort,UInt(64.W)))
   ByapssPortE2 := Seq(pipeOut(8).bits.rd,pipeOut(9).bits.rd)
   val ByapssPortE3 = Wire(Vec(E3BypaaPort,UInt(64.W)))
-  ByapssPortE3 := Seq(Mux(BypassPkt(5).decodePkt.load || BypassPkt(5).decodePkt.load,LSU.io.out.bits,pipeOut(5).bits.rd),pipeIn(8).bits.rd,pipeIn(9).bits.rd,pipeOut(8).bits.rd,pipeOut(9).bits.rd)
+  ByapssPortE3 := Seq(pipeIn(7).bits.rd,pipeIn(8).bits.rd,pipeIn(9).bits.rd,pipeOut(8).bits.rd,pipeOut(9).bits.rd)
 
   //decode & issue
   //rs1 data type: pc, regfile or bypassa
