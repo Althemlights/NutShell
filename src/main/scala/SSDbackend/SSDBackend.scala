@@ -107,7 +107,7 @@ class SSDbackend extends NutCoreModule with hasBypassConst {
   }
   val flushList = List(0,1,2,3)
   (flushList zip ALURedirectList).foreach{ case(a,b) =>
-    Bypass.io.flush(a) := b.valid
+    Bypass.io.flush(a) := b.valid && pipeOut(a).ready
     dontTouch(b.valid)
   }
 
