@@ -135,10 +135,6 @@ class DecodeIO2BypassPkt extends Module {
     i1decodePkt.load && !io.dmemReady*/
   dontTouch(io.issueStall)
 
-  val cond = Wire(Bool())
-  cond := io.in(0).bits.cf.pc === "h8000011c".U
-  myDebug(cond,"issue_0 is %b\n",io.issueStall(0).asUInt)
-
     //BypassCtl
     val FuType = VecInit(Seq.fill(10)(0.U.asTypeOf(new decodePkt)))
     for (i <- 0 to 9) FuType(i) := io.BypassPktTable(i).decodePkt

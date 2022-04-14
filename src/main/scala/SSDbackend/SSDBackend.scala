@@ -107,7 +107,7 @@ class SSDbackend extends NutCoreModule with hasBypassConst {
   }
   val flushList = List(0,1,2,3)
   (flushList zip ALURedirectList).foreach{ case(a,b) =>
-    Bypass.io.flush(a) := b.valid
+    Bypass.io.flush(a) := b.valid && pipeOut(a).ready
     dontTouch(b.valid)
   }
 
@@ -246,9 +246,6 @@ class SSDbackend extends NutCoreModule with hasBypassConst {
   //e4
   pipeIn(8).bits.rd := Mux(aluValid(2),ALU_6.io.out.bits,pipeOut(6).bits.rd)
   pipeIn(9).bits.rd := Mux(aluValid(3),ALU_7.io.out.bits,pipeOut(7).bits.rd)
-  val cond = Wire(Bool())
-  cond := pipeOut(6).bits.pc === "h8000008c".U
-  myDebug(cond,"aluValid id:%b\n",aluValid(2).asUInt)
 
   //e5 write back
   //regfile
@@ -265,6 +262,11 @@ class SSDbackend extends NutCoreModule with hasBypassConst {
   regfile.io.readPorts(1).addr := io.in(1).bits.ctrl.rfSrc2
   regfile.io.readPorts(2).addr := io.in(0).bits.ctrl.rfSrc1
   regfile.io.readPorts(3).addr := io.in(0).bits.ctrl.rfSrc2
+
+  // for debug
+  val lsuPC =WireInit(0.U(32.W))
+  lsuPC := Mux(BypassPkt(6).decodePkt.load || BypassPkt(6).decodePkt.store, pipeOut(6).bits.pc, pipeOut(7).bits.pc)
+  BoringUtils.addSource(lsuPC,"lsuPC")
 
   // pipe connect
 

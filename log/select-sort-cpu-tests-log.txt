@@ -1,6 +1,6 @@
 [1;34m[src/device/io/mmio.c,18,add_mmio_map] Add mmio map 'flash' at [0x0000000010000000, 0x00000000100000ff][0m
 sh: 1: spike-dasm: not found
-Emu compiled at Apr 11 2022, 21:01:09
+Emu compiled at Apr 13 2022, 16:48:52
 The image is /home/jy/oscpu/bin/non-output/cpu-tests/select-sort-cpu-tests.bin
 Using simulated 4096MB RAM
 --diff is not given, try to use $(NEMU_HOME)/build/riscv64-nemu-interpreter-so by default
@@ -266,5 +266,5 @@ Core 0: [31mABORT at pc = 0x80000068
 [0m[35mtotal guest instructions = 1,501
 [0m[35minstrCnt = 1,501, cycleCnt = 4,978, IPC = 0.301527
 [0m[34mSeed=0 Guest cycle spent: 4,979 (this will be different from cycleCnt if emu loads a snapshot)
-[0m[34mHost time spent: 17ms
+[0m[34mHost time spent: 18ms
 [0m

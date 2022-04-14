@@ -302,8 +302,15 @@ class SSDLSU extends  NutCoreModule with HasStoreBufferConst{
   storeBuffer.io.in.bits.data := lsuPipeStage4.io.right.bits.data
   storeBuffer.io.in.bits.mask := lsuPipeStage4.io.right.bits.mask
   storeBuffer.io.in.bits.size := lsuPipeStage4.io.right.bits.size
-  //mmio
+  //mydebug
+  val loadCond = lsuPipeOut(2).fire() && !lsuPipeOut(2).bits.isStore && !lsuPipeOut(2).bits.isCacheStore
+  val storeCond = lsuPipeOut(2).fire() && lsuPipeOut(2).bits.isStore
+  val lsuPC = WireInit(0.U(32.W))
+  BoringUtils.addSink(lsuPC,"lsuPC")
+  myDebug(loadCond, "Load  addr:%x, mask:%b, at PC: %x\n",lsuPipeOut(2).bits.paddr,lsuPipeOut(2).bits.mask,lsuPC)
+  myDebug(storeCond,"Store addr:%x, mask:%b, at PC: %x\n",lsuPipeOut(2).bits.paddr,lsuPipeOut(2).bits.mask,lsuPC)
 }
+
 
 class SSDLSU_fake extends  NutCoreModule with HasStoreBufferConst {
   val io = IO(new SSDLSUIO)
