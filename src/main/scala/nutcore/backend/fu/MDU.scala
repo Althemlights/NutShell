@@ -62,7 +62,7 @@ class Multiplier(len: Int) extends NutCoreModule {
   val busy = RegInit(false.B)
   when (io.in.valid && !busy) { busy := true.B }
   when (io.out.valid) { busy := false.B }
-  io.in.ready := (if (latency == 0) true.B else !busy)
+  io.in.ready := (if (latency == 0) true.B else !busy || io.out.valid)
 }
 
 class Divider(len: Int = 64) extends NutCoreModule {
@@ -77,7 +77,13 @@ class Divider(len: Int = 64) extends NutCoreModule {
   val state = RegInit(s_idle)
   val newReq = (state === s_idle) && io.in.fire()
 
-  val (a, b) = (io.in.bits(0), io.in.bits(1))
+  //add reg
+  val a_reg = RegEnable(io.in.bits(0),io.in.fire())
+  val b_reg = RegEnable(io.in.bits(1),io.in.fire())
+  val a_in = Mux(io.in.valid,io.in.bits(0),a_reg)
+  val b_in = Mux(io.in.valid,io.in.bits(1),b_reg)
+  val (a, b) = (a_in,b_in)
+  //val (a, b) = (io.in.bits(0), io.in.bits(1))
   val divBy0 = b === 0.U(len.W)
 
   val shiftReg = Reg(UInt((1 + len * 2).W))
@@ -92,6 +98,7 @@ class Divider(len: Int = 64) extends NutCoreModule {
   val aValx2Reg = RegEnable(Cat(aVal, "b0".U), newReq)
 
   val cnt = Counter(len)
+  dontTouch(cnt.value)
   when (newReq) {
     state := s_log2
   } .elsewhen (state === s_log2) {
@@ -126,7 +133,7 @@ class Divider(len: Int = 64) extends NutCoreModule {
   io.out.bits := Cat(resR, resQ)
 
   io.out.valid := (if (HasDiv) (state === s_finish) else io.in.valid) // FIXME: should deal with ready = 0
-  io.in.ready := (state === s_idle)
+  io.in.ready := (state === s_idle) || io.out.valid
 }
 
 class MDUIO extends FunctionUnitIO {
@@ -140,7 +147,7 @@ class MDU extends NutCoreModule {
     this.valid := valid
     this.src1 := src1
     this.src2 := src2
-    this.func := func
+    this.func := Mux(valid,func,RegEnable(func,valid))
     io.out.bits
   }
 
@@ -176,9 +183,10 @@ class MDU extends NutCoreModule {
   val mulRes = Mux(func(1,0) === MDUOpType.mul(1,0), mul.io.out.bits(XLEN-1,0), mul.io.out.bits(2*XLEN-1,XLEN))
   val divRes = Mux(func(1) /* rem */, div.io.out.bits(2*XLEN-1,XLEN), div.io.out.bits(XLEN-1,0))
   val res = Mux(isDiv, divRes, mulRes)
-  io.out.bits := Mux(isW, SignExt(res(31,0),XLEN), res)
+  io.out.bits := Mux(io.out.valid,Mux(isW, SignExt(res(31,0),XLEN), res),RegEnable(Mux(isW, SignExt(res(31,0),XLEN), res),io.out.valid))
 
-  val isDivReg = Mux(io.in.fire(), isDiv, RegNext(isDiv))
+  val isDivReg = Mux(io.in.fire(), isDiv, RegEnable(isDiv,io.in.fire()))
+  //val isDivReg = Mux(io.in.fire(), isDiv, RegNext(isDiv))
   io.in.ready := Mux(isDiv, div.io.in.ready, mul.io.in.ready)
   io.out.valid := Mux(isDivReg, div.io.out.valid, mul.io.out.valid)
 

@@ -104,138 +104,26 @@ class NutCore(implicit val p: NutCoreConfig) extends NutCoreModule {
   }
 
   // Backend
-  // tmp interface
-  val frontendTmp = Wire(Decoupled(new DecodeIO))
-  frontendTmp.bits := 0.U.asTypeOf(frontend.io.out(0).bits)
-  frontendTmp.valid := false.B
-  //  //SSDbackend
-  //  val SSDbackend = Module(new SSDbackend)
-  //  SSDbackend.io.in <> frontend.io.out
-  //  frontend.io.redirect <> SSDbackend.io.redirectOut
-
-  //MMUIO tmp
-  val MMUIOtmp = Wire((new MMUIO))
-  MMUIOtmp.addr := WireInit(0.U(39.W))
-  MMUIOtmp.loadPF := false.B
-  MMUIOtmp.storePF := false.B
-  MMUIOtmp.priviledgeMode := 3.U(2.W)
-  MMUIOtmp.status_sum := true.B
-  MMUIOtmp.status_mxr := true.B
-  val MMUIOtmp1 = Wire((new MMUIO))
-  MMUIOtmp1.addr := WireInit(0.U(39.W))
-  MMUIOtmp1.loadPF := false.B
-  MMUIOtmp1.storePF := false.B
-  MMUIOtmp1.priviledgeMode := 3.U(2.W)
-  MMUIOtmp1.status_sum := true.B
-  MMUIOtmp1.status_mxr := true.B
-
-//  if (!EnableOutOfOrderExec) {
-//    val mmioXbar = Module(new SimpleBusCrossbarNto1(if (HasDcache) 2 else 3))
-//    val backend = Module(new Backend_ooo)
-//
-//    //**************** modify banckend ready to always false in PipelineVector2Connect ***********************************//
-//
-//    PipelineVector2Connect(new DecodeIO, frontendTmp, frontendTmp, backend.io.in(0), backend.io.in(1), frontend.io.flushVec(1), 16)
-//
-//    backend.io.flush := frontend.io.flushVec(2)
-//    frontend.io.redirect <> backend.io.redirect
-//
-//    val dmemXbar = Module(new SimpleBusAutoIDCrossbarNto1(4, userBits = if (HasDcache) DCacheUserBundleWidth else 0))
-//
-//    val itlb = TLB(in = frontend.io.imem, mem = dmemXbar.io.in(2), flush = frontend.io.flushVec(0) | frontend.io.bpFlush, csrMMU = backend.io.memMMU.imem)(TLBConfig(name = "itlb", userBits = ICacheUserBundleWidth, totalEntry = 4))
-//    frontend.io.ipf := itlb.io.ipf
-//    io.imem <> Cache(in = itlb.io.out, mmio = mmioXbar.io.in.take(1), flush = Fill(2, frontend.io.flushVec(0) | frontend.io.bpFlush), empty = itlb.io.cacheEmpty)(
-//      CacheConfig(ro = true, name = "icache", userBits = ICacheUserBundleWidth)
-//    )
-//
-//    val dtlb = TLB(in = backend.io.dtlb, mem = dmemXbar.io.in(1), flush = frontend.io.flushVec(3), csrMMU = backend.io.memMMU.dmem)(TLBConfig(name = "dtlb", userBits = DCacheUserBundleWidth, totalEntry = 64))
-//    dtlb.io.out := DontCare //FIXIT
-//    dtlb.io.out.req.ready := true.B //FIXIT
-//
-//    if (EnableVirtualMemory) {
-//      dmemXbar.io.in(3) <> backend.io.dmem
-//      io.dmem <> Cache(in = dmemXbar.io.out, mmio = mmioXbar.io.in.drop(1), flush = "b00".U, empty = dtlb.io.cacheEmpty, enable = HasDcache)(
-//        CacheConfig(ro = false, name = "dcache", userBits = DCacheUserBundleWidth, idBits = 4))
-//    } else {
-//      dmemXbar.io.in(1) := DontCare
-//      dmemXbar.io.in(3) := DontCare
-//      dmemXbar.io.out := DontCare
-//      io.dmem <> Cache(in = backend.io.dmem, mmio = mmioXbar.io.in.drop(1), flush = "b00".U, empty = dtlb.io.cacheEmpty, enable = HasDcache)(
-//        CacheConfig(ro = false, name = "dcache", userBits = DCacheUserBundleWidth))
-//    }
-//
-//    // Make DMA access through L1 DCache to keep coherence
-//    val expender = Module(new SimpleBusUCExpender(userBits = DCacheUserBundleWidth, userVal = 0.U))
-//    expender.io.in <> io.frontend
-//    dmemXbar.io.in(0) <> expender.io.out
-//
-//    io.mmio <> mmioXbar.io.out
-//
-//  } else {
-//    val backend = Module(new Backend_inorder)
-//    backend.io.dmem.req.ready := false.B
-//    backend.io.dmem.resp.valid := false.B
-//    backend.io.dmem.resp.bits := 0.U.asTypeOf(new SimpleBusRespBundle)
-//    backend.io.memMMU.imem <> MMUIOtmp1
-//    backend.io.memMMU.dmem <> MMUIOtmp1
-
-//    PipelineVector2Connect(new DecodeIO, frontendTmp, frontendTmp, backend.io.in(0), backend.io.in(1), frontend.io.flushVec(1), 4)
-    frontendTmp.ready := false.B
-    val SSDbackend = Module(new SSDbackend)
-    SSDbackend.io.in <> frontend.io.out
-    frontend.io.redirect <> SSDbackend.io.redirectOut
-
-    val mmioXbar = Module(new SimpleBusCrossbarNto1(2))
-    val dmemXbar = Module(new SimpleBusCrossbarNto1(4))
-    val s2NotReady = WireInit(false.B)
-    BoringUtils.addSource(!dmemXbar.io.in(0).req.ready,"s2NotReady") //dmemeXbar will delay ready 1 cycle
-
-    val itlb = EmbeddedTLB(in = frontend.io.imem, mem = dmemXbar.io.in(1), flush = frontend.io.flushVec(0) | frontend.io.bpFlush, csrMMU = MMUIOtmp/*backend.io.memMMU.imem*/, enable = false)(TLBConfig(name = "itlb", userBits = ICacheUserBundleWidth, totalEntry = 4))
-    frontend.io.ipf := itlb.io.ipf
-    io.imem <> Cache(in = itlb.io.out, mmio = mmioXbar.io.in.take(1), flush = Fill(2, frontend.io.flushVec(0) | frontend.io.bpFlush), empty = itlb.io.cacheEmpty, enable = HasIcache)(CacheConfig(ro = true, name = "icache", userBits = ICacheUserBundleWidth))
-
-    // dtlb
-    val dtlb = EmbeddedTLB(in = SSDbackend.io.dmem, mem = dmemXbar.io.in(2), flush = false.B, csrMMU = MMUIOtmp/*backend.io.memMMU.dmem*/, enable = false)(TLBConfig(name = "dtlb", totalEntry = 64))
-    dmemXbar.io.in(0) <> dtlb.io.out
-    io.dmem <> Cache(in = dmemXbar.io.out, mmio = mmioXbar.io.in.drop(1), flush = "b00".U, empty = dtlb.io.cacheEmpty, enable = HasDcache)(CacheConfig(ro = false, name = "dcache"))
-
-    // redirect
-    //frontend.io.redirect <> backend.io.redirect
-//    backend.io.flush := frontend.io.flushVec(3,2)
-
-    // Make DMA access through L1 DCache to keep coherence
-    dmemXbar.io.in(3) <> io.frontend
-
-    io.mmio <> mmioXbar.io.out
-//  }
-  //SSDcore backend
-  //  val SSDbackend = Module(new SSDbackend)
-  //  SSDbackend.io.in <> frontend.io.out
-  //  frontend.io.redirect <> SSDbackend.io.redirectOut
+  val BoolTmp0 = WireInit(false.B)
+  val BoolTmp1 = WireInit(false.B)
 
 
-  //  val SSDmmioXbar = Module(new SimpleBusCrossbarNto1(2))
-  //  val SSDdmemXbar = Module(new SimpleBusCrossbarNto1(4))
+  val SSDbackend = Module(new SSDbackend)
+  SSDbackend.io.in <> frontend.io.out
+  frontend.io.redirect <> SSDbackend.io.redirectOut
+  frontend.io.ipf := false.B
 
-  //  val itlb = EmbeddedTLB(in = frontend.io.imem, mem = SSDdmemXbar.io.in(1), flush = frontend.io.flushVec(0) | frontend.io.bpFlush, csrMMU = MMUIOtmp /*backend.io.memMMU.imem*/, enable = false)(TLBConfig(name = "itlb", userBits = ICacheUserBundleWidth, totalEntry = 4))
-  //  frontend.io.ipf := itlb.io.ipf
-  //  io.imem <> Cache(in = itlb.io.out, mmio = SSDmmioXbar.io.in.take(1), flush = Fill(2, frontend.io.flushVec(0) | frontend.io.bpFlush), empty = itlb.io.cacheEmpty, enable = HasIcache)(CacheConfig(ro = true, name = "icache", userBits = ICacheUserBundleWidth))
-  //
-  //  // dtlb
-  //  val dtlb = EmbeddedTLB(in = backend.io.dmem, mem = SSDdmemXbar.io.in(2), flush = false.B, csrMMU = MMUIOtmp/*backend.io.memMMU.dmem*/, enable = false)(TLBConfig(name = "dtlb", totalEntry = 64))
-  //  SSDdmemXbar.io.in(0) <> dtlb.io.out
-  //
-  //  val cacheStall = WireInit(false.B)
-  //  //BoringUtils.addSink(cacheStall,"cacheStall")
-  //  io.dmem <> Cache(in = SSDdmemXbar.io.out, mmio = SSDmmioXbar.io.in.drop(1), flush = Cat(cacheStall,cacheStall), dtlb.io.cacheEmpty, enable = HasDcache)(CacheConfig(ro = false, name = "dcache"))
-  //
-  //  // redirect
-  //  //frontend.io.redirect <> backend.io.redirect
-  //  //backend.io.flush := frontend.io.flushVec(3,2)
-  //
-  //  // Make DMA access through L1 DCache to keep coherence
-  //  SSDdmemXbar.io.in(3) <> io.frontend
-  //
-  //  io.mmio <> SSDmmioXbar.io.out
+  val mmioXbar = Module(new SimpleBusCrossbarNto1(2))
+  val s2NotReady = WireInit(false.B)
+  BoringUtils.addSource(!SSDbackend.io.dmem.req.ready,"s2NotReady")
+  io.imem <> Cache(in = frontend.io.imem, mmio = mmioXbar.io.in.take(1), flush = Fill(2, frontend.io.flushVec(0) | frontend.io.bpFlush), empty = BoolTmp0, enable = HasIcache)(CacheConfig(ro = true, name = "icache", userBits = ICacheUserBundleWidth))
+  io.dmem <> Cache(in = SSDbackend.io.dmem, mmio = mmioXbar.io.in.drop(1), flush = "b00".U, empty = BoolTmp1, enable = HasDcache)(CacheConfig(ro = true, name = "dcache"))
+
+  // DMA?
+  io.frontend.resp.bits := DontCare
+  io.frontend.req.ready := false.B
+  io.frontend.resp.valid := false.B
+
+  io.mmio <> mmioXbar.io.out
 
 }

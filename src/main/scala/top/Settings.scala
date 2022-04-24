@@ -25,8 +25,8 @@ object DefaultSettings {
     "ResetVector" -> 0x80000000L,
     "NrExtIntr" -> 1,
 
-    "HasL2cache" -> true,
-    "HasPrefetch" -> true,
+    "HasL2cache" -> false,
+    "HasPrefetch" -> false,
     "EnableMultiIssue" -> true,
     "EnableOutOfOrderExec" -> true,
     "HasDTLB" -> true,

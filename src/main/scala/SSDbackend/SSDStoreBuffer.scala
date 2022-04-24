@@ -27,7 +27,8 @@ class StoreBufferIO extends NutCoreBundle with HasStoreBufferConst {
   val out = Decoupled(new StoreBufferEntry)
   val writePtr = Output(UInt((log2Up(StoreBufferSize)+1).W))
   val readPtr = Output(UInt((log2Up(StoreBufferSize)+1).W))
-  val isFull = Output(Bool())     // StoreBufferSize - 2, for store inst in pipeline stage 4, 5
+  val isAlmostFull = Output(Bool())
+  val isFull = Output(Bool())
   val isEmpty = Output(Bool())
   val snapshot = Vec(StoreBufferSize, new StoreBufferEntry)
 }
@@ -46,6 +47,7 @@ class StoreBuffer extends NutCoreModule with HasStoreBufferConst{
   val StoreBuffer = RegInit(VecInit(Seq.fill(StoreBufferSize)(0.U.asTypeOf( new StoreBufferEntry))))
   //merge reference signal
   val merge = Wire(Bool())
+  val mergedIsReading = Wire(Bool())
   val mergeHit = WireInit(VecInit(Seq.fill(2*StoreBufferSize)(false.B)))
   val mergeAddr = WireInit(0.U(log2Up(StoreBufferSize).W))
   val addrIndex = Wire(Vec(2*StoreBufferSize,UInt(((log2Up(StoreBufferSize)+1).W))))
@@ -70,7 +72,7 @@ class StoreBuffer extends NutCoreModule with HasStoreBufferConst{
   val writeFlag = RegInit(0.U(1.W))
   val readAddr = RegInit(0.U(log2Up(StoreBufferSize).W))
   val readFlag = RegInit(0.U(1.W))
-  when(writeFire && (!merge || merge && (mergeHit(Cat(0.U(1.W),readAddr)) || mergeHit(Cat(1.U(1.W),readAddr))))) {
+  when(writeFire && (!merge || merge && mergedIsReading)) {
     when(writeAddr =/= readAddr) {
       writeFlag := (Cat(writeFlag, writeAddr) + 1.U) (log2Up(StoreBufferSize))
       writeAddr := (Cat(writeFlag, writeAddr) + 1.U) (log2Up(StoreBufferSize) - 1, 0)
@@ -89,6 +91,7 @@ class StoreBuffer extends NutCoreModule with HasStoreBufferConst{
     }
   }
   //Flag Logic
+  io.isAlmostFull := (writeAddr === readAddr - 1.U) && writeFlag =/= readFlag
   io.isFull := writeAddr === readAddr && writeFlag =/= readFlag
   io.isEmpty := writeAddr === readAddr && writeFlag === readFlag
 
@@ -124,12 +127,13 @@ class StoreBuffer extends NutCoreModule with HasStoreBufferConst{
 }
   mergeHit := mergeCheck(writeAddrExpand,readAddrExpand,AddrExpand,io.in.bits.paddr)
   merge := mergeHit.asUInt.orR
+  mergedIsReading := readFire && (mergeHit(Cat(0.U(1.W),readAddr)) || mergeHit(Cat(1.U(1.W),readAddr)))
   mergeAddr := Mux1H(mergeHit,addrIndex)(log2Up(StoreBufferSize)-1,0)
   mergeData := MergeData(io.in.bits.data,Mux1H(mergeHit,SBDataVec),io.in.bits.mask,Mux1H(mergeHit,SBMaskVec))
   mergeMask := io.in.bits.mask | Mux1H(mergeHit,SBMaskVec)
-  FinalwriteAddr := Mux(merge,mergeAddr,writeAddr)
-  writeData := Mux(merge,mergeData,io.in.bits.data)
-  writeMask := Mux(merge,mergeMask,io.in.bits.mask)
+  FinalwriteAddr := Mux(merge && !mergedIsReading,mergeAddr,writeAddr)
+  writeData := Mux(merge && !mergedIsReading,mergeData,io.in.bits.data)
+  writeMask := Mux(merge && !mergedIsReading,mergeMask,io.in.bits.mask)
   //output
   io.writePtr := Cat(writeFlag,writeAddr)
   io.readPtr := Cat(readFlag,readAddr)

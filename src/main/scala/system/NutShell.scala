@@ -51,11 +51,11 @@ class NutShell(implicit val p: NutCoreConfig) extends Module with HasSoCParamete
   })
 
   val nutcore = Module(new NutCore)
-  val cohMg = Module(new CoherenceManager)
+//  val cohMg = Module(new CoherenceManager)
   val xbar = Module(new SimpleBusCrossbarNto1(2))
-  cohMg.io.in <> nutcore.io.imem.mem
-  nutcore.io.dmem.coh <> cohMg.io.out.coh
-  xbar.io.in(0) <> cohMg.io.out.mem
+//  cohMg.io.in <> nutcore.io.imem.mem
+//  nutcore.io.dmem.coh <> cohMg.io.out.coh
+  xbar.io.in(0) <> nutcore.io.imem.mem //cohMg.io.out.mem
   xbar.io.in(1) <> nutcore.io.dmem.mem
 
   val axi2sb = Module(new AXI42SimpleBusConverter())
@@ -97,6 +97,9 @@ class NutShell(implicit val p: NutCoreConfig) extends Module with HasSoCParamete
   nutcore.io.imem.coh.resp.ready := true.B
   nutcore.io.imem.coh.req.valid := false.B
   nutcore.io.imem.coh.req.bits := DontCare
+  nutcore.io.dmem.coh.resp.ready := true.B
+  nutcore.io.dmem.coh.req.valid := false.B
+  nutcore.io.dmem.coh.req.bits := DontCare
 
   val addrSpace = List(
     (Settings.getLong("MMIOBase"), Settings.getLong("MMIOSize")), // external devices

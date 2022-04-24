@@ -1,18 +1,18 @@
 /**************************************************************************************
-* Copyright (c) 2020 Institute of Computing Technology, CAS
-* Copyright (c) 2020 University of Chinese Academy of Sciences
-* 
-* NutShell is licensed under Mulan PSL v2.
-* You can use this software according to the terms and conditions of the Mulan PSL v2. 
-* You may obtain a copy of Mulan PSL v2 at:
-*             http://license.coscl.org.cn/MulanPSL2 
-* 
-* THIS SOFTWARE IS PROVIDED ON AN "AS IS" BASIS, WITHOUT WARRANTIES OF ANY KIND, EITHER 
-* EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO NON-INFRINGEMENT, MERCHANTABILITY OR 
-* FIT FOR A PARTICULAR PURPOSE.  
-*
-* See the Mulan PSL v2 for more details.  
-***************************************************************************************/
+ * Copyright (c) 2020 Institute of Computing Technology, CAS
+ * Copyright (c) 2020 University of Chinese Academy of Sciences
+ *
+ * NutShell is licensed under Mulan PSL v2.
+ * You can use this software according to the terms and conditions of the Mulan PSL v2.
+ * You may obtain a copy of Mulan PSL v2 at:
+ *             http://license.coscl.org.cn/MulanPSL2
+ *
+ * THIS SOFTWARE IS PROVIDED ON AN "AS IS" BASIS, WITHOUT WARRANTIES OF ANY KIND, EITHER
+ * EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO NON-INFRINGEMENT, MERCHANTABILITY OR
+ * FIT FOR A PARTICULAR PURPOSE.
+ *
+ * See the Mulan PSL v2 for more details.
+ ***************************************************************************************/
 
 package bus.simplebus
 
@@ -56,9 +56,9 @@ class SimpleBusCrossbar1toN(addressSpace: List[(Long, Long)]) extends Module {
   }}
 
   switch (state) {
-    is (s_idle) { 
-      when (outSel.req.fire()) { state := s_resp } 
-      when (reqInvalidAddr) { state := s_error } 
+    is (s_idle) {
+      when (outSel.req.fire()) { state := s_resp }
+      when (reqInvalidAddr) { state := s_error }
     }
     is (s_resp) { when (outSelResp.resp.fire()) { state := s_idle } }
     is (s_error) { when(io.in.resp.fire()){ state := s_idle } }
@@ -121,7 +121,7 @@ class SimpleBusCrossbarNto1(n: Int, userBits:Int = 0) extends Module {
       when (thisReq.fire()) {
         inflightSrc := inputArb.io.chosen
         when (thisReq.bits.isRead()) { state := s_readResp }
-        .elsewhen (thisReq.bits.isWriteLast() || thisReq.bits.isWriteSingle()) { state := s_writeResp }
+          .elsewhen (thisReq.bits.isWriteLast() || thisReq.bits.isWriteSingle()) { state := s_writeResp }
       }
     }
     is (s_readResp) { when (io.out.resp.fire() && io.out.resp.bits.isReadLast()) { state := s_idle } }

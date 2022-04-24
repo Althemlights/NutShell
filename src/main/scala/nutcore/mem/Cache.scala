@@ -134,8 +134,8 @@ sealed class CacheStage1(implicit val cacheConfig: CacheConfig) extends CacheMod
   }
   val io = IO(new CacheStage1IO)
 
-  if (ro) when (io.in.fire()) { assert(!io.in.bits.isWrite()) }
-  Debug(io.in.fire(), "[L1$] cache stage1, addr in: %x, user: %x id: %x\n", io.in.bits.addr, io.in.bits.user.getOrElse(0.U), io.in.bits.id.getOrElse(0.U))
+//  if (ro) when (io.in.fire()) { assert(!io.in.bits.isWrite()) }
+//  Debug(io.in.fire(), "[L1$] cache stage1, addr in: %x, user: %x id: %x\n", io.in.bits.addr, io.in.bits.user.getOrElse(0.U), io.in.bits.id.getOrElse(0.U))
 
   // read meta array and data array
   val readBusValid = io.in.valid && io.out.ready
@@ -144,8 +144,8 @@ sealed class CacheStage1(implicit val cacheConfig: CacheConfig) extends CacheMod
 
   io.out.bits.req := io.in.bits
   io.out.valid := io.in.valid && io.metaReadBus.req.ready && io.dataReadBus.req.ready
-  io.in.ready := (!io.in.valid || io.out.fire()) && io.metaReadBus.req.ready && io.dataReadBus.req.ready
-
+  //io.in.ready := (!io.in.valid || io.out.fire()) && io.metaReadBus.req.ready && io.dataReadBus.req.ready
+  io.in.ready := io.out.ready && io.metaReadBus.req.ready && io.dataReadBus.req.ready
   Debug("in.ready = %d, in.valid = %d, out.valid = %d, out.ready = %d, addr = %x, cmd = %x, dataReadBus.req.valid = %d\n", io.in.ready, io.in.valid, io.out.valid, io.out.ready, io.in.bits.addr, io.in.bits.cmd, io.dataReadBus.req.valid)
 }
 
@@ -228,7 +228,7 @@ sealed class CacheStage2(implicit val cacheConfig: CacheConfig) extends CacheMod
 
   io.out.bits.req <> req
   io.out.valid := io.in.valid
-  io.in.ready := !io.in.valid || io.out.fire()
+  io.in.ready := io.out.ready //!io.in.valid || io.out.fire()
 
   Debug("[isFD:%d isFDreg:%d inFire:%d invalid:%d \n", isForwardData, isForwardDataReg, io.in.fire(), io.in.valid)
   Debug("[isFM:%d isFMreg:%d metawreq:%x widx:%x ridx:%x \n", isForwardMeta, isForwardMetaReg, io.metaWriteBus.req.valid, io.metaWriteBus.req.bits.setIdx, getMetaIdx(req.addr))
@@ -277,7 +277,7 @@ sealed class CacheStage3(implicit val cacheConfig: CacheConfig) extends CacheMod
   val useForwardData = io.in.bits.isForwardData && io.in.bits.waymask === io.in.bits.forwardData.waymask.getOrElse("b1".U)
   val dataReadArray = Mux1H(io.in.bits.waymask, io.in.bits.datas).data
   val dataRead = Mux(useForwardData, io.in.bits.forwardData.data.data, dataReadArray)
-  val wordMask = Mux(!ro.B && req.isWrite(), MaskExpand(req.wmask), 0.U(DataBits.W))
+  val wordMask = Mux(req.isWrite(), MaskExpand(req.wmask), 0.U(DataBits.W))
 
   val writeL2BeatCnt = Counter(LineBeats)
   when(io.out.fire() && (req.cmd === SimpleBusCmd.writeBurst || req.isWriteLast())) {
@@ -291,7 +291,7 @@ sealed class CacheStage3(implicit val cacheConfig: CacheConfig) extends CacheMod
 
   val metaHitWriteBus = Wire(CacheMetaArrayWriteBus()).apply(
     valid = hitWrite && !meta.dirty, setIdx = getMetaIdx(req.addr), waymask = io.in.bits.waymask,
-    data = Wire(new MetaBundle).apply(tag = meta.tag, valid = true.B, dirty = (!ro).B)
+    data = Wire(new MetaBundle).apply(tag = meta.tag, valid = true.B, dirty = true.B)
   )
 
   val s_idle :: s_memReadReq :: s_memReadResp :: s_memWriteReq :: s_memWriteResp :: s_mmioReq :: s_mmioResp :: s_wait_resp :: s_release :: Nil = Enum(9)
@@ -369,7 +369,7 @@ sealed class CacheStage3(implicit val cacheConfig: CacheConfig) extends CacheMod
         state := s_release
         readBeatCnt.value := Mux(addr.wordIndex === (LineBeats - 1).U, 0.U, (addr.wordIndex + 1.U))
       } .elsewhen ((miss && !storeHit || mmio) && !io.flush) {
-        state := Mux(mmio, s_mmioReq, Mux(!ro.B && meta.dirty, s_memWriteReq, s_memReadReq))
+        state := Mux(mmio, s_mmioReq, Mux( meta.dirty, s_memWriteReq, s_memReadReq))
       }
     }
 
@@ -418,7 +418,7 @@ sealed class CacheStage3(implicit val cacheConfig: CacheConfig) extends CacheMod
 
   val metaRefillWriteBus = Wire(CacheMetaArrayWriteBus()).apply(
     valid = (state === s_memReadResp) && io.mem.resp.fire() && io.mem.resp.bits.isReadLast(),
-    data = Wire(new MetaBundle).apply(valid = true.B, tag = addr.tag, dirty = !ro.B && req.isWrite()),
+    data = Wire(new MetaBundle).apply(valid = true.B, tag = addr.tag, dirty = req.isWrite()),
     setIdx = getMetaIdx(req.addr), waymask = io.in.bits.waymask
   )
 
@@ -519,9 +519,7 @@ class Cache(implicit val cacheConfig: CacheConfig) extends CacheModule with HasC
   io.in.resp.valid := Mux(s3.io.out.valid && s3.io.out.bits.isPrefetch(), false.B, s3.io.out.valid || s3.io.dataReadRespToL1)
 
   if (cacheName == "dcache") {
-    //val s2NotReady = !arb.io.in(1).ready
     val s3NotReady = !s3.io.in.ready
-    //BoringUtils.addSource(s2NotReady,"s2NotReady")
     BoringUtils.addSource(s3NotReady,"s3NotReady")
   }
 

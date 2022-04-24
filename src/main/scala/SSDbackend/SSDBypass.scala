@@ -104,16 +104,16 @@ class DecodeIO2BypassPkt extends Module {
     val i0Hiti1Rs1 = WireInit(false.B)
     val i0Hiti1Rs2 = WireInit(false.B)
     io.out0.bits.decodePkt.subalu :=
-      (i0decodePkt.alu && i0rs1hitStage >= 0.U && i0rs1hitStage <= 3.U && (io.BypassPktTable(i0rs1hitStage).decodePkt.mul || io.BypassPktTable(i0rs1hitStage).decodePkt.load)
-      || i0decodePkt.alu && i0rs2hitStage >= 0.U && i0rs2hitStage <= 3.U && (io.BypassPktTable(i0rs2hitStage).decodePkt.mul || io.BypassPktTable(i0rs2hitStage).decodePkt.load)
+      (i0decodePkt.alu && i0rs1hitStage >= 0.U && i0rs1hitStage <= 3.U && (io.BypassPktTable(i0rs1hitStage).decodePkt.muldiv || io.BypassPktTable(i0rs1hitStage).decodePkt.load)
+      || i0decodePkt.alu && i0rs2hitStage >= 0.U && i0rs2hitStage <= 3.U && (io.BypassPktTable(i0rs2hitStage).decodePkt.muldiv || io.BypassPktTable(i0rs2hitStage).decodePkt.load)
       || i0decodePkt.alu && i0rs1hitStage >= 0.U && i0rs1hitStage <= 5.U && io.BypassPktTable(i0rs1hitStage).decodePkt.subalu
       || i0decodePkt.alu && i0rs2hitStage >= 0.U && i0rs2hitStage <= 5.U && io.BypassPktTable(i0rs2hitStage).decodePkt.subalu
       ||i0Hiti1Rs1 || i0Hiti1Rs2
       )
 
     io.out1.bits.decodePkt.subalu :=
-      (i1decodePkt.alu && i1rs1hitStage >= 0.U && i1rs1hitStage <= 3.U && (io.BypassPktTable(i1rs1hitStage).decodePkt.mul || io.BypassPktTable(i1rs1hitStage).decodePkt.load)
-      || i1decodePkt.alu && i1rs2hitStage >= 0.U && i1rs2hitStage <= 3.U && (io.BypassPktTable(i1rs2hitStage).decodePkt.mul || io.BypassPktTable(i1rs2hitStage).decodePkt.load)
+      (i1decodePkt.alu && i1rs1hitStage >= 0.U && i1rs1hitStage <= 3.U && (io.BypassPktTable(i1rs1hitStage).decodePkt.muldiv || io.BypassPktTable(i1rs1hitStage).decodePkt.load)
+      || i1decodePkt.alu && i1rs2hitStage >= 0.U && i1rs2hitStage <= 3.U && (io.BypassPktTable(i1rs2hitStage).decodePkt.muldiv || io.BypassPktTable(i1rs2hitStage).decodePkt.load)
       || i1decodePkt.alu && i1rs1hitStage >= 0.U && i1rs1hitStage <= 5.U && io.BypassPktTable(i1rs1hitStage).decodePkt.subalu
       || i1decodePkt.alu && i1rs2hitStage >= 0.U && i1rs2hitStage <= 5.U && io.BypassPktTable(i1rs2hitStage).decodePkt.subalu
       )
@@ -121,19 +121,19 @@ class DecodeIO2BypassPkt extends Module {
     //issue stall
   io.issueStall(0) := (io.in(0).bits.ctrl.rfSrc1 === i1decodePkt.rd && i0rs1valid ||
     io.in(0).bits.ctrl.rfSrc2 === i1decodePkt.rd && i0rs2valid) && i1decodePkt.rdvalid && i1decodePkt.alu && io.out1.bits.decodePkt.subalu ||
-    (i0decodePkt.load || i0decodePkt.store) && (io.in(1).bits.cf.isBranch || (i1decodePkt.load || i1decodePkt.store)) ||
-    (i1decodePkt.load || i1decodePkt.store) && io.in(0).bits.cf.isBranch ||
-    (i0decodePkt.load || i0decodePkt.store) &&
+    (i0decodePkt.load || i0decodePkt.store) && (i1decodePkt.branch || (i1decodePkt.load || i1decodePkt.store)) ||
+    (i1decodePkt.load || i1decodePkt.store) && i0decodePkt.branch ||
+    (i0decodePkt.load || i0decodePkt.store || i0decodePkt.muldiv) &&
       (i0rs1valid && (i0BypassCtlPkt.rs1bypasse2.asUInt.orR || i0BypassCtlPkt.rs1bypasse3.asUInt.orR) ||
         i0rs2valid && (i0BypassCtlPkt.rs2bypasse2.asUInt.orR || i0BypassCtlPkt.rs2bypasse3.asUInt.orR)) ||
-    /*i0decodePkt.load && !io.dmemReady ||*/
     io.issueStall(1)
 
-  io.issueStall(1) := (i1decodePkt.load || i1decodePkt.store) &&
+  io.issueStall(1) := (i1decodePkt.load || i1decodePkt.store || i1decodePkt.muldiv) &&
     (i1rs1valid && (i1BypassCtlPkt.rs1bypasse2.asUInt.orR || i1BypassCtlPkt.rs1bypasse3.asUInt.orR) ||
-    i1rs2valid && (i1BypassCtlPkt.rs2bypasse2.asUInt.orR || i1BypassCtlPkt.rs2bypasse3.asUInt.orR)) /*||
-    i1decodePkt.load && !io.dmemReady*/
+    i1rs2valid && (i1BypassCtlPkt.rs2bypasse2.asUInt.orR || i1BypassCtlPkt.rs2bypasse3.asUInt.orR))
   dontTouch(io.issueStall)
+  dontTouch(i0decodePkt.branch)
+  dontTouch(i1decodePkt.branch)
 
     //BypassCtl
     val FuType = VecInit(Seq.fill(10)(0.U.asTypeOf(new decodePkt)))
@@ -142,8 +142,8 @@ class DecodeIO2BypassPkt extends Module {
     for (i <- 0 to 9) Valid(i) := io.BypassPktValid(i)
 
     //BypassPkt out0
-  i0Hiti1Rs1 := io.in(0).bits.ctrl.rfSrc1 === i1decodePkt.rd && i0rs1valid && i1decodePkt.rdvalid && (i1decodePkt.mul || i1decodePkt.load || i1decodePkt.alu && !io.out1.bits.decodePkt.subalu)
-  i0Hiti1Rs2 := io.in(0).bits.ctrl.rfSrc2 === i1decodePkt.rd && i0rs2valid && i1decodePkt.rdvalid && (i1decodePkt.mul || i1decodePkt.load || i1decodePkt.alu && !io.out1.bits.decodePkt.subalu)
+  i0Hiti1Rs1 := io.in(0).bits.ctrl.rfSrc1 === i1decodePkt.rd && i0rs1valid && i1decodePkt.rdvalid && (i1decodePkt.muldiv || i1decodePkt.load || i1decodePkt.alu && !io.out1.bits.decodePkt.subalu)
+  i0Hiti1Rs2 := io.in(0).bits.ctrl.rfSrc2 === i1decodePkt.rd && i0rs2valid && i1decodePkt.rdvalid && (i1decodePkt.muldiv || i1decodePkt.load || i1decodePkt.alu && !io.out1.bits.decodePkt.subalu)
 
   io.out0.bits.BypassCtl.rs1bypasse0 := VecInit(
       i0rs1valid && Valid(0) && i0rs1hitStage === 0.U && FuType(0).alu && !FuType(0).subalu && !i0Hiti1Rs1,
@@ -152,22 +152,22 @@ class DecodeIO2BypassPkt extends Module {
       i0rs1valid && Valid(3) && i0rs1hitStage === 3.U && FuType(3).alu && !FuType(3).subalu && !i0Hiti1Rs1,
       i0rs1valid && Valid(4) && i0rs1hitStage === 4.U && FuType(4).alu && !FuType(4).subalu && !i0Hiti1Rs1,
       i0rs1valid && Valid(5) && i0rs1hitStage === 5.U && FuType(5).alu && !FuType(5).subalu && !i0Hiti1Rs1,
-      i0rs1valid && Valid(4) && i0rs1hitStage === 4.U && FuType(4).load || Valid(5) && i0rs1hitStage === 5.U && FuType(5).load && !i0Hiti1Rs1,
-      i0rs1valid && Valid(4) && i0rs1hitStage === 4.U && FuType(4).mul || Valid(5) && i0rs1hitStage === 5.U && FuType(5).mul && !i0Hiti1Rs1,
+      i0rs1valid &&(Valid(4) && i0rs1hitStage === 4.U && FuType(4).load || Valid(5) && i0rs1hitStage === 5.U && FuType(5).load && !i0Hiti1Rs1),
+      i0rs1valid &&(Valid(4) && i0rs1hitStage === 4.U && FuType(4).muldiv  || Valid(5) && i0rs1hitStage === 5.U && FuType(5).muldiv &&  !i0Hiti1Rs1),
       i0rs1valid && Valid(6) && i0rs1hitStage === 6.U && !i0Hiti1Rs1,
       i0rs1valid && Valid(7) && i0rs1hitStage === 7.U && !i0Hiti1Rs1,
       i0rs1valid && Valid(8) && i0rs1hitStage === 8.U && !i0Hiti1Rs1,
       i0rs1valid && Valid(9) && i0rs1hitStage === 9.U && !i0Hiti1Rs1
     )
-    io.out0.bits.BypassCtl.rs2bypasse0 := VecInit(
+  io.out0.bits.BypassCtl.rs2bypasse0 := VecInit(
       i0rs2valid && Valid(0) && i0rs2hitStage === 0.U && FuType(0).alu && !FuType(0).subalu && !i0Hiti1Rs2,
       i0rs2valid && Valid(1) && i0rs2hitStage === 1.U && FuType(1).alu && !FuType(1).subalu && !i0Hiti1Rs2,
       i0rs2valid && Valid(2) && i0rs2hitStage === 2.U && FuType(2).alu && !FuType(2).subalu && !i0Hiti1Rs2,
       i0rs2valid && Valid(3) && i0rs2hitStage === 3.U && FuType(3).alu && !FuType(3).subalu && !i0Hiti1Rs2,
       i0rs2valid && Valid(4) && i0rs2hitStage === 4.U && FuType(4).alu && !FuType(4).subalu && !i0Hiti1Rs2,
       i0rs2valid && Valid(5) && i0rs2hitStage === 5.U && FuType(5).alu && !FuType(5).subalu && !i0Hiti1Rs2,
-      i0rs2valid && Valid(4) && i0rs2hitStage === 4.U && FuType(4).load || Valid(5) && i0rs1hitStage === 5.U && FuType(5).load && !i0Hiti1Rs2,
-      i0rs2valid && Valid(4) && i0rs2hitStage === 4.U && FuType(4).mul || Valid(5) && i0rs1hitStage === 5.U && FuType(5).mul && !i0Hiti1Rs2,
+      i0rs2valid &&(Valid(4) && i0rs2hitStage === 4.U && FuType(4).load || Valid(5) && i0rs2hitStage === 5.U && FuType(5).load && !i0Hiti1Rs2),
+      i0rs2valid &&(Valid(4) && i0rs2hitStage === 4.U && FuType(4).muldiv  || Valid(5) && i0rs2hitStage === 5.U && FuType(5).muldiv  && !i0Hiti1Rs2),
       i0rs2valid && Valid(6) && i0rs2hitStage === 6.U && !i0Hiti1Rs2,
       i0rs2valid && Valid(7) && i0rs2hitStage === 7.U && !i0Hiti1Rs2,
       i0rs2valid && Valid(8) && i0rs2hitStage === 8.U && !i0Hiti1Rs2,
@@ -186,16 +186,16 @@ class DecodeIO2BypassPkt extends Module {
       i0rs1valid && i0Hiti1Rs1,
       i0rs1valid && Valid(0) && i0rs1hitStage === 0.U && FuType(0).alu && FuType(0).subalu
         || Valid(0) && i0rs1hitStage === 0.U && FuType(0).load
-        || Valid(0) && i0rs1hitStage === 0.U && FuType(0).mul,
+        || Valid(0) && i0rs1hitStage === 0.U && FuType(0).muldiv,
       i0rs1valid && Valid(1) && i0rs1hitStage === 1.U && FuType(1).load
         || Valid(1) && i0rs1hitStage === 1.U && FuType(1).alu && FuType(1).subalu
-        || Valid(1) && i0rs1hitStage === 1.U && FuType(1).mul,
+        || Valid(1) && i0rs1hitStage === 1.U && FuType(1).muldiv,
       i0rs1valid && Valid(2) && i0rs1hitStage === 2.U && FuType(2).alu && FuType(2).subalu
         || Valid(2) && i0rs1hitStage === 2.U && FuType(2).load
-        || Valid(2) && i0rs1hitStage === 2.U && FuType(2).mul,
+        || Valid(2) && i0rs1hitStage === 2.U && FuType(2).muldiv,
       i0rs1valid && Valid(3) && i0rs1hitStage === 3.U && FuType(3).alu && FuType(3).subalu
         || Valid(3) && i0rs1hitStage === 3.U && FuType(3).load
-        || Valid(3) && i0rs1hitStage === 3.U && FuType(3).mul
+        || Valid(3) && i0rs1hitStage === 3.U && FuType(3).muldiv
     )
 
 
@@ -203,16 +203,16 @@ class DecodeIO2BypassPkt extends Module {
       i0rs2valid && i0Hiti1Rs2,
       i0rs2valid && Valid(0) && i0rs2hitStage === 0.U && FuType(0).alu && FuType(0).subalu
         || Valid(0) && i0rs2hitStage === 0.U && FuType(0).load
-        || Valid(0) && i0rs2hitStage === 0.U && FuType(0).mul,
+        || Valid(0) && i0rs2hitStage === 0.U && FuType(0).muldiv,
       i0rs2valid && Valid(1) && i0rs2hitStage === 1.U && FuType(1).load
         || Valid(1) && i0rs2hitStage === 1.U && FuType(1).alu && FuType(1).subalu
-        || Valid(1) && i0rs2hitStage === 1.U && FuType(1).mul,
+        || Valid(1) && i0rs2hitStage === 1.U && FuType(1).muldiv,
       i0rs2valid && Valid(2) && i0rs2hitStage === 2.U && FuType(2).alu && FuType(2).subalu
         || Valid(2) && i0rs2hitStage === 2.U && FuType(2).load
-        || Valid(2) && i0rs2hitStage === 2.U && FuType(2).mul,
+        || Valid(2) && i0rs2hitStage === 2.U && FuType(2).muldiv,
       i0rs2valid && Valid(3) && i0rs2hitStage === 3.U && FuType(3).alu && FuType(3).subalu
         || Valid(3) && i0rs2hitStage === 3.U && FuType(3).load
-        || Valid(3) && i0rs2hitStage === 3.U && FuType(3).mul
+        || Valid(3) && i0rs2hitStage === 3.U && FuType(3).muldiv
     )
     //BypassPkt out1
     io.out1.bits.BypassCtl.rs1bypasse0 := VecInit(
@@ -222,8 +222,8 @@ class DecodeIO2BypassPkt extends Module {
       i1rs1valid && Valid(3) && i1rs1hitStage === 3.U && FuType(3).alu && !FuType(3).subalu,
       i1rs1valid && Valid(4) && i1rs1hitStage === 4.U && FuType(4).alu && !FuType(4).subalu,
       i1rs1valid && Valid(5) && i1rs1hitStage === 5.U && FuType(5).alu && !FuType(5).subalu,
-      i1rs1valid && Valid(4) && i1rs1hitStage === 4.U && FuType(4).load || Valid(5) && i1rs1hitStage === 5.U && FuType(5).load,
-      i1rs1valid && Valid(4) && i1rs1hitStage === 4.U && FuType(4).mul || Valid(5) && i1rs1hitStage === 5.U && FuType(5).mul,
+      i1rs1valid &&(Valid(4) && i1rs1hitStage === 4.U && FuType(4).load || Valid(5) && i1rs1hitStage === 5.U && FuType(5).load),
+      i1rs1valid &&(Valid(4) && i1rs1hitStage === 4.U && FuType(4).muldiv  || Valid(5) && i1rs1hitStage === 5.U && FuType(5).muldiv),
       i1rs1valid && Valid(6) && i1rs1hitStage === 6.U,
       i1rs1valid && Valid(7) && i1rs1hitStage === 7.U,
       i1rs1valid && Valid(8) && i1rs1hitStage === 8.U,
@@ -236,8 +236,8 @@ class DecodeIO2BypassPkt extends Module {
       i1rs2valid && Valid(3) && i1rs2hitStage === 3.U && FuType(3).alu && !FuType(3).subalu,
       i1rs2valid && Valid(4) && i1rs2hitStage === 4.U && FuType(4).alu && !FuType(4).subalu,
       i1rs2valid && Valid(5) && i1rs2hitStage === 5.U && FuType(5).alu && !FuType(5).subalu,
-      i1rs2valid && Valid(4) && i1rs2hitStage === 4.U && FuType(4).load || Valid(5) && i1rs1hitStage === 5.U && FuType(5).load,
-      i1rs2valid && Valid(4) && i1rs2hitStage === 4.U && FuType(4).mul || Valid(5) && i1rs1hitStage === 5.U && FuType(5).mul,
+      i1rs2valid &&(Valid(4) && i1rs2hitStage === 4.U && FuType(4).load || Valid(5) && i1rs2hitStage === 5.U && FuType(5).load),
+      i1rs2valid &&(Valid(4) && i1rs2hitStage === 4.U && FuType(4).muldiv  || Valid(5) && i1rs2hitStage === 5.U && FuType(5).muldiv),
       i1rs2valid && Valid(6) && i1rs2hitStage === 6.U,
       i1rs2valid && Valid(7) && i1rs2hitStage === 7.U,
       i1rs2valid && Valid(8) && i1rs2hitStage === 8.U,
@@ -255,31 +255,31 @@ class DecodeIO2BypassPkt extends Module {
     false.B,
     i1rs1valid && Valid(0) && i1rs1hitStage === 0.U && FuType(0).alu && FuType(0).subalu
       || Valid(0) && i1rs1hitStage === 0.U && FuType(0).load
-      || Valid(0) && i1rs1hitStage === 0.U && FuType(0).mul,
+      || Valid(0) && i1rs1hitStage === 0.U && FuType(0).muldiv,
     i1rs1valid && Valid(1) && i1rs1hitStage === 1.U && FuType(1).load
       || Valid(1) && i1rs1hitStage === 1.U && FuType(1).alu && FuType(1).subalu
-      || Valid(1) && i1rs1hitStage === 1.U && FuType(1).mul,
+      || Valid(1) && i1rs1hitStage === 1.U && FuType(1).muldiv,
     i1rs1valid && Valid(2) && i1rs1hitStage === 2.U && FuType(2).alu && FuType(2).subalu
       || Valid(2) && i1rs1hitStage === 2.U && FuType(2).load
-      || Valid(2) && i1rs1hitStage === 2.U && FuType(2).mul,
+      || Valid(2) && i1rs1hitStage === 2.U && FuType(2).muldiv,
     i1rs1valid && Valid(3) && i1rs1hitStage === 3.U && FuType(3).alu && FuType(3).subalu
       || Valid(3) && i1rs1hitStage === 3.U && FuType(3).load
-      || Valid(3) && i1rs1hitStage === 3.U && FuType(3).mul
+      || Valid(3) && i1rs1hitStage === 3.U && FuType(3).muldiv
   )
   io.out1.bits.BypassCtl.rs2bypasse3 := VecInit(
     false.B,
     i1rs2valid && Valid(0) && i1rs2hitStage === 0.U && FuType(0).alu && FuType(0).subalu
       || Valid(0) && i1rs2hitStage === 0.U && FuType(0).load
-      || Valid(0) && i1rs2hitStage === 0.U && FuType(0).mul,
+      || Valid(0) && i1rs2hitStage === 0.U && FuType(0).muldiv,
     i1rs2valid && Valid(1) && i1rs2hitStage === 1.U && FuType(1).load
       || Valid(1) && i1rs2hitStage === 1.U && FuType(1).alu && FuType(1).subalu
-      || Valid(1) && i1rs2hitStage === 1.U && FuType(1).mul,
+      || Valid(1) && i1rs2hitStage === 1.U && FuType(1).muldiv,
     i1rs2valid && Valid(2) && i1rs2hitStage === 2.U && FuType(2).alu && FuType(2).subalu
       || Valid(2) && i1rs2hitStage === 2.U && FuType(2).load
-      || Valid(2) && i1rs2hitStage === 2.U && FuType(2).mul,
+      || Valid(2) && i1rs2hitStage === 2.U && FuType(2).muldiv,
     i1rs2valid && Valid(3) && i1rs2hitStage === 3.U && FuType(3).alu && FuType(3).subalu
       || Valid(3) && i1rs2hitStage === 3.U && FuType(3).load
-      || Valid(3) && i1rs2hitStage === 3.U && FuType(3).mul
+      || Valid(3) && i1rs2hitStage === 3.U && FuType(3).muldiv
   )
   //debug
 /*  val cond = Wire(Bool())
@@ -298,11 +298,11 @@ object DecodeIO2decodePkt {
     out.rdvalid <> in.ctrl.rfWen
     out.alu := in.ctrl.fuType === FuType.alu || in.ctrl.fuType === FuType.bru
     //subalu 会在其他模块覆盖掉
-    out.mul := false.B
-    out.div := false.B
+    out.muldiv := in.ctrl.fuType === FuType.mdu
     out.load := LSUOpType.isLoad(in.ctrl.fuOpType) && in.ctrl.fuType === FuType.lsu
     out.store := LSUOpType.isStore(in.ctrl.fuOpType) && in.ctrl.fuType === FuType.lsu
     out.subalu := false.B
+    out.branch := ALUOpType.isBru(in.ctrl.fuOpType) && in.ctrl.fuType === FuType.alu
   }
 }
 
@@ -345,8 +345,7 @@ class Bypass extends Module{
   val io = IO(new Bundle {
     val in = Vec(2,Flipped(Decoupled(new DecodeIO)))
     val memStall = Input(Bool())
-    val lsuS2Stall = Input(Bool())
-    val lsuS3Stall = Input(Bool())
+    val mduStall = Input(Bool())
     val flush = Input(Vec(4,Bool()))
     val issueStall = Output(Vec(2,Bool()))
     val pipeFlush = Output(Vec(10,Bool()))
@@ -378,8 +377,8 @@ class Bypass extends Module{
   }
 
   //ready & valid
-  pipeOut(8).ready := true.B
-  pipeOut(9).ready := true.B
+  pipeOut(8).ready := true.B && !(io.memStall || io.mduStall)
+  pipeOut(9).ready := true.B && !(io.memStall || io.mduStall)
 
   val BypassPkt = Wire(Vec(10, new BypassPkt))
   val BypassPktValid = Wire(Vec(10,Bool()))
@@ -406,15 +405,9 @@ class Bypass extends Module{
   //stall stage
   val pipeStage0 = Module(new stallPointConnect(new BypassPkt))
   val pipeStage1 = Module(new stallPointConnect(new BypassPkt))
-  val pipeStage2 = Module(new stallPointConnect(new BypassPkt))
-  val pipeStage3 = Module(new stallPointConnect(new BypassPkt))
-  val pipeStage4 = Module(new stallPointConnect(new BypassPkt))
-  val pipeStage5 = Module(new stallPointConnect(new BypassPkt))
-  val pipeStage6 = Module(new stallPointConnect(new BypassPkt))
-  val pipeStage7 = Module(new stallPointConnect(new BypassPkt))
 
-  val stallStageList = List(pipeStage0,pipeStage1,pipeStage2,pipeStage3,pipeStage4,pipeStage5,pipeStage6,pipeStage7)
-  val stallList = List(0,1,2,3,4,5,6,7)
+  val stallStageList = List(pipeStage0,pipeStage1)
+  val stallList = List(0,1)
   (stallStageList zip stallList).foreach{case (a,b) =>
     a.io.left <> pipeIn(b)
     a.io.right <> pipeOut(b)
@@ -423,19 +416,25 @@ class Bypass extends Module{
   }
   pipeStage0.io.isStall := DecodeIO2BypassPkt.io.issueStall(0)
   pipeStage1.io.isStall := DecodeIO2BypassPkt.io.issueStall(1)
-  pipeStage2.io.isStall := io.lsuS2Stall
-  pipeStage3.io.isStall := io.lsuS2Stall
-  pipeStage4.io.isStall := io.lsuS3Stall
-  pipeStage5.io.isStall := io.lsuS3Stall
-  pipeStage6.io.isStall := io.memStall
-  pipeStage7.io.isStall := io.memStall
+//  pipeStage2.io.isStall := io.lsuS2Stall
+//  pipeStage3.io.isStall := io.lsuS2Stall
+//  pipeStage4.io.isStall := io.lsuS3Stall
+//  pipeStage5.io.isStall := io.lsuS3Stall
+//  pipeStage6.io.isStall := io.memStall
+//  pipeStage7.io.isStall := io.memStall
 
   //normal stage
+  val pipeStage2 = Module(new normalPipeConnect(new BypassPkt))
+  val pipeStage3 = Module(new normalPipeConnect(new BypassPkt))
+  val pipeStage4 = Module(new normalPipeConnect(new BypassPkt))
+  val pipeStage5 = Module(new normalPipeConnect(new BypassPkt))
+  val pipeStage6 = Module(new normalPipeConnect(new BypassPkt))
+  val pipeStage7 = Module(new normalPipeConnect(new BypassPkt))
   val pipeStage8 = Module(new normalPipeConnect(new BypassPkt))
   val pipeStage9 = Module(new normalPipeConnect(new BypassPkt))
 
-  val normalStageList = List(pipeStage8,pipeStage9)
-  val noralList = List(8,9)
+  val normalStageList = List(pipeStage2,pipeStage3,pipeStage4,pipeStage5,pipeStage6,pipeStage7,pipeStage8,pipeStage9)
+  val noralList = List(2,3,4,5,6,7,8,9)
 
   (normalStageList zip noralList).foreach{case (a,b) =>
     a.io.left <> pipeIn(b)
