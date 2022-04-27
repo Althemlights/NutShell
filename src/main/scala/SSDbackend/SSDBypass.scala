@@ -22,15 +22,17 @@ import chisel3.util._
 import chisel3.{Flipped, Module, _}
 import nutcore._
 
-//第一版先就将这部分都塞到一块
 class DecodeIO2BypassPkt extends Module {
   val io = IO(new Bundle {
     val in = Vec(2, Flipped(Decoupled(new DecodeIO)))
     val BypassPktTable = Input(Vec(10, new BypassPkt))
     val BypassPktValid = Input(Vec(10, Bool()))
     val issueStall = Output(Vec(2, Bool()))
+    val memStall = Input(Bool())
+    val mduStall = Input(Bool())
     val out0 = Decoupled(new BypassPkt)
     val out1 = Decoupled(new BypassPkt)
+    val pmuio = new PMUIO0
   })
   //生成 BypassPkt， 以及issue stall 信号
   val i0decodePkt = Wire(new decodePkt)
@@ -131,15 +133,53 @@ class DecodeIO2BypassPkt extends Module {
   io.issueStall(1) := (i1decodePkt.load || i1decodePkt.store || i1decodePkt.muldiv) &&
     (i1rs1valid && (i1BypassCtlPkt.rs1bypasse2.asUInt.orR || i1BypassCtlPkt.rs1bypasse3.asUInt.orR) ||
     i1rs2valid && (i1BypassCtlPkt.rs2bypasse2.asUInt.orR || i1BypassCtlPkt.rs2bypasse3.asUInt.orR))
-  dontTouch(io.issueStall)
-  dontTouch(i0decodePkt.branch)
-  dontTouch(i1decodePkt.branch)
 
-    //BypassCtl
-    val FuType = VecInit(Seq.fill(10)(0.U.asTypeOf(new decodePkt)))
-    for (i <- 0 to 9) FuType(i) := io.BypassPktTable(i).decodePkt
-    val Valid = VecInit(Seq.fill(10)(false.B))
-    for (i <- 0 to 9) Valid(i) := io.BypassPktValid(i)
+  //Signal to PMU
+  //Normal Bound
+  dontTouch(io.pmuio)
+  io.pmuio.normali0 := io.in(0).fire()
+  io.pmuio.normali1 := io.in(1).fire()
+  //Wrong Prediction Bound
+
+  //Frontend Bound
+  io.pmuio.frontendi0 := !io.in(0).valid
+  io.pmuio.frontendi1 := !io.in(1).valid
+  //Backend Bound (issue stall)
+  io.pmuio.laterStageStalli0 := (io.memStall || io.mduStall) && io.in(0).valid
+  io.pmuio.laterStageStalli1 := (io.memStall || io.mduStall) && io.in(1).valid
+  val i0RsNotready = io.in(0).valid && !io.pmuio.laterStageStalli0 && (i0rs1valid && (i0BypassCtlPkt.rs1bypasse2.asUInt.orR || i0BypassCtlPkt.rs1bypasse3.asUInt.orR) ||
+    i0rs2valid && (i0BypassCtlPkt.rs2bypasse2.asUInt.orR || i0BypassCtlPkt.rs2bypasse3.asUInt.orR))
+  val i1RsNotready = io.in(1).valid && !io.pmuio.laterStageStalli1 && (i1rs1valid && (i1BypassCtlPkt.rs1bypasse2.asUInt.orR || i1BypassCtlPkt.rs1bypasse3.asUInt.orR) ||
+    i1rs2valid && (i1BypassCtlPkt.rs2bypasse2.asUInt.orR || i1BypassCtlPkt.rs2bypasse3.asUInt.orR))
+
+  io.pmuio.loadRsNotreadyi1 := i1decodePkt.load && i1RsNotready && !io.pmuio.laterStageStalli1
+  io.pmuio.storeRsNotreadyi1 := i1decodePkt.store && i1RsNotready && !io.pmuio.laterStageStalli1
+  io.pmuio.mulRsNotreadyi1 := i1decodePkt.muldiv && !MDUOpType.isDiv(io.in(1).bits.ctrl.fuOpType) && i1RsNotready && !io.pmuio.laterStageStalli1
+  io.pmuio.divRsNotreadyi1 := i1decodePkt.muldiv && MDUOpType.isDiv(io.in(1).bits.ctrl.fuOpType) && i1RsNotready && !io.pmuio.laterStageStalli1
+
+  io.pmuio.i1Stalli0 := io.in(0).valid  && !io.pmuio.laterStageStalli0 && io.issueStall(1)
+  io.pmuio.bothLsui0 := io.in(0).valid  && !io.pmuio.laterStageStalli0 && !io.pmuio.i1Stalli0 &&
+    (i0decodePkt.load || i0decodePkt.store) && (i1decodePkt.load || i1decodePkt.store)
+  io.pmuio.LsuBri0 := io.in(0).valid  && !io.pmuio.laterStageStalli0 && !io.pmuio.i1Stalli0 &&
+    ((i0decodePkt.load || i0decodePkt.store) && i1decodePkt.branch || (i1decodePkt.load || i1decodePkt.store) && i0decodePkt.branch)
+  io.pmuio.hitSubalui0 := io.in(0).valid && !io.pmuio.laterStageStalli0 && (io.in(0).bits.ctrl.rfSrc1 === i1decodePkt.rd && i0rs1valid ||
+    io.in(0).bits.ctrl.rfSrc2 === i1decodePkt.rd && i0rs2valid) && i1decodePkt.rdvalid && i1decodePkt.alu && io.out1.bits.decodePkt.subalu && !io.pmuio.i1Stalli0 &&
+    !io.pmuio.bothLsui0 && !io.pmuio.LsuBri0
+
+  val ruleStall = io.pmuio.i1Stalli0 || io.pmuio.bothLsui0 || io.pmuio.LsuBri0 || io.pmuio.hitSubalui0
+  io.pmuio.loadRsNotreadyi0 := i0decodePkt.load && i0RsNotready && !io.pmuio.laterStageStalli0 && !ruleStall
+  io.pmuio.storeRsNotreadyi0 := i0decodePkt.store && i0RsNotready && !io.pmuio.laterStageStalli0 && !ruleStall
+  io.pmuio.mulRsNotreadyi0 := i0decodePkt.muldiv && !MDUOpType.isDiv(io.in(0).bits.ctrl.fuOpType) && i0RsNotready && !io.pmuio.laterStageStalli0 && !ruleStall
+  io.pmuio.divRsNotreadyi0 := i0decodePkt.muldiv && MDUOpType.isDiv(io.in(0).bits.ctrl.fuOpType) && i0RsNotready && !io.pmuio.laterStageStalli0 && !ruleStall
+
+
+
+
+
+  val FuType = VecInit(Seq.fill(10)(0.U.asTypeOf(new decodePkt)))
+  for (i <- 0 to 9) FuType(i) := io.BypassPktTable(i).decodePkt
+  val Valid = VecInit(Seq.fill(10)(false.B))
+  for (i <- 0 to 9) Valid(i) := io.BypassPktValid(i)
 
     //BypassPkt out0
   i0Hiti1Rs1 := io.in(0).bits.ctrl.rfSrc1 === i1decodePkt.rd && i0rs1valid && i1decodePkt.rdvalid && (i1decodePkt.muldiv || i1decodePkt.load || i1decodePkt.alu && !io.out1.bits.decodePkt.subalu)
@@ -352,6 +392,7 @@ class Bypass extends Module{
     val decodeBypassPkt = Vec(2, Decoupled(new BypassPkt))
     val BypassPkt = Vec(10, new BypassPkt)
     val BypassPktValid = Output(Vec(10,Bool()))
+    val pmuio = new PMUIO0
   })
 
   val PipelineCtl = Module(new PipeCtl)
@@ -395,6 +436,9 @@ class Bypass extends Module{
   io.BypassPktValid := BypassPktValid
   DecodeIO2BypassPkt.io.in(0) <> io.in(1)
   DecodeIO2BypassPkt.io.in(1) <> io.in(0)
+  DecodeIO2BypassPkt.io.memStall <> io.memStall
+  DecodeIO2BypassPkt.io.mduStall <> io.mduStall
+  DecodeIO2BypassPkt.io.pmuio <> io.pmuio
 
 
   io.issueStall := DecodeIO2BypassPkt.io.issueStall
