@@ -7,7 +7,7 @@ import chisel3.util._
 import utils._
 
 trait HasStoreBufferConst{
-  val StoreBufferSize = 8
+  val StoreBufferSize = 16
 }
 
 class StoreBufferEntry extends NutCoreBundle{
