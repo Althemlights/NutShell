@@ -25,6 +25,7 @@ class SSDbackend extends NutCoreModule with hasBypassConst {
   //new
   val Bypass = Module(new Bypass)
   val regfile = Module(new SSDRF)
+  val PMU = Module(new PMU)
 
   //pipeline interface
   val pipeIn = Wire(Vec(10,Flipped(Decoupled(new FuPkt))))
@@ -72,6 +73,8 @@ class SSDbackend extends NutCoreModule with hasBypassConst {
   Bypass.io.decodeBypassPkt(1).ready := pipeIn(1).ready
   BypassPktE0(0).ready := pipeIn(0).ready
   BypassPktE0(1).ready := pipeIn(1).ready
+  //PMU
+  PMU.io.in0 <> Bypass.io.pmuio
 
   //decode & issue & e0bypass
   //ALU & SUB_ALU
