@@ -16,10 +16,10 @@
 
 package nutcore
 
+import SSDbackend._
 import chisel3._
 import chisel3.util._
 import chisel3.util.experimental.BoringUtils
-
 import utils._
 import difftest._
 import top.Settings
@@ -54,8 +54,8 @@ object ALUOpType {
   def bgeu = "b0010111".U
 
   // for RAS
-  def call = "b1011100".U
-  def ret  = "b1011110".U
+  def call = "b1011100".U  //0x5c
+  def ret  = "b1011110".U  //0x5e
 
   def isAdd(func: UInt) = func(6)
   def pcPlus2(func: UInt) = func(5)
@@ -70,6 +70,8 @@ class ALUIO extends FunctionUnitIO {
   val cfIn = Flipped(new CtrlFlowIO)
   val redirect = new RedirectIO
   val offset = Input(UInt(XLEN.W))
+  val alu2pmu = new ALU2PMUIO
+  val bpuUpdateReq = new BPUUpdateReq
 }
 
 class ALU(hasBru: Boolean = false) extends NutCoreModule {
@@ -154,27 +156,39 @@ class ALU(hasBru: Boolean = false) extends NutCoreModule {
   bpuUpdateReq.fuOpType := func
   bpuUpdateReq.btbType := LookupTree(func, RV32I_BRUInstr.bruFuncTobtbTypeTable)
   bpuUpdateReq.isRVC := isRVC
+  io.bpuUpdateReq := bpuUpdateReq
 
-  if(hasBru){
-//    BoringUtils.addSource(RegNext(bpuUpdateReq), "bpuUpdateReq")
+
+
+    //BoringUtils.addSource(RegNext(bpuUpdateReq), "bpuUpdateReq")
 //
-//    val right = valid && isBru && !predictWrong
-//    val wrong = valid && isBru && predictWrong
-//    BoringUtils.addSource(right && isBranch, "MbpBRight")
-//    BoringUtils.addSource(wrong && isBranch, "MbpBWrong")
-//    BoringUtils.addSource(wrong && isBranch && io.cfIn.pc(2,0)==="h0".U && isRVC, "Custom1")
-//    BoringUtils.addSource(wrong && isBranch && io.cfIn.pc(2,0)==="h0".U && !isRVC, "Custom2")
-//    BoringUtils.addSource(wrong && isBranch && io.cfIn.pc(2,0)==="h2".U && isRVC, "Custom3")
-//    BoringUtils.addSource(wrong && isBranch && io.cfIn.pc(2,0)==="h2".U && !isRVC, "Custom4")
-//    BoringUtils.addSource(wrong && isBranch && io.cfIn.pc(2,0)==="h4".U && isRVC, "Custom5")
-//    BoringUtils.addSource(wrong && isBranch && io.cfIn.pc(2,0)==="h4".U && !isRVC, "Custom6")
-//    BoringUtils.addSource(wrong && isBranch && io.cfIn.pc(2,0)==="h6".U && isRVC, "Custom7")
-//    BoringUtils.addSource(wrong && isBranch && io.cfIn.pc(2,0)==="h6".U && !isRVC, "Custom8")
-//    BoringUtils.addSource(right && (func === ALUOpType.jal || func === ALUOpType.call), "MbpJRight")
-//    BoringUtils.addSource(wrong && (func === ALUOpType.jal || func === ALUOpType.call), "MbpJWrong")
-//    BoringUtils.addSource(right && func === ALUOpType.jalr, "MbpIRight")
-//    BoringUtils.addSource(wrong && func === ALUOpType.jalr, "MbpIWrong")
-//    BoringUtils.addSource(right && func === ALUOpType.ret, "MbpRRight")
-//    BoringUtils.addSource(wrong && func === ALUOpType.ret, "MbpRWrong")
-  }
+    val right = valid && isBru && !predictWrong
+    val wrong = valid && isBru && predictWrong
+
+    io.alu2pmu.branchRight := right && isBranch
+    io.alu2pmu.branchWrong := wrong && isBranch
+    io.alu2pmu.jalRight := right && (func === ALUOpType.jal || func === ALUOpType.call)
+    io.alu2pmu.jalWrong := wrong && (func === ALUOpType.jal || func === ALUOpType.call)
+    io.alu2pmu.jalrRight := right && func === ALUOpType.jalr
+    io.alu2pmu.jalrWrong := wrong && func === ALUOpType.jalr
+    io.alu2pmu.retRight := right && func === ALUOpType.ret
+    io.alu2pmu.retWrong := wrong && func === ALUOpType.ret
+
+
+  //    BoringUtils.addSource(right && isBranch, "MbpBRight")
+  //    BoringUtils.addSource(wrong && isBranch, "MbpBWrong")
+  //    BoringUtils.addSource(wrong && isBranch && io.cfIn.pc(2,0)==="h0".U && isRVC, "Custom1")
+  //    BoringUtils.addSource(wrong && isBranch && io.cfIn.pc(2,0)==="h0".U && !isRVC, "Custom2")
+  //    BoringUtils.addSource(wrong && isBranch && io.cfIn.pc(2,0)==="h2".U && isRVC, "Custom3")
+  //    BoringUtils.addSource(wrong && isBranch && io.cfIn.pc(2,0)==="h2".U && !isRVC, "Custom4")
+  //    BoringUtils.addSource(wrong && isBranch && io.cfIn.pc(2,0)==="h4".U && isRVC, "Custom5")
+  //    BoringUtils.addSource(wrong && isBranch && io.cfIn.pc(2,0)==="h4".U && !isRVC, "Custom6")
+  //    BoringUtils.addSource(wrong && isBranch && io.cfIn.pc(2,0)==="h6".U && isRVC, "Custom7")
+  //    BoringUtils.addSource(wrong && isBranch && io.cfIn.pc(2,0)==="h6".U && !isRVC, "Custom8")
+  //    BoringUtils.addSource(right && (func === ALUOpType.jal || func === ALUOpType.call), "MbpJRight")
+  //    BoringUtils.addSource(wrong && (func === ALUOpType.jal || func === ALUOpType.call), "MbpJWrong")
+  //    BoringUtils.addSource(right && func === ALUOpType.jalr, "MbpIRight")
+  //    BoringUtils.addSource(wrong && func === ALUOpType.jalr, "MbpIWrong")
+  //    BoringUtils.addSource(right && func === ALUOpType.ret, "MbpRRight")
+  //    BoringUtils.addSource(wrong && func === ALUOpType.ret, "MbpRWrong")
 }
