@@ -123,8 +123,10 @@ class DecodeIO2BypassPkt extends Module {
     //issue stall
   io.issueStall(0) := (io.in(0).bits.ctrl.rfSrc1 === i1decodePkt.rd && i0rs1valid ||
     io.in(0).bits.ctrl.rfSrc2 === i1decodePkt.rd && i0rs2valid) && i1decodePkt.rdvalid && i1decodePkt.alu && io.out1.bits.decodePkt.subalu ||
-    (i0decodePkt.load || i0decodePkt.store) && (i1decodePkt.branch || (i1decodePkt.load || i1decodePkt.store)) ||
-    (i1decodePkt.load || i1decodePkt.store) && i0decodePkt.branch ||
+//    (i0decodePkt.load || i0decodePkt.store) && (i1decodePkt.branch || (i1decodePkt.load || i1decodePkt.store)) ||
+//    (i1decodePkt.load || i1decodePkt.store) && i0decodePkt.branch ||
+    (i0decodePkt.load || i0decodePkt.store) &&  (i1decodePkt.load || i1decodePkt.store) ||
+    i1decodePkt.branch && i0decodePkt.branch ||
     (i0decodePkt.load || i0decodePkt.store || i0decodePkt.muldiv) &&
       (i0rs1valid && (i0BypassCtlPkt.rs1bypasse2.asUInt.orR || i0BypassCtlPkt.rs1bypasse3.asUInt.orR) ||
         i0rs2valid && (i0BypassCtlPkt.rs2bypasse2.asUInt.orR || i0BypassCtlPkt.rs2bypasse3.asUInt.orR)) ||
@@ -160,11 +162,11 @@ class DecodeIO2BypassPkt extends Module {
   io.pmuio.i1Stalli0 := io.in(0).valid  && !io.pmuio.laterStageStalli0 && io.issueStall(1)
   io.pmuio.bothLsui0 := io.in(0).valid  && !io.pmuio.laterStageStalli0 && !io.pmuio.i1Stalli0 &&
     (i0decodePkt.load || i0decodePkt.store) && (i1decodePkt.load || i1decodePkt.store)
-  io.pmuio.LsuBri0 := io.in(0).valid  && !io.pmuio.laterStageStalli0 && !io.pmuio.i1Stalli0 &&
-    ((i0decodePkt.load || i0decodePkt.store) && i1decodePkt.branch || (i1decodePkt.load || i1decodePkt.store) && i0decodePkt.branch)
+  io.pmuio.bothBrui0 := io.in(0).valid  && !io.pmuio.laterStageStalli0 && !io.pmuio.i1Stalli0 && i1decodePkt.branch && i0decodePkt.branch
+  io.pmuio.LsuBri0 := false.B
   io.pmuio.hitSubalui0 := io.in(0).valid && !io.pmuio.laterStageStalli0 && (io.in(0).bits.ctrl.rfSrc1 === i1decodePkt.rd && i0rs1valid ||
     io.in(0).bits.ctrl.rfSrc2 === i1decodePkt.rd && i0rs2valid) && i1decodePkt.rdvalid && i1decodePkt.alu && io.out1.bits.decodePkt.subalu && !io.pmuio.i1Stalli0 &&
-    !io.pmuio.bothLsui0 && !io.pmuio.LsuBri0
+    !io.pmuio.bothLsui0 && !io.pmuio.LsuBri0 && !io.pmuio.bothBrui0
 
   val ruleStall = io.pmuio.i1Stalli0 || io.pmuio.bothLsui0 || io.pmuio.LsuBri0 || io.pmuio.hitSubalui0
   io.pmuio.loadRsNotreadyi0 := i0decodePkt.load && i0RsNotready && !io.pmuio.laterStageStalli0 && !ruleStall
