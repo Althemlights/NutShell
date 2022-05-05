@@ -21,8 +21,10 @@ class decodePkt extends  NutCoreBundle{
 }
 trait hasBypassConst{
   def E0BypassPort = 12  // 0->9: alu1,alu0,e21,e20,e31,e30,mem3,mdu3,subalu1,subalu0,e51,e50
-  def E2BypassPort = 2  // 0->1: e51,e50
-  def E3BypassPort = 5 // 0->8 : e30,e40,e41,e50,e51
+  def E2BypassPort = 2   // 0->1: e51,e50
+  def E3BypassPort = 5   // 0->8 : e30,e40,e41,e50,e51
+  def E1StoreBypassPort = 4
+  def E2StoreBypassPort = 6
 }
 class BypassCtl extends Bundle with hasBypassConst {
   val rs1bypasse0 = Output(Vec(E0BypassPort,Bool()))
@@ -32,9 +34,18 @@ class BypassCtl extends Bundle with hasBypassConst {
   val rs1bypasse3 = Output(Vec(E3BypassPort,Bool()))
   val rs2bypasse3 = Output(Vec(E3BypassPort,Bool()))
 }
+class StorePipeBypassCtrl extends Bundle with hasBypassConst{
+  val storeBypassCtrlE1 = Output(Vec(E1StoreBypassPort,Bool()))
+  val storeBypassCtrlE2 = Output(Vec(E2StoreBypassPort,Bool()))
+}
+class StorePipeBypassPort extends  Bundle with hasBypassConst{
+  val storeBypassPortE1 = Output(Vec(E1StoreBypassPort,UInt(64.W)))
+  val storeBypassPortE2 = Output(Vec(E2StoreBypassPort,UInt(64.W)))
+ }
 class BypassPkt extends Bundle {
   val decodePkt = new decodePkt
   val BypassCtl = new BypassCtl
+  val storeCtrl = new StorePipeBypassCtrl
 }
 class rsrdPkt extends Bundle{
   val rs1Valid = Output(Bool())

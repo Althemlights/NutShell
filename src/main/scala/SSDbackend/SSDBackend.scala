@@ -158,6 +158,7 @@ class SSDbackend extends NutCoreModule with hasBypassConst {
   dontTouch(io.dmem.resp.ready)
   LSU.io.out.ready := true.B//!(Redirect6.valid || Redirect7.valid)
   memStall := LSU.io.memStall
+  LSU.io.storeBypassCtrl <> Bypass.io.storeCtrl
   LSU.io.flush(0) := Redirect0.valid
   LSU.io.flush(1) := Redirect1.valid
   LSU.io.flush(2) := Redirect6.valid
@@ -205,17 +206,24 @@ class SSDbackend extends NutCoreModule with hasBypassConst {
   )
 
   val BypassPortE0 = Wire(Vec(E0BypassPort,UInt(64.W)))
+  val BypassPortE2 = Wire(Vec(E2BypassPort,UInt(64.W)))
+  val BypassPortE3 = Wire(Vec(E3BypassPort,UInt(64.W)))
+  val StoreBypassPortE1 = Wire(Vec(E1StoreBypassPort,UInt(64.W)))
+  val StoreBypassPortE2 = Wire(Vec(E2StoreBypassPort,UInt(64.W)))
   BypassPortE0 := Seq(pipeIn(2).bits.rd,pipeIn(3).bits.rd,pipeIn(4).bits.rd,pipeIn(5).bits.rd,
     pipeIn(6).bits.rd,pipeIn(7).bits.rd,LSU.io.out.bits,MDU.io.out.bits,
     pipeIn(8).bits.rd,pipeIn(9).bits.rd,pipeOut(8).bits.rd,pipeOut(9).bits.rd)
-
-  val BypassPortE2 = Wire(Vec(E2BypassPort,UInt(64.W)))
   BypassPortE2 := Seq(pipeOut(8).bits.rd,pipeOut(9).bits.rd)
-  val BypassPortE3 = Wire(Vec(E3BypassPort,UInt(64.W)))
   BypassPortE3 := Seq(pipeIn(7).bits.rd,pipeIn(8).bits.rd,pipeIn(9).bits.rd,pipeOut(8).bits.rd,pipeOut(9).bits.rd)
+  StoreBypassPortE1 := Seq(pipeIn(6).bits.rd,pipeIn(7).bits.rd,pipeIn(8).bits.rd,pipeIn(9).bits.rd)
+  StoreBypassPortE2 := Seq(pipeIn(6).bits.rd,pipeIn(7).bits.rd,pipeIn(8).bits.rd,pipeIn(9).bits.rd,pipeOut(8).bits.rd,pipeOut(9).bits.rd)
+  LSU.io.storeBypassPort.storeBypassPortE1 <> StoreBypassPortE1
+  LSU.io.storeBypassPort.storeBypassPortE2 <> StoreBypassPortE2
   dontTouch(BypassPortE0)
   dontTouch(BypassPortE2)
   dontTouch(BypassPortE3)
+  dontTouch(StoreBypassPortE1)
+  dontTouch(StoreBypassPortE2)
   //decode & issue
   //rs1 data type: pc, regfile or bypassa
   //rs2 data type: imm, regfilw or bypass
