@@ -33,10 +33,13 @@ class DecodeIO2BypassPkt extends Module {
     val out0 = Decoupled(new BypassPkt)
     val out1 = Decoupled(new BypassPkt)
     val pmuio = new PMUIO0
+
   })
   //生成 BypassPkt， 以及issue stall 信号
   val i0decodePkt = Wire(new decodePkt)
   val i1decodePkt = Wire(new decodePkt)
+  val storeCtrli0 = Wire(new StorePipeBypassCtrl)
+  val storeCtrli1 = Wire(new StorePipeBypassCtrl)
   val i0BypassCtlPkt = io.out0.bits.BypassCtl
   val i1BypassCtlPkt = io.out1.bits.BypassCtl
   DecodeIO2decodePkt(io.in(0).bits, i0decodePkt)
@@ -121,20 +124,27 @@ class DecodeIO2BypassPkt extends Module {
       )
 
     //issue stall
+
   io.issueStall(0) := (io.in(0).bits.ctrl.rfSrc1 === i1decodePkt.rd && i0rs1valid ||
     io.in(0).bits.ctrl.rfSrc2 === i1decodePkt.rd && i0rs2valid) && i1decodePkt.rdvalid && i1decodePkt.alu && io.out1.bits.decodePkt.subalu ||
-//    (i0decodePkt.load || i0decodePkt.store) && (i1decodePkt.branch || (i1decodePkt.load || i1decodePkt.store)) ||
-//    (i1decodePkt.load || i1decodePkt.store) && i0decodePkt.branch ||
     (i0decodePkt.load || i0decodePkt.store) &&  (i1decodePkt.load || i1decodePkt.store) ||
     i1decodePkt.branch && i0decodePkt.branch ||
-    (i0decodePkt.load || i0decodePkt.store || i0decodePkt.muldiv) &&
+    (i0decodePkt.load || i0decodePkt.muldiv ) &&
       (i0rs1valid && (i0BypassCtlPkt.rs1bypasse2.asUInt.orR || i0BypassCtlPkt.rs1bypasse3.asUInt.orR) ||
         i0rs2valid && (i0BypassCtlPkt.rs2bypasse2.asUInt.orR || i0BypassCtlPkt.rs2bypasse3.asUInt.orR)) ||
+    i0decodePkt.store &&
+      (!(storeCtrli0.storeBypassCtrlE1.asUInt.orR) && i0rs1valid && (i0BypassCtlPkt.rs1bypasse2.asUInt.orR || i0BypassCtlPkt.rs1bypasse3.asUInt.orR) ||
+      !(storeCtrli0.storeBypassCtrlE2.asUInt.orR) && i0rs2valid && (i0BypassCtlPkt.rs2bypasse2.asUInt.orR || i0BypassCtlPkt.rs2bypasse3.asUInt.orR)) ||
     io.issueStall(1)
 
-  io.issueStall(1) := (i1decodePkt.load || i1decodePkt.store || i1decodePkt.muldiv) &&
-    (i1rs1valid && (i1BypassCtlPkt.rs1bypasse2.asUInt.orR || i1BypassCtlPkt.rs1bypasse3.asUInt.orR) ||
-    i1rs2valid && (i1BypassCtlPkt.rs2bypasse2.asUInt.orR || i1BypassCtlPkt.rs2bypasse3.asUInt.orR))
+  io.issueStall(1) :=
+    (i1decodePkt.load || i1decodePkt.muldiv) &&
+      (i1rs1valid && (i1BypassCtlPkt.rs1bypasse2.asUInt.orR || i1BypassCtlPkt.rs1bypasse3.asUInt.orR) ||
+     i1rs2valid && (i1BypassCtlPkt.rs2bypasse2.asUInt.orR || i1BypassCtlPkt.rs2bypasse3.asUInt.orR)) ||
+      i1decodePkt.store &&
+        (!(storeCtrli1.storeBypassCtrlE1.asUInt.orR) && i1rs1valid && (i1BypassCtlPkt.rs1bypasse2.asUInt.orR || i1BypassCtlPkt.rs1bypasse3.asUInt.orR) ||
+          !(storeCtrli1.storeBypassCtrlE2.asUInt.orR) && i1rs2valid && (i1BypassCtlPkt.rs2bypasse2.asUInt.orR || i1BypassCtlPkt.rs2bypasse3.asUInt.orR))
+
 
   //Signal to PMU
   //Normal Bound
@@ -155,7 +165,9 @@ class DecodeIO2BypassPkt extends Module {
     i1rs2valid && (i1BypassCtlPkt.rs2bypasse2.asUInt.orR || i1BypassCtlPkt.rs2bypasse3.asUInt.orR))
 
   io.pmuio.loadRsNotreadyi1 := i1decodePkt.load && i1RsNotready && !io.pmuio.laterStageStalli1
-  io.pmuio.storeRsNotreadyi1 := i1decodePkt.store && i1RsNotready && !io.pmuio.laterStageStalli1
+  io.pmuio.storeRsNotreadyi1 := i1decodePkt.store && !io.pmuio.laterStageStalli1 && !io.pmuio.frontendi1 &&
+    (!(storeCtrli1.storeBypassCtrlE1.asUInt.orR) && i1rs1valid && (i1BypassCtlPkt.rs1bypasse2.asUInt.orR || i1BypassCtlPkt.rs1bypasse3.asUInt.orR) ||
+      !(storeCtrli1.storeBypassCtrlE2.asUInt.orR) && i1rs2valid && (i1BypassCtlPkt.rs2bypasse2.asUInt.orR || i1BypassCtlPkt.rs2bypasse3.asUInt.orR))
   io.pmuio.mulRsNotreadyi1 := i1decodePkt.muldiv && !MDUOpType.isDiv(io.in(1).bits.ctrl.fuOpType) && i1RsNotready && !io.pmuio.laterStageStalli1
   io.pmuio.divRsNotreadyi1 := i1decodePkt.muldiv && MDUOpType.isDiv(io.in(1).bits.ctrl.fuOpType) && i1RsNotready && !io.pmuio.laterStageStalli1
 
@@ -170,7 +182,9 @@ class DecodeIO2BypassPkt extends Module {
 
   val ruleStall = io.pmuio.i1Stalli0 || io.pmuio.bothLsui0 || io.pmuio.LsuBri0 || io.pmuio.hitSubalui0
   io.pmuio.loadRsNotreadyi0 := i0decodePkt.load && i0RsNotready && !io.pmuio.laterStageStalli0 && !ruleStall
-  io.pmuio.storeRsNotreadyi0 := i0decodePkt.store && i0RsNotready && !io.pmuio.laterStageStalli0 && !ruleStall
+  io.pmuio.storeRsNotreadyi0 := i0decodePkt.store && !io.pmuio.laterStageStalli0 && !ruleStall && !io.pmuio.frontendi0 &&
+    (!(storeCtrli0.storeBypassCtrlE1.asUInt.orR) && i0rs1valid && (i0BypassCtlPkt.rs1bypasse2.asUInt.orR || i0BypassCtlPkt.rs1bypasse3.asUInt.orR) ||
+      !(storeCtrli0.storeBypassCtrlE2.asUInt.orR) && i0rs2valid && (i0BypassCtlPkt.rs2bypasse2.asUInt.orR || i0BypassCtlPkt.rs2bypasse3.asUInt.orR))
   io.pmuio.mulRsNotreadyi0 := i0decodePkt.muldiv && !MDUOpType.isDiv(io.in(0).bits.ctrl.fuOpType) && i0RsNotready && !io.pmuio.laterStageStalli0 && !ruleStall
   io.pmuio.divRsNotreadyi0 := i0decodePkt.muldiv && MDUOpType.isDiv(io.in(0).bits.ctrl.fuOpType) && i0RsNotready && !io.pmuio.laterStageStalli0 && !ruleStall
 
@@ -323,6 +337,41 @@ class DecodeIO2BypassPkt extends Module {
       || Valid(3) && i1rs2hitStage === 3.U && FuType(3).load
       || Valid(3) && i1rs2hitStage === 3.U && FuType(3).muldiv
   )
+
+  // store pipeline bypaas ctrl
+  storeCtrli0.storeBypassCtrlE1 := VecInit(
+    i0rs1valid && Valid(2) && i0rs1hitStage === 2.U && (FuType(2).load || FuType(2).muldiv) && i0decodePkt.store,
+    i0rs1valid && Valid(3) && i0rs1hitStage === 3.U && (FuType(3).load || FuType(3).muldiv) && i0decodePkt.store,
+    i0rs1valid && Valid(4) && i0rs1hitStage === 4.U && (FuType(4).alu && FuType(4).subalu) && i0decodePkt.store,
+    i0rs1valid && Valid(5) && i0rs1hitStage === 5.U && (FuType(5).alu && FuType(5).subalu) && i0decodePkt.store
+  )
+  storeCtrli0.storeBypassCtrlE2 := VecInit(
+    i0rs2valid && Valid(0) && i0rs2hitStage === 0.U && (FuType(0).load || FuType(0).muldiv) && i0decodePkt.store,
+    i0rs2valid && Valid(1) && i0rs2hitStage === 1.U && (FuType(1).load || FuType(1).muldiv) && i0decodePkt.store,
+    i0rs2valid && Valid(2) && i0rs2hitStage === 2.U && (FuType(2).load || FuType(2).muldiv) && i0decodePkt.store,
+    i0rs2valid && Valid(3) && i0rs2hitStage === 3.U && (FuType(3).load || FuType(3).muldiv) && i0decodePkt.store,
+    i0rs2valid && Valid(4) && i0rs2hitStage === 4.U && (FuType(4).alu && FuType(4).subalu) && i0decodePkt.store,
+    i0rs2valid && Valid(5) && i0rs2hitStage === 5.U && (FuType(5).alu && FuType(5).subalu) && i0decodePkt.store
+  )
+  storeCtrli1.storeBypassCtrlE1 := VecInit(
+    i1rs1valid && Valid(2) && i1rs1hitStage === 2.U && (FuType(2).load || FuType(2).muldiv) && i1decodePkt.store,
+    i1rs1valid && Valid(3) && i1rs1hitStage === 3.U && (FuType(3).load || FuType(3).muldiv) && i1decodePkt.store,
+    i1rs1valid && Valid(4) && i1rs1hitStage === 4.U && (FuType(4).alu && FuType(4).subalu) && i1decodePkt.store,
+    i1rs1valid && Valid(5) && i1rs1hitStage === 5.U && (FuType(5).alu && FuType(5).subalu) && i1decodePkt.store
+  )
+  storeCtrli1.storeBypassCtrlE2 := VecInit(
+    i1rs2valid && Valid(0) && i1rs2hitStage === 0.U && (FuType(0).load || FuType(0).muldiv) && i1decodePkt.store,
+    i1rs2valid && Valid(1) && i1rs2hitStage === 1.U && (FuType(1).load || FuType(1).muldiv) && i1decodePkt.store,
+    i1rs2valid && Valid(2) && i1rs2hitStage === 2.U && (FuType(2).load || FuType(2).muldiv) && i1decodePkt.store,
+    i1rs2valid && Valid(3) && i1rs2hitStage === 3.U && (FuType(3).load || FuType(3).muldiv) && i1decodePkt.store,
+    i1rs2valid && Valid(4) && i1rs2hitStage === 4.U && (FuType(4).alu && FuType(4).subalu) && i1decodePkt.store,
+    i1rs2valid && Valid(5) && i1rs2hitStage === 5.U && (FuType(5).alu && FuType(5).subalu) && i1decodePkt.store
+  )
+  dontTouch(storeCtrli0)
+  dontTouch(storeCtrli1)
+  io.out0.bits.storeCtrl := storeCtrli0
+  io.out1.bits.storeCtrl := storeCtrli1
+
   //debug
 /*  val cond = Wire(Bool())
   cond := io.in(0).bits.cf.pc === "h8000008c".U
@@ -395,6 +444,7 @@ class Bypass extends Module{
     val BypassPkt = Vec(10, new BypassPkt)
     val BypassPktValid = Output(Vec(10,Bool()))
     val pmuio = new PMUIO0
+    val storeCtrl = new StorePipeBypassCtrl
   })
 
   val PipelineCtl = Module(new PipeCtl)
@@ -446,6 +496,14 @@ class Bypass extends Module{
   io.issueStall := DecodeIO2BypassPkt.io.issueStall
   io.decodeBypassPkt <> Seq(DecodeIO2BypassPkt.io.out0,DecodeIO2BypassPkt.io.out1)
   io.pipeFlush := PipelineCtl.pipeCtl.flush
+
+  //store pipeline ctrl
+  io.storeCtrl.storeBypassCtrlE1 := Mux(pipeOut(1).valid && BypassPkt(1).decodePkt.store,pipeOut(1).bits.storeCtrl.storeBypassCtrlE1,
+    Mux(pipeOut(0).valid && BypassPkt(0).decodePkt.store,pipeOut(0).bits.storeCtrl.storeBypassCtrlE1,
+      0.U.asTypeOf(new StorePipeBypassCtrl).storeBypassCtrlE1))
+  io.storeCtrl.storeBypassCtrlE2 := Mux(pipeOut(3).valid && BypassPkt(3).decodePkt.store,pipeOut(3).bits.storeCtrl.storeBypassCtrlE2,
+    Mux(pipeOut(2).valid && BypassPkt(2).decodePkt.store,pipeOut(2).bits.storeCtrl.storeBypassCtrlE2,
+      0.U.asTypeOf(new StorePipeBypassCtrl).storeBypassCtrlE2))
 
   //pipeline connect
   //stall stage
