@@ -54,7 +54,7 @@ class Multiplier(len: Int) extends NutCoreModule {
   val latency = 1
 
   def DSPInPipe[T <: Data](a: T) = RegNext(a)
-  def DSPOutPipe[T <: Data](a: T) = RegNext(RegNext(RegNext(a)))
+  def DSPOutPipe[T <: Data](a: T) = RegNext(a)
   val mulRes = (DSPInPipe(io.in.bits(0)).asSInt * DSPInPipe(io.in.bits(1)).asSInt)
   io.out.bits := DSPOutPipe(mulRes).asUInt
   io.out.valid := DSPOutPipe(DSPInPipe(io.in.fire()))

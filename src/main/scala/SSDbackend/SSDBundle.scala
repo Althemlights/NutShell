@@ -52,6 +52,8 @@ class FuPkt extends NutCoreBundle {
   val rd = Output(UInt(64.W))
   val fuOpType = Output(UInt(7.W))
   val offset = Output(UInt(64.W))
+  val bpuUpdateReq = new BPUUpdateReq
+  val alu2pmu = new ALU2PMUIO
   //for difftest
   val instr = Output(UInt(64.W))
   //for redirect
