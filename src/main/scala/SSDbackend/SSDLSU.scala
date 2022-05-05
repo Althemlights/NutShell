@@ -12,7 +12,7 @@ import _root_.utils._
 class SSDLSUIO extends FunctionUnitIO{
   val offset = Input(UInt(XLEN.W))
   val memStall = Output(Bool())
-  val flush = Input(Bool())
+  val flush = Input(Vec(4,Bool()))
   val LoadReady = Output(Bool())
   val StoreReady = Output(Bool())
   val dmem = new SimpleBusUC(addrBits = VAddrBits)
@@ -100,7 +100,7 @@ class SSDLSU extends  NutCoreModule with HasStoreBufferConst{
     !storeBuffer.io.in.ready && lsuPipeStage3.right.valid && lsuPipeStage3.right.bits.isStore && LoadCacheIn.valid ||
     cacheS2NotReady || cacheS3NotReady
 
-  lsuPipeIn(0).valid := isStore || LoadCacheIn.valid
+  lsuPipeIn(0).valid := isStore && !flush(1) || LoadCacheIn.valid
   lsuPipeIn(0).bits.isStore := isStore
   lsuPipeIn(0).bits.paddr := reqAddr(PAddrBits-1,0)
   lsuPipeIn(0).bits.data := reqWdata
@@ -129,7 +129,7 @@ class SSDLSU extends  NutCoreModule with HasStoreBufferConst{
     a.io.left <> lsuPipeIn(b)
     a.io.right <> lsuPipeOut(b)
     a.io.rightOutFire <> lsuPipeOut(b).fire()
-    a.io.isFlush <> flush
+    a.io.isFlush <> (flush(2) || flush(3))
   }
 
   //store buffer
@@ -152,7 +152,7 @@ class SSDLSU extends  NutCoreModule with HasStoreBufferConst{
     wmask = reqWmask, // for partical check
     cmd = SimpleBusCmd.read
   )
-  LoadCacheIn.valid :=  valid && !isStore
+  LoadCacheIn.valid :=  valid && !isStore && !flush(1)
 
   val cacheInArbiter0 = Module(new Arbiter((new SimpleBusReqBundle),2)) //store has higher priority,and store ready is driven by arbiter0, load ready is driven by arbiter1
   val cacheInArbiter1 = Module(new Arbiter((new SimpleBusReqBundle),2))
@@ -251,7 +251,7 @@ class SSDLSU extends  NutCoreModule with HasStoreBufferConst{
   storeHitCtrl.left.bits.hitMask := hitMaskE2
   storeHitCtrl.left.bits.hitData := hitDataE2
   storeHitCtrl.isStall := lsuPipeStage3.isStall
-  storeHitCtrl.isFlush := flush
+  storeHitCtrl.isFlush := flush(2) || flush(3)
 
   val hitCtrlSignal = storeHitCtrl.right.bits
 
@@ -292,7 +292,7 @@ class SSDLSU extends  NutCoreModule with HasStoreBufferConst{
   val outBuffer = RegEnable(out,io.out.valid)
   io.out.bits := Mux(io.out.valid,out,outBuffer)
   //store buffer snapshit
-  storeBuffer.io.in.valid := lsuPipeStage4.io.right.valid && lsuPipeStage4.io.right.bits.isStore
+  storeBuffer.io.in.valid := lsuPipeStage4.io.right.valid && lsuPipeStage4.io.right.bits.isStore && !flush(3)
   lsuPipeStage4.io.right.ready := storeBuffer.io.in.ready
   storeBuffer.io.in.bits.paddr := lsuPipeStage4.io.right.bits.paddr
   storeBuffer.io.in.bits.data := lsuPipeStage4.io.right.bits.data
@@ -303,15 +303,14 @@ class SSDLSU extends  NutCoreModule with HasStoreBufferConst{
   val storeCond = lsuPipeOut(1).fire() && lsuPipeOut(1).bits.isStore
   dontTouch(loadCond)
   dontTouch(storeCond)
-
-  //tmp debug signal
-  val tag = io.dmem.req.bits.addr === "h8000ce50".U
+  val tag = lsuPipeIn(0).bits.paddr === "h80008fb0".U
   dontTouch(tag)
 
-  //myDebug(loadCond, "Load  addr:%x, mask:%b, data:%x, at PC: %x\n",lsuPipeOut(1).bits.paddr,lsuPipeOut(1).bits.mask,io.out.bits,lsuPipeOut(1).bits.pc)
-  //myDebug(storeCond,"Store addr:%x, mask:%b, data:%x, at PC: %x\n",lsuPipeOut(1).bits.paddr,lsuPipeOut(1).bits.mask,lsuPipeOut(1).bits.data,lsuPipeOut(1).bits.pc)
+  if(SSDCoreConfig().EnableLSUDebug){
+  myDebug(loadCond, "Load  addr:%x, mask:%b, data:%x, at PC: %x\n",lsuPipeOut(1).bits.paddr,lsuPipeOut(1).bits.mask,io.out.bits,lsuPipeOut(1).bits.pc)
+  myDebug(storeCond,"Store addr:%x, mask:%b, data:%x, at PC: %x\n",lsuPipeOut(1).bits.paddr,lsuPipeOut(1).bits.mask,lsuPipeOut(1).bits.data,lsuPipeOut(1).bits.pc)
 }
-
+}
 
 class SSDLSU_fake extends  NutCoreModule with HasStoreBufferConst {
   val io = IO(new SSDLSUIO)
@@ -333,14 +332,6 @@ class SSDLSU_fake extends  NutCoreModule with HasStoreBufferConst {
   io.in.ready := false.B
   io.out.bits := 0.U
   io.out.valid := false.B
-
-  //for test
-  //  val a = WireInit(false.B)
-  //  BoringUtils.addSink(a,"d")
-
-  //  BoringUtils.addSource(false.B,"cacheStall")
-  //  BoringUtils.addSource(false.B,"addrHit")
-  //  BoringUtils.addSource(false.B,"fullHit")
 
 
 }
