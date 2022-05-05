@@ -272,6 +272,16 @@ sealed class CacheStage3(implicit val cacheConfig: CacheConfig) extends CacheMod
   // this is ugly
   if (cacheName == "dcache") {
     BoringUtils.addSink(storeHit,"storeHit")
+    BoringUtils.addSource(io.isFinish && io.in.bits.req.cmd === SimpleBusCmd.read,"dcacheLoad")
+    BoringUtils.addSource(io.isFinish && io.in.bits.req.cmd === SimpleBusCmd.write,"dcacheStore")
+    BoringUtils.addSource(io.isFinish && io.in.bits.req.cmd === SimpleBusCmd.read && miss && !storeHit ,"dcacheLoadMiss")
+    BoringUtils.addSource(io.isFinish && io.in.bits.req.cmd === SimpleBusCmd.write && miss ,"dcacheStoreMiss")
+  }
+  if (cacheName == "icache") {
+    BoringUtils.addSource(io.isFinish && io.in.bits.req.cmd === SimpleBusCmd.read,"icacheLoad")
+    BoringUtils.addSource(io.isFinish && io.in.bits.req.cmd === SimpleBusCmd.write,"icacheStore")
+    BoringUtils.addSource(io.isFinish && io.in.bits.req.cmd === SimpleBusCmd.read && miss  ,"icacheLoadMiss")
+    BoringUtils.addSource(io.isFinish && io.in.bits.req.cmd === SimpleBusCmd.write && miss ,"icacheStoreMiss")
   }
 
   val useForwardData = io.in.bits.isForwardData && io.in.bits.waymask === io.in.bits.forwardData.waymask.getOrElse("b1".U)
