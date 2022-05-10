@@ -17,6 +17,7 @@
 package nutcore
 
 import SSDbackend._
+import SSDfrontend._
 import chisel3._
 import chisel3.util._
 import chisel3.util.experimental.BoringUtils
@@ -97,27 +98,23 @@ class NutCore(implicit val p: NutCoreConfig) extends NutCoreModule {
   val io = IO(new NutCoreIO)
 
   // Frontend
-  val frontend = (Settings.get("IsRV32"), Settings.get("EnableOutOfOrderExec")) match {
-    case (true, _)      => Module(new Frontend_embedded)
-    case (false, true)  => Module(new Frontend_ooo)
-    case (false, false) => Module(new Frontend_inorder)
-  }
+  val frontend = Module(new SSDfrontend)
 
   // Backend
+  val backend = Module(new SSDbackend)
+  backend.io.in <> frontend.io.out
+  frontend.io.redirect <> backend.io.redirectOut
+  frontend.io.ipf := false.B
+
+  //tmp signal
   val BoolTmp0 = WireInit(false.B)
   val BoolTmp1 = WireInit(false.B)
 
-
-  val SSDbackend = Module(new SSDbackend)
-  SSDbackend.io.in <> frontend.io.out
-  frontend.io.redirect <> SSDbackend.io.redirectOut
-  frontend.io.ipf := false.B
-
   val mmioXbar = Module(new SimpleBusCrossbarNto1(2))
   val s2NotReady = WireInit(false.B)
-  BoringUtils.addSource(!SSDbackend.io.dmem.req.ready,"s2NotReady")
+  BoringUtils.addSource(!backend.io.dmem.req.ready,"s2NotReady")
   io.imem <> Cache(in = frontend.io.imem, mmio = mmioXbar.io.in.take(1), flush = Fill(2, frontend.io.flushVec(0) | frontend.io.bpFlush), empty = BoolTmp0, enable = HasIcache)(CacheConfig(ro = true, name = "icache", userBits = ICacheUserBundleWidth))
-  io.dmem <> Cache(in = SSDbackend.io.dmem, mmio = mmioXbar.io.in.drop(1), flush = "b00".U, empty = BoolTmp1, enable = HasDcache)(CacheConfig(ro = true, name = "dcache"))
+  io.dmem <> Cache(in = backend.io.dmem, mmio = mmioXbar.io.in.drop(1), flush = "b00".U, empty = BoolTmp1, enable = HasDcache)(CacheConfig(ro = true, name = "dcache"))
 
   // DMA?
   io.frontend.resp.bits := DontCare
