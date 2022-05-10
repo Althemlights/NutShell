@@ -9,5 +9,6 @@ case class SSDCoreConfig(
                         EnableStallCnt: Boolean = true,
                         EnablePerfCnt: Boolean = true,
                         EnableInstCnt: Boolean = true,
-                        EnableCacheCnt: Boolean = true
+                        EnableCacheCnt: Boolean = true,
+                        usingCompressed: Boolean= true
                         )
