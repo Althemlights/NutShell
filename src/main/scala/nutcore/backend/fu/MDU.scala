@@ -1,18 +1,18 @@
 /**************************************************************************************
-* Copyright (c) 2020 Institute of Computing Technology, CAS
-* Copyright (c) 2020 University of Chinese Academy of Sciences
-* 
-* NutShell is licensed under Mulan PSL v2.
-* You can use this software according to the terms and conditions of the Mulan PSL v2. 
-* You may obtain a copy of Mulan PSL v2 at:
-*             http://license.coscl.org.cn/MulanPSL2 
-* 
-* THIS SOFTWARE IS PROVIDED ON AN "AS IS" BASIS, WITHOUT WARRANTIES OF ANY KIND, EITHER 
-* EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO NON-INFRINGEMENT, MERCHANTABILITY OR 
-* FIT FOR A PARTICULAR PURPOSE.  
-*
-* See the Mulan PSL v2 for more details.  
-***************************************************************************************/
+ * Copyright (c) 2020 Institute of Computing Technology, CAS
+ * Copyright (c) 2020 University of Chinese Academy of Sciences
+ *
+ * NutShell is licensed under Mulan PSL v2.
+ * You can use this software according to the terms and conditions of the Mulan PSL v2.
+ * You may obtain a copy of Mulan PSL v2 at:
+ *             http://license.coscl.org.cn/MulanPSL2
+ *
+ * THIS SOFTWARE IS PROVIDED ON AN "AS IS" BASIS, WITHOUT WARRANTIES OF ANY KIND, EITHER
+ * EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO NON-INFRINGEMENT, MERCHANTABILITY OR
+ * FIT FOR A PARTICULAR PURPOSE.
+ *
+ * See the Mulan PSL v2 for more details.
+ ***************************************************************************************/
 
 package nutcore
 
@@ -76,6 +76,7 @@ class Divider(len: Int = 64) extends NutCoreModule {
   val s_idle :: s_log2 :: s_shift :: s_compute :: s_finish :: Nil = Enum(5)
   val state = RegInit(s_idle)
   val newReq = (state === s_idle) && io.in.fire()
+  val anotherReq = (state === s_finish) && io.in.fire()
 
   //add reg
   val a_reg = RegEnable(io.in.bits(0),io.in.fire())
@@ -92,10 +93,10 @@ class Divider(len: Int = 64) extends NutCoreModule {
 
   val (aSign, aVal) = abs(a, io.sign)
   val (bSign, bVal) = abs(b, io.sign)
-  val aSignReg = RegEnable(aSign, newReq)
-  val qSignReg = RegEnable((aSign ^ bSign) && !divBy0, newReq)
-  val bReg = RegEnable(bVal, newReq)
-  val aValx2Reg = RegEnable(Cat(aVal, "b0".U), newReq)
+  val aSignReg = RegEnable(aSign, newReq || anotherReq)
+  val qSignReg = RegEnable((aSign ^ bSign) && !divBy0, newReq || anotherReq)
+  val bReg = RegEnable(bVal, newReq || anotherReq)
+  val aValx2Reg = RegEnable(Cat(aVal, "b0".U), newReq || anotherReq)
 
   val cnt = Counter(len)
   dontTouch(cnt.value)
@@ -123,8 +124,10 @@ class Divider(len: Int = 64) extends NutCoreModule {
     shiftReg := Cat(Mux(enough, hi - bReg, hi)(len - 1, 0), lo, enough)
     cnt.inc()
     when (cnt.value === (len-1).U) { state := s_finish }
-  } .elsewhen (state === s_finish) {
+  } .elsewhen (state === s_finish && !io.in.fire()) {
     state := s_idle
+  }.elsewhen (anotherReq) {
+    state := s_log2
   }
 
   val r = hi(len, 1)
