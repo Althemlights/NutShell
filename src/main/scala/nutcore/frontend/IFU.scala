@@ -1,39 +1,42 @@
 /**************************************************************************************
-* Copyright (c) 2020 Institute of Computing Technology, CAS
-* Copyright (c) 2020 University of Chinese Academy of Sciences
-* 
-* NutShell is licensed under Mulan PSL v2.
-* You can use this software according to the terms and conditions of the Mulan PSL v2. 
-* You may obtain a copy of Mulan PSL v2 at:
-*             http://license.coscl.org.cn/MulanPSL2 
-* 
-* THIS SOFTWARE IS PROVIDED ON AN "AS IS" BASIS, WITHOUT WARRANTIES OF ANY KIND, EITHER 
-* EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO NON-INFRINGEMENT, MERCHANTABILITY OR 
-* FIT FOR A PARTICULAR PURPOSE.  
-*
-* See the Mulan PSL v2 for more details.  
-***************************************************************************************/
+ * Copyright (c) 2020 Institute of Computing Technology, CAS
+ * Copyright (c) 2020 University of Chinese Academy of Sciences
+ *
+ * NutShell is licensed under Mulan PSL v2.
+ * You can use this software according to the terms and conditions of the Mulan PSL v2.
+ * You may obtain a copy of Mulan PSL v2 at:
+ *             http://license.coscl.org.cn/MulanPSL2
+ *
+ * THIS SOFTWARE IS PROVIDED ON AN "AS IS" BASIS, WITHOUT WARRANTIES OF ANY KIND, EITHER
+ * EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO NON-INFRINGEMENT, MERCHANTABILITY OR
+ * FIT FOR A PARTICULAR PURPOSE.
+ *
+ * See the Mulan PSL v2 for more details.
+ ***************************************************************************************/
 
 package nutcore
 
-import chisel3._
+import SSDbackend.SSDCoreConfig
+import chisel3.{util, _}
 import chisel3.util._
 import chisel3.util.experimental.BoringUtils
-
 import utils._
 import bus.simplebus._
 import top.Settings
 import difftest._
+import SSDbackend._
 
 trait HasResetVector {
   val resetVector = Settings.getLong("ResetVector")
 }
 
 class ICacheUserBundle extends NutCoreBundle {
-    val pc = UInt(VAddrBits.W)
-    val brIdx = UInt(4.W) // mark if an inst is predicted to branch
-    val pnpc = UInt(VAddrBits.W)
-    val instValid = UInt(4.W) // mark which part of this inst line is valid
+  val pc = UInt(VAddrBits.W)
+  val brIdx = UInt(4.W) // mark if an inst is predicted to branch
+  val pnpc = UInt(VAddrBits.W)
+  val instValid = UInt(4.W) // mark which part of this inst line is valid
+  val ghr = UInt(GhrLength.W)
+  val btbIsBranch = UInt(4.W) // align with npc, need to delay one clock cycle
 }
 // Note: update ICacheUserBundleWidth when change ICacheUserBundle
 
@@ -51,13 +54,15 @@ class IFU_ooo extends NutCoreModule with HasResetVector {
   })
 
   // pc
+  val ghr = RegInit(0.U(GhrLength.W))
+  //  val ghr_commit = RegInit(0.U(GhrLength.W))
   val pc = RegInit(resetVector.U(VAddrBits.W))
   // val pcBrIdx = RegInit(0.U(4.W))
   val pcInstValid = RegInit("b1111".U)
   val pcUpdate = Wire(Bool())
   pcUpdate := io.redirect.valid || io.imem.req.fire()
-  val snpc = Cat(pc(VAddrBits-1, 3), 0.U(3.W)) + CacheReadWidth.U  // IFU will always ask icache to fetch next instline 
-  // Note: we define instline as 8 Byte aligned data from icache 
+  val snpc = Cat(pc(VAddrBits-1, 3), 0.U(3.W)) + CacheReadWidth.U  // IFU will always ask icache to fetch next instline
+  // Note: we define instline as 8 Byte aligned data from icache
 
   // Next-line branch predictor
   val nlp = Module(new BPU_ooo)
@@ -85,22 +90,22 @@ class IFU_ooo extends NutCoreModule with HasResetVector {
   val bpuBrIdx = if (Settings.get("HasIcache")) nlp.io.brIdx.asUInt else nlpbridx_latch
 
   // cross instline inst branch predict logic "crosslineJump"
-  // 
+  //
   // if "crosslineJump", icache will need to fetch next instline, then fetch redirect addr
   // "crosslineJump" mechanism is used to speed up such code:
   // ```
   // 000c BranchCondition (32 bit inst)
   // ```
-  // in this case, full inst is needed by BRU to get the right branch result, 
+  // in this case, full inst is needed by BRU to get the right branch result,
   // so we need to fetch the next inst line to get the higher bits of a 32bit branch inst
   // but in order to use BP result to avoid pipeline flush,
   // the next inst provided by icache should be predicted npc, instead of sequential npc
   //
   // There is another way: BPU uses "high 16 bit half" pc to index not-compressed crossline branch insts.
-
+  dontTouch(nlp.io.out)
   val crosslineJump = nlp.io.crosslineJump
   val s_idle :: s_crosslineJump :: Nil = Enum(2)
-  val state = RegInit(s_idle) 
+  val state = RegInit(s_idle)
   switch(state){
     is(s_idle){
       when(pcUpdate && crosslineJump && !io.redirect.valid){ state := s_crosslineJump }
@@ -114,12 +119,28 @@ class IFU_ooo extends NutCoreModule with HasResetVector {
 
   // predicted next pc
   val pnpc = Mux(crosslineJump, snpc, bpuTarget)
- 
+
   // next pc
   val npc = Wire(UInt(VAddrBits.W))
   npc := Mux(io.redirect.valid, io.redirect.target, Mux(state === s_crosslineJump, crosslineJumpTarget, Mux(bpuValid, pnpc, snpc)))
   // val npcIsSeq = Mux(io.redirect.valid , false.B, Mux(state === s_crosslineJump, false.B, Mux(crosslineJump, true.B, Mux(nlp.io.out.valid, false.B, true.B)))) //for debug only
 
+  //ghr & ghr update
+  val ghrUpdate = io.imem.req.fire() && nlp.io.out.ghrUpdataValid || io.redirect.ghrUpdataValid
+  val nghr = Wire(UInt(GhrLength.W))
+  nghr := Mux(io.redirect.ghrUpdataValid, io.redirect.ghr, Mux(nlp.io.out.ghrUpdataValid, nlp.io.out.ghr, ghr)) // crossline not considered
+  dontTouch(nghr)
+  when(ghrUpdate) {
+    ghr := nghr
+  }
+
+  //for redirect debug
+  val redirectCond = io.redirect.valid
+  if(SSDCoreConfig().EnableRedirectDebug){
+    myDebug(redirectCond,"At pc:%x, ghrValid:%b, ghr:%b, btbIsBranch:%b, target:%x\n",io.redirect.pc,io.redirect.ghrUpdataValid,io.redirect.ghr,io.redirect.btbIsBranch,io.redirect.target)
+  }
+
+  dontTouch(io.redirect.pc)
   // instValid: which part of an instline contains an valid inst
   // e.g. 1100 means inst(s) in instline(63,32) is/are valid
   val npcInstValid = Wire(UInt(4.W))
@@ -137,12 +158,12 @@ class IFU_ooo extends NutCoreModule with HasResetVector {
   // predicted branch position index, 4 bit vector
   val pbrIdx = bpuBrIdx | (crosslineJump << 3)
   brIdx := Mux(io.redirect.valid, 0.U, Mux(state === s_crosslineJump, 0.U, pbrIdx))
-  
+
   // BP will be disabled shortly after a redirect request
   nlp.io.in.pc.valid := io.imem.req.fire() // only predict when Icache accepts a request
   nlp.io.in.pc.bits := npc  // predict one cycle early
-  nlp.io.flush := io.redirect.valid // redirect means BPU may need to be updated
-
+  nlp.io.flush := io.redirect.valid && false.B// redirect means BPU may need to be updated
+  nlp.io.in.ghr := nghr
   // Multi-cycle branch predictor
   // Multi-cycle branch predictor will not be synthesized if EnableMultiCyclePredictor is set to false
   val mcp = Module(new DummyPredicter)
@@ -152,7 +173,7 @@ class IFU_ooo extends NutCoreModule with HasResetVector {
   mcp.io.ignore := state === s_crosslineJump
 
   class MCPResult extends NutCoreBundle{
-    val redirect = new RedirectIO
+    val redirect = new RedirectIO_nooo
     val brIdx = Output(Vec(4, Bool()))
   }
   val mcpResultQueue = Module(new Queue(new MCPResult, entries = 4, pipe = true, flow = true, hasFlush = true))
@@ -162,17 +183,22 @@ class IFU_ooo extends NutCoreModule with HasResetVector {
   mcpResultQueue.io.enq.bits.brIdx := mcp.io.brIdx
   mcpResultQueue.io.deq.ready := io.imem.resp.fire()
 
-  val validMCPRedirect = 
+  val validMCPRedirect =
     mcpResultQueue.io.deq.bits.redirect.valid && //mcp predicts branch
-    mcpResultQueue.io.deq.bits.brIdx.asUInt =/= io.imem.resp.bits.user.get(VAddrBits*2 + 3, VAddrBits*2) //brIdx is different
-    (mcpResultQueue.io.deq.bits.brIdx.asUInt & io.imem.resp.bits.user.get(VAddrBits*2 + 7, VAddrBits*2 + 4)).orR //mcp reports a valid branch
+      mcpResultQueue.io.deq.bits.brIdx.asUInt =/= io.imem.resp.bits.user.get(VAddrBits*2 + 3, VAddrBits*2) //brIdx is different
+  (mcpResultQueue.io.deq.bits.brIdx.asUInt & io.imem.resp.bits.user.get(VAddrBits*2 + 7, VAddrBits*2 + 4)).orR //mcp reports a valid branch
 
 
   //val bp2 = Module(new BPU_nodelay)
   //bp2.io.in.bits := io.out.bits
   //bp2.io.in.valid := io.imem.resp.fire()
+  //  val ghr_update = WireInit(0.U.asTypeOf(new BPUUpdateReq))
+  //  BoringUtils.addSink(ghr_update, "ghrUpdateReq")
+  //  when(ghr_update.valid && ALUOpType.isBranch(ghr_update.fuOpType)) {
+  //    ghr_commit := Cat(ghr_commit(GhrLength-2,0),ghr_update.actualTarget)
+  //  }
 
-  when (pcUpdate) { 
+  when (pcUpdate) {
     pc := npc
     pcInstValid := npcInstValid
     // pcBrIdx := brIdx // just for debug
@@ -180,8 +206,8 @@ class IFU_ooo extends NutCoreModule with HasResetVector {
   }
 
   Debug(pcUpdate, "[IFUIN] pc:%x pcUpdate:%d npc:%x RedValid:%d RedTarget:%x LJL:%d LJTarget:%x LJ:%d snpc:%x bpValid:%d pnpc:%x \n",
-        pc, pcUpdate, npc, io.redirect.valid, io.redirect.target,state === s_crosslineJump, crosslineJumpTarget, 
-        crosslineJump,snpc,nlp.io.out.valid,nlp.io.out.target)
+    pc, pcUpdate, npc, io.redirect.valid, io.redirect.target,state === s_crosslineJump, crosslineJumpTarget,
+    crosslineJump,snpc,nlp.io.out.valid,nlp.io.out.target)
 
   io.flushVec := Mux(io.redirect.valid, Mux(io.redirect.rtype === 0.U, "b1111".U, "b0011".U), 0.U)
   io.bpFlush := false.B
@@ -191,6 +217,8 @@ class IFU_ooo extends NutCoreModule with HasResetVector {
   icacheUserGen.pnpc := Mux(crosslineJump, nlp.io.out.target, npc)
   icacheUserGen.brIdx := brIdx & pcInstValid
   icacheUserGen.instValid := pcInstValid
+  icacheUserGen.ghr := ghr
+  icacheUserGen.btbIsBranch := nlp.io.out.btbIsBranch
 
   io.imem.req.bits.apply(addr = Cat(pc(VAddrBits-1,1),0.U(1.W)), //cache will treat it as Cat(pc(63,3),0.U(3.W))
     size = "b11".U, cmd = SimpleBusCmd.read, wdata = 0.U, wmask = 0.U, user = icacheUserGen.asUInt)
@@ -199,19 +227,35 @@ class IFU_ooo extends NutCoreModule with HasResetVector {
   io.imem.resp.ready := io.out.ready || io.flushVec(0)
 
   io.out.bits := DontCare
-    //inst path only uses 32bit inst, get the right inst according to pc(2)
+  //inst path only uses 32bit inst, get the right inst according to pc(2)
 
   Debug(io.imem.req.fire(), "[IFI] pc=%x user=%x redirect %x pcInstValid %b brIdx %b npc %x pc %x pnpc %x\n", io.imem.req.bits.addr, io.imem.req.bits.user.getOrElse(0.U), io.redirect.valid, pcInstValid.asUInt, (pcInstValid & brIdx).asUInt, npc, pc, nlp.io.out.target)
   Debug(io.out.fire(), "[IFO] pc=%x user=%x inst=%x npc=%x bridx %b valid %b ipf %x\n", io.out.bits.pc, io.imem.resp.bits.user.get, io.out.bits.instr, io.out.bits.pnpc, io.out.bits.brIdx.asUInt, io.out.bits.instValid.asUInt, io.ipf)
 
   // io.out.bits.instr := (if (XLEN == 64) io.imem.resp.bits.rdata.asTypeOf(Vec(2, UInt(32.W)))(io.out.bits.pc(2))
-                      //  else io.imem.resp.bits.rdata)
+  //  else io.imem.resp.bits.rdata)
   io.out.bits.instr := io.imem.resp.bits.rdata
   io.out.bits.pc := io.imem.resp.bits.user.get.asTypeOf(new ICacheUserBundle).pc
   io.out.bits.pnpc := io.imem.resp.bits.user.get.asTypeOf(new ICacheUserBundle).pnpc
   io.out.bits.brIdx := io.imem.resp.bits.user.get.asTypeOf(new ICacheUserBundle).brIdx
   io.out.bits.instValid := io.imem.resp.bits.user.get.asTypeOf(new ICacheUserBundle).instValid
+  io.out.bits.ghr := io.imem.resp.bits.user.get.asTypeOf(new ICacheUserBundle).ghr
+  io.out.bits.btbIsBranch := io.imem.resp.bits.user.get.asTypeOf(new ICacheUserBundle).btbIsBranch
 
+  //  //align btbIsBranch with pc
+  //  //btbIsBranch queue
+  //  class nlpResult extends NutCoreBundle{
+  //    val btbIsBranchEntry = Output(UInt(4.W))
+  //  }
+  //
+  //  val nlpResultQueue = Module(new Queue(new nlpResult, entries = 3, hasFlush = true))
+  //  nlpResultQueue.io.flush.get := io.redirect.valid || io.bpFlush
+  //  nlpResultQueue.io.enq.valid := RegNext(io.imem.req.fire() || io.redirect.valid)
+  //  nlpResultQueue.io.enq.bits.btbIsBranchEntry := nlp.io.out.btbIsBranch
+  //  nlpResultQueue.io.deq.ready := io.imem.resp.fire()
+
+
+  dontTouch(io.out)
   io.out.bits.icachePF := io.ipf
   // assert(!io.out.bits.icachePF)
   io.out.valid := io.imem.resp.valid && !io.flushVec(0)
@@ -276,7 +320,7 @@ class IFU_embedded extends NutCoreModule with HasResetVector {
   // predicted next pc
   val pnpc = bpu.io.out.target
   val npc = Mux(io.redirect.valid, io.redirect.target, Mux(bpu.io.out.valid, pnpc, snpc))
-  
+
   bpu.io.in.pc.valid := io.imem.req.fire() // only predict when Icache accepts a request
   bpu.io.in.pc.bits := npc  // predict one cycle early
   bpu.io.flush := io.redirect.valid
@@ -326,7 +370,7 @@ class IFU_inorder extends NutCoreModule with HasResetVector {
   val bp1 = Module(new BPU_inorder)
 
   val crosslineJump = bp1.io.crosslineJump
-  val crosslineJumpLatch = RegInit(false.B) 
+  val crosslineJumpLatch = RegInit(false.B)
   when(pcUpdate || bp1.io.flush) {
     crosslineJumpLatch := Mux(bp1.io.flush, false.B, crosslineJump && !crosslineJumpLatch)
   }
@@ -342,7 +386,7 @@ class IFU_inorder extends NutCoreModule with HasResetVector {
   // Debug("[NPC] %x %x %x %x %x %x\n",crosslineJumpLatch, crosslineJumpTarget, crosslineJump, bp1.io.out.valid, pnpc, snpc)
 
   // val npc = Mux(io.redirect.valid, io.redirect.target, Mux(io.redirectRVC.valid, io.redirectRVC.target, snpc))
-  val brIdx = Wire(UInt(4.W)) 
+  val brIdx = Wire(UInt(4.W))
   // brIdx(0) -> branch at pc offset 0 (mod 4)
   // brIdx(1) -> branch at pc offset 2 (mod 4)
   // brIdx(2) -> branch at pc offset 6 (mod 8), and this inst is not rvc inst
@@ -357,8 +401,8 @@ class IFU_inorder extends NutCoreModule with HasResetVector {
 
   bp1.io.flush := io.redirect.valid
 
-  when (pcUpdate) { 
-    pc := npc 
+  when (pcUpdate) {
+    pc := npc
     // printf("[IF1] pc=%x\n", pc)
   }
 
@@ -374,13 +418,13 @@ class IFU_inorder extends NutCoreModule with HasResetVector {
   io.imem.resp.ready := io.out.ready || io.flushVec(0)
 
   io.out.bits := DontCare
-    //inst path only uses 32bit inst, get the right inst according to pc(2)
+  //inst path only uses 32bit inst, get the right inst according to pc(2)
 
   Debug(io.imem.req.fire(), "[IFI] pc=%x user=%x %x %x %x \n", io.imem.req.bits.addr, io.imem.req.bits.user.getOrElse(0.U), io.redirect.valid, pbrIdx, brIdx)
   Debug(io.out.fire(), "[IFO] pc=%x inst=%x\n", io.out.bits.pc, io.out.bits.instr)
 
   // io.out.bits.instr := (if (XLEN == 64) io.imem.resp.bits.rdata.asTypeOf(Vec(2, UInt(32.W)))(io.out.bits.pc(2))
-                      //  else io.imem.resp.bits.rdata)
+  //  else io.imem.resp.bits.rdata)
   io.out.bits.instr := io.imem.resp.bits.rdata
   io.imem.resp.bits.user.map{ case x =>
     io.out.bits.pc := x(VAddrBits-1,0)
