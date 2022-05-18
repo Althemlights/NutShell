@@ -1,18 +1,18 @@
 /**************************************************************************************
-* Copyright (c) 2020 Institute of Computing Technology, CAS
-* Copyright (c) 2020 University of Chinese Academy of Sciences
-* 
-* NutShell is licensed under Mulan PSL v2.
-* You can use this software according to the terms and conditions of the Mulan PSL v2. 
-* You may obtain a copy of Mulan PSL v2 at:
-*             http://license.coscl.org.cn/MulanPSL2 
-* 
-* THIS SOFTWARE IS PROVIDED ON AN "AS IS" BASIS, WITHOUT WARRANTIES OF ANY KIND, EITHER 
-* EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO NON-INFRINGEMENT, MERCHANTABILITY OR 
-* FIT FOR A PARTICULAR PURPOSE.  
-*
-* See the Mulan PSL v2 for more details.  
-***************************************************************************************/
+ * Copyright (c) 2020 Institute of Computing Technology, CAS
+ * Copyright (c) 2020 University of Chinese Academy of Sciences
+ *
+ * NutShell is licensed under Mulan PSL v2.
+ * You can use this software according to the terms and conditions of the Mulan PSL v2.
+ * You may obtain a copy of Mulan PSL v2 at:
+ *             http://license.coscl.org.cn/MulanPSL2
+ *
+ * THIS SOFTWARE IS PROVIDED ON AN "AS IS" BASIS, WITHOUT WARRANTIES OF ANY KIND, EITHER
+ * EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO NON-INFRINGEMENT, MERCHANTABILITY OR
+ * FIT FOR A PARTICULAR PURPOSE.
+ *
+ * See the Mulan PSL v2 for more details.
+ ***************************************************************************************/
 
 package nutcore
 
@@ -45,7 +45,19 @@ class RedirectIO extends NutCoreBundle {
   val target = Output(UInt(VAddrBits.W))
   val rtype = Output(UInt(1.W)) // 1: branch mispredict: only need to flush frontend  0: others: flush the whole pipeline
   val valid = Output(Bool())
+  val ghr = Output(UInt(GhrLength.W))
+  val ghrUpdataValid = Output(Bool())
+  val btbIsBranch = Output(UInt(4.W))
+  //for debug
+  val pc = Output(UInt(VAddrBits.W))
 }
+
+class RedirectIO_nooo extends NutCoreBundle {
+  val target = Output(UInt(VAddrBits.W))
+  val rtype = Output(UInt(1.W)) // 1: branch mispredict: only need to flush frontend  0: others: flush the whole pipeline
+  val valid = Output(Bool())
+}
+
 
 class MisPredictionRecIO extends NutCoreBundle {
   val redirect = new RedirectIO
@@ -55,6 +67,7 @@ class MisPredictionRecIO extends NutCoreBundle {
 }
 
 class CtrlFlowIO extends NutCoreBundle {
+  //  val ghr = Output(UInt(GhrLength.W))
   val instr = Output(UInt(64.W))
   val pc = Output(UInt(VAddrBits.W))
   val pnpc = Output(UInt(VAddrBits.W))
@@ -126,8 +139,8 @@ class MMUIO extends NutCoreBundle {
 
   val loadPF = Output(Bool())
   val storePF = Output(Bool())
-  val addr = Output(UInt(VAddrBits.W)) 
-  
+  val addr = Output(UInt(VAddrBits.W))
+
   def isPF() = loadPF || storePF
 }
 
@@ -153,13 +166,16 @@ class TLBExuIO extends NutCoreBundle {
 }
 
 class InstFetchIO extends NutCoreBundle {
-  val pc = Output(UInt(VAddrBits.W)) // real PC will be regenerated in IBF 
+  val pc = Output(UInt(VAddrBits.W)) // real PC will be regenerated in IBF
   val pnpc = Output(UInt(VAddrBits.W))
   val brIdx = Output(UInt(4.W))
   val instValid = Output(UInt(4.W))
   //above will be used as user bits in icache
   val icachePF = Output(Bool())
   val instr = Output(UInt(64.W))
+  val checkPointGHR = Output(UInt(GhrLength.W))
+  val ghr = Output(UInt(GhrLength.W))
+  val btbIsBranch = Output(UInt(4.W))
 }
 
 // Micro OP
