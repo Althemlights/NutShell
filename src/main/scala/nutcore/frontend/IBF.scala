@@ -1,18 +1,18 @@
 /**************************************************************************************
-* Copyright (c) 2020 Institute of Computing Technology, CAS
-* Copyright (c) 2020 University of Chinese Academy of Sciences
-* 
-* NutShell is licensed under Mulan PSL v2.
-* You can use this software according to the terms and conditions of the Mulan PSL v2. 
-* You may obtain a copy of Mulan PSL v2 at:
-*             http://license.coscl.org.cn/MulanPSL2 
-* 
-* THIS SOFTWARE IS PROVIDED ON AN "AS IS" BASIS, WITHOUT WARRANTIES OF ANY KIND, EITHER 
-* EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO NON-INFRINGEMENT, MERCHANTABILITY OR 
-* FIT FOR A PARTICULAR PURPOSE.  
-*
-* See the Mulan PSL v2 for more details.  
-***************************************************************************************/
+ * Copyright (c) 2020 Institute of Computing Technology, CAS
+ * Copyright (c) 2020 University of Chinese Academy of Sciences
+ *
+ * NutShell is licensed under Mulan PSL v2.
+ * You can use this software according to the terms and conditions of the Mulan PSL v2.
+ * You may obtain a copy of Mulan PSL v2 at:
+ *             http://license.coscl.org.cn/MulanPSL2
+ *
+ * THIS SOFTWARE IS PROVIDED ON AN "AS IS" BASIS, WITHOUT WARRANTIES OF ANY KIND, EITHER
+ * EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO NON-INFRINGEMENT, MERCHANTABILITY OR
+ * FIT FOR A PARTICULAR PURPOSE.
+ *
+ * See the Mulan PSL v2 for more details.
+ ***************************************************************************************/
 
 package nutcore
 
@@ -36,13 +36,15 @@ class IBF extends NutCoreModule with HasInstrType with HasIBUFConst{
     val out = Vec(2, Decoupled(new CtrlFlowIO))
     val flush = Input(Bool())
   })
-
+  dontTouch(io.in.bits.ghr)
   //ibuf reg
   // val instBuffer = RegInit(0.U(ibufBitSize.W))
   val ringInstBuffer = RegInit(VecInit(Seq.fill(ibufSize)(0.U(16.W))))
+  val ghrRingMeta = RegInit(VecInit(Seq.fill(ibufSize)(0.U(GhrLength.W))))
   val pcRingMeta = RegInit(VecInit(Seq.fill(ibufSize)(0.U(VAddrBits.W))))
   val npcRingMeta = RegInit(VecInit(Seq.fill(ibufSize)(0.U(VAddrBits.W))))
   val validRingMeta = RegInit(VecInit(Seq.fill(ibufSize)(false.B)))
+  val btbIsBranchRingMeta = RegInit(VecInit(Seq.fill(ibufSize)(false.B)))
   val branchRingMeta = RegInit(VecInit(Seq.fill(ibufSize)(false.B)))
   val ipfRingMeta = RegInit(VecInit(Seq.fill(ibufSize)(false.B)))
   val ringBufferHead = RegInit(0.U(log2Up(ibufSize).W))
@@ -59,7 +61,7 @@ class IBF extends NutCoreModule with HasInstrType with HasIBUFConst{
   val icachePF = io.in.bits.icachePF
   instrVec := instr.asTypeOf(Vec(4, UInt(16.W)))
   (0 to 3).map(i => isRVC(i.U) := instrVec(i.U)(1,0) =/= "b11".U)
-  
+
   //ibuf enqueue
   //if valid & ringBufferAllowin, enqueue
   val needEnqueue = Wire(Vec(4, Bool()))
@@ -77,12 +79,14 @@ class IBF extends NutCoreModule with HasInstrType with HasIBUFConst{
 
   val ibufWen = io.in.fire() // i.e. ringBufferAllowin && io.in.valid
   def ibufWrite(targetSlot: Int, shiftSize: UInt){
-      ringInstBuffer(targetSlot.U + ringBufferHead) := instrVec(shiftSize + targetSlot.U)
-      pcRingMeta(targetSlot.U + ringBufferHead) := Cat(io.in.bits.pc(VAddrBits-1, 3), shiftSize + targetSlot.U, 0.U(1.W))
-      npcRingMeta(targetSlot.U + ringBufferHead) := io.in.bits.pnpc
-      validRingMeta(targetSlot.U + ringBufferHead) := true.B
-      branchRingMeta(targetSlot.U + ringBufferHead) := io.in.bits.brIdx(shiftSize + targetSlot.U)
-      ipfRingMeta(targetSlot.U + ringBufferHead) := io.in.bits.icachePF
+    ringInstBuffer(targetSlot.U + ringBufferHead) := instrVec(shiftSize + targetSlot.U)
+    pcRingMeta(targetSlot.U + ringBufferHead) := Cat(io.in.bits.pc(VAddrBits-1, 3), shiftSize + targetSlot.U, 0.U(1.W))
+    npcRingMeta(targetSlot.U + ringBufferHead) := io.in.bits.pnpc
+    validRingMeta(targetSlot.U + ringBufferHead) := true.B
+    branchRingMeta(targetSlot.U + ringBufferHead) := io.in.bits.brIdx(shiftSize + targetSlot.U)
+    ipfRingMeta(targetSlot.U + ringBufferHead) := io.in.bits.icachePF
+    ghrRingMeta(targetSlot.U + ringBufferHead) := io.in.bits.ghr
+    btbIsBranchRingMeta(targetSlot.U + ringBufferHead) := io.in.bits.btbIsBranch(shiftSize + targetSlot.U)
   }
   when(ibufWen){
     when(enqueueFire(0)){ibufWrite(0, shiftSize)}
@@ -115,6 +119,9 @@ class IBF extends NutCoreModule with HasInstrType with HasIBUFConst{
   io.out(0).bits := DontCare
   io.out(0).bits.redirect.valid := false.B
   io.out(0).bits.pc := pcRingMeta(ringBufferTail)
+  io.out(0).bits.redirect.ghr := ghrRingMeta(ringBufferTail)
+  io.out(0).bits.redirect.ghrUpdataValid := DontCare
+  io.out(0).bits.redirect.btbIsBranch := btbIsBranchRingMeta(ringBufferTail)
   io.out(0).bits.pnpc := npcRingMeta(ringBufferTail)
   io.out(0).bits.instr := Cat(ringInstBuffer(ringBufferTail+1.U), ringInstBuffer(ringBufferTail))
   io.out(0).bits.brIdx := branchRingMeta(ringBufferTail)
@@ -125,16 +132,18 @@ class IBF extends NutCoreModule with HasInstrType with HasIBUFConst{
   io.out(0).bits.exceptionVec.map(_ => false.B)
   io.out(0).bits.exceptionVec(instrPageFault) := ipfRingMeta(ringBufferTail) || !dequeueIsRVC(0) && ipfRingMeta(ringBufferTail + 1.U)
   val dequeueSize1 = Mux(io.out(0).fire(), Mux(dequeueIsRVC(0), 1.U, 2.U), 0.U) // socket 2 will use dequeueSize1 to get its inst
-    Debug(io.out(0).fire(), "dequeue: bufferhead %x buffertail %x\n", ringBufferHead, ringBufferTail)
-    Debug(io.out(0).fire(), "dequeue1: inst %x pc %x npc %x br %x ipf %x(%x)\n", io.out(0).bits.instr, io.out(0).bits.pc, io.out(0).bits.pnpc, io.out(0).bits.brIdx, io.out(0).bits.exceptionVec(instrPageFault), io.out(0).bits.crossPageIPFFix)
+  Debug(io.out(0).fire(), "dequeue: bufferhead %x buffertail %x\n", ringBufferHead, ringBufferTail)
+  Debug(io.out(0).fire(), "dequeue1: inst %x pc %x npc %x br %x ipf %x(%x)\n", io.out(0).bits.instr, io.out(0).bits.pc, io.out(0).bits.pnpc, io.out(0).bits.brIdx, io.out(0).bits.exceptionVec(instrPageFault), io.out(0).bits.crossPageIPFFix)
 
   //dequeue socket 2
   val inst2_StartIndex = ringBufferTail + dequeueSize1
   io.out(1).bits := DontCare
   io.out(1).bits.redirect.valid := false.B
   io.out(1).bits.pc := pcRingMeta(inst2_StartIndex)
+  io.out(1).bits.redirect.ghr := ghrRingMeta(inst2_StartIndex)
+  io.out(1).bits.redirect.ghrUpdataValid := DontCare
+  io.out(1).bits.redirect.btbIsBranch := btbIsBranchRingMeta(inst2_StartIndex)
   io.out(1).bits.pnpc := npcRingMeta(inst2_StartIndex)
-  // io.out(1).bits.pnpc := npcRingMeta(inst2_StartIndex)
   io.out(1).bits.instr := Cat(ringInstBuffer(inst2_StartIndex+1.U), ringInstBuffer(inst2_StartIndex))
   io.out(1).bits.brIdx := branchRingMeta(inst2_StartIndex)
   io.out(1).bits.isRVC := dequeueIsRVC(dequeueSize1)
