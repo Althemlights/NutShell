@@ -41,7 +41,7 @@ class StorePipeBypassCtrl extends Bundle with hasBypassConst{
 class StorePipeBypassPort extends  Bundle with hasBypassConst{
   val storeBypassPortE1 = Output(Vec(E1StoreBypassPort,UInt(64.W)))
   val storeBypassPortE2 = Output(Vec(E2StoreBypassPort,UInt(64.W)))
- }
+}
 class BypassPkt extends Bundle {
   val decodePkt = new decodePkt
   val BypassCtl = new BypassCtl
@@ -75,5 +75,10 @@ class FuPkt extends NutCoreBundle {
   val isBranch = Output(Bool()) // not use
   val debugInfo = new rsrdPkt
   val csrInst = Output(Bool())
+  //for ghr update
+  val ghr = Output(UInt(GhrLength.W))
+  val btbIsBranch = Output(Bool())  //for update ghr
+  //for ghr commit
+  val branchTaken = Output(Bool())
 }
 
