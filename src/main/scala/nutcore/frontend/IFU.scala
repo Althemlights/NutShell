@@ -53,6 +53,15 @@ class IFU_ooo extends NutCoreModule with HasResetVector {
     val ipf = Input(Bool())
   })
 
+  //get pht index
+  def getPhtIndex(pc:UInt, ghr:UInt) = {
+    //val phtIndex = pc(GhrMid+2,3) ^ ghr(GhrLength-1,GhrMid) ^ ghr(GhrMid-1,0)
+    //val phtIndex = pc(GhrLength+2,3) ^  ghr(GhrLength-1,0)
+    //val phtIndex = Cat(pc(GhrLength+2,7) ^  ghr(5-1,0),pc(6,3))
+    val phtIndex = Cat(pc(GhrLength+2,8) ^ ghr(4,0) ^ Cat(0.U(1.W),ghr(8,5)),pc(7,3))
+    phtIndex
+  }
+
   // pc
   val ghr = RegInit(0.U(GhrLength.W))
   //  val ghr_commit = RegInit(0.U(GhrLength.W))
@@ -137,7 +146,9 @@ class IFU_ooo extends NutCoreModule with HasResetVector {
   //for redirect debug
   val redirectCond = io.redirect.valid
   if(SSDCoreConfig().EnableRedirectDebug){
-    myDebug(redirectCond,"At pc:%x, ghrValid:%b, ghr:%b, btbIsBranch:%b, target:%x\n",io.redirect.pc,io.redirect.ghrUpdataValid,io.redirect.ghr,io.redirect.btbIsBranch,io.redirect.target)
+    myDebug(redirectCond,"Redirect at pc:%x, ghrValid:%b, ghr:%b, target:%x, redirectPhtIndex:%x\n",
+      io.redirect.pc,io.redirect.ghrUpdataValid,io.redirect.ghr,io.redirect.target,
+      nlp.getPhtIndex(io.redirect.target,io.redirect.ghr))
   }
 
   dontTouch(io.redirect.pc)
