@@ -12,5 +12,5 @@ case class SSDCoreConfig(
                           EnableCacheCnt: Boolean = true,
                           EnableGHRDebug: Boolean = false,
                           EnableBPUupdateDebug: Boolean = false,
-                          EnableRedirectDebug: Boolean = true
+                          EnableRedirectDebug: Boolean = false
                         )
