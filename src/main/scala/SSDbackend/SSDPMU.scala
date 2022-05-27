@@ -40,6 +40,8 @@ class ALU2PMUIO extends Bundle {
   val jalrWrong = Output(Bool())
   val retRight = Output(Bool())
   val retWrong = Output(Bool())
+  val branchTargetWrong = Output(Bool())
+  val branchDirectionWrong = Output(Bool())
 }
 class PMUIO1 extends Bundle {
   val branchRight = Output(UInt(3.W))
@@ -50,6 +52,8 @@ class PMUIO1 extends Bundle {
   val jalrWrong = Output(UInt(3.W))
   val retRight = Output(UInt(3.W))
   val retWrong = Output(UInt(3.W))
+  val branchTargetWrong = Output(UInt(3.W))
+  val branchDirectionWrong = Output(UInt(3.W))
 }
 class PMUIO2 extends Bundle{
   val branchInst = Output(UInt(2.W))
@@ -133,9 +137,11 @@ class PMU extends Module{
     io.in1.jalrRight             ->   (0x04,  "jalrRight         "),
     io.in1.jalrWrong             ->   (0x05,  "jalrWrong         "),
     io.in1.retRight              ->   (0x06,  "retRight          "),
-    io.in1.retWrong              ->   (0x07,  "retWrong          ")
+    io.in1.retWrong              ->   (0x07,  "retWrong          "),
+    io.in1.branchTargetWrong     ->   (0x08,  "branchTgtWrong    "),
+    io.in1.branchDirectionWrong  ->   (0x09,  "branchDrctWrong   ")
   )
-  val perfCntNum = 8
+  val perfCntNum = 10
   val perfCnts = List.fill(perfCntNum)(RegInit(0.U(64.W)))
   val perfIncrease = List.fill(perfCntNum)(WireInit(0.U(3.W)))
   (perfCnts zip perfIncrease).map{ case(a,b) => { a := a + b }}
