@@ -73,13 +73,16 @@ class ALUIO extends FunctionUnitIO {
   val alu2pmu = new ALU2PMUIO
   val bpuUpdateReq = new BPUUpdateReq
   val branchTaken = Output(Bool())
+  val instCheckValid = Input(Bool()) // for all inst to check whether it is mispredicted as a branch instruction
 }
+
 
 class ALU(hasBru: Boolean = false) extends NutCoreModule {
   val io = IO(new ALUIO)
 
-  val (valid, src1, src2, func) = (io.in.valid, io.in.bits.src1, io.in.bits.src2, io.in.bits.func)
-  def access(valid: Bool, src1: UInt, src2: UInt, func: UInt): UInt = {
+  val (instCheckValid, valid, src1, src2, func) = (io.instCheckValid, io.in.valid, io.in.bits.src1, io.in.bits.src2, io.in.bits.func)
+  def access(instCheckValid: Bool, valid: Bool, src1: UInt, src2: UInt, func: UInt): UInt = {
+    this.instCheckValid := instCheckValid
     this.valid := valid
     this.src1 := src1
     this.src2 := src2
@@ -117,23 +120,29 @@ class ALU(hasBru: Boolean = false) extends NutCoreModule {
   )
 
   val isBranch = ALUOpType.isBranch(func)
+  val isJump = ALUOpType.isJump(func)
   val isBru = ALUOpType.isBru(func)
   val taken = LookupTree(ALUOpType.getBranchType(func), branchOpTable) ^ ALUOpType.isBranchInvert(func)
   val target = Mux(isBranch, io.cfIn.pc + io.offset, adderRes)(VAddrBits-1,0)
   val predictWrong = Mux(!taken && isBranch, io.cfIn.brIdx(0), !io.cfIn.brIdx(0) || (io.redirect.target =/= io.cfIn.pnpc))
   val isRVC = (io.cfIn.instr(1,0) =/= "b11".U)
   //when btb does not recognize branch instruction
-  val btbMiss = valid && isBru && isBranch && !io.cfIn.redirect.btbIsBranch(0)
+  val branchPredictMiss = valid && isBru && isBranch && !io.cfIn.redirect.btbIsBranch(0)
+  val ALUInstBPW = valid && !(isBru && isBranch) && io.cfIn.redirect.btbIsBranch(0) // mispredict other insts as branch inst (Branch Predict Wrong)
+  val notALUInstBPW = instCheckValid && io.cfIn.redirect.btbIsBranch(0)
+  val branchPredictWrong = ALUInstBPW || notALUInstBPW
   assert(io.cfIn.instr(1,0) === "b11".U || isRVC || !valid)
   Debug(valid && (io.cfIn.instr(1,0) === "b11".U) =/= !isRVC, "[ERROR] pc %x inst %x rvc %x\n",io.cfIn.pc, io.cfIn.instr, isRVC)
-  io.redirect.target := Mux(!taken && isBranch, Mux(isRVC, io.cfIn.pc + 2.U, io.cfIn.pc + 4.U), target)
+  io.redirect.target := Mux(!taken && isBranch || ALUInstBPW & !isJump || notALUInstBPW, Mux(isRVC, io.cfIn.pc + 2.U, io.cfIn.pc + 4.U), target)
   // with branch predictor, this is actually to fix the wrong prediction
-  io.redirect.valid := valid && isBru && predictWrong || btbMiss
-  io.redirect.ghrUpdataValid := valid && isBranch && predictWrong || btbMiss
+  io.redirect.valid := valid && isBru && predictWrong || branchPredictMiss //|| branchPredictWrong
+  //the jump instruction also needs to update the ghr when the prediction is wrong to prevent the prediction result
+  // of the instruction on the wrong branch from polluting the GHR
+  io.redirect.ghrUpdateValid := valid && isBru && predictWrong || branchPredictMiss || branchPredictWrong // maybe = io.redirect.valid ?
   val redirectRtype = if (EnableOutOfOrderExec) 1.U else 0.U
   io.redirect.btbIsBranch := DontCare
   io.redirect.rtype := redirectRtype
-  io.redirect.ghr := Cat(io.cfIn.redirect.ghr(GhrLength-2,0),taken)
+  io.redirect.ghr := Mux((branchPredictMiss || valid && isBru && isBranch && (taken =/= io.cfIn.brIdx(0))),Cat(io.cfIn.redirect.ghr(GhrLength-2,0),taken),io.cfIn.redirect.ghr)
   io.redirect.pc := io.cfIn.pc
   // mark redirect type as speculative exec fix
   // may be can be moved to ISU to calculate pc + 4
@@ -166,7 +175,7 @@ class ALU(hasBru: Boolean = false) extends NutCoreModule {
   bpuUpdateReq.btbType := LookupTree(func, RV32I_BRUInstr.bruFuncTobtbTypeTable)
   bpuUpdateReq.isRVC := isRVC
   bpuUpdateReq.ghrNotUpdated := io.cfIn.redirect.ghr
-  bpuUpdateReq.btbBtypeMiss := btbMiss
+  bpuUpdateReq.btbBtypeMiss := branchPredictMiss
   io.bpuUpdateReq := bpuUpdateReq
 
 
@@ -175,6 +184,8 @@ class ALU(hasBru: Boolean = false) extends NutCoreModule {
   //
   val right = valid && isBru && !predictWrong
   val wrong = valid && isBru && predictWrong
+  val targetWrong = valid && isBru && predictWrong && (io.redirect.target =/= io.cfIn.pnpc) && (taken === io.cfIn.brIdx(0))
+  val directionWrong = valid && isBru && predictWrong && (taken =/= io.cfIn.brIdx(0))
 
   io.alu2pmu.branchRight := right && isBranch
   io.alu2pmu.branchWrong := wrong && isBranch
@@ -184,22 +195,7 @@ class ALU(hasBru: Boolean = false) extends NutCoreModule {
   io.alu2pmu.jalrWrong := wrong && func === ALUOpType.jalr
   io.alu2pmu.retRight := right && func === ALUOpType.ret
   io.alu2pmu.retWrong := wrong && func === ALUOpType.ret
+  io.alu2pmu.branchTargetWrong := wrong && isBranch && targetWrong
+  io.alu2pmu.branchDirectionWrong := wrong && isBranch && directionWrong
 
-
-  //    BoringUtils.addSource(right && isBranch, "MbpBRight")
-  //    BoringUtils.addSource(wrong && isBranch, "MbpBWrong")
-  //    BoringUtils.addSource(wrong && isBranch && io.cfIn.pc(2,0)==="h0".U && isRVC, "Custom1")
-  //    BoringUtils.addSource(wrong && isBranch && io.cfIn.pc(2,0)==="h0".U && !isRVC, "Custom2")
-  //    BoringUtils.addSource(wrong && isBranch && io.cfIn.pc(2,0)==="h2".U && isRVC, "Custom3")
-  //    BoringUtils.addSource(wrong && isBranch && io.cfIn.pc(2,0)==="h2".U && !isRVC, "Custom4")
-  //    BoringUtils.addSource(wrong && isBranch && io.cfIn.pc(2,0)==="h4".U && isRVC, "Custom5")
-  //    BoringUtils.addSource(wrong && isBranch && io.cfIn.pc(2,0)==="h4".U && !isRVC, "Custom6")
-  //    BoringUtils.addSource(wrong && isBranch && io.cfIn.pc(2,0)==="h6".U && isRVC, "Custom7")
-  //    BoringUtils.addSource(wrong && isBranch && io.cfIn.pc(2,0)==="h6".U && !isRVC, "Custom8")
-  //    BoringUtils.addSource(right && (func === ALUOpType.jal || func === ALUOpType.call), "MbpJRight")
-  //    BoringUtils.addSource(wrong && (func === ALUOpType.jal || func === ALUOpType.call), "MbpJWrong")
-  //    BoringUtils.addSource(right && func === ALUOpType.jalr, "MbpIRight")
-  //    BoringUtils.addSource(wrong && func === ALUOpType.jalr, "MbpIWrong")
-  //    BoringUtils.addSource(right && func === ALUOpType.ret, "MbpRRight")
-  //    BoringUtils.addSource(wrong && func === ALUOpType.ret, "MbpRWrong")
 }
