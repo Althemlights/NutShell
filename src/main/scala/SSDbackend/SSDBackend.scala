@@ -150,10 +150,10 @@ class SSDbackend extends NutCoreModule with hasBypassConst {
     pipeOut(7).valid && BypassPkt(7).decodePkt.alu && BypassPkt(7).decodePkt.subalu
   )
 
-  ALU_0.access(aluValid(0),pipeOut(0).bits.rs1,pipeOut(0).bits.rs2,pipeOut(0).bits.fuOpType)
-  ALU_1.access(aluValid(1),pipeOut(1).bits.rs1,pipeOut(1).bits.rs2,pipeOut(1).bits.fuOpType)
-  ALU_6.access(aluValid(2),pipeOut(6).bits.rs1,pipeOut(6).bits.rs2,pipeOut(6).bits.fuOpType)
-  ALU_7.access(aluValid(3),pipeOut(7).bits.rs1,pipeOut(7).bits.rs2,pipeOut(7).bits.fuOpType)
+  ALU_0.access(pipeOut(0).valid && !BypassPkt(0).decodePkt.alu,aluValid(0),pipeOut(0).bits.rs1,pipeOut(0).bits.rs2,pipeOut(0).bits.fuOpType)
+  ALU_1.access(pipeOut(1).valid && !BypassPkt(1).decodePkt.alu,aluValid(1),pipeOut(1).bits.rs1,pipeOut(1).bits.rs2,pipeOut(1).bits.fuOpType)
+  ALU_6.access(false.B,aluValid(2),pipeOut(6).bits.rs1,pipeOut(6).bits.rs2,pipeOut(6).bits.fuOpType)
+  ALU_7.access(false.B,aluValid(3),pipeOut(7).bits.rs1,pipeOut(7).bits.rs2,pipeOut(7).bits.fuOpType)
 
   //LSU
   val LSU = Module(new SSDLSU)
@@ -162,12 +162,12 @@ class SSDbackend extends NutCoreModule with hasBypassConst {
   LSU.io.out.ready := true.B//!(Redirect6.valid || Redirect7.valid)
   memStall := LSU.io.memStall
   LSU.io.storeBypassCtrl <> Bypass.io.storeCtrl
-  LSU.io.flush(0) := Redirect0.valid
-  LSU.io.flush(1) := Redirect1.valid
-  LSU.io.flush(2) := Redirect6.valid
-  LSU.io.flush(3) := Redirect7.valid
   val i0LSUValid = BypassPktValid(0) && (BypassPkt(0).decodePkt.load || BypassPkt(0).decodePkt.store)
   val i1LSUValid = BypassPktValid(1) && (BypassPkt(1).decodePkt.load || BypassPkt(1).decodePkt.store)
+  LSU.io.flush(0) := Redirect0.valid
+  LSU.io.flush(1) := Redirect1.valid && i0LSUValid
+  LSU.io.flush(2) := Redirect6.valid
+  LSU.io.flush(3) := Redirect7.valid
   dontTouch(i0LSUValid)
   dontTouch(i1LSUValid)
   val LSUValid = i0LSUValid || i1LSUValid
@@ -360,6 +360,7 @@ class SSDbackend extends NutCoreModule with hasBypassConst {
     a.io.rightOutFire <> pipeFire(b)
     a.io.isFlush <> pipeFlush(b)
   }
+
   //GHR commit
   val GHRCommit = RegInit(0.U(GhrLength.W))
   val i0IsBranch = pipeOut(8).fire() && pipeOut(8).bits.isBranch && ALUOpType.isBranch(pipeOut(8).bits.fuOpType)
@@ -368,13 +369,19 @@ class SSDbackend extends NutCoreModule with hasBypassConst {
   val nextGHRCommit = Cat(GHRCommit(GhrLength-2,0),Mux(i0IsBranch,pipeOut(8).bits.branchTaken,pipeOut(9).bits.branchTaken))
   when(GHRCommitUpdate){ GHRCommit := nextGHRCommit}
   val branchInstPC = Mux(GHRCommitUpdate,Mux(i0IsBranch,pipeOut(8).bits.pc,pipeOut(9).bits.pc),0.U)
+  val ghrCompared = Mux(i0IsBranch,pipeOut(8).bits.bpuUpdateReq.ghrNotUpdated,Mux(i1IsBranch,pipeOut(9).bits.bpuUpdateReq.ghrNotUpdated, 0.U))
+  val ghrTag = Mux(i0IsBranch,pipeOut(8).bits.bpuUpdateReq.ghrNotUpdated =/= GHRCommit,
+    Mux(i1IsBranch,pipeOut(9).bits.bpuUpdateReq.ghrNotUpdated =/= GHRCommit,false.B))
+  //assert(RegNext(!ghrTag))
   dontTouch(branchInstPC)
   dontTouch(nextGHRCommit)
   dontTouch(GHRCommit)
   if(SSDCoreConfig().EnableGHRDebug){
-    myDebug(GHRCommitUpdate,"pc = %x, taken: %b, next GHR: %b, GHR now: %b\n",
-      branchInstPC,Mux(i0IsBranch,pipeOut(8).bits.branchTaken,pipeOut(9).bits.branchTaken).asUInt,nextGHRCommit,GHRCommit)
+    myDebug(GHRCommitUpdate,"pc = %x, taken: %b, GHR now: %x, GHR compared %x\n",
+      branchInstPC,Mux(i0IsBranch,pipeOut(8).bits.branchTaken,pipeOut(9).bits.branchTaken).asUInt,GHRCommit,ghrCompared)
   }
+  dontTouch(ghrTag)
+  dontTouch(ghrCompared)
   //PMU perfCnt signal
   val perfCntIO = Wire(new PMUIO1)
   PMU.io.in1 <> perfCntIO
@@ -387,6 +394,8 @@ class SSDbackend extends NutCoreModule with hasBypassConst {
   perfCntIO.jalrWrong   := (pipeOut(8).fire() && pipeOut(8).bits.alu2pmu.jalrWrong).asUInt   + (pipeOut(9).fire() && pipeOut(9).bits.alu2pmu.jalrWrong).asUInt
   perfCntIO.retRight    := (pipeOut(8).fire() && pipeOut(8).bits.alu2pmu.retRight).asUInt    + (pipeOut(9).fire() && pipeOut(9).bits.alu2pmu.retRight).asUInt
   perfCntIO.retWrong    := (pipeOut(8).fire() && pipeOut(8).bits.alu2pmu.retWrong).asUInt    + (pipeOut(9).fire() && pipeOut(9).bits.alu2pmu.retWrong).asUInt
+  perfCntIO.branchTargetWrong    := (pipeOut(8).fire() && pipeOut(8).bits.alu2pmu.branchTargetWrong).asUInt    + (pipeOut(9).fire() && pipeOut(9).bits.alu2pmu.branchTargetWrong).asUInt
+  perfCntIO.branchDirectionWrong := (pipeOut(8).fire() && pipeOut(8).bits.alu2pmu.branchDirectionWrong).asUInt + (pipeOut(9).fire() && pipeOut(9).bits.alu2pmu.branchDirectionWrong).asUInt
   //PMU instCnt signal
   val instIssueCntIO = Wire(new PMUIO2)
   val instCommitCntIO = Wire(new PMUIO2)
@@ -514,18 +523,6 @@ class SSDbackend extends NutCoreModule with hasBypassConst {
     BypassPkt(8).BypassCtl.rs1bypasse3.asUInt.orR.asUInt + BypassPkt(8).BypassCtl.rs2bypasse3.asUInt.orR.asUInt +
     BypassPkt(9).BypassCtl.rs1bypasse3.asUInt.orR.asUInt + BypassPkt(9).BypassCtl.rs2bypasse3.asUInt.orR.asUInt
   }
-
-  //BoringUtils.addSource(io.in(1).valid && io.in(1).ready,"perfCntI0Issue")
-  //BoringUtils.addSource(io.in(0).valid && io.in(0).ready,"perfCntI1Issue")
-  //BoringUtils.addSource(!io.in(1).ready,"perfCntI0Stall")
-  //BoringUtils.addSource(!io.in(0).ready,"perfCntI1Stall")
-  //BoringUtils.addSource(BypassPkt(8).BypassCtl.rs1bypasse0.asUInt.orR || BypassPkt(8).BypassCtl.rs2bypasse0.asUInt.orR ||
-  //BypassPkt(9).BypassCtl.rs1bypasse0.asUInt.orR || BypassPkt(9).BypassCtl.rs2bypasse0.asUInt.orR,"perfCntE0Bypass")
-  //BoringUtils.addSource(BypassPkt(8).BypassCtl.rs1bypasse2.asUInt.orR || BypassPkt(8).BypassCtl.rs2bypasse2.asUInt.orR ||
-  //BypassPkt(9).BypassCtl.rs1bypasse2.asUInt.orR || BypassPkt(9).BypassCtl.rs2bypasse2.asUInt.orR,"perfCntE2Bypass")
-  //BoringUtils.addSource(BypassPkt(8).BypassCtl.rs1bypasse3.asUInt.orR || BypassPkt(8).BypassCtl.rs2bypasse3.asUInt.orR ||
-  //BypassPkt(9).BypassCtl.rs1bypasse3.asUInt.orR || BypassPkt(9).BypassCtl.rs2bypasse3.asUInt.orR,"perfCntE3Bypass")
-
 
   BoringUtils.addSource((pipeOut(8).bits.instr === "h0000006b".U || pipeOut(8).bits.instr === "h0005006b".U) && pipeOut(8).fire() ||
     (pipeOut(9).bits.instr === "h0000006b".U || pipeOut(9).bits.instr === "h0005006b".U) && pipeOut(9).fire(),"SSDcoretrap")
