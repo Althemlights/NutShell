@@ -80,9 +80,16 @@ class BPU_ooo extends NutCoreModule {
     //val phtIndex = pc(GhrMid+2,3) ^ ghr(GhrLength-1,GhrMid) ^ ghr(GhrMid-1,0)
     //val phtIndex = pc(GhrLength+2,3) ^  ghr(GhrLength-1,0)
     //val phtIndex = Cat(pc(GhrLength+2,9) ^ ghr(2,0) , pc(8,3)) // 84%
-    phtIndex = Cat(pc(GhrLength+2,9) ^ ghr(2,0) , pc(8,3))
+    val phtIndex = Cat(pc(GhrLength+2,9) ^ ghr(2,0), pc(8,3))
     phtIndex
   }
+
+  def genInstValid(pc: UInt) = LookupTree(pc(2,1), List(
+    "b00".U -> "b1111".U,
+    "b01".U -> "b1110".U,
+    "b10".U -> "b1100".U,
+    "b11".U -> "b1000".U
+  ))
 
   // BTB
   val NRbtb = 512
@@ -122,8 +129,9 @@ class BPU_ooo extends NutCoreModule {
   io.crosslineJump := crosslineJump
   // val crosslineJumpLatch = RegNext(crosslineJump)
   // val crosslineJumpTarget = RegEnable(btbRead.target, crosslineJump)
+  val pcLatchValid = genInstValid(pcLatch)
   val btbIsBranch = Wire(Vec(4, Bool()))
-  (0 to 3).map(i => (btbIsBranch(i) := (btbRead(i)._type === BTBtype.B)))
+  (0 to 3).map(i => (btbIsBranch(i) := btbRead(i).valid && (btbRead(i)._type === BTBtype.B) && pcLatchValid(i).asBool))
   io.out.btbIsBranch := btbIsBranch.asUInt()
   // PHT
   val pht = List.fill(4)(Mem(NRbht >> 2, UInt(2.W)))
@@ -186,15 +194,6 @@ class BPU_ooo extends NutCoreModule {
       }
   }
 
-  def genInstValid(pc: UInt) = LookupTree(pc(2,1), List(
-    "b00".U -> "b1111".U,
-    "b01".U -> "b1110".U,
-    "b10".U -> "b1100".U,
-    "b11".U -> "b1000".U
-  ))
-
-  val pcLatchValid = genInstValid(pcLatch)
-
   val target = Wire(Vec(4, UInt(VAddrBits.W)))
   (0 to 3).map(i => target(i) := Mux(btbRead(i)._type === BTBtype.R, rasTarget, btbRead(i).target))
   (0 to 3).map(i => io.brIdx(i) := btbHit(i) && pcLatchValid(i).asBool && Mux(btbRead(i)._type === BTBtype.B, phtTaken(i), true.B) && btbRead(i).valid)
@@ -203,11 +202,37 @@ class BPU_ooo extends NutCoreModule {
   io.out.rtype := 0.U
 
   //GHR
-  val ghrUpdataValid = btbIsBranch.asUInt().orR()
-  val ghrLatch = RegEnable(Cat(io.in.ghr(GhrLength-2,0),(phtTaken.asUInt & btbIsBranch.asUInt).orR()),io.in.pc.valid)
-  io.out.ghr := ghrLatch
-  io.out.ghrUpdataValid := ghrUpdataValid
+  val ghrLatch = RegEnable(io.in.ghr,io.in.pc.valid)
+  //note the speculatibe ghr when more than one branch inst in a instline
+  //divide the instline into two parts according to the position of the taken branch inst
+  
+  //                         ||                   || <-  jump / branch taken inst
+  //   -----------------------------------------------------------------------------------------
+  //   ||        3           ||          2        ||           1        ||          0         ||  <- instline
+  //   -----------------------------------------------------------------------------------------
+  //   ||   behind part      ||                             front part                        ||
+  //   -----------------------------------------------------------------------------------------
+
+  val jump = io.brIdx.asUInt.orR
+  val frontMask = Wire(UInt(4.W))
+  frontMask := Mux(!jump,"b1111".U,PriorityMux(io.brIdx,Seq("b0001".U,"b0011".U,"b0111".U,"b1111".U))) // when no jump, it will be "b1111".U
+  val frontBranchVec = Wire(UInt(4.W))
+  frontBranchVec := (frontMask & btbIsBranch.asUInt).asUInt
+  val frontBranchNum = Wire(UInt(3.W))
+  val frontBranchNumTmp0 = Wire(UInt(2.W))
+  val frontBranchNumTmp1 = Wire(UInt(2.W))
+  frontBranchNumTmp0 := frontBranchVec(0) + frontBranchVec(1)
+  frontBranchNumTmp1 := frontBranchVec(2) + frontBranchVec(3)
+  frontBranchNum := frontBranchNumTmp0 + frontBranchNumTmp1
+  val branchTakenJump = Mux(jump,PriorityMux(io.brIdx,Seq(btbIsBranch(0),btbIsBranch(1),btbIsBranch(2),btbIsBranch(3))),false.B)
+  val ghrPadding = (0.U(1.W) << (frontBranchNum - 1.U)).asUInt | branchTakenJump
+  val ghrUpdated = (ghrLatch << frontBranchNum).asUInt | ghrPadding
+  val ghrUpdateValid = frontBranchVec.asUInt.orR
+  io.out.ghr := ghrUpdated
+  io.out.ghrUpdateValid := ghrUpdateValid
   io.out.pc := io.in.pc.bits
+  dontTouch(frontMask)
+  dontTouch(frontBranchNum)
 
   //BPU brancn inst update req debug
   val cond = req.btbType === BTBtype.B && req.valid
