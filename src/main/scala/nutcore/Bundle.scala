@@ -46,7 +46,7 @@ class RedirectIO extends NutCoreBundle {
   val rtype = Output(UInt(1.W)) // 1: branch mispredict: only need to flush frontend  0: others: flush the whole pipeline
   val valid = Output(Bool())
   val ghr = Output(UInt(GhrLength.W))
-  val ghrUpdataValid = Output(Bool())
+  val ghrUpdateValid = Output(Bool())
   val btbIsBranch = Output(UInt(4.W))
   //for debug
   val pc = Output(UInt(VAddrBits.W))
