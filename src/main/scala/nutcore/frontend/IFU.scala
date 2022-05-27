@@ -135,9 +135,9 @@ class IFU_ooo extends NutCoreModule with HasResetVector {
   // val npcIsSeq = Mux(io.redirect.valid , false.B, Mux(state === s_crosslineJump, false.B, Mux(crosslineJump, true.B, Mux(nlp.io.out.valid, false.B, true.B)))) //for debug only
 
   //ghr & ghr update
-  val ghrUpdate = io.imem.req.fire() && nlp.io.out.ghrUpdataValid || io.redirect.ghrUpdataValid
+  val ghrUpdate = io.imem.req.fire() && nlp.io.out.ghrUpdateValid || io.redirect.ghrUpdateValid
   val nghr = Wire(UInt(GhrLength.W))
-  nghr := Mux(io.redirect.ghrUpdataValid, io.redirect.ghr, Mux(nlp.io.out.ghrUpdataValid, nlp.io.out.ghr, ghr)) // crossline not considered
+  nghr := Mux(io.redirect.ghrUpdateValid, io.redirect.ghr, Mux(nlp.io.out.ghrUpdateValid, nlp.io.out.ghr, ghr)) // crossline not considered
   dontTouch(nghr)
   when(ghrUpdate) {
     ghr := nghr
@@ -147,7 +147,7 @@ class IFU_ooo extends NutCoreModule with HasResetVector {
   val redirectCond = io.redirect.valid
   if(SSDCoreConfig().EnableRedirectDebug){
     myDebug(redirectCond,"Redirect at pc:%x, ghrValid:%b, ghr:%b, target:%x, redirectPhtIndex:%x\n",
-      io.redirect.pc,io.redirect.ghrUpdataValid,io.redirect.ghr,io.redirect.target,
+      io.redirect.pc,io.redirect.ghrUpdateValid,io.redirect.ghr,io.redirect.target,
       nlp.getPhtIndex(io.redirect.target,io.redirect.ghr))
   }
 
