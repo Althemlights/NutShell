@@ -313,6 +313,7 @@ class Backend_ooo(implicit val p: NutCoreConfig) extends NutCoreModule with HasR
   val brucommit = Wire(new OOCommitIO)
   val brucommitdelayed = Wire(new OOCommitIO)
   val bruOut = bru.access(
+    false.B,
     valid = brurs.io.out.valid, 
     src1 = brurs.io.out.bits.decode.data.src1, 
     src2 = brurs.io.out.bits.decode.data.src2, 
