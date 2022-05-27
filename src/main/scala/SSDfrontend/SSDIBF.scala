@@ -120,7 +120,7 @@
 //  io.out(0).bits.redirect.valid := false.B
 //  io.out(0).bits.pc := pcRingMeta(ringBufferTail)
 //  io.out(0).bits.redirect.ghr := ghrRingMeta(ringBufferTail)
-//  io.out(0).bits.redirect.ghrUpdataValid := DontCare
+//  io.out(0).bits.redirect.ghrUpdateValid := DontCare
 //  io.out(0).bits.redirect.btbIsBranch := btbIsBranchRingMeta(ringBufferTail)
 //  io.out(0).bits.pnpc := npcRingMeta(ringBufferTail)
 //  io.out(0).bits.instr := Cat(ringInstBuffer(ringBufferTail+1.U), ringInstBuffer(ringBufferTail))
@@ -141,7 +141,7 @@
 //  io.out(1).bits.redirect.valid := false.B
 //  io.out(1).bits.pc := pcRingMeta(inst2_StartIndex)
 //  io.out(1).bits.redirect.ghr := ghrRingMeta(inst2_StartIndex)
-//  io.out(1).bits.redirect.ghrUpdataValid := DontCare
+//  io.out(1).bits.redirect.ghrUpdateValid := DontCare
 //  io.out(1).bits.redirect.btbIsBranch := btbIsBranchRingMeta(inst2_StartIndex)
 //  io.out(1).bits.pnpc := npcRingMeta(inst2_StartIndex)
 //  io.out(1).bits.instr := Cat(ringInstBuffer(inst2_StartIndex+1.U), ringInstBuffer(inst2_StartIndex))
