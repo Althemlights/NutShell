@@ -77,12 +77,16 @@ class BPU_ooo extends NutCoreModule {
 
   //get pht index
   def getPhtIndex(pc:UInt, ghr:UInt) = {
-    //val phtIndex = pc(GhrMid+2,3) ^ ghr(GhrLength-1,GhrMid) ^ ghr(GhrMid-1,0)
-    //val phtIndex = pc(GhrLength+2,3) ^  ghr(GhrLength-1,0)
-    //val phtIndex = Cat(pc(GhrLength+2,9) ^ ghr(2,0) , pc(8,3)) // 84%
-    val phtIndex = Cat(pc(GhrLength+2,9) ^ ghr(2,0), pc(8,3))
+    val phtIndex = Cat(ghr(4,0) ^ Cat(ghr(8,7),0.U(3.W)).asUInt, pc(6,5) ^ ghr(6,5), pc(4,3))
     phtIndex
   }
+
+  def outputHold(out: Data, validLatch: Bool) = {
+    val outLatch = RegEnable(out,validLatch)
+    val output = Mux(validLatch,out,outLatch)
+    output
+  }
+  val validLatch = RegNext(io.in.pc.valid)
 
   def genInstValid(pc: UInt) = LookupTree(pc(2,1), List(
     "b00".U -> "b1111".U,
@@ -92,7 +96,7 @@ class BPU_ooo extends NutCoreModule {
   ))
 
   // BTB
-  val NRbtb = 512
+  val NRbtb = 2048
   val NRbht = 2048
   val btbAddr = new TableAddr(log2Up(NRbtb >> 2))
   def btbEntry() = new Bundle {
@@ -125,14 +129,15 @@ class BPU_ooo extends NutCoreModule {
   val btbHit = Wire(Vec(4, Bool()))
   (0 to 3).map(i => btbHit(i) := btbRead(i).valid && btbRead(i).tag === btbAddr.getTag(pcLatch) && !flush && RegNext(btb(i).io.r.req.fire(), init = false.B))
   // btbHit will ignore pc(2,0). pc(2,0) is used to build brIdx
-  val crosslineJump = btbRead(3).crosslineJump && btbHit(3) && !io.brIdx(0) && !io.brIdx(1) && !io.brIdx(2)
+  val brIdx = VecInit(Seq.fill(4)(false.B))
+  val crosslineJump = btbRead(3).crosslineJump && btbHit(3) && !brIdx(0) && !brIdx(1) && !brIdx(2)
   io.crosslineJump := crosslineJump
   // val crosslineJumpLatch = RegNext(crosslineJump)
   // val crosslineJumpTarget = RegEnable(btbRead.target, crosslineJump)
   val pcLatchValid = genInstValid(pcLatch)
   val btbIsBranch = Wire(Vec(4, Bool()))
-  (0 to 3).map(i => (btbIsBranch(i) := btbRead(i).valid && (btbRead(i)._type === BTBtype.B) && pcLatchValid(i).asBool))
-  io.out.btbIsBranch := btbIsBranch.asUInt()
+  (0 to 3).map(i => (btbIsBranch(i) := btbRead(i).valid && (btbRead(i)._type === BTBtype.B) && pcLatchValid(i).asBool && btbRead(i).tag === btbAddr.getTag(pcLatch)))
+  io.out.btbIsBranch := outputHold(btbIsBranch.asUInt(),validLatch)
   // PHT
   val pht = List.fill(4)(Mem(NRbht >> 2, UInt(2.W)))
   val phtTaken = Wire(Vec(4, Bool()))
@@ -163,17 +168,18 @@ class BPU_ooo extends NutCoreModule {
   // SRAM to implement BTB, since write requests have higher priority
   // than read request. Again, since the pipeline will be flushed
   // in the next cycle, the read request will be useless.
-  (0 to 3).map(i => btb(i).io.w.req.valid := (req.isMissPredict || req.btbBtypeMiss) && req.valid && i.U === req.pc(2,1))
+  (0 to 3).map(i => btb(i).io.w.req.valid := (req.isMissPredict /*|| req.btbBtypeMiss*/) && req.valid && i.U === req.pc(2,1))
   (0 to 3).map(i => btb(i).io.w.req.bits.setIdx := btbAddr.getIdx(req.pc))
   (0 to 3).map(i => btb(i).io.w.req.bits.data := btbWrite)
 
-  val reqLatch = RegNext(req)
+  val reqLatch = RegEnable(req,req.valid)
   val phtReadIndex = getPhtIndex(req.pc,req.ghrNotUpdated)
   val phtWriteIndex = getPhtIndex(reqLatch.pc,reqLatch.ghrNotUpdated)
   dontTouch(phtReadIndex)
   dontTouch(phtWriteIndex)
+  dontTouch(phtWriteIndex)
   val getpht = LookupTree(req.pc(2,1), List.tabulate(4)(i => (i.U -> pht(i).read(phtReadIndex))))
-  val cnt = RegNext(getpht)
+  val cnt = RegEnable(getpht,req.valid)
   val taken = reqLatch.actualTaken
   val newCnt = Mux(taken, cnt + 1.U, cnt - 1.U)
   val wen = (taken && (cnt =/= "b11".U)) || (!taken && (cnt =/= "b00".U))
@@ -196,9 +202,10 @@ class BPU_ooo extends NutCoreModule {
 
   val target = Wire(Vec(4, UInt(VAddrBits.W)))
   (0 to 3).map(i => target(i) := Mux(btbRead(i)._type === BTBtype.R, rasTarget, btbRead(i).target))
-  (0 to 3).map(i => io.brIdx(i) := btbHit(i) && pcLatchValid(i).asBool && Mux(btbRead(i)._type === BTBtype.B, phtTaken(i), true.B) && btbRead(i).valid)
-  io.out.target := PriorityMux(io.brIdx, target)
-  io.out.valid := io.brIdx.asUInt.orR
+  (0 to 3).map(i => brIdx(i) := btbHit(i) && pcLatchValid(i).asBool && Mux(btbRead(i)._type === BTBtype.B, phtTaken(i), true.B) && btbRead(i).valid)
+  io.brIdx := outputHold(brIdx,validLatch)
+  io.out.target := outputHold(PriorityMux(io.brIdx, target),validLatch)
+  io.out.valid := outputHold(io.brIdx.asUInt.orR,validLatch)
   io.out.rtype := 0.U
 
   //GHR
@@ -228,17 +235,17 @@ class BPU_ooo extends NutCoreModule {
   val ghrPadding = (0.U(1.W) << (frontBranchNum - 1.U)).asUInt | branchTakenJump
   val ghrUpdated = (ghrLatch << frontBranchNum).asUInt | ghrPadding
   val ghrUpdateValid = frontBranchVec.asUInt.orR
-  io.out.ghr := ghrUpdated
-  io.out.ghrUpdateValid := ghrUpdateValid
-  io.out.pc := io.in.pc.bits
+  io.out.ghr := outputHold(ghrUpdated,validLatch)
+  io.out.ghrUpdateValid := outputHold(ghrUpdateValid,validLatch)
+  io.out.pc := io.in.pc.bits //not used
   dontTouch(frontMask)
   dontTouch(frontBranchNum)
 
   //BPU brancn inst update req debug
   val cond = req.btbType === BTBtype.B && req.valid
   if(SSDCoreConfig().EnableBPUupdateDebug) {
-    myDebug(cond, "BPUUpdate at pc:%x, btbBtypeMiss:%b, taken:%b, ghr:%b, target:%x, phtIndex:%x, cnt:%b\n",
-      req.pc, req.btbBtypeMiss, req.actualTaken, req.ghrNotUpdated, req.actualTarget, phtReadIndex,getpht)
+    myDebug(cond, "BPUUpdate at pc:%x, btbBtypeMiss:%b, isMissPredict:%b, taken:%b, ghr:%b, target:%x, phtIndex:%x, cnt:%b\n",
+      req.pc, req.btbBtypeMiss, req.isMissPredict, req.actualTaken, req.ghrNotUpdated, req.actualTarget, phtReadIndex,getpht)
   }
   // io.out.valid := btbHit && Mux(btbRead._type === BTBtype.B, phtTaken, true.B) && !crosslineJump || crosslineJumpLatch && !flush && !crosslineJump
   // Note:
