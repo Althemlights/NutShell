@@ -135,14 +135,15 @@ class ALU(hasBru: Boolean = false) extends NutCoreModule {
   Debug(valid && (io.cfIn.instr(1,0) === "b11".U) =/= !isRVC, "[ERROR] pc %x inst %x rvc %x\n",io.cfIn.pc, io.cfIn.instr, isRVC)
   io.redirect.target := Mux(!taken && isBranch || ALUInstBPW & !isJump || notALUInstBPW, Mux(isRVC, io.cfIn.pc + 2.U, io.cfIn.pc + 4.U), target)
   // with branch predictor, this is actually to fix the wrong prediction
-  io.redirect.valid := valid && isBru && predictWrong || branchPredictMiss //|| branchPredictWrong
+  io.redirect.valid := valid && isBru && predictWrong //|| branchPredictMiss //|| branchPredictWrong
   //the jump instruction also needs to update the ghr when the prediction is wrong to prevent the prediction result
   // of the instruction on the wrong branch from polluting the GHR
-  io.redirect.ghrUpdateValid := valid && isBru && predictWrong || branchPredictMiss || branchPredictWrong // maybe = io.redirect.valid ?
+  io.redirect.ghrUpdateValid := valid && isBru && predictWrong //|| branchPredictMiss || branchPredictWrong // maybe = io.redirect.valid ?
   val redirectRtype = if (EnableOutOfOrderExec) 1.U else 0.U
   io.redirect.btbIsBranch := DontCare
   io.redirect.rtype := redirectRtype
-  io.redirect.ghr := Mux((branchPredictMiss || valid && isBru && isBranch && (taken =/= io.cfIn.brIdx(0))),Cat(io.cfIn.redirect.ghr(GhrLength-2,0),taken),io.cfIn.redirect.ghr)
+  //io.redirect.ghr := Mux((branchPredictMiss || valid && isBru && isBranch && (taken =/= io.cfIn.brIdx(0))),Cat(io.cfIn.redirect.ghr(GhrLength-2,0),taken),io.cfIn.redirect.ghr)
+  io.redirect.ghr := Cat(io.cfIn.redirect.ghr(GhrLength-2,0),taken)
   io.redirect.pc := io.cfIn.pc
   // mark redirect type as speculative exec fix
   // may be can be moved to ISU to calculate pc + 4
