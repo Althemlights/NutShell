@@ -53,14 +53,8 @@ class IFU_ooo extends NutCoreModule with HasResetVector {
     val ipf = Input(Bool())
   })
 
-  //get pht index
-  def getPhtIndex(pc:UInt, ghr:UInt) = {
-    //val phtIndex = pc(GhrMid+2,3) ^ ghr(GhrLength-1,GhrMid) ^ ghr(GhrMid-1,0)
-    //val phtIndex = pc(GhrLength+2,3) ^  ghr(GhrLength-1,0)
-    //val phtIndex = Cat(pc(GhrLength+2,7) ^  ghr(5-1,0),pc(6,3))
-    val phtIndex = Cat(pc(GhrLength+2,8) ^ ghr(4,0) ^ Cat(0.U(1.W),ghr(8,5)),pc(7,3))
-    phtIndex
-  }
+  // Next-line branch predictor
+  val nlp = Module(new BPU_ooo)
 
   // pc
   val ghr = RegInit(0.U(GhrLength.W))
@@ -72,9 +66,6 @@ class IFU_ooo extends NutCoreModule with HasResetVector {
   pcUpdate := io.redirect.valid || io.imem.req.fire()
   val snpc = Cat(pc(VAddrBits-1, 3), 0.U(3.W)) + CacheReadWidth.U  // IFU will always ask icache to fetch next instline
   // Note: we define instline as 8 Byte aligned data from icache
-
-  // Next-line branch predictor
-  val nlp = Module(new BPU_ooo)
 
   // nlpxxx_latch is used for the situation when I$ is disabled
   val nlpvalidreg = RegInit(false.B)
@@ -171,7 +162,7 @@ class IFU_ooo extends NutCoreModule with HasResetVector {
   brIdx := Mux(io.redirect.valid, 0.U, Mux(state === s_crosslineJump, 0.U, pbrIdx))
 
   // BP will be disabled shortly after a redirect request
-  nlp.io.in.pc.valid := io.imem.req.fire() // only predict when Icache accepts a request
+  nlp.io.in.pc.valid := io.imem.req.fire() || io.redirect.valid// only predict when Icache accepts a request
   nlp.io.in.pc.bits := npc  // predict one cycle early
   nlp.io.flush := io.redirect.valid && false.B// redirect means BPU may need to be updated
   nlp.io.in.ghr := nghr
