@@ -51,8 +51,8 @@ class SSDbackend extends NutCoreModule with hasBypassConst {
     pipeFire(2*i) := pipeOut(2*i).valid && pipeIn(2*i+2).ready
     pipeFire(2*i+1) := pipeOut(2*i+1).valid && pipeIn(2*i+3).ready
   }
-  pipeFire(8) := true.B
-  pipeFire(9) := true.B
+  pipeFire(8) := pipeOut(8).valid && pipeOut(8).ready
+  pipeFire(9) := pipeOut(9).valid && pipeOut(9).ready
 
   //Bypass
   val memStall = Wire(Bool())
@@ -317,6 +317,7 @@ class SSDbackend extends NutCoreModule with hasBypassConst {
   pipeIn(9).bits.alu2pmu := Mux(bpuUpdataReq7.valid && pipeOut(7).valid, alu2pmu7, pipeOut(7).bits.alu2pmu)
 
   //e5 write back
+  //e5 write back
   //regfile
   regfile.io.writePorts(0).wen := BypassPktValid(8) && BypassPkt(8).decodePkt.rdvalid
   regfile.io.writePorts(0).addr := BypassPkt(8).decodePkt.rd
@@ -546,11 +547,11 @@ class SSDbackend extends NutCoreModule with hasBypassConst {
   dt_ic1.io.clock    := clock
   dt_ic1.io.coreid   := 0.U
   dt_ic1.io.index    := 0.U
-  dt_ic1.io.valid    := RegNext(pipeOut(9).valid && pipeOut(9).bits.pc =/= 0.U)
+  dt_ic1.io.valid    := RegNext(pipeOut(9).fire() && pipeOut(9).bits.pc =/= 0.U)
   dt_ic1.io.pc       := RegNext(Cat(0.U((64-VAddrBits).W),pipeOut(9).bits.pc))
   dt_ic1.io.instr    := RegNext(pipeOut(9).bits.instr)
   dt_ic1.io.special  := 0.U
-  dt_ic1.io.skip     := RegNext(pipeOut(9).valid && pipeOut(9).bits.csrInst)
+  dt_ic1.io.skip     := RegNext(pipeOut(9).fire() && pipeOut(9).bits.csrInst)
   dt_ic1.io.isRVC    := false.B
   dt_ic1.io.scFailed := false.B
   dt_ic1.io.wen      := RegNext(regfile.io.writePorts(1).wen)
@@ -562,11 +563,11 @@ class SSDbackend extends NutCoreModule with hasBypassConst {
   dt_ic0.io.coreid   := 0.U
   dt_ic0.io.index    := 1.U
 
-  dt_ic0.io.valid    := RegNext(pipeOut(8).valid && pipeOut(8).bits.pc =/= 0.U)
+  dt_ic0.io.valid    := RegNext(pipeOut(8).fire() && pipeOut(8).bits.pc =/= 0.U)
   dt_ic0.io.pc       := RegNext(Cat(0.U((64-VAddrBits).W),pipeOut(8).bits.pc))
   dt_ic0.io.instr    := RegNext(pipeOut(8).bits.instr)
   dt_ic0.io.special  := 0.U
-  dt_ic0.io.skip     := RegNext(pipeOut(8).valid && pipeOut(8).bits.csrInst)
+  dt_ic0.io.skip     := RegNext(pipeOut(8).fire() && pipeOut(8).bits.csrInst)
   dt_ic0.io.isRVC    := false.B
   dt_ic0.io.scFailed := false.B
   dt_ic0.io.wen      := RegNext(regfile.io.writePorts(0).wen)
@@ -603,7 +604,7 @@ class SSDbackend extends NutCoreModule with hasBypassConst {
   val instr_cnt = RegInit(0.U(64.W))
 
   cycle_cnt := cycle_cnt + 1.U
-  instr_cnt := instr_cnt + RegNext(pipeOut(8).valid).asUInt + RegNext(pipeOut(9).valid).asUInt
+  instr_cnt := instr_cnt + RegNext(pipeOut(8).fire()).asUInt + RegNext(pipeOut(9).fire()).asUInt
   PMU.io.cycleCnt := cycle_cnt
 
   val rf_a0 = WireInit(0.U(64.W))
