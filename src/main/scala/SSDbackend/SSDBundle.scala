@@ -6,7 +6,7 @@ import nutcore._
 class StallFlushIO extends Bundle{
   //stall point : (0,2) -> i0pipestall, i1pipestall, memsstall
   val stall = Output(Vec(3,Bool()))
-  val flush = Output(Vec(10,Bool()))
+  val flush = Output(Vec(12,Bool())) //10 + 2 (2 is for regfile invalid write)
 }
 class decodePkt extends  NutCoreBundle{
   val rd = Output(UInt(5.W))
@@ -65,6 +65,7 @@ class FuPkt extends NutCoreBundle {
   val offset = Output(UInt(64.W))
   val bpuUpdateReq = new BPUUpdateReq
   val alu2pmu = new ALU2PMUIO
+  val redirect = new RedirectIO
   //for difftest
   val instr = Output(UInt(64.W))
   //for redirect
