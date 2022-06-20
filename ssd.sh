@@ -13,16 +13,21 @@ echo "The regression testing of SSDCore is in progress... (っ'-' )っ"
 
 help(){
   echo "Usage:"
-  echo "-c: Clean build"
+  echo "-c: Coremark test"
   echo "-b: BPU performance analysis"
   echo "-r: Run test cases of the specifoed directory"
   echo "-h: Help information"
 }
-
-bputest(){
+cmarktest(){
   make clean
   make emu -j4
   build/emu -i /home/jy/xs-env/nexus-am/apps/coremark/build/coremark-riscv64-nutshell.bin --wave-path=wave.vcd -b 0 >1.log 2>&1
+  python3 bpu.py
+}
+bputest(){
+  make clean
+  make emu -j4
+  build/emu -i /home/jy/xs-env/nexus-am/apps/brancntest/build/branchtest-riscv64-nutshell.bin --wave-path=wave.vcd -b 0 >1.log 2>&1
   python3 bpu.py
 }
 
@@ -50,10 +55,10 @@ bputest(){
 #    create_soft_link $BUILD_PATH $OSCPU_PATH/$BIN_FOLDER \"*.bin\"
 #}
 
-while getopts "c:b r:h" OPT; do
+while getopts "c b r:h" OPT; do
   case $OPT in
     h) help;;
-    c) ;;
+    c) cmarktest;;
     b) bputest;;
     g) ;;
     r) TEST_CASES="$OPTARG";;
