@@ -77,12 +77,13 @@ class BPU_ooo extends NutCoreModule {
 
   //get pht index
   def getPhtIndex(pc:UInt, ghr:UInt) = {
-    val phtIndex = Cat(ghr(4,0) ^ Cat(ghr(8,7),0.U(3.W)).asUInt, pc(6,5) ^ ghr(6,5), pc(4,3))
+    //val phtIndex = Cat(ghr(4,0) ^ Cat(ghr(8,7),0.U(3.W)).asUInt, pc(6,5) ^ ghr(6,5), pc(4,3))//88.198%
+    val phtIndex = pc(9,3)
     phtIndex
   }
 
   def outputHold(out: Data, validLatch: Bool) = {
-    val outLatch = RegEnable(out,validLatch)
+    val outLatch = RegEnable(out, 0.U.asTypeOf(out), validLatch)
     val output = Mux(validLatch,out,outLatch)
     output
   }
