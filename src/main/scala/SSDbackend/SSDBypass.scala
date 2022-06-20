@@ -413,14 +413,14 @@ class PipeCtl extends Module{
   pipeCtl.stall(2) := io.memStall
 
   //flush vec
-  val allStageFlushVec = VecInit(Seq.fill(10)(false.B))
+  val allStageFlushVec = VecInit(Seq.fill(12)(false.B))
 
   //pipeline0 : 1,3,5,7,9
   //pipeline1 : 0,2,4,6,8
-  val alu0FLushList = List(0,1)
-  val alu1FLushList = List(0,1,2)
-  val subalu0FLushList = List(0,1,2,3,4,5,6,7)
-  val subalu1FLushList = List(0,1,2,3,4,5,6,7,8)
+  val alu0FLushList = List(0,1,2,3)
+  val alu1FLushList = List(0,1,2,3,4)
+  val subalu0FLushList = List(0,1,2,3,4,5,6,7,8,9)
+  val subalu1FLushList = List(0,1,2,3,4,5,6,7,8,9,10)
 
 
   alu0FLushList.foreach{ case i => when(io.flush(0) === true.B){allStageFlushVec(i) := io.flush(0)}}
@@ -439,7 +439,7 @@ class Bypass extends Module{
     val mduStall = Input(Bool())
     val flush = Input(Vec(4,Bool()))
     val issueStall = Output(Vec(2,Bool()))
-    val pipeFlush = Output(Vec(10,Bool()))
+    val pipeFlush = Output(Vec(12,Bool()))
     val decodeBypassPkt = Vec(2, Decoupled(new BypassPkt))
     val BypassPkt = Vec(10, new BypassPkt)
     val BypassPktValid = Output(Vec(10,Bool()))
@@ -476,7 +476,7 @@ class Bypass extends Module{
   val BypassPkt = Wire(Vec(10, new BypassPkt))
   val BypassPktValid = Wire(Vec(10,Bool()))
   for(i <- 0 to 9) BypassPkt(i) := pipeOut(i).bits
-  for(i <- 0 to 9) BypassPktValid(i) := pipeOut(i).valid
+  for(i <- 0 to 9) BypassPktValid(i) := pipeOut(i).valid && !io.pipeFlush(i+2)
 
   PipelineCtl.io.i0pipeStall <>  DecodeIO2BypassPkt.io.issueStall(0)
   PipelineCtl.io.i1pipeStall <>  DecodeIO2BypassPkt.io.issueStall(1)
