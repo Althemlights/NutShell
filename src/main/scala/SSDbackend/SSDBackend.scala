@@ -177,7 +177,7 @@ class SSDbackend extends NutCoreModule with hasBypassConst {
   val LSUoffset = Mux(i1LSUValid,pipeRegStage1.right.bits.offset,pipeRegStage0.right.bits.offset)
   LSU.access(LSUValid,LSUsrc1,LSUsrc2,LSUfunc,LSUoffset)
   //MDU
-  val MDU = Module(new MDU)
+  val MDU = Module(new SSDMDU)
   MDU.io.out.ready := true.B
   val i0MDUValid = BypassPktValid(0) && (BypassPkt(0).decodePkt.muldiv)
   val i1MDUValid = BypassPktValid(1) && (BypassPkt(1).decodePkt.muldiv)
@@ -343,7 +343,9 @@ class SSDbackend extends NutCoreModule with hasBypassConst {
   lsuPC := Mux(BypassPkt(1).decodePkt.load || BypassPkt(1).decodePkt.store, pipeOut(1).bits.pc, pipeOut(0).bits.pc)
   BoringUtils.addSource(lsuPC,"lsuPC")
 
-  // pipe connect
+  //moduleTest
+  val moduleTest = Module(new ModuleTest)
+  //pipe connect
 
   val stallStageList = List(pipeRegStage0,pipeRegStage1)
   val stallIndexList = List(0,1)
