@@ -314,8 +314,8 @@ class SSDbackend extends NutCoreModule with hasBypassConst {
   pipeIn(9).bits.rd := Mux(aluValid(3),ALU_7.io.out.bits,pipeOut(7).bits.rd)
   pipeIn(8).bits.branchTaken := Mux(aluValid(2),ALU_6.io.branchTaken,pipeOut(6).bits.branchTaken)
   pipeIn(9).bits.branchTaken := Mux(aluValid(3),ALU_7.io.branchTaken,pipeOut(7).bits.branchTaken)
-  pipeIn(8).bits.redirect := Mux(ALU_6.io.redirect.valid && pipeOut(6).valid,ALU_6.io.redirect,0.U.asTypeOf(new RedirectIO))
-  pipeIn(9).bits.redirect := Mux(ALU_7.io.redirect.valid && pipeOut(7).valid,ALU_7.io.redirect,0.U.asTypeOf(new RedirectIO))
+  pipeIn(8).bits.redirect := Mux(ALU_6.io.redirect.valid && pipeOut(6).valid,ALU_6.io.redirect,pipeOut(6).bits.redirect)
+  pipeIn(9).bits.redirect := Mux(ALU_7.io.redirect.valid && pipeOut(7).valid,ALU_7.io.redirect,pipeOut(7).bits.redirect)
   pipeIn(8).bits.bpuUpdateReq := Mux(bpuUpdataReq6.valid && pipeOut(6).valid, bpuUpdataReq6, pipeOut(6).bits.bpuUpdateReq)
   pipeIn(9).bits.bpuUpdateReq := Mux(bpuUpdataReq7.valid && pipeOut(7).valid, bpuUpdataReq7, pipeOut(7).bits.bpuUpdateReq)
   pipeIn(8).bits.alu2pmu := Mux(bpuUpdataReq6.valid && pipeOut(6).valid, alu2pmu6, pipeOut(6).bits.alu2pmu)
@@ -344,7 +344,7 @@ class SSDbackend extends NutCoreModule with hasBypassConst {
   BoringUtils.addSource(lsuPC,"lsuPC")
 
   //moduleTest
-  val moduleTest = Module(new ModuleTest)
+  //  val moduleTest = Module(new ModuleTest)
   //pipe connect
 
   val stallStageList = List(pipeRegStage0,pipeRegStage1)
@@ -390,6 +390,28 @@ class SSDbackend extends NutCoreModule with hasBypassConst {
   }
   dontTouch(ghrTag)
   dontTouch(ghrCompared)
+  //Call/Ret Debug
+  val i0Call = pipeOut(8).fire() && !pipeFlush(10) && ALUOpType.call === pipeOut(8).bits.fuOpType
+  val i1Call = pipeOut(9).fire() && !pipeFlush(11) && ALUOpType.call === pipeOut(9).bits.fuOpType
+  val i0Ret = pipeOut(8).fire() && !pipeFlush(10) && ALUOpType.ret === pipeOut(8).bits.fuOpType
+  val i1Ret = pipeOut(9).fire() && !pipeFlush(11) && ALUOpType.ret === pipeOut(9).bits.fuOpType
+  val CallCond = i0Call || i1Call
+  val RetCond = i0Ret || i1Ret
+  dontTouch(CallCond)
+  dontTouch(RetCond)
+  val CallPC = Mux(CallCond,Mux(i0Call,pipeOut(8).bits.pc,pipeOut(9).bits.pc),0.U)
+  val RetPC = Mux(RetCond,Mux(i0Ret,pipeOut(8).bits.pc,pipeOut(9).bits.pc),0.U)
+  val RetWrong = RetCond &&  Mux(i0Ret,pipeOut(8).bits.alu2pmu.retWrong,pipeOut(9).bits.alu2pmu.retWrong)
+  dontTouch(RetWrong)
+  if(SSDCoreConfig().EnableRetDebug){
+    myDebug(CallCond,"Call: pc = %x, Targe = %x \n",
+      CallPC,Mux(i0Call,pipeOut(8).bits.bpuUpdateReq.actualTarget,pipeOut(9).bits.bpuUpdateReq.actualTarget).asUInt)
+  }
+  if(SSDCoreConfig().EnableRetDebug){
+    myDebug(RetCond,"Ret : pc = %x, Targe = %x, isMisPredict = %b \n",
+      RetPC,Mux(i0Ret,pipeOut(8).bits.bpuUpdateReq.actualTarget,pipeOut(9).bits.bpuUpdateReq.actualTarget).asUInt,
+      Mux(i0Ret,pipeOut(8).bits.alu2pmu.retWrong,pipeOut(9).bits.alu2pmu.retWrong).asUInt)
+  }
   //PMU perfCnt signal
   val perfCntIO = Wire(new PMUIO1)
   PMU.io.in1 <> perfCntIO
