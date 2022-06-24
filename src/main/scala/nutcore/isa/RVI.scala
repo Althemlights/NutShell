@@ -104,10 +104,10 @@ object RV32I_BRUInstr extends HasInstrType {
     ALUOpType.bge  -> BTBtype.B,
     ALUOpType.bltu -> BTBtype.B,
     ALUOpType.bgeu -> BTBtype.B,
-    ALUOpType.call -> BTBtype.J,
+    ALUOpType.call -> BTBtype.C,
     ALUOpType.ret  -> BTBtype.R,
     ALUOpType.jal  -> BTBtype.J,
-    ALUOpType.jalr -> BTBtype.I
+    ALUOpType.jalr -> BTBtype.J
   )
 }
 
