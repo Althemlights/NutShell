@@ -41,7 +41,7 @@ class TableAddr(val idxBits: Int) extends NutCoreBundle {
 object BTBtype {
   def B = "b01".U  // branch
   def J = "b00".U  // jump
-  def I = "b10".U  // indirect
+  def C = "b10".U  // call
   def R = "b11".U  // return
 
   def apply() = UInt(2.W)
@@ -188,18 +188,35 @@ class BPU_ooo extends NutCoreModule {
       (0 to 3).map(i => when(i.U === reqLatch.pc(2,1)){pht(i).write(phtWriteIndex, newCnt)})
   }
   dontTouch(newCnt)
-  when (req.valid) {
-    when (req.fuOpType === ALUOpType.call)  {
-      ras.write(sp.value + 1.U, Mux(req.isRVC, req.pc + 2.U, req.pc + 4.U))
-      sp.value := sp.value + 1.U
-    }
-      .elsewhen (req.fuOpType === ALUOpType.ret) {
-        when(sp.value === 0.U) {
-          // RAS empty, do nothing
-        }
-        sp.value := Mux(sp.value===0.U, 0.U, sp.value - 1.U)
+//  when (req.valid) {
+//    when (req.fuOpType === ALUOpType.call)  {
+//      ras.write(sp.value + 1.U, Mux(req.isRVC, req.pc + 2.U, req.pc + 4.U))
+//      sp.value := sp.value + 1.U
+//    }
+//      .elsewhen (req.fuOpType === ALUOpType.ret) {
+//        when(sp.value === 0.U) {
+//          // RAS empty, do nothing
+//        }
+//        sp.value := Mux(sp.value===0.U, 0.U, sp.value - 1.U)
+//      }
+//  }
+  //RAS speculative update
+  val brIdxOneHot = Mux(brIdx(0),"b0001".U,Mux(brIdx(1),"b0010".U,Mux(brIdx(2),"b0100".U,Mux(brIdx(3),"b1000".U,"b0000".U))))
+  val retIdx = VecInit(Seq.fill(4)(false.B))
+  val retPC = Mux1H(brIdxOneHot,Seq(pcLatch+4.U,pcLatch+6.U,pcLatch+8.U,pcLatch+10.U))
+  (0 to 3).map(i => retIdx(i) := (btbRead(i)._type === BTBtype.C) && (brIdxOneHot(i)))
+  val rasWen = retIdx.asUInt.orR()
+
+  when (rasWen)  {
+    ras.write(sp.value + 1.U, retPC)  //TODO: modify for RVC
+    sp.value := sp.value + 1.U
+  }.elsewhen (req.valid && req.fuOpType === ALUOpType.ret) {
+      when(sp.value === 0.U) {
+        // RAS empty, do nothing
       }
-  }
+          sp.value := Mux(sp.value===0.U, 0.U, sp.value - 1.U)
+    }
+
 
   val target = Wire(Vec(4, UInt(VAddrBits.W)))
   (0 to 3).map(i => target(i) := Mux(btbRead(i)._type === BTBtype.R, rasTarget, btbRead(i).target))
