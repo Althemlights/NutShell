@@ -102,7 +102,7 @@ class IBF extends NutCoreModule with HasInstrType with HasIBUFConst{
     Debug(enqueueFire(3), "inst %x pc %x npc %x br %x ipf %x eqsrc %x\n", instrVec(shiftSize+3.U), Cat(io.in.bits.pc(VAddrBits-1, 3), shiftSize + 3.U, 0.U(1.W)), io.in.bits.pnpc, io.in.bits.brIdx(shiftSize+3.U), io.in.bits.icachePF, shiftSize+3.U)
   }
 
-  io.in.ready := ringBufferAllowin || !io.in.valid// used to be !io.in.valid, do not know what's for
+  io.in.ready := ringBufferAllowin /*|| !io.in.valid*/// used to be !io.in.valid, do not know what's for
 
   //ibuf dequeue
   //there are 2 dequeue sockets

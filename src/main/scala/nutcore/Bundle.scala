@@ -66,6 +66,12 @@ class MisPredictionRecIO extends NutCoreBundle {
   val prfidx = Output(UInt(prfAddrWidth.W))
 }
 
+class BypassIO extends  Bundle{
+  val isALU = Output(Bool())
+  val isMDU = Output(Bool())
+  val isLoad = Output(Bool())
+  val isStore = Output(Bool())
+}
 class CtrlFlowIO extends NutCoreBundle {
   //  val ghr = Output(UInt(GhrLength.W))
   val instr = Output(UInt(64.W))
