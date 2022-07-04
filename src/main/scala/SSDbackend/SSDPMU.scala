@@ -87,8 +87,8 @@ class PMU extends Module{
   issue1Num := in0.normali1+in0.frontendi1+in0.laterStageStalli1+in0.loadRsNotreadyi1+in0.storeRsNotreadyi1+in0.mulRsNotreadyi1+in0.divRsNotreadyi1
   issue0Num := in0.normali0+in0.frontendi0+in0.laterStageStalli0+in0.i1Stalli0+in0.hitSubalui0+in0.bothLsui0+in0.LsuBri0+in0.bothBrui0+
     in0.loadRsNotreadyi0+in0.storeRsNotreadyi0+in0.mulRsNotreadyi0+in0.divRsNotreadyi0
-  assert(issue1Num === 1.U)
-  assert(issue0Num === 1.U)
+//  assert(issue1Num === 1.U)
+//  assert(issue0Num === 1.U)
   dontTouch(issue1Num)
   dontTouch(issue0Num)
 
