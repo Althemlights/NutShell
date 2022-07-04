@@ -13,7 +13,7 @@ import java.io.PipedOutputStream
 
 class SSDbackend extends NutCoreModule with hasBypassConst {
   val io = IO(new Bundle{
-    val in = Vec(2, Flipped(Decoupled(new DecodeIO)))
+    val in = Vec(4, Flipped(Decoupled(new DecodeIO)))
     val redirectOut = new RedirectIO
     val dmem = new SimpleBusUC(addrBits = VAddrBits) // without dtlb
     //val mmio = new SimpleBusUC
@@ -57,7 +57,8 @@ class SSDbackend extends NutCoreModule with hasBypassConst {
   //Bypass
   val memStall = Wire(Bool())
   val mduStall = Wire(Bool())
-  Bypass.io.in <> io.in
+  Bypass.io.in(0) <> io.in(2)
+  Bypass.io.in(1) <> io.in(3)
   Bypass.io.memStall := memStall
   Bypass.io.mduStall := mduStall
   val issueStall = VecInit(false.B,false.B)
@@ -570,111 +571,109 @@ class SSDbackend extends NutCoreModule with hasBypassConst {
   //      printf("=================================\n")
   //    }
   //  }
+
   /* ----- Difftest ----- */
-
-  val dt_ic1 = Module(new DifftestInstrCommit)
-  dt_ic1.io.clock    := clock
-  dt_ic1.io.coreid   := 0.U
-  dt_ic1.io.index    := 0.U
-  dt_ic1.io.valid    := RegNext( pipeOut(9).fire() && !pipeFlush(11) && pipeOut(9).bits.pc =/= 0.U)
-  dt_ic1.io.pc       := RegNext(Cat(0.U((64-VAddrBits).W),pipeOut(9).bits.pc))
-  dt_ic1.io.instr    := RegNext(pipeOut(9).bits.instr)
-  dt_ic1.io.special  := 0.U
-  dt_ic1.io.skip     := RegNext( pipeOut(9).fire() && !pipeFlush(11) && pipeOut(9).bits.csrInst)
-  dt_ic1.io.isRVC    := false.B
-  dt_ic1.io.scFailed := false.B
-  dt_ic1.io.wen      := RegNext(regfile.io.writePorts(1).wen)
-  dt_ic1.io.wpdest   := RegNext(Cat(0.U(3.W),regfile.io.writePorts(1).addr))
-  dt_ic1.io.wdest    := RegNext(Cat(0.U(3.W),regfile.io.writePorts(1).addr))
-
-  val dt_ic0 = Module(new DifftestInstrCommit)
-  dt_ic0.io.clock    := clock
-  dt_ic0.io.coreid   := 0.U
-  dt_ic0.io.index    := 1.U
-
-  dt_ic0.io.valid    := RegNext( pipeOut(8).fire() && !pipeFlush(10) && pipeOut(8).bits.pc =/= 0.U)
-  dt_ic0.io.pc       := RegNext(Cat(0.U((64-VAddrBits).W),pipeOut(8).bits.pc))
-  dt_ic0.io.instr    := RegNext(pipeOut(8).bits.instr)
-  dt_ic0.io.special  := 0.U
-  dt_ic0.io.skip     := RegNext( pipeOut(8).fire() && !pipeFlush(10) && pipeOut(8).bits.csrInst)
-  dt_ic0.io.isRVC    := false.B
-  dt_ic0.io.scFailed := false.B
-  dt_ic0.io.wen      := RegNext(regfile.io.writePorts(0).wen)
-  dt_ic0.io.wpdest   := RegNext(Cat(0.U(3.W),regfile.io.writePorts(0).addr))
-  dt_ic0.io.wdest    := RegNext(Cat(0.U(3.W),regfile.io.writePorts(0).addr))
-
-  val dt_iw0 = Module(new DifftestIntWriteback)
-  dt_iw0.io.clock    := clock
-  dt_iw0.io.coreid   := 0.U
-  dt_iw0.io.valid    := RegNext(regfile.io.writePorts(1).wen)
-  dt_iw0.io.dest     := RegNext(regfile.io.writePorts(1).addr)
-  dt_iw0.io.data     := RegNext(regfile.io.writePorts(1).data)
-
-
-
-  val dt_iw1 = Module(new DifftestIntWriteback)
-  dt_iw1.io.clock    := clock
-  dt_iw1.io.coreid   := 0.U
-  dt_iw1.io.valid    := RegNext(regfile.io.writePorts(0).wen)
-  dt_iw1.io.dest     := RegNext(regfile.io.writePorts(0).addr)
-  dt_iw1.io.data     := RegNext(regfile.io.writePorts(0).data)
-
-
-
-
-  val dt_ae = Module(new DifftestArchEvent)
-  dt_ae.io.clock        := clock
-  dt_ae.io.coreid       := 0.U
-  dt_ae.io.intrNO       := 0.U
-  dt_ae.io.cause        := 0.U
-  dt_ae.io.exceptionPC  := 0.U
-
   val cycle_cnt = RegInit(0.U(64.W))
   val instr_cnt = RegInit(0.U(64.W))
 
   cycle_cnt := cycle_cnt + 1.U
-  instr_cnt := instr_cnt + RegNext( pipeOut(8).fire() && !pipeFlush(10)).asUInt + RegNext( pipeOut(9).fire() && !pipeFlush(11)).asUInt
+  instr_cnt := instr_cnt + RegNext(pipeOut(8).fire() && !pipeFlush(10)).asUInt + RegNext(pipeOut(9).fire() && !pipeFlush(11)).asUInt
   PMU.io.cycleCnt := cycle_cnt
 
   val rf_a0 = WireInit(0.U(64.W))
   BoringUtils.addSink(rf_a0, "rf_a0")
 
-  val dt_te = Module(new DifftestTrapEvent)
-  dt_te.io.clock    := clock
-  dt_te.io.coreid   := 0.U
-  dt_te.io.valid    := RegNext(SSDcoretrap)
-  dt_te.io.code     := rf_a0(2, 0)
-  dt_te.io.pc       := Mux(RegNext(pipeOut(8).bits.instr === "h0000006b".U),RegNext(Cat(0.U((64-VAddrBits).W),pipeOut(8).bits.pc)),RegNext(Cat(0.U((64-VAddrBits).W),pipeOut(9).bits.pc)))
-  dt_te.io.cycleCnt := cycle_cnt
-  dt_te.io.instrCnt := instr_cnt
+  if(SSDCoreConfig().EnableDifftest) {
+    val dt_ic1 = Module(new DifftestInstrCommit)
+    dt_ic1.io.clock := clock
+    dt_ic1.io.coreid := 0.U
+    dt_ic1.io.index := 0.U
+    dt_ic1.io.valid := RegNext(pipeOut(9).fire() && !pipeFlush(11) && pipeOut(9).bits.pc =/= 0.U)
+    dt_ic1.io.pc := RegNext(Cat(0.U((64 - VAddrBits).W), pipeOut(9).bits.pc))
+    dt_ic1.io.instr := RegNext(pipeOut(9).bits.instr)
+    dt_ic1.io.special := 0.U
+    dt_ic1.io.skip := RegNext(pipeOut(9).fire() && !pipeFlush(11) && pipeOut(9).bits.csrInst)
+    dt_ic1.io.isRVC := false.B
+    dt_ic1.io.scFailed := false.B
+    dt_ic1.io.wen := RegNext(regfile.io.writePorts(1).wen)
+    dt_ic1.io.wpdest := RegNext(Cat(0.U(3.W), regfile.io.writePorts(1).addr))
+    dt_ic1.io.wdest := RegNext(Cat(0.U(3.W), regfile.io.writePorts(1).addr))
 
-  val dt_cs = Module(new DifftestCSRState)
-  dt_cs.io.clock          := clock
-  dt_cs.io.coreid         := 0.U
-  dt_cs.io.priviledgeMode := 3.U  // Machine mode
-  dt_cs.io.mstatus        := 0.U
-  dt_cs.io.sstatus        := 0.U
-  dt_cs.io.mepc           := 0.U
-  dt_cs.io.sepc           := 0.U
-  dt_cs.io.mtval          := 0.U
-  dt_cs.io.stval          := 0.U
-  dt_cs.io.mtvec          := 0.U
-  dt_cs.io.stvec          := 0.U
-  dt_cs.io.mcause         := 0.U
-  dt_cs.io.scause         := 0.U
-  dt_cs.io.satp           := 0.U
-  dt_cs.io.mip            := 0.U
-  dt_cs.io.mie            := 0.U
-  dt_cs.io.mscratch       := 0.U
-  dt_cs.io.sscratch       := 0.U
-  dt_cs.io.mideleg        := 0.U
-  dt_cs.io.medeleg        := 0.U
+    val dt_ic0 = Module(new DifftestInstrCommit)
+    dt_ic0.io.clock := clock
+    dt_ic0.io.coreid := 0.U
+    dt_ic0.io.index := 1.U
 
-  val dt_irs = Module(new DifftestArchIntRegState)
-  dt_irs.io.clock  := clock
-  dt_irs.io.coreid := 0.U
-  dt_irs.io.gpr := regfile.io.debugPorts
+    dt_ic0.io.valid := RegNext(pipeOut(8).fire() && !pipeFlush(10) && pipeOut(8).bits.pc =/= 0.U)
+    dt_ic0.io.pc := RegNext(Cat(0.U((64 - VAddrBits).W), pipeOut(8).bits.pc))
+    dt_ic0.io.instr := RegNext(pipeOut(8).bits.instr)
+    dt_ic0.io.special := 0.U
+    dt_ic0.io.skip := RegNext(pipeOut(8).fire() && !pipeFlush(10) && pipeOut(8).bits.csrInst)
+    dt_ic0.io.isRVC := false.B
+    dt_ic0.io.scFailed := false.B
+    dt_ic0.io.wen := RegNext(regfile.io.writePorts(0).wen)
+    dt_ic0.io.wpdest := RegNext(Cat(0.U(3.W), regfile.io.writePorts(0).addr))
+    dt_ic0.io.wdest := RegNext(Cat(0.U(3.W), regfile.io.writePorts(0).addr))
 
+    val dt_iw0 = Module(new DifftestIntWriteback)
+    dt_iw0.io.clock := clock
+    dt_iw0.io.coreid := 0.U
+    dt_iw0.io.valid := RegNext(regfile.io.writePorts(1).wen)
+    dt_iw0.io.dest := RegNext(regfile.io.writePorts(1).addr)
+    dt_iw0.io.data := RegNext(regfile.io.writePorts(1).data)
+
+
+    val dt_iw1 = Module(new DifftestIntWriteback)
+    dt_iw1.io.clock := clock
+    dt_iw1.io.coreid := 0.U
+    dt_iw1.io.valid := RegNext(regfile.io.writePorts(0).wen)
+    dt_iw1.io.dest := RegNext(regfile.io.writePorts(0).addr)
+    dt_iw1.io.data := RegNext(regfile.io.writePorts(0).data)
+
+
+    val dt_ae = Module(new DifftestArchEvent)
+    dt_ae.io.clock := clock
+    dt_ae.io.coreid := 0.U
+    dt_ae.io.intrNO := 0.U
+    dt_ae.io.cause := 0.U
+    dt_ae.io.exceptionPC := 0.U
+
+    val dt_te = Module(new DifftestTrapEvent)
+    dt_te.io.clock := clock
+    dt_te.io.coreid := 0.U
+    dt_te.io.valid := RegNext(SSDcoretrap)
+    dt_te.io.code := rf_a0(2, 0)
+    dt_te.io.pc := Mux(RegNext(pipeOut(8).bits.instr === "h0000006b".U), RegNext(Cat(0.U((64 - VAddrBits).W), pipeOut(8).bits.pc)), RegNext(Cat(0.U((64 - VAddrBits).W), pipeOut(9).bits.pc)))
+    dt_te.io.cycleCnt := cycle_cnt
+    dt_te.io.instrCnt := instr_cnt
+
+    val dt_cs = Module(new DifftestCSRState)
+    dt_cs.io.clock := clock
+    dt_cs.io.coreid := 0.U
+    dt_cs.io.priviledgeMode := 3.U // Machine mode
+    dt_cs.io.mstatus := 0.U
+    dt_cs.io.sstatus := 0.U
+    dt_cs.io.mepc := 0.U
+    dt_cs.io.sepc := 0.U
+    dt_cs.io.mtval := 0.U
+    dt_cs.io.stval := 0.U
+    dt_cs.io.mtvec := 0.U
+    dt_cs.io.stvec := 0.U
+    dt_cs.io.mcause := 0.U
+    dt_cs.io.scause := 0.U
+    dt_cs.io.satp := 0.U
+    dt_cs.io.mip := 0.U
+    dt_cs.io.mie := 0.U
+    dt_cs.io.mscratch := 0.U
+    dt_cs.io.sscratch := 0.U
+    dt_cs.io.mideleg := 0.U
+    dt_cs.io.medeleg := 0.U
+
+    val dt_irs = Module(new DifftestArchIntRegState)
+    dt_irs.io.clock := clock
+    dt_irs.io.coreid := 0.U
+    dt_irs.io.gpr := regfile.io.debugPorts
+  }
 
 
 
