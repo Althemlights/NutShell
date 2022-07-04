@@ -25,7 +25,7 @@ import chisel3.experimental.IO
 
 class FrontendIO(implicit val p: NutCoreConfig) extends Bundle with HasNutCoreConst {
   val imem = new SimpleBusUC(userBits = ICacheUserBundleWidth, addrBits = VAddrBits)
-  val out = Vec(2, Decoupled(new DecodeIO))
+  val out = Vec(4, Decoupled(new DecodeIO))
   val flushVec = Output(UInt(4.W))
   val redirect = Flipped(new RedirectIO)
   val bpFlush = Output(Bool())
@@ -47,12 +47,18 @@ class Frontend_ooo(implicit val p: NutCoreConfig) extends NutCoreModule with Has
   }
 
   val ifu  = Module(new IFU_ooo)
-  val ibf = Module(new IBF)
+  val ibf1 = Module(new IBF)  //copy register for high fanout signal
+  val ibf2 = Module(new IBF)
   val idu  = Module(new IDU)
 
-  pipelineConnect2(ifu.io.out, ibf.io.in, ifu.io.flushVec(0))
-  PipelineVector2Connect(new CtrlFlowIO, ibf.io.out(0), ibf.io.out(1), idu.io.in(0), idu.io.in(1), ifu.io.flushVec(1), if (EnableOutOfOrderExec) 8 else 4)
-  ibf.io.flush := ifu.io.flushVec(1)
+//  pipelineConnect2(ifu.io.out, ibf.io.in, ifu.io.flushVec(0))
+  ifu.io.out <> ibf1.io.in
+  PipelineVector2Connect(new CtrlFlowIO, ibf1.io.out(0), ibf1.io.out(1), idu.io.in(0), idu.io.in(1), ifu.io.flushVec(1), if (EnableOutOfOrderExec) 8 else 4)
+  ibf1.io.flush := ifu.io.flushVec(1)
+
+  ifu.io.out <> ibf2.io.in
+  PipelineVector2Connect(new CtrlFlowIO, ibf2.io.out(0), ibf2.io.out(1), idu.io.in(2), idu.io.in(3), ifu.io.flushVec(1), if (EnableOutOfOrderExec) 8 else 4)
+  ibf2.io.flush := ifu.io.flushVec(1)
 
   io.out <> idu.io.out
   io.redirect <> ifu.io.redirect
@@ -61,14 +67,6 @@ class Frontend_ooo(implicit val p: NutCoreConfig) extends NutCoreModule with Has
   io.ipf <> ifu.io.ipf
   io.imem <> ifu.io.imem
 
-  Debug("------------------------ FRONTEND:------------------------\n")
-  Debug("flush = %b, ifu:(%d,%d), ibf:(%d,%d), idu:(%d,%d)\n",
-    ifu.io.flushVec.asUInt, ifu.io.out.valid, ifu.io.out.ready,
-    ibf.io.in.valid, ibf.io.in.ready, idu.io.in(0).valid, idu.io.in(0).ready)
-  Debug(ifu.io.out.valid, "IFU: pc = 0x%x, instr = 0x%x\n", ifu.io.out.bits.pc, ifu.io.out.bits.instr)
-  Debug(ibf.io.in.valid, "IBF: pc = 0x%x, instr = 0x%x\n", ibf.io.in.bits.pc, ibf.io.in.bits.instr)
-  Debug(idu.io.in(0).valid, "IDU1: pc = 0x%x, instr = 0x%x, pnpc = 0x%x\n", idu.io.in(0).bits.pc, idu.io.in(0).bits.instr, idu.io.in(0).bits.pnpc)
-  Debug(idu.io.in(1).valid, "IDU2: pc = 0x%x, instr = 0x%x, pnpc = 0x%x\n", idu.io.in(1).bits.pc, idu.io.in(1).bits.instr, idu.io.in(1).bits.pnpc)
 }
 
 class Frontend_embedded(implicit val p: NutCoreConfig) extends NutCoreModule with HasFrontendIO {
