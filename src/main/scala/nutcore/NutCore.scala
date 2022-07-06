@@ -37,7 +37,7 @@ trait HasNutCoreParameter {
   val HasDTLB = Settings.get("HasDTLB")
   val AddrBits = 64 // AddrBits is used in some cases
   val VAddrBits = if (Settings.get("IsRV32")) 32 else 39 // VAddrBits is Virtual Memory addr bits
-  val GhrLength = 12
+  val GhrLength = 5
   val GhrMid    = GhrLength / 2
   val PAddrBits = 32 // PAddrBits is Phyical Memory addr bits
   val AddrBytes = AddrBits / 8 // unused
@@ -114,6 +114,8 @@ class NutCore(implicit val p: NutCoreConfig) extends NutCoreModule {
   SSDbackend.io.in <> frontend.io.out
   frontend.io.redirect <> SSDbackend.io.redirectOut
   frontend.io.ipf := false.B
+  PipelineVector2Connect(new DecodeIO, frontend.io.out(0), frontend.io.out(1), SSDbackend.io.in(0), SSDbackend.io.in(1), frontend.io.flushVec(1), 16)
+  PipelineVector2Connect(new DecodeIO, frontend.io.out(2), frontend.io.out(3), SSDbackend.io.in(2), SSDbackend.io.in(3), frontend.io.flushVec(1), 16)
 
   val mmioXbar = Module(new SimpleBusCrossbarNto1(2))
   val s2NotReady = WireInit(false.B)
