@@ -13,8 +13,9 @@ echo "The regression testing of SSDCore is in progress... (っ'-' )っ"
 
 help(){
   echo "Usage:"
-  echo "-c: Coremark test"
   echo "-b: BPU performance analysis"
+  echo "-c: Coremark test"
+  echo "-m: Generate verilog for test module"
   echo "-r: Run test cases of the specifoed directory"
   echo "-h: Help information"
 }
@@ -29,6 +30,11 @@ bputest(){
   make emu -j4
   build/emu -i /home/jy/xs-env/nexus-am/apps/brancntest/build/branchtest-riscv64-nutshell.bin --wave-path=wave.vcd -b 0 >1.log 2>&1
   python3 bpu.py
+}
+moduleGenVerilog(){
+  rm -rf moduleBuild/
+  mkdir moduleBuild
+  mill chiselModule.runMain top.moduleTop -td moduleBuild --output-file nutcore.v
 }
 
 
@@ -55,11 +61,12 @@ bputest(){
 #    create_soft_link $BUILD_PATH $OSCPU_PATH/$BIN_FOLDER \"*.bin\"
 #}
 
-while getopts "c b r:h" OPT; do
+while getopts "c b r:h m" OPT; do
   case $OPT in
     h) help;;
     c) cmarktest;;
     b) bputest;;
+    m) moduleGenVerilog;;
     g) ;;
     r) TEST_CASES="$OPTARG";;
     ?) echo "Wrong Options";;
@@ -88,7 +95,7 @@ for FOLDER in ${TEST_CASES[@]}
         BIN_FILES=`eval "find $FOLDER -mindepth 1 -maxdepth 1 -regex \".*\.\(bin\)\""`
         for BIN_FILE in $BIN_FILES; do
             FILE_NAME=`basename ${BIN_FILE%.*}`
-            printf "[%20s] " $FILE_NAME
+            printf "[%23s] " $FILE_NAME
             LOG_FILE=log/$FILE_NAME-log.txt
             build/emu -i $BIN_FILE &> $LOG_FILE
             TESTCASES_NUM=`expr $TESTCASES_NUM + 1`
