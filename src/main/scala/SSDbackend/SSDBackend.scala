@@ -132,10 +132,10 @@ class SSDbackend extends NutCoreModule with hasBypassConst {
   Bypass.io.flush(2) := Redirect8.valid && pipeOut(8).valid
   Bypass.io.flush(3) := Redirect9.valid && pipeOut(9).valid
 
-  io.redirectOut := Mux(Redirect9.valid &&  pipeOut(9).fire() && !pipeFlush(11),Redirect9,
-    Mux(Redirect8.valid &&  pipeOut(8).fire() && !pipeFlush(10),Redirect8,
-      Mux(Redirect3.valid && pipeOut(3).fire(),Redirect3,
-        Mux(Redirect2.valid && pipeOut(2).fire(),Redirect2,0.U.asTypeOf(new RedirectIO)))))
+  io.redirectOut := Mux(Redirect9.valid &&  pipeOut(9).valid && !pipeFlush(11),Redirect9,
+    Mux(Redirect8.valid &&  pipeOut(8).valid && !pipeFlush(10),Redirect8,
+      Mux(Redirect3.valid && pipeOut(3).valid,Redirect3,
+        Mux(Redirect2.valid && pipeOut(2).valid,Redirect2,0.U.asTypeOf(new RedirectIO)))))
   finalBpuUpdateReq := Mux(pipeOut(9).bits.bpuUpdateReq.valid && pipeOut(9).fire() && !pipeFlush(11),pipeOut(9).bits.bpuUpdateReq,
     Mux(pipeOut(8).bits.bpuUpdateReq.valid && pipeOut(8).fire() && !pipeFlush(10),pipeOut(8).bits.bpuUpdateReq,0.U.asTypeOf(new BPUUpdateReq)))
   BoringUtils.addSource(finalBpuUpdateReq, "bpuUpdateReq")
@@ -165,10 +165,12 @@ class SSDbackend extends NutCoreModule with hasBypassConst {
   LSU.io.storeBypassCtrl <> Bypass.io.storeCtrl
   val i0LSUValid = BypassPktValid(0) && (BypassPkt(0).decodePkt.load || BypassPkt(0).decodePkt.store)
   val i1LSUValid = BypassPktValid(1) && (BypassPkt(1).decodePkt.load || BypassPkt(1).decodePkt.store)
-  LSU.io.flush(0) := ALU_0.io.redirect.valid
-  LSU.io.flush(1) := ALU_1.io.redirect.valid && i0LSUValid
-  LSU.io.flush(2) := ALU_6.io.redirect.valid
-  LSU.io.flush(3) := ALU_7.io.redirect.valid
+  //LSU flush
+  LSU.io.flush(0) := LSU.io.flush(1)
+  LSU.io.flush(1) := pipeOut(3).bits.redirect.valid && pipeOut(2).valid && (BypassPkt(2).decodePkt.load || BypassPkt(2).decodePkt.store) || LSU.io.flush(2)
+  LSU.io.flush(2) := ALU_6.io.redirect.valid || ALU_7.io.redirect.valid
+  LSU.io.flush(3) := ALU_7.io.redirect.valid && BypassPktValid(6) && BypassPkt(6).decodePkt.store
+
   dontTouch(i0LSUValid)
   dontTouch(i1LSUValid)
   val LSUValid = i0LSUValid || i1LSUValid
@@ -315,8 +317,8 @@ class SSDbackend extends NutCoreModule with hasBypassConst {
   pipeIn(9).bits.rd := Mux(aluValid(3),ALU_7.io.out.bits,pipeOut(7).bits.rd)
   pipeIn(8).bits.branchTaken := Mux(aluValid(2),ALU_6.io.branchTaken,pipeOut(6).bits.branchTaken)
   pipeIn(9).bits.branchTaken := Mux(aluValid(3),ALU_7.io.branchTaken,pipeOut(7).bits.branchTaken)
-  pipeIn(8).bits.redirect := Mux(ALU_6.io.redirect.valid && pipeOut(6).valid,ALU_6.io.redirect,pipeOut(6).bits.redirect)
-  pipeIn(9).bits.redirect := Mux(ALU_7.io.redirect.valid && pipeOut(7).valid,ALU_7.io.redirect,pipeOut(7).bits.redirect)
+  pipeIn(8).bits.redirect := Mux(ALU_6.io.redirect.valid && pipeOut(6).valid,ALU_6.io.redirect,0.U.asTypeOf(new RedirectIO))
+  pipeIn(9).bits.redirect := Mux(ALU_7.io.redirect.valid && pipeOut(7).valid,ALU_7.io.redirect,0.U.asTypeOf(new RedirectIO))
   pipeIn(8).bits.bpuUpdateReq := Mux(bpuUpdataReq6.valid && pipeOut(6).valid, bpuUpdataReq6, pipeOut(6).bits.bpuUpdateReq)
   pipeIn(9).bits.bpuUpdateReq := Mux(bpuUpdataReq7.valid && pipeOut(7).valid, bpuUpdataReq7, pipeOut(7).bits.bpuUpdateReq)
   pipeIn(8).bits.alu2pmu := Mux(bpuUpdataReq6.valid && pipeOut(6).valid, alu2pmu6, pipeOut(6).bits.alu2pmu)
