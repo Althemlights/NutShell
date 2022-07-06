@@ -4,7 +4,8 @@ import chisel3._
 
 case class SSDCoreConfig(
                           EnableDebug: Boolean = true,
-                          EnableDifftest : Boolean = false,
+                          EnableDifftest : Boolean = true,
+                          EnablePMU : Boolean = false,
                           EnablePipestageDebug : Boolean = false,
                           EnableLSUDebug : Boolean = false,
                           EnableStallCnt: Boolean = false,
