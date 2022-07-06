@@ -118,7 +118,7 @@ class PMU extends Module{
   val stallCntNum = 19
   val stallCnts = List.fill(stallCntNum)(RegInit(0.U(64.W)))
   val stallCntCond = List.fill(stallCntNum)(WireInit(false.B))
-  (stallCnts zip stallCntCond).map{ case(a,b) => { when(b) { a := a + 1.U }}}
+  if(SSDCoreConfig().EnablePMU){(stallCnts zip stallCntCond).map{ case(a,b) => { when(b) { a := a + 1.U }}}}
   StallCntList.map{ case(a,(b,c)) => {stallCntCond(b) := a}}
 
   if(SSDCoreConfig().EnableStallCnt) {
@@ -144,7 +144,7 @@ class PMU extends Module{
   val perfCntNum = 10
   val perfCnts = List.fill(perfCntNum)(RegInit(0.U(64.W)))
   val perfIncrease = List.fill(perfCntNum)(WireInit(0.U(3.W)))
-  (perfCnts zip perfIncrease).map{ case(a,b) => { a := a + b }}
+  if(SSDCoreConfig().EnablePMU){(perfCnts zip perfIncrease).map{ case(a,b) => { a := a + b }}}
   PerfCntList.map{ case(a,(b,c)) => {perfIncrease(b) := a}}
 
   if(SSDCoreConfig().EnablePerfCnt) {
@@ -177,7 +177,7 @@ class PMU extends Module{
   val instCntNum = 16
   val instCnts = List.fill(instCntNum)(RegInit(0.U(64.W)))
   val instIncrease = List.fill(instCntNum)(WireInit(0.U(2.W)))
-  (instCnts zip instIncrease).map{ case(a,b) => { a := a + b }}
+  if(SSDCoreConfig().EnablePMU){(instCnts zip instIncrease).map{ case(a,b) => { a := a + b }}}
   instCntList.map{ case(a,(b,c)) => {instIncrease(b) := a}}
 
 
@@ -207,7 +207,7 @@ class PMU extends Module{
   val cacheCntNum = 9
   val cacheCnts = List.fill(cacheCntNum)(RegInit(0.U(64.W)))
   val cacheCntCond = List.fill(cacheCntNum)(WireInit(false.B))
-  (cacheCnts zip cacheCntCond).map{ case(a,b) => { when(b) { a := a + 1.U }}}
+  if(SSDCoreConfig().EnablePMU){(cacheCnts zip cacheCntCond).map{ case(a,b) => { when(b) { a := a + 1.U }}}}
   cacheCntList.map{ case(a,(b,c)) => { BoringUtils.addSink(cacheCntCond(b),a)}}
 
 
