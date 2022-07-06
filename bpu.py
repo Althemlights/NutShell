@@ -41,7 +41,7 @@ for line in emu_log_lines:
     if(line.find('retWrong') != -1):
         ret_wrong_num = get_line_digit(line)
 #     if(line.find('cnt:01') != -1 or line.find('cnt:10') != -1):
-    if(line.find('pc:008000002c') != -1 ) :
+    if(line.find('800019b4') != -1 ) :
         bpu_log.write(line)
 
 branch_accuracy = float(branch_right_num)/(branch_right_num + branch_wrong_num)*100
@@ -59,10 +59,12 @@ bpu_log.seek(0)
 #print('CondBranch prediction accuracy is %4.3f%%' % prediction_accuracy)
 bpu_log.close
 
+#test all kinds of PHT index
+
 #read again for print
 bpu_log_r = open(bpu_log_path,'r')
 
 bpu_log_r_lines = bpu_log_r.readlines()
-for line in bpu_log_r_lines:
-    print(line)
+# for line in bpu_log_r_lines:
+#     print(line)
 bpu_log_r.close()
