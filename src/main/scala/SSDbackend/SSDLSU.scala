@@ -73,6 +73,16 @@ class SSDLSU extends  NutCoreModule with HasStoreBufferConst{
   val reqWmask = genWmask(addr, size)
 
   //store pipeline
+  /*
+  ||----------EX1------------||
+  ||--------memStage2--------|| register <- flush(0)
+  ||----------EX2------------||
+  ||--------memStage3--------|| register <- flush(1)
+  ||----------EX3------------||
+  ||--------memStage4--------|| register <- flush(2)
+  ||----------EX4------------||
+  ||-------storeBuffer-------|| register <- flush(3)
+   */
   val lsuPipeIn = Wire(Vec(3,Flipped(Decoupled(new storePipeEntry))))
   val lsuPipeOut = Wire(Vec(3,Decoupled(new storePipeEntry)))
   val lsuPipeStage2 = Module(new stallPointConnect(new storePipeEntry)).suggestName("memStage2")
@@ -104,7 +114,7 @@ class SSDLSU extends  NutCoreModule with HasStoreBufferConst{
     !storeBuffer.io.in.ready && lsuPipeStage3.right.valid && lsuPipeStage3.right.bits.isStore && LoadCacheIn.valid ||
     cacheS2NotReady || cacheS3NotReady
 
-  lsuPipeIn(0).valid := isStore && !flush(1) || LoadCacheIn.valid
+  lsuPipeIn(0).valid := isStore  || LoadCacheIn.valid
   lsuPipeIn(0).bits.isStore := isStore
   lsuPipeIn(0).bits.paddr := reqAddr(PAddrBits-1,0)
   lsuPipeIn(0).bits.offset := offset
@@ -146,9 +156,8 @@ class SSDLSU extends  NutCoreModule with HasStoreBufferConst{
     a.io.left <> lsuPipeIn(b)
     a.io.right <> lsuPipeOut(b)
     a.io.rightOutFire <> lsuPipeOut(b).fire()
-    a.io.isFlush <> (flush(2) || flush(3))
+    a.io.isFlush <> flush(b)
   }
-
   //store buffer
   //load/store issue ctrl (issue to DCache)
   StoreCacheIn.bits.apply(
@@ -169,7 +178,7 @@ class SSDLSU extends  NutCoreModule with HasStoreBufferConst{
     wmask = reqWmask, // for partical check
     cmd = SimpleBusCmd.read
   )
-  LoadCacheIn.valid :=  valid && !isStore && !flush(1)
+  LoadCacheIn.valid :=  valid && !isStore
 
   val cacheInArbiter0 = Module(new Arbiter((new SimpleBusReqBundle),2)) //store has higher priority,and store ready is driven by arbiter0, load ready is driven by arbiter1
   val cacheInArbiter1 = Module(new Arbiter((new SimpleBusReqBundle),2))
@@ -268,7 +277,7 @@ class SSDLSU extends  NutCoreModule with HasStoreBufferConst{
   storeHitCtrl.left.bits.hitMask := hitMaskE2
   storeHitCtrl.left.bits.hitData := hitDataE2
   storeHitCtrl.isStall := lsuPipeStage3.isStall
-  storeHitCtrl.isFlush := flush(2) || flush(3)
+  storeHitCtrl.isFlush := flush(1)
 
   val hitCtrlSignal = storeHitCtrl.right.bits
 
