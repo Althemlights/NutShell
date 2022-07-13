@@ -133,7 +133,7 @@ class ALU(hasBru: Boolean = false) extends NutCoreModule {
   val branchPredictWrong = ALUInstBPW || notALUInstBPW
   assert(io.cfIn.instr(1,0) === "b11".U || isRVC || !valid)
   Debug(valid && (io.cfIn.instr(1,0) === "b11".U) =/= !isRVC, "[ERROR] pc %x inst %x rvc %x\n",io.cfIn.pc, io.cfIn.instr, isRVC)
-  io.redirect.target := Mux(!taken && isBranch || ALUInstBPW & !isJump || notALUInstBPW, Mux(isRVC, io.cfIn.pc + 2.U, io.cfIn.pc + 4.U), target)
+  io.redirect.target := Mux(!taken && isBranch , Mux(isRVC, io.cfIn.pc + 2.U, io.cfIn.pc + 4.U), target)
   // with branch predictor, this is actually to fix the wrong prediction
   io.redirect.valid := valid && isBru && predictWrong //|| branchPredictMiss //|| branchPredictWrong
 
