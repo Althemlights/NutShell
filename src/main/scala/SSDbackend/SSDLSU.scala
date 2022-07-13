@@ -12,6 +12,7 @@ import _root_.utils._
 class SSDLSUIO extends FunctionUnitIO{
   val offset = Input(UInt(XLEN.W))
   val memStall = Output(Bool())
+//  val MMIOStall = Output(Bool())  //to stall issue when load/store MMIO address
   val flush = Input(Vec(4,Bool()))
   val LoadReady = Output(Bool())
   val StoreReady = Output(Bool())
@@ -106,12 +107,11 @@ class SSDLSU extends  NutCoreModule with HasStoreBufferConst{
   val cacheS2NotReady = s2NotReady  && LoadCacheIn.valid || !s2NotReady && LoadCacheIn.valid && storeBuffer.io.isAlmostFull
   val cacheS3NotReady = s3NotReady && lsuPipeStage2.right.valid && !lsuPipeStage2.right.bits.isStore && !lsuPipeStage2.right.bits.isCacheStore
   //stall signal
-  val memStall = WireInit(false.B)
-  BoringUtils.addSink(memStall,"memStall")
+  val cacheMissStall = WireInit(false.B)
+  BoringUtils.addSink(cacheMissStall,"cacheMissStall")
   val pc = WireInit(0.U(VAddrBits.W))
   BoringUtils.addSink(pc,"lsuPC")
-  io.memStall := memStall && lsuPipeStage3.right.valid && !lsuPipeStage3.right.bits.isStore && !lsuPipeStage3.right.bits.isCacheStore ||
-    !storeBuffer.io.in.ready && lsuPipeStage3.right.valid && lsuPipeStage3.right.bits.isStore && LoadCacheIn.valid ||
+  io.memStall := cacheMissStall && lsuPipeStage3.right.valid && !lsuPipeStage3.right.bits.isStore && !lsuPipeStage3.right.bits.isCacheStore ||
     cacheS2NotReady || cacheS3NotReady
 
   lsuPipeIn(0).valid := isStore  || LoadCacheIn.valid
@@ -129,7 +129,7 @@ class SSDLSU extends  NutCoreModule with HasStoreBufferConst{
   lsuPipeOut(2).ready := storeBuffer.io.in.ready    //when almost full, still can store one
   lsuPipeStage2.io.isStall := cacheS2NotReady
   lsuPipeStage3.io.isStall := cacheS3NotReady
-  lsuPipeStage4.io.isStall := memStall
+  lsuPipeStage4.io.isStall := cacheMissStall
 
 
   io.LoadReady := cacheIn.ready && !storeBuffer.io.isAlmostFull
@@ -157,6 +157,7 @@ class SSDLSU extends  NutCoreModule with HasStoreBufferConst{
     a.io.right <> lsuPipeOut(b)
     a.io.rightOutFire <> lsuPipeOut(b).fire()
     a.io.isFlush <> flush(b)
+    a.io.inValid <> false.B
   }
   //store buffer
   //load/store issue ctrl (issue to DCache)
@@ -278,6 +279,7 @@ class SSDLSU extends  NutCoreModule with HasStoreBufferConst{
   storeHitCtrl.left.bits.hitData := hitDataE2
   storeHitCtrl.isStall := lsuPipeStage3.isStall
   storeHitCtrl.isFlush := flush(1)
+  storeHitCtrl.io.inValid := false.B
 
   val hitCtrlSignal = storeHitCtrl.right.bits
 
