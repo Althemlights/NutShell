@@ -415,7 +415,7 @@ sealed class CacheStage3(implicit val cacheConfig: CacheConfig) extends CacheMod
   }
 
   if (cacheName == "dcache") {
-    BoringUtils.addSource((state =/= s_idle || miss) && !(alreadyOutFire || io.out.fire()) && io.in.bits.req.cmd === SimpleBusCmd.read ,"memStall")
+    BoringUtils.addSource((state =/= s_idle || miss) && !(alreadyOutFire || io.out.fire()) && io.in.bits.req.cmd === SimpleBusCmd.read ,"cacheMissStall")
   }
   val dataRefill = MaskData(io.mem.resp.bits.rdata, req.wdata, Mux(readingFirst, wordMask, 0.U(DataBits.W)))
   val dataRefillWriteBus = Wire(CacheDataArrayWriteBus).apply(
