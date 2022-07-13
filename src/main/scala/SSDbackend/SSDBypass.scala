@@ -220,8 +220,8 @@ class DecodeIO2BypassPkt extends Module {
 
 
     //BypassPkt out0
-  i0Hiti1Rs1 := io.in(0).bits.ctrl.rfSrc1 === i1decodePkt.rd && i0rs1valid && i1decodePkt.rdvalid && (i1decodePkt.muldiv || i1decodePkt.load || i1decodePkt.alu && !io.out1.bits.decodePkt.subalu)
-  i0Hiti1Rs2 := io.in(0).bits.ctrl.rfSrc2 === i1decodePkt.rd && i0rs2valid && i1decodePkt.rdvalid && (i1decodePkt.muldiv || i1decodePkt.load || i1decodePkt.alu && !io.out1.bits.decodePkt.subalu)
+  i0Hiti1Rs1 := io.in(0).bits.ctrl.rfSrc1 === i1decodePkt.rd && i0rs1valid && i1decodePkt.rdvalid //&& (i1decodePkt.muldiv || i1decodePkt.load || i1decodePkt.alu && !io.out1.bits.decodePkt.subalu)
+  i0Hiti1Rs2 := io.in(0).bits.ctrl.rfSrc2 === i1decodePkt.rd && i0rs2valid && i1decodePkt.rdvalid //&& (i1decodePkt.muldiv || i1decodePkt.load || i1decodePkt.alu && !io.out1.bits.decodePkt.subalu)
 
   io.out0.bits.BypassCtl.rs1bypasse0 := VecInit(
        i0rs1hitStage === 0.U && FuType(0).alu && !FuType(0).subalu && !i0Hiti1Rs1,
@@ -402,22 +402,33 @@ class PipeCtl extends Module{
   pipeCtl.stall(1) := io.i0pipeStall
   pipeCtl.stall(2) := io.memStall
 
-  //flush vec
-  val allStageFlushVec = VecInit(Seq.fill(12)(false.B))
-
+  //flush/invalid vec
+  val allStageFlushVec = VecInit(Seq.fill(10)(false.B))
+  val allStageInvalidVec = VecInit(Seq.fill(12)(false.B))
   //pipeline0 : 1,3,5,7,9
   //pipeline1 : 0,2,4,6,8
-  val alu0FLushList = List(0,1,2,3)
-  val alu1FLushList = List(0,1,2,3,4)
-  val subalu0FLushList = List(0,1,2,3,4,5,6,7,8,9)
-  val subalu1FLushList = List(0,1,2,3,4,5,6,7,8,9,10)
+  val alu0InvalidList = List(0,1,2,3)
+  val alu1InvalidList = List(0,1,2,3,4)
+  val subalu0InvalidList = List(0,1,2,3,4,5,6,7,8,9)
+  val subalu1InvalidList = List(0,1,2,3,4,5,6,7,8,9,10)
+
+  val alu0FlushList = List(0,1)
+  val alu1FlushList = List(0,1,2)
+  val subalu0FlushList = List(0,1,2,3,4,5,6,7)
+  val subalu1FlushList = List(0,1,2,3,4,5,6,7,8)
 
 
-  alu0FLushList.foreach{ case i => when(io.flush(0) === true.B){allStageFlushVec(i) := io.flush(0)}}
-  alu1FLushList.foreach{ case i => when(io.flush(1) === true.B){allStageFlushVec(i) := io.flush(1)}}
-  subalu0FLushList.foreach{ case i => when(io.flush(2) === true.B){allStageFlushVec(i) := io.flush(2)}}
-  subalu1FLushList.foreach{ case i => when(io.flush(3) === true.B){allStageFlushVec(i) := io.flush(3)}}
+  alu0InvalidList.foreach{ case i => when(io.flush(0) === true.B){allStageInvalidVec(i) := io.flush(0)}}
+  alu1InvalidList.foreach{ case i => when(io.flush(1) === true.B){allStageInvalidVec(i) := io.flush(1)}}
+  subalu0InvalidList.foreach{ case i => when(io.flush(2) === true.B){allStageInvalidVec(i) := io.flush(2)}}
+  subalu1InvalidList.foreach{ case i => when(io.flush(3) === true.B){allStageInvalidVec(i) := io.flush(3)}}
 
+  alu0FlushList.foreach{ case i => when(io.flush(0) === true.B){allStageFlushVec(i) := io.flush(0)}}
+  alu1FlushList.foreach{ case i => when(io.flush(1) === true.B){allStageFlushVec(i) := io.flush(1)}}
+  subalu0FlushList.foreach{ case i => when(io.flush(2) === true.B){allStageFlushVec(i) := io.flush(2)}}
+  subalu1FlushList.foreach{ case i => when(io.flush(3) === true.B){allStageFlushVec(i) := io.flush(3)}}
+
+  pipeCtl.invalid := allStageInvalidVec
   pipeCtl.flush := allStageFlushVec
 
 
@@ -429,7 +440,8 @@ class Bypass extends Module{
     val mduStall = Input(Bool())
     val flush = Input(Vec(4,Bool()))
     val issueStall = Output(Vec(2,Bool()))
-    val pipeFlush = Output(Vec(12,Bool()))
+    val pipeFlush = Output(Vec(10,Bool()))
+    val pipeInvalid = Output(Vec(12,Bool()))
     val decodeBypassPkt = Vec(2, Decoupled(new BypassPkt))
     val BypassPkt = Vec(10, new BypassPkt)
     val BypassPktValid = Output(Vec(10,Bool()))
@@ -460,13 +472,13 @@ class Bypass extends Module{
   }
 
   //ready & valid
-  pipeOut(8).ready := true.B && !(io.memStall || io.mduStall)
-  pipeOut(9).ready := true.B && !(io.memStall || io.mduStall)
+  pipeOut(8).ready := true.B
+  pipeOut(9).ready := true.B
 
   val BypassPkt = Wire(Vec(10, new BypassPkt))
   val BypassPktValid = Wire(Vec(10,Bool()))
   for(i <- 0 to 9) BypassPkt(i) := pipeOut(i).bits
-  for(i <- 0 to 9) BypassPktValid(i) := pipeOut(i).valid && !io.pipeFlush(i+2)
+  for(i <- 0 to 9) BypassPktValid(i) := pipeOut(i).valid && !io.pipeInvalid(i+2)
 
   PipelineCtl.io.i0pipeStall <>  DecodeIO2BypassPkt.io.issueStall(0)
   PipelineCtl.io.i1pipeStall <>  DecodeIO2BypassPkt.io.issueStall(1)
@@ -486,6 +498,7 @@ class Bypass extends Module{
   io.issueStall := DecodeIO2BypassPkt.io.issueStall
   io.decodeBypassPkt <> Seq(DecodeIO2BypassPkt.io.out0,DecodeIO2BypassPkt.io.out1)
   io.pipeFlush := PipelineCtl.pipeCtl.flush
+  io.pipeInvalid := PipelineCtl.pipeCtl.invalid
 
   //store pipeline ctrl
   io.storeCtrl.storeBypassCtrlE1 := Mux(pipeOut(1).valid && BypassPkt(1).decodePkt.store,pipeOut(1).bits.storeCtrl.storeBypassCtrlE1,
@@ -499,17 +512,22 @@ class Bypass extends Module{
   //stall stage
   val pipeStage0 = Module(new stallPointConnect(new BypassPkt)).suggestName("pipeStage0")
   val pipeStage1 = Module(new stallPointConnect(new BypassPkt)).suggestName("pipeStage1")
+  val pipeStage6 = Module(new stallPointConnect(new BypassPkt)).suggestName("pipeStage6")
+  val pipeStage7 = Module(new stallPointConnect(new BypassPkt)).suggestName("pipeStage7")
 
-  val stallStageList = List(pipeStage0,pipeStage1)
-  val stallList = List(0,1)
+  val stallStageList = List(pipeStage0,pipeStage1,pipeStage6,pipeStage7)
+  val stallList = List(0,1,6,7)
   (stallStageList zip stallList).foreach{case (a,b) =>
     a.io.left <> pipeIn(b)
     a.io.right <> pipeOut(b)
     a.io.rightOutFire <> pipeFire(b)
     a.io.isFlush <> PipelineCtl.pipeCtl.flush(b)
+    a.io.inValid <> PipelineCtl.pipeCtl.invalid(b)
   }
   pipeStage0.io.isStall := DecodeIO2BypassPkt.io.issueStall(0)
   pipeStage1.io.isStall := DecodeIO2BypassPkt.io.issueStall(1)
+  pipeStage6.io.isStall := io.memStall || io.mduStall
+  pipeStage7.io.isStall := io.memStall || io.mduStall
 //  pipeStage2.io.isStall := io.lsuS2Stall
 //  pipeStage3.io.isStall := io.lsuS2Stall
 //  pipeStage4.io.isStall := io.lsuS3Stall
@@ -522,19 +540,18 @@ class Bypass extends Module{
   val pipeStage3 = Module(new normalPipeConnect(new BypassPkt)).suggestName("pipeStage3")
   val pipeStage4 = Module(new normalPipeConnect(new BypassPkt)).suggestName("pipeStage4")
   val pipeStage5 = Module(new normalPipeConnect(new BypassPkt)).suggestName("pipeStage5")
-  val pipeStage6 = Module(new normalPipeConnect(new BypassPkt)).suggestName("pipeStage6")
-  val pipeStage7 = Module(new normalPipeConnect(new BypassPkt)).suggestName("pipeStage7")
   val pipeStage8 = Module(new normalPipeConnect(new BypassPkt)).suggestName("pipeStage8")
   val pipeStage9 = Module(new normalPipeConnect(new BypassPkt)).suggestName("pipeStage9")
 
-  val normalStageList = List(pipeStage2,pipeStage3,pipeStage4,pipeStage5,pipeStage6,pipeStage7,pipeStage8,pipeStage9)
-  val noralList = List(2,3,4,5,6,7,8,9)
+  val normalStageList = List(pipeStage2,pipeStage3,pipeStage4,pipeStage5,pipeStage8,pipeStage9)
+  val noralList = List(2,3,4,5,8,9)
 
   (normalStageList zip noralList).foreach{case (a,b) =>
     a.io.left <> pipeIn(b)
     a.io.right <> pipeOut(b)
     a.io.rightOutFire <> pipeFire(b)
     a.io.isFlush <> PipelineCtl.pipeCtl.flush(b)
+    a.io.inValid <> PipelineCtl.pipeCtl.invalid(b)
   }
 
 
