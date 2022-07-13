@@ -31,18 +31,19 @@ class stallPointConnect[T <: Data](gen : T) extends Module {
     val left = Flipped(DecoupledIO(gen))
     val right = DecoupledIO(gen)
     val rightOutFire = Input(Bool())
+    val inValid = Input(Bool())
     val isFlush = Input(Bool())
     val isStall = Input(Bool())
   })
-  val (left,right,rightOutFire,isFlush,isStall) = (io.left,io.right,io.rightOutFire,io.isFlush,io.isStall)
+  val (left,right,rightOutFire,isFlush,isStall,inValid) = (io.left,io.right,io.rightOutFire,io.isFlush,io.isStall,io.inValid)
 
   val valid = RegInit(false.B)
   when (rightOutFire) { valid := false.B }
-  when (left.valid && right.ready && !isStall) { valid := true.B }
-  when (isFlush && right.ready) { valid := false.B }
+  when (left.valid && right.ready && !isStall && !inValid) { valid := true.B }
+  when (isFlush) { valid := false.B }
 
   left.ready := right.ready && !isStall
-  right.bits := RegEnable(left.bits, left.valid && left.ready)
+  right.bits := RegEnable(left.bits, left.valid && left.ready && !inValid)
   right.valid := valid //&& !isFlush
 
 
@@ -52,17 +53,18 @@ class normalPipeConnect[T <: Data](gen : T) extends Module {
     val left = Flipped(DecoupledIO(gen))
     val right = DecoupledIO(gen)
     val rightOutFire = Input(Bool())
+    val inValid = Input(Bool())
     val isFlush = Input(Bool())
   })
-  val (left,right,rightOutFire,isFlush) = (io.left,io.right,io.rightOutFire,io.isFlush)
+  val (left,right,rightOutFire,isFlush,inValid) = (io.left,io.right,io.rightOutFire,io.isFlush,io.inValid)
 
   val valid = RegInit(false.B)
   when (rightOutFire) { valid := false.B }
-  when (left.valid && right.ready) { valid := true.B }
-  when (isFlush && right.ready) { valid := false.B }
+  when (left.valid && right.ready && !inValid) { valid := true.B }
+  when (isFlush) { valid := false.B }
 
   left.ready := right.ready
-  right.bits := RegEnable(left.bits, left.valid && right.ready)
+  right.bits := RegEnable(left.bits, left.valid && right.ready && !inValid)
   right.valid := valid //&& !isFlush
 
 
