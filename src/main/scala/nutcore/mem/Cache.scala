@@ -22,8 +22,10 @@ import chisel3.util.experimental.BoringUtils
 import bus.simplebus._
 import bus.axi4._
 import chisel3.experimental.IO
+import com.google.protobuf.Internal.FloatList
 import utils._
 import top.Settings
+import SSDbackend._
 
 case class CacheConfig (
   ro: Boolean = false,
@@ -245,6 +247,7 @@ sealed class CacheStage3(implicit val cacheConfig: CacheConfig) extends CacheMod
     val dataWriteBus = CacheDataArrayWriteBus()
     val metaWriteBus = CacheMetaArrayWriteBus()
 
+
     val mem = new SimpleBusUC
     val mmio = new SimpleBusUC
     val cohResp = Decoupled(new SimpleBusRespBundle)
@@ -265,6 +268,10 @@ sealed class CacheStage3(implicit val cacheConfig: CacheConfig) extends CacheMod
   val probe = io.in.valid && hasCoh.B && req.isProbe()
   val hitReadBurst = hit && req.isReadBurst()
   val meta = Mux1H(io.in.bits.waymask, io.in.bits.metas)
+  val mmioStorePending = WireInit(false.B)
+  if (cacheName == "dcache") {
+    BoringUtils.addSink(mmioStorePending,"MMIOStorePending")
+  }
   assert(!(mmio && hit), "MMIO request should not hit in cache")
 
   val storeHit = WireInit(false.B)      //hit in store pipe or store buffer
@@ -304,7 +311,7 @@ sealed class CacheStage3(implicit val cacheConfig: CacheConfig) extends CacheMod
     data = Wire(new MetaBundle).apply(tag = meta.tag, valid = true.B, dirty = true.B)
   )
 
-  val s_idle :: s_memReadReq :: s_memReadResp :: s_memWriteReq :: s_memWriteResp :: s_mmioReq :: s_mmioResp :: s_wait_resp :: s_release :: Nil = Enum(9)
+  val s_idle :: s_memReadReq :: s_memReadResp :: s_memWriteReq :: s_memWriteResp :: s_mmio_wait :: s_mmioReq :: s_mmioResp :: s_wait_resp :: s_release :: Nil = Enum(10)
   val state = RegInit(s_idle)
   val needFlush = RegInit(false.B)
 
@@ -347,6 +354,30 @@ sealed class CacheStage3(implicit val cacheConfig: CacheConfig) extends CacheMod
   io.mmio.req.bits := req
   io.mmio.resp.ready := true.B
   io.mmio.req.valid := (state === s_mmioReq)
+  val outBufferValid = WireInit(false.B)
+  //Optimal handling when there is mmio store
+  if (cacheName == "dcache") {
+    val MMIOStorePkt = Wire(Flipped(Decoupled(new StoreBufferEntry)))
+    MMIOStorePkt.valid := false.B
+    MMIOStorePkt.bits := 0.U.asTypeOf(new StoreBufferEntry)
+    BoringUtils.addSink(outBufferValid,"MMIOStorePktValid")
+    BoringUtils.addSink(MMIOStorePkt.bits,"MMIOStorePktBits")
+    BoringUtils.addSource(MMIOStorePkt.ready,"MMIOStorePktReady")
+    MMIOStorePkt.valid := outBufferValid && (state === s_mmioReq)
+    val mmioStoreReq = Wire(Flipped(Decoupled(new SimpleBusReqBundle(userBits = userBits, idBits = idBits))))
+    val mmioStoreReqLatch = RegEnable(mmioStoreReq.bits,mmioStoreReq.fire())
+    mmioStoreReq.ready := true.B
+    mmioStoreReq.valid := (state === s_mmioReq)
+    mmioStoreReq.bits.cmd := SimpleBusCmd.write
+    mmioStoreReq.bits.addr := MMIOStorePkt.bits.paddr
+    mmioStoreReq.bits.wdata := MMIOStorePkt.bits.data
+    mmioStoreReq.bits.size := MMIOStorePkt.bits.size
+    mmioStoreReq.bits.wmask := MMIOStorePkt.bits.mask
+
+    MMIOStorePkt.ready := io.mmio.req.ready
+
+    io.mmio.req.bits := Mux(mmioStorePending,mmioStoreReqLatch,req)
+  }
 
   val afterFirstRead = RegInit(false.B)
   val alreadyOutFire = RegEnable(true.B, init = false.B, io.out.fire())
@@ -378,13 +409,15 @@ sealed class CacheStage3(implicit val cacheConfig: CacheConfig) extends CacheMod
       }.elsewhen (hitReadBurst && io.out.ready) {
         state := s_release
         readBeatCnt.value := Mux(addr.wordIndex === (LineBeats - 1).U, 0.U, (addr.wordIndex + 1.U))
-      } .elsewhen ((miss && !storeHit || mmio) && !io.flush) {
-        state := Mux(mmio, s_mmioReq, Mux( meta.dirty, s_memWriteReq, s_memReadReq))
+      } .elsewhen ((miss && !storeHit || mmio) && !io.flush || mmioStorePending) {
+        state := Mux(mmioStorePending,Mux(outBufferValid,s_mmioReq,s_mmio_wait),Mux(mmio,s_mmioReq,Mux(meta.dirty, s_memWriteReq, s_memReadReq)))
+        //state := Mux(mmio && !mmioStorePending || outBufferValid, s_mmioReq , Mux(mmio && mmioStorePending, s_mmio_wait,  Mux(meta.dirty, s_memWriteReq, s_memReadReq)))
       }
     }
 
+    is (s_mmio_wait) { when(!mmioStorePending) { state := s_idle }.elsewhen(outBufferValid) { state := s_mmioReq }}
     is (s_mmioReq) { when (io.mmio.req.fire()) { state := s_mmioResp } }
-    is (s_mmioResp) { when (io.mmio.resp.fire()) { state := s_wait_resp } }
+    is (s_mmioResp) { when (io.mmio.resp.fire()) { state := Mux( mmio, s_wait_resp, s_idle) }}
 
     is (s_release) {
       when (io.cohResp.fire() || respToL1Fire) { readBeatCnt.inc() }
@@ -414,9 +447,6 @@ sealed class CacheStage3(implicit val cacheConfig: CacheConfig) extends CacheMod
     is (s_wait_resp) { when (io.out.fire() || needFlush || alreadyOutFire) { state := s_idle } }
   }
 
-  if (cacheName == "dcache") {
-    BoringUtils.addSource((state =/= s_idle || miss) && !(alreadyOutFire || io.out.fire()) && io.in.bits.req.cmd === SimpleBusCmd.read ,"cacheMissStall")
-  }
   val dataRefill = MaskData(io.mem.resp.bits.rdata, req.wdata, Mux(readingFirst, wordMask, 0.U(DataBits.W)))
   val dataRefillWriteBus = Wire(CacheDataArrayWriteBus).apply(
     valid = (state === s_memReadResp) && io.mem.resp.fire(), setIdx = Cat(addr.index, readBeatCnt.value),
@@ -469,11 +499,14 @@ sealed class CacheStage3(implicit val cacheConfig: CacheConfig) extends CacheMod
   // s2 and s3 can not be overwritten before a missing request
   // is totally handled. We use io.isFinish to indicate when the
   // request really ends.
-  io.isFinish := Mux(probe, io.cohResp.fire() && Mux(miss, state === s_idle, (state === s_release) && releaseLast),
-    Mux(hit || req.isWrite() || storeHit, io.out.fire(), (state === s_wait_resp) && (io.out.fire() || alreadyOutFire))
-  )
+  io.isFinish := Mux((hit || req.isWrite() || storeHit || mmio) && !mmioStorePending, io.out.fire() /*&& !mmioStorePending*/, (state === s_wait_resp) && (io.out.fire() || alreadyOutFire))
 
-  io.in.ready := io.out.ready && (state === s_idle && !hitReadBurst) && !miss && !probe
+
+//  io.in.ready := io.out.ready && (state === s_idle && !hitReadBurst) && !miss && !probe && !(mmioStorePending && mmio)
+  if (cacheName == "dcache") {
+    BoringUtils.addSource(!io.in.ready,"cacheMissStall")
+  }
+  io.in.ready := (io.out.ready && (state === s_idle && !hitReadBurst) && !(miss && !mmio || mmio) && !(hit && io.in.bits.req.cmd === SimpleBusCmd.write) || (mmio && state === s_wait_resp))
   io.dataReadRespToL1 := hitReadBurst && (state === s_idle && io.out.ready || state === s_release && state2 === s2_dataOK)
 
   assert(!(metaHitWriteBus.req.valid && metaRefillWriteBus.req.valid))
@@ -529,7 +562,9 @@ class Cache(implicit val cacheConfig: CacheConfig) extends CacheModule with HasC
   io.in.resp.valid := Mux(s3.io.out.valid && s3.io.out.bits.isPrefetch(), false.B, s3.io.out.valid || s3.io.dataReadRespToL1)
 
   if (cacheName == "dcache") {
-    val s3NotReady = !s3.io.in.ready
+    val s2NotReady = !s1.io.in.ready
+    val s3NotReady = !s2.io.in.ready
+    BoringUtils.addSource(s2NotReady,"s2NotReady")
     BoringUtils.addSource(s3NotReady,"s3NotReady")
   }
 
