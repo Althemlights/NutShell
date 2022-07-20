@@ -80,7 +80,7 @@ class FuPkt extends NutCoreBundle {
   //for SubALU
   val isSubALU = Output(Bool())
   //for MMIO
-//  val isMMIO = Output(Bool())
+  val isMMIO = Output(Bool())
   //for ghr update
   val ghr = Output(UInt(GhrLength.W))
   val btbIsBranch = Output(Bool())  //for update ghr
