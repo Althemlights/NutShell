@@ -114,19 +114,32 @@ class NutCore(implicit val p: NutCoreConfig) extends NutCoreModule {
   SSDbackend.io.in <> frontend.io.out
   frontend.io.redirect <> SSDbackend.io.redirectOut
   frontend.io.ipf := false.B
-  PipelineVector2Connect(new DecodeIO, frontend.io.out(0), frontend.io.out(1), SSDbackend.io.in(0), SSDbackend.io.in(1), frontend.io.flushVec(1), 16)
-  PipelineVector2Connect(new DecodeIO, frontend.io.out(2), frontend.io.out(3), SSDbackend.io.in(2), SSDbackend.io.in(3), frontend.io.flushVec(1), 16)
-
-  val mmioXbar = Module(new SimpleBusCrossbarNto1(2))
+  // add pipestage
+//  PipelineVector2Connect(new DecodeIO, frontend.io.out(0), frontend.io.out(1), SSDbackend.io.in(0), SSDbackend.io.in(1), frontend.io.flushVec(1), 16)
+//  PipelineVector2Connect(new DecodeIO, frontend.io.out(2), frontend.io.out(3), SSDbackend.io.in(2), SSDbackend.io.in(3), frontend.io.flushVec(1), 16)
+  for(i <- 0 to 3){frontend.io.out(i) <> SSDbackend.io.in(i)}
+//  val mmioXbar = Module(new SimpleBusCrossbarNto1(1))
   val s2NotReady = WireInit(false.B)
-  io.imem <> Cache(in = frontend.io.imem, mmio = mmioXbar.io.in.take(1), flush = Fill(2, frontend.io.flushVec(0) | frontend.io.bpFlush), empty = BoolTmp0, enable = HasIcache)(CacheConfig(ro = true, name = "icache", userBits = ICacheUserBundleWidth))
-  io.dmem <> Cache(in = SSDbackend.io.dmem, mmio = mmioXbar.io.in.drop(1), flush = "b00".U, empty = BoolTmp1, enable = HasDcache)(CacheConfig(ro = true, name = "dcache"))
+  io.imem <> SSDCache(in = frontend.io.imem, flush = (frontend.io.flushVec(0) | frontend.io.bpFlush))(SSDCacheConfig(ro = true, name = "icache", userBits = ICacheUserBundleWidth))
+  io.dmem <> SSDCache(in = SSDbackend.io.dmem, flush = false.B)(SSDCacheConfig(ro = true, name = "dcache"))
 
   // DMA?
   io.frontend.resp.bits := DontCare
   io.frontend.req.ready := false.B
   io.frontend.resp.valid := false.B
 
-  io.mmio <> mmioXbar.io.out
+//  io.mmio <> mmioXbar.io.out
+
+//  val mmioXbar = Module(new SimpleBusCrossbarNto1(2))
+//  val s2NotReady = WireInit(false.B)
+//  io.imem <> Cache(in = frontend.io.imem, mmio = mmioXbar.io.in.take(1), flush = Fill(2, frontend.io.flushVec(0) | frontend.io.bpFlush), empty = BoolTmp0, enable = HasIcache)(CacheConfig(ro = true, name = "icache", userBits = ICacheUserBundleWidth))
+//  io.dmem <> Cache(in = SSDbackend.io.dmem, mmio = mmioXbar.io.in.drop(1), flush = "b00".U, empty = BoolTmp1, enable = HasDcache)(CacheConfig(ro = true, name = "dcache"))
+//
+//  // DMA?
+//  io.frontend.resp.bits := DontCare
+//  io.frontend.req.ready := false.B
+//  io.frontend.resp.valid := false.B
+//
+  io.mmio <> DontCare
 
 }
