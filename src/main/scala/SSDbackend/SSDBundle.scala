@@ -35,18 +35,23 @@ class BypassCtl extends Bundle with hasBypassConst {
   val rs1bypasse3 = Output(Vec(E3BypassPort,Bool()))
   val rs2bypasse3 = Output(Vec(E3BypassPort,Bool()))
 }
-class StorePipeBypassCtrl extends Bundle with hasBypassConst{
-  val storeBypassCtrlE1 = Output(Vec(E1StoreBypassPort,Bool()))
+class LSUPipeBypassCtrl extends Bundle with hasBypassConst{
+  val lsBypassCtrlE1 = Output(Vec(E1StoreBypassPort,Bool()))
+  val storeBypassCtrlE2 = Output(Vec(E2StoreBypassPort,Bool()))
+}
+class LSUBypassCtrl extends Bundle with hasBypassConst{
+  val lsBypassCtrli0E1 = Output(Vec(E1StoreBypassPort,Bool()))
+  val lsBypassCtrli1E1 = Output(Vec(E1StoreBypassPort,Bool()))
   val storeBypassCtrlE2 = Output(Vec(E2StoreBypassPort,Bool()))
 }
 class StorePipeBypassPort extends  Bundle with hasBypassConst{
-  val storeBypassPortE1 = Output(Vec(E1StoreBypassPort,UInt(64.W)))
+  val lsBypassPortE1 = Output(Vec(E1StoreBypassPort,UInt(64.W)))
   val storeBypassPortE2 = Output(Vec(E2StoreBypassPort,UInt(64.W)))
 }
 class BypassPkt extends Bundle {
   val decodePkt = new decodePkt
   val BypassCtl = new BypassCtl
-  val storeCtrl = new StorePipeBypassCtrl
+  val lsuCtrl = new LSUPipeBypassCtrl
 }
 class rsrdPkt extends Bundle{
   val rs1Valid = Output(Bool())
@@ -68,7 +73,7 @@ class FuPkt extends NutCoreBundle {
   val alu2pmu = new ALU2PMUIO
   val redirect = new RedirectIO
   //for difftest
-  val instr = Output(UInt(64.W))
+  val instr = Output(UInt(32.W))
   //for redirect
   val pc = Output(UInt(VAddrBits.W))
   val pnpc = Output(UInt(VAddrBits.W))
