@@ -206,6 +206,7 @@ class BPU_ooo extends NutCoreModule {
   val retPC = Mux1H(brIdxOneHot,Seq(pcLatch+4.U,pcLatch+6.U,pcLatch+8.U,pcLatch+10.U))
   (0 to 3).map(i => retIdx(i) := (btbRead(i)._type === BTBtype.C) && (brIdxOneHot(i)))
   val rasWen = retIdx.asUInt.orR()
+  val rasEmpty = sp.value === 0.U
 
   when (rasWen)  {
     ras.write(sp.value + 1.U, retPC)  //TODO: modify for RVC
@@ -218,9 +219,11 @@ class BPU_ooo extends NutCoreModule {
     }
 
 
+
+
   val target = Wire(Vec(4, UInt(VAddrBits.W)))
   (0 to 3).map(i => target(i) := Mux(btbRead(i)._type === BTBtype.R, rasTarget, btbRead(i).target))
-  (0 to 3).map(i => brIdx(i) := btbHit(i) && pcLatchValid(i).asBool && Mux(btbRead(i)._type === BTBtype.B, phtTaken(i), true.B) && btbRead(i).valid)
+  (0 to 3).map(i => brIdx(i) := btbHit(i) && pcLatchValid(i).asBool && Mux(btbRead(i)._type === BTBtype.B, phtTaken(i), Mux(btbRead(i)._type === BTBtype.R, !rasEmpty, true.B)) && btbRead(i).valid)
   io.brIdx := outputHold(brIdx,validLatch)
   io.out.target := outputHold(PriorityMux(io.brIdx, target),validLatch)
   io.out.valid := outputHold(io.brIdx.asUInt.orR,validLatch)
