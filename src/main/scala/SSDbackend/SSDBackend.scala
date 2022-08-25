@@ -181,27 +181,33 @@ class SSDbackend extends NutCoreModule with hasBypassConst {
   dontTouch(io.dmem.resp.ready)
   LSU.io.out.ready := true.B//!(Redirect6.valid || Redirect7.valid)
   memStall := LSU.io.memStall
-  LSU.io.storeBypassCtrl <> Bypass.io.storeCtrl
-  val i0LSUValid = BypassPktValid(0) && (BypassPkt(0).decodePkt.load || BypassPkt(0).decodePkt.store)
-  val i1LSUValid = BypassPktValid(1) && (BypassPkt(1).decodePkt.load || BypassPkt(1).decodePkt.store)
+  LSU.io.storeBypassCtrl <> Bypass.io.LSUBypassCtrl.storeBypassCtrlE2
+  val i0LSUValid = BypassPktValid(2) && (BypassPkt(2).decodePkt.load || BypassPkt(2).decodePkt.store)
+  val i1LSUValid = BypassPktValid(3) && (BypassPkt(3).decodePkt.load || BypassPkt(3).decodePkt.store)
   //LSU flush
-  LSU.io.flush(0) := pipeOut(2).bits.redirect.valid && pipeOut(2).valid || pipeOut(3).bits.redirect.valid && pipeOut(3).valid ||
-    ALU_6.io.redirect.valid || ALU_7.io.redirect.valid
-  LSU.io.flush(1) := ALU_6.io.redirect.valid || ALU_7.io.redirect.valid
-  LSU.io.flush(2) := ALU_6.io.redirect.valid || ALU_7.io.redirect.valid
-  LSU.io.flush(3) := false.B
-  LSU.io.invalid(0) := false.B
-  LSU.io.invalid(1) := pipeOut(3).bits.redirect.valid && pipeOut(3).valid && (BypassPkt(2).decodePkt.load || BypassPkt(2).decodePkt.store)
-  LSU.io.invalid(2) := false.B
-  LSU.io.invalid(3) := ALU_7.io.redirect.valid && BypassPktValid(6) && BypassPkt(6).decodePkt.store
+//  LSU.io.flush(0) := pipeOut(2).bits.redirect.valid && pipeOut(2).valid || pipeOut(3).bits.redirect.valid && pipeOut(3).valid ||
+//    ALU_6.io.redirect.valid || ALU_7.io.redirect.valid
+//  LSU.io.flush(1) := ALU_6.io.redirect.valid || ALU_7.io.redirect.valid
+//  LSU.io.flush(2) := ALU_6.io.redirect.valid || ALU_7.io.redirect.valid
+//  LSU.io.flush(3) := false.B
+//  LSU.io.invalid(0) := false.B
+//  LSU.io.invalid(1) := pipeOut(3).bits.redirect.valid && pipeOut(3).valid && (BypassPkt(2).decodePkt.load || BypassPkt(2).decodePkt.store)
+//  LSU.io.invalid(2) := false.B
+//  LSU.io.invalid(3) := ALU_7.io.redirect.valid && BypassPktValid(6) && BypassPkt(6).decodePkt.store
+    LSU.io.flush(0) := ALU_6.io.redirect.valid || ALU_7.io.redirect.valid
+    LSU.io.flush(1) := ALU_6.io.redirect.valid || ALU_7.io.redirect.valid
+    LSU.io.flush(2) := false.B
+    LSU.io.invalid(0) := pipeOut(3).bits.redirect.valid && pipeOut(3).valid && (BypassPkt(2).decodePkt.load || BypassPkt(2).decodePkt.store)
+    LSU.io.invalid(1) := false.B
+    LSU.io.invalid(2) := ALU_7.io.redirect.valid && BypassPktValid(6) && BypassPkt(6).decodePkt.store
 
   dontTouch(i0LSUValid)
   dontTouch(i1LSUValid)
   val LSUValid = i0LSUValid || i1LSUValid
-  val LSUfunc = Mux(i1LSUValid,pipeRegStage1.right.bits.fuOpType,pipeRegStage0.right.bits.fuOpType)
-  val LSUsrc1 = Mux(i1LSUValid,pipeRegStage1.right.bits.rs1,pipeRegStage0.right.bits.rs1)
-  val LSUsrc2 = Mux(i1LSUValid,pipeRegStage1.right.bits.rs2,pipeRegStage0.right.bits.rs2)
-  val LSUoffset = Mux(i1LSUValid,pipeRegStage1.right.bits.offset,pipeRegStage0.right.bits.offset)
+  val LSUfunc = Mux(i1LSUValid,pipeRegStage3.right.bits.fuOpType,pipeRegStage2.right.bits.fuOpType)
+  val LSUsrc1 = Mux(i1LSUValid,pipeRegStage3.right.bits.rs1,pipeRegStage2.right.bits.rs1)
+  val LSUsrc2 = Mux(i1LSUValid,pipeRegStage3.right.bits.rs2,pipeRegStage2.right.bits.rs2)
+  val LSUoffset = Mux(i1LSUValid,pipeRegStage3.right.bits.offset,pipeRegStage2.right.bits.offset)
   LSU.access(LSUValid,LSUsrc1,LSUsrc2,LSUfunc,LSUoffset)
   //MDU
   val MDU = Module(new SSDMDU)
@@ -216,13 +222,17 @@ class SSDbackend extends NutCoreModule with hasBypassConst {
   mduStall := (BypassPkt(4).decodePkt.muldiv && pipeRegStage4.right.valid || BypassPkt(5).decodePkt.muldiv && pipeRegStage5.right.valid) && !MDU.io.out.valid ||
     MDUValid && !MDU.io.in.ready
   //Bypass signal and data port
-  val ByPassEna = Wire(Vec(12,Bool()))
+  val ByPassEna = Wire(Vec(14,Bool()))
   ByPassEna := Seq(
     //e0
     BypassPktE0(0).bits.BypassCtl.rs1bypasse0.asUInt.orR,
     BypassPktE0(0).bits.BypassCtl.rs2bypasse0.asUInt.orR,
     BypassPktE0(1).bits.BypassCtl.rs1bypasse0.asUInt.orR,
     BypassPktE0(1).bits.BypassCtl.rs2bypasse0.asUInt.orR,
+    //e1 
+    //for src1 of load/store inst
+    Bypass.io.LSUBypassCtrl.lsBypassCtrli0E1.asUInt.orR,
+    Bypass.io.LSUBypassCtrl.lsBypassCtrli1E1.asUInt.orR,
     //e2
     BypassPkt(2).BypassCtl.rs1bypasse2.asUInt.orR,
     BypassPkt(2).BypassCtl.rs2bypasse2.asUInt.orR,
@@ -238,7 +248,7 @@ class SSDbackend extends NutCoreModule with hasBypassConst {
   val BypassPortE0 = Wire(Vec(E0BypassPort,UInt(64.W)))
   val BypassPortE2 = Wire(Vec(E2BypassPort,UInt(64.W)))
   val BypassPortE3 = Wire(Vec(E3BypassPort,UInt(64.W)))
-  val StoreBypassPortE1 = Wire(Vec(E1StoreBypassPort,UInt(64.W)))
+  val lsuBypassPortE1 = Wire(Vec(E1StoreBypassPort,UInt(64.W)))
   val StoreBypassPortE2 = Wire(Vec(E2StoreBypassPort,UInt(64.W)))
   BypassPortE0 := Seq(pipeIn(2).bits.rd,pipeIn(3).bits.rd,pipeIn(4).bits.rd,pipeIn(5).bits.rd,
     pipeIn(6).bits.rd,pipeIn(7).bits.rd,LSU.io.out.bits,MDU.io.out.bits,
@@ -246,14 +256,14 @@ class SSDbackend extends NutCoreModule with hasBypassConst {
   BypassPortE2 := Seq(coupledPipeOut(2).bits.rd,coupledPipeOut(3).bits.rd)
   BypassPortE3 := Seq(coupledPipeIn(1).bits.rd,coupledPipeIn(2).bits.rd,coupledPipeIn(3).bits.rd,coupledPipeOut(2).bits.rd,coupledPipeOut(3).bits.rd)
 
-  StoreBypassPortE1 := Seq(coupledPipeIn(0).bits.rd,coupledPipeIn(1).bits.rd,coupledPipeIn(2).bits.rd,coupledPipeIn(3).bits.rd)
+  lsuBypassPortE1 := Seq(coupledPipeIn(0).bits.rd,coupledPipeIn(1).bits.rd,coupledPipeIn(2).bits.rd,coupledPipeIn(3).bits.rd)
   StoreBypassPortE2 := Seq(coupledPipeIn(0).bits.rd,coupledPipeIn(1).bits.rd,coupledPipeIn(2).bits.rd,coupledPipeIn(3).bits.rd,coupledPipeOut(2).bits.rd,coupledPipeOut(3).bits.rd)
-  LSU.io.storeBypassPort.storeBypassPortE1 <> StoreBypassPortE1
-  LSU.io.storeBypassPort.storeBypassPortE2 <> StoreBypassPortE2
+  
+  LSU.io.storeBypassPort <> StoreBypassPortE2
   dontTouch(BypassPortE0)
   dontTouch(BypassPortE2)
   dontTouch(BypassPortE3)
-  dontTouch(StoreBypassPortE1)
+  dontTouch(lsuBypassPortE1)
   dontTouch(StoreBypassPortE2)
   //decode & issue
   //rs1 data type: pc, regfile or bypassa
@@ -332,6 +342,8 @@ class SSDbackend extends NutCoreModule with hasBypassConst {
   //e1
   pipeIn(2).bits.rd := Mux(aluValid(0),ALU_0.io.out.bits,0.U(64.W))
   pipeIn(3).bits.rd := Mux(aluValid(1),ALU_1.io.out.bits,0.U(64.W))
+  pipeIn(2).bits.rs1 := BypassMux(ByPassEna(4), BypassPkt(0).lsuCtrl.lsBypassCtrlE1,lsuBypassPortE1, pipeOut(0).bits.rs1)
+  pipeIn(3).bits.rs1 := BypassMux(ByPassEna(5), BypassPkt(1).lsuCtrl.lsBypassCtrlE1,lsuBypassPortE1, pipeOut(1).bits.rs1)
   pipeIn(2).bits.branchTaken := Mux(aluValid(0),ALU_0.io.branchTaken,0.U(64.W))
   pipeIn(3).bits.branchTaken := Mux(aluValid(1),ALU_1.io.branchTaken,0.U(64.W))
   pipeIn(2).bits.bpuUpdateReq := Mux(bpuUpdataReq0.valid && pipeOut(0).valid,bpuUpdataReq0,0.U.asTypeOf(new BPUUpdateReq))
@@ -342,27 +354,27 @@ class SSDbackend extends NutCoreModule with hasBypassConst {
   pipeIn(3).bits.alu2pmu := Mux(bpuUpdataReq1.valid && pipeOut(1).valid,alu2pmu1,0.U.asTypeOf(new ALU2PMUIO))
 
   //e2
-  pipeIn(4).bits.rs1 := BypassMux(ByPassEna(4), BypassPkt(2).BypassCtl.rs1bypasse2,BypassPortE2, pipeOut(2).bits.rs1)
-  pipeIn(4).bits.rs2 := BypassMux(ByPassEna(5), BypassPkt(2).BypassCtl.rs2bypasse2,BypassPortE2, pipeOut(2).bits.rs2)
-  pipeIn(5).bits.rs1 := BypassMux(ByPassEna(6), BypassPkt(3).BypassCtl.rs1bypasse2,BypassPortE2, pipeOut(3).bits.rs1)
-  pipeIn(5).bits.rs2 := BypassMux(ByPassEna(7), BypassPkt(3).BypassCtl.rs2bypasse2,BypassPortE2, pipeOut(3).bits.rs2)
+  pipeIn(4).bits.rs1 := BypassMux(ByPassEna(6), BypassPkt(2).BypassCtl.rs1bypasse2,BypassPortE2, pipeOut(2).bits.rs1)
+  pipeIn(4).bits.rs2 := BypassMux(ByPassEna(7), BypassPkt(2).BypassCtl.rs2bypasse2,BypassPortE2, pipeOut(2).bits.rs2)
+  pipeIn(5).bits.rs1 := BypassMux(ByPassEna(8), BypassPkt(3).BypassCtl.rs1bypasse2,BypassPortE2, pipeOut(3).bits.rs1)
+  pipeIn(5).bits.rs2 := BypassMux(ByPassEna(9), BypassPkt(3).BypassCtl.rs2bypasse2,BypassPortE2, pipeOut(3).bits.rs2)
 
   //e3
   pipeIn(6).bits.rd := Mux(BypassPkt(4).decodePkt.load,LSU.io.out.bits,Mux(BypassPkt(4).decodePkt.muldiv,MDU.io.out.bits,pipeOut(4).bits.rd))
-  pipeIn(6).bits.rs1 := BypassMux(ByPassEna(8), BypassPkt(4).BypassCtl.rs1bypasse3,BypassPortE3, pipeOut(4).bits.rs1)
-  pipeIn(6).bits.rs2 := BypassMux(ByPassEna(9), BypassPkt(4).BypassCtl.rs2bypasse3,BypassPortE3, pipeOut(4).bits.rs2)
+  pipeIn(6).bits.rs1 := BypassMux(ByPassEna(10), BypassPkt(4).BypassCtl.rs1bypasse3,BypassPortE3, pipeOut(4).bits.rs1)
+  pipeIn(6).bits.rs2 := BypassMux(ByPassEna(11), BypassPkt(4).BypassCtl.rs2bypasse3,BypassPortE3, pipeOut(4).bits.rs2)
   pipeIn(6).bits.isMMIO := Mux(BypassPkt(4).decodePkt.load || BypassPkt(4).decodePkt.store,LSU.io.isMMIO,false.B)
   pipeIn(7).bits.rd := Mux(BypassPkt(5).decodePkt.load,LSU.io.out.bits,Mux(BypassPkt(5).decodePkt.muldiv,MDU.io.out.bits,pipeOut(5).bits.rd))
-  pipeIn(7).bits.rs1 := BypassMux(ByPassEna(10), BypassPkt(5).BypassCtl.rs1bypasse3,BypassPortE3, pipeOut(5).bits.rs1)
-  pipeIn(7).bits.rs2 := BypassMux(ByPassEna(11), BypassPkt(5).BypassCtl.rs2bypasse3,BypassPortE3, pipeOut(5).bits.rs2)
+  pipeIn(7).bits.rs1 := BypassMux(ByPassEna(12), BypassPkt(5).BypassCtl.rs1bypasse3,BypassPortE3, pipeOut(5).bits.rs1)
+  pipeIn(7).bits.rs2 := BypassMux(ByPassEna(13), BypassPkt(5).BypassCtl.rs2bypasse3,BypassPortE3, pipeOut(5).bits.rs2)
   pipeIn(7).bits.isMMIO := Mux(BypassPkt(5).decodePkt.load || BypassPkt(5).decodePkt.store,LSU.io.isMMIO,false.B)
 
   coupledPipeIn(0).bits.rd := Mux(BypassPkt(4).decodePkt.load,LSU.io.out.bits,Mux(BypassPkt(4).decodePkt.muldiv,MDU.io.out.bits,pipeOut(4).bits.rd))
-  coupledPipeIn(0).bits.rs1 := BypassMux(ByPassEna(8), BypassPkt(4).BypassCtl.rs1bypasse3,BypassPortE3, pipeOut(4).bits.rs1)
-  coupledPipeIn(0).bits.rs2 := BypassMux(ByPassEna(9), BypassPkt(4).BypassCtl.rs2bypasse3,BypassPortE3, pipeOut(4).bits.rs2)
+  coupledPipeIn(0).bits.rs1 := BypassMux(ByPassEna(10), BypassPkt(4).BypassCtl.rs1bypasse3,BypassPortE3, pipeOut(4).bits.rs1)
+  coupledPipeIn(0).bits.rs2 := BypassMux(ByPassEna(11), BypassPkt(4).BypassCtl.rs2bypasse3,BypassPortE3, pipeOut(4).bits.rs2)
   coupledPipeIn(1).bits.rd := Mux(BypassPkt(5).decodePkt.load,LSU.io.out.bits,Mux(BypassPkt(5).decodePkt.muldiv,MDU.io.out.bits,pipeOut(5).bits.rd))
-  coupledPipeIn(1).bits.rs1 := BypassMux(ByPassEna(10), BypassPkt(5).BypassCtl.rs1bypasse3,BypassPortE3, pipeOut(5).bits.rs1)
-  coupledPipeIn(1).bits.rs2 := BypassMux(ByPassEna(11), BypassPkt(5).BypassCtl.rs2bypasse3,BypassPortE3, pipeOut(5).bits.rs2)
+  coupledPipeIn(1).bits.rs1 := BypassMux(ByPassEna(12), BypassPkt(5).BypassCtl.rs1bypasse3,BypassPortE3, pipeOut(5).bits.rs1)
+  coupledPipeIn(1).bits.rs2 := BypassMux(ByPassEna(13), BypassPkt(5).BypassCtl.rs2bypasse3,BypassPortE3, pipeOut(5).bits.rs2)
 
   //e4
   pipeIn(8).bits.rd := Mux(aluValid(2),ALU_6.io.out.bits,pipeOut(6).bits.rd)
@@ -398,7 +410,7 @@ class SSDbackend extends NutCoreModule with hasBypassConst {
 
   // for debug
   val lsuPC =WireInit(0.U(VAddrBits.W))
-  lsuPC := Mux(BypassPkt(1).decodePkt.load || BypassPkt(1).decodePkt.store, pipeOut(1).bits.pc, pipeOut(0).bits.pc)
+  lsuPC := Mux(BypassPkt(3).decodePkt.load || BypassPkt(3).decodePkt.store, pipeOut(3).bits.pc, pipeOut(2).bits.pc)
   BoringUtils.addSource(lsuPC,"lsuPC")
 
   //moduleTest
@@ -659,7 +671,7 @@ class SSDbackend extends NutCoreModule with hasBypassConst {
     dt_ic1.io.clock := clock
     dt_ic1.io.coreid := 0.U
     dt_ic1.io.index := 0.U
-    dt_ic1.io.valid := RegNext(pipeOut(9).fire() && !pipeInvalid(11) && pipeOut(9).bits.pc =/= 0.U)
+    dt_ic1.io.valid := RegNext(pipeOut(9).fire() && !pipeInvalid(11) && pipeOut(9).bits.pc =/= 0.U) && !RegNext(SSDcoretrap)
     dt_ic1.io.pc := RegNext(Cat(0.U((64 - VAddrBits).W), pipeOut(9).bits.pc))
     dt_ic1.io.instr := RegNext(pipeOut(9).bits.instr)
     dt_ic1.io.special := 0.U
