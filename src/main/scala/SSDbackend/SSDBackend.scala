@@ -147,35 +147,44 @@ class SSDbackend extends NutCoreModule with hasBypassConst {
   val CSR = Module(new SSDCSR)
   CSR.io.out.ready := true.B
   CSR.io.isBackendException := false.B
-  val i0CSRValid = pipeOut(0).bits.csrInst
-  val i1CSRValid = pipeOut(1).bits.csrInst
+  val i0CSRValid = pipeOut(6).bits.csrInst
+  val i1CSRValid = pipeOut(7).bits.csrInst
   val CSRValid = (i0CSRValid || i1CSRValid) && (! Bypass.io.flush(0))
-  val CSRfunc = Mux(pipeOut(1).bits.csrInst,pipeOut(1).bits.fuOpType,pipeOut(0).bits.fuOpType)
-  val CSRsrc1 = Mux(pipeOut(1).bits.csrInst,pipeOut(1).bits.rs1,pipeOut(0).bits.rs1)
-  val CSRsrc2 = Mux(pipeOut(1).bits.csrInst,pipeOut(1).bits.rs2,pipeOut(0).bits.rs2)
+  val CSRfunc = Mux(pipeOut(7).bits.csrInst,pipeOut(7).bits.fuOpType,pipeOut(6).bits.fuOpType)
+  val CSRsrc1 = Mux(pipeOut(7).bits.csrInst,pipeOut(7).bits.rs1,pipeOut(6).bits.rs1)
+  val CSRsrc2 = Mux(pipeOut(7).bits.csrInst,pipeOut(7).bits.rs2,pipeOut(6).bits.rs2)
   CSR.access(CSRValid,CSRsrc1,CSRsrc2,CSRfunc)
   CSR.io.cfIn := 0.U.asTypeOf(new CtrlFlowIO)
   CSR.io.instrValid := true.B
-  when(pipeOut(9).bits.csrInst){
-    CSR.io.cfIn.pc                   := pipeOut(9).bits.pc
-    CSR.io.cfIn.pnpc                 := pipeOut(9).bits.pnpc
-    CSR.io.cfIn.instr                := pipeOut(9).bits.instr
-    CSR.io.cfIn.brIdx                := pipeOut(9).bits.brIdx
-    CSR.io.cfIn.isRVC                := pipeOut(9).bits.isRVC
-    CSR.io.cfIn.isBranch             := pipeOut(9).bits.isBranch
-    CSR.io.cfIn.redirect.btbIsBranch := pipeOut(9).bits.btbIsBranch
-    CSR.io.cfIn.redirect.ghr         := pipeOut(9).bits.ghr
-  }.elsewhen(pipeOut(8).bits.csrInst) {
-    CSR.io.cfIn.pc                   := pipeOut(8).bits.pc
-    CSR.io.cfIn.pnpc                 := pipeOut(8).bits.pnpc
-    CSR.io.cfIn.instr                := pipeOut(8).bits.instr
-    CSR.io.cfIn.brIdx                := pipeOut(8).bits.brIdx
-    CSR.io.cfIn.isRVC                := pipeOut(8).bits.isRVC
-    CSR.io.cfIn.isBranch             := pipeOut(8).bits.isBranch
-    CSR.io.cfIn.redirect.btbIsBranch := pipeOut(8).bits.btbIsBranch
-    CSR.io.cfIn.redirect.ghr         := pipeOut(8).bits.ghr
+  when(pipeOut(7).bits.csrInst){
+    CSR.io.cfIn.pc                   := pipeOut(7).bits.pc
+    CSR.io.cfIn.pnpc                 := pipeOut(7).bits.pnpc
+    CSR.io.cfIn.instr                := pipeOut(7).bits.instr
+    CSR.io.cfIn.brIdx                := pipeOut(7).bits.brIdx
+    CSR.io.cfIn.isRVC                := pipeOut(7).bits.isRVC
+    CSR.io.cfIn.isBranch             := pipeOut(7).bits.isBranch
+    CSR.io.cfIn.redirect.btbIsBranch := pipeOut(7).bits.btbIsBranch
+    CSR.io.cfIn.redirect.ghr         := pipeOut(7).bits.ghr
+  }.elsewhen(pipeOut(6).bits.csrInst) {
+    CSR.io.cfIn.pc                   := pipeOut(6).bits.pc
+    CSR.io.cfIn.pnpc                 := pipeOut(6).bits.pnpc
+    CSR.io.cfIn.instr                := pipeOut(6).bits.instr
+    CSR.io.cfIn.brIdx                := pipeOut(6).bits.brIdx
+    CSR.io.cfIn.isRVC                := pipeOut(6).bits.isRVC
+    CSR.io.cfIn.isBranch             := pipeOut(6).bits.isBranch
+    CSR.io.cfIn.redirect.btbIsBranch := pipeOut(6).bits.btbIsBranch
+    CSR.io.cfIn.redirect.ghr         := pipeOut(6).bits.ghr
+  }.otherwise {
+    CSR.io.cfIn.pc                   := pipeOut(6).bits.pc
+    CSR.io.cfIn.pnpc                 := pipeOut(6).bits.pnpc
+    CSR.io.cfIn.instr                := pipeOut(6).bits.instr
+    CSR.io.cfIn.brIdx                := pipeOut(6).bits.brIdx
+    CSR.io.cfIn.isRVC                := pipeOut(6).bits.isRVC
+    CSR.io.cfIn.isBranch             := pipeOut(6).bits.isBranch
+    CSR.io.cfIn.redirect.btbIsBranch := pipeOut(6).bits.btbIsBranch
+    CSR.io.cfIn.redirect.ghr         := pipeOut(6).bits.ghr
   }
-
+/
 
     dontTouch(CSR.io)
   //  val csrOut = csr.access(valid = fuValids(FuType.csr), src1 = src1, src2 = src2, func = fuOpType)
