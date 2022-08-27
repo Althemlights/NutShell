@@ -15,6 +15,13 @@ class PMUIO0 extends Bundle{
   val laterStageStalli1 = Output(Bool())
 
   val loadRsNotreadyi1 = Output(Bool())
+  val load_sub_rs1_i1 = Output(Bool())
+  val load_md_rs1_i1 = Output(Bool())
+  val load_load_rs1_i1 = Output(Bool())
+  val load_sub_rs2_i1 = Output(Bool())
+  val load_md_rs2_i1 = Output(Bool())
+  val load_load_rs2_i1 = Output(Bool())
+
   val storeRsNotreadyi1 = Output(Bool())
   val mulRsNotreadyi1 = Output(Bool())
   val divRsNotreadyi1 = Output(Bool())
@@ -113,9 +120,16 @@ class PMU extends Module{
     io.in0.loadRsNotreadyi1     ->   (0x0e,  "loadRsNotreadyi1  "),
     io.in0.storeRsNotreadyi1    ->   (0x0f,  "storeRsNotreadyi1 "),
     io.in0.mulRsNotreadyi1      ->   (0x10,  "mulRsNotreadyi1   "),
-    io.in0.divRsNotreadyi1      ->   (0x11,  "divRsNotreadyi1   ")
+    io.in0.divRsNotreadyi1      ->   (0x11,  "divRsNotreadyi1   "),
+
+    io.in0.load_sub_rs1_i1     ->   (0x12,  "load_sub_rs1_i1    "),
+    io.in0.load_md_rs1_i1      ->   (0x13,  "load_md_rs1_i1     "),
+    io.in0.load_load_rs1_i1    ->   (0x14,  "load_load_rs1_i1   "),
+    io.in0.load_sub_rs2_i1     ->   (0x12,  "load_sub_rs2_i1    "),
+    io.in0.load_md_rs2_i1      ->   (0x13,  "load_md_rs2_i1     "),
+    io.in0.load_load_rs2_i1    ->   (0x14,  "load_load_rs2_i1   ")
   )
-  val stallCntNum = 19
+  val stallCntNum = 25
   val stallCnts = List.fill(stallCntNum)(RegInit(0.U(64.W)))
   val stallCntCond = List.fill(stallCntNum)(WireInit(false.B))
   if(SSDCoreConfig().EnablePMU){(stallCnts zip stallCntCond).map{ case(a,b) => { when(b) { a := a + 1.U }}}}
@@ -147,7 +161,7 @@ class PMU extends Module{
   if(SSDCoreConfig().EnablePMU){(perfCnts zip perfIncrease).map{ case(a,b) => { a := a + b }}}
   PerfCntList.map{ case(a,(b,c)) => {perfIncrease(b) := a}}
 
-  if(SSDCoreConfig().EnablePerfCnt) {
+  if(SSDCoreConfig().EnableBPUCnt) {
     when(RegNext(io.coreTrap)) {
       PerfCntList.map { case (a, (b, c)) => {printf(c + " ->  %d\n", perfCnts(b))}
       }
