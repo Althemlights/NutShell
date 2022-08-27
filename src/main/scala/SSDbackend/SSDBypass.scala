@@ -152,9 +152,7 @@ class DecodeIO2BypassPkt extends Module {
     i0decodePkt.load &&
       (i0Hiti1Rs1 ||
         (i0rs1hitStage >= 0.U && i0rs1hitStage <= 3.U) && FuType(i0rs1hitStage).subalu && !i0Hiti1Rs1 ||
-        (i0rs2hitStage >= 0.U && i0rs2hitStage <= 3.U) && FuType(i0rs2hitStage).subalu && !i0Hiti1Rs2 ||
-        (i0rs1hitStage >= 0.U && i0rs1hitStage <= 1.U) && (FuType(i0rs1hitStage).muldiv || FuType(i0rs1hitStage).load) && !i0Hiti1Rs1 ||
-        (i0rs2hitStage >= 0.U && i0rs2hitStage <= 1.U) && (FuType(i0rs2hitStage).muldiv || FuType(i0rs2hitStage).load) && !i0Hiti1Rs2) ||
+        (i0rs1hitStage >= 0.U && i0rs1hitStage <= 1.U) && (FuType(i0rs1hitStage).muldiv || FuType(i0rs1hitStage).load) && !i0Hiti1Rs1 ) ||
   i0decodePkt.store && ( i0Hiti1Rs1 || i0Hiti1Rs2 ||    //the condition when store instruction does not meet the launch request
       i0rs1hitStage === 0.U && (FuType(0).subalu || FuType(0).load || FuType(0).muldiv) ||
       i0rs1hitStage === 1.U && (FuType(1).subalu || FuType(1).load || FuType(1).muldiv) ||
@@ -172,9 +170,7 @@ class DecodeIO2BypassPkt extends Module {
         (i1rs2hitStage >= 0.U && i1rs2hitStage <= 3.U) && (FuType(i1rs2hitStage).muldiv || FuType(i1rs2hitStage).subalu || FuType(i1rs2hitStage).load)) ||
      i1decodePkt.load &&
        ((i1rs1hitStage >= 0.U && i1rs1hitStage <= 3.U) && FuType(i1rs1hitStage).subalu ||
-        (i1rs2hitStage >= 0.U && i1rs2hitStage <= 3.U) && FuType(i1rs2hitStage).subalu ||
-        (i1rs1hitStage >= 0.U && i1rs1hitStage <= 1.U) && (FuType(i1rs1hitStage).muldiv || FuType(i1rs1hitStage).load) ||
-        (i1rs2hitStage >= 0.U && i1rs2hitStage <=1.U) && (FuType(i1rs2hitStage).muldiv || FuType(i1rs2hitStage).load)) ||
+        (i1rs1hitStage >= 0.U && i1rs1hitStage <= 1.U) && (FuType(i1rs1hitStage).muldiv || FuType(i1rs1hitStage).load)) ||
     i1decodePkt.store && (
         i1rs1hitStage === 0.U && (FuType(0).subalu || FuType(0).load || FuType(0).muldiv) ||
         i1rs1hitStage === 1.U && (FuType(1).subalu || FuType(1).load || FuType(1).muldiv) ||
@@ -198,17 +194,20 @@ class DecodeIO2BypassPkt extends Module {
   //Backend Bound (issue stall)
   io.pmuio.laterStageStalli0 := (io.memStall || io.mduStall) && io.in(0).valid
   io.pmuio.laterStageStalli1 := (io.memStall || io.mduStall) && io.in(1).valid
-  val i0RsNotready = io.in(0).valid && !io.pmuio.laterStageStalli0 && (i0rs1valid && (i0BypassCtlPkt.rs1bypasse2.asUInt.orR || i0BypassCtlPkt.rs1bypasse3.asUInt.orR) ||
-    i0rs2valid && (i0BypassCtlPkt.rs2bypasse2.asUInt.orR || i0BypassCtlPkt.rs2bypasse3.asUInt.orR))
-  val i1RsNotready = io.in(1).valid && !io.pmuio.laterStageStalli1 && (i1rs1valid && (i1BypassCtlPkt.rs1bypasse2.asUInt.orR || i1BypassCtlPkt.rs1bypasse3.asUInt.orR) ||
-    i1rs2valid && (i1BypassCtlPkt.rs2bypasse2.asUInt.orR || i1BypassCtlPkt.rs2bypasse3.asUInt.orR))
 
-  io.pmuio.loadRsNotreadyi1 := i1decodePkt.load && i1RsNotready && !io.pmuio.laterStageStalli1
-  io.pmuio.storeRsNotreadyi1 := i1decodePkt.store && !io.pmuio.laterStageStalli1 && !io.pmuio.frontendi1 &&
-    (!(lsuCtrli1.lsBypassCtrlE1.asUInt.orR) && i1rs1valid && (i1BypassCtlPkt.rs1bypasse2.asUInt.orR || i1BypassCtlPkt.rs1bypasse3.asUInt.orR) ||
-      !(lsuCtrli1.storeBypassCtrlE2.asUInt.orR) && i1rs2valid && (i1BypassCtlPkt.rs2bypasse2.asUInt.orR || i1BypassCtlPkt.rs2bypasse3.asUInt.orR))
-  io.pmuio.mulRsNotreadyi1 := i1decodePkt.muldiv && !MDUOpType.isDiv(io.in(1).bits.ctrl.fuOpType) && i1RsNotready && !io.pmuio.laterStageStalli1
-  io.pmuio.divRsNotreadyi1 := i1decodePkt.muldiv && MDUOpType.isDiv(io.in(1).bits.ctrl.fuOpType) && i1RsNotready && !io.pmuio.laterStageStalli1
+
+  io.pmuio.loadRsNotreadyi1 := io.in(1).valid && i1decodePkt.load && io.issueStall(1) && !io.pmuio.laterStageStalli1
+  //loadRsNotreadyi10 <- subalu, loadRsNotreadyi11 <- mul/div, loadRsNotreadyi12 <- load
+  io.pmuio.load_sub_rs1_i1 := io.in(1).valid && i1decodePkt.load && io.issueStall(1) && !io.pmuio.laterStageStalli1 && FuType(i1rs1hitStage).subalu
+  io.pmuio.load_md_rs1_i1 := io.in(1).valid && i1decodePkt.load && io.issueStall(1) && !io.pmuio.laterStageStalli1 && FuType(i1rs1hitStage).muldiv
+  io.pmuio.load_load_rs1_i1 := io.in(1).valid && i1decodePkt.load && io.issueStall(1) && !io.pmuio.laterStageStalli1 && FuType(i1rs1hitStage).load
+  io.pmuio.load_sub_rs2_i1 := io.in(1).valid && i1decodePkt.load && io.issueStall(1) && !io.pmuio.laterStageStalli1 && FuType(i1rs2hitStage).subalu
+  io.pmuio.load_md_rs2_i1 := io.in(1).valid && i1decodePkt.load && io.issueStall(1) && !io.pmuio.laterStageStalli1 && FuType(i1rs2hitStage).muldiv
+  io.pmuio.load_load_rs2_i1 := io.in(1).valid && i1decodePkt.load && io.issueStall(1) && !io.pmuio.laterStageStalli1 && FuType(i1rs2hitStage).load
+
+  io.pmuio.storeRsNotreadyi1 := io.in(1).valid && i1decodePkt.store && io.issueStall(1) && !io.pmuio.laterStageStalli1
+  io.pmuio.mulRsNotreadyi1 := i1decodePkt.muldiv && !MDUOpType.isDiv(io.in(1).bits.ctrl.fuOpType) && io.issueStall(1) && !io.pmuio.laterStageStalli1
+  io.pmuio.divRsNotreadyi1 := i1decodePkt.muldiv && MDUOpType.isDiv(io.in(1).bits.ctrl.fuOpType) && io.issueStall(1) && !io.pmuio.laterStageStalli1
 
   io.pmuio.i1Stalli0 := io.in(0).valid  && !io.pmuio.laterStageStalli0 && io.issueStall(1)
   io.pmuio.bothLsui0 := io.in(0).valid  && !io.pmuio.laterStageStalli0 && !io.pmuio.i1Stalli0 &&
@@ -220,12 +219,10 @@ class DecodeIO2BypassPkt extends Module {
     !io.pmuio.bothLsui0 && !io.pmuio.LsuBri0 && !io.pmuio.bothBrui0
 
   val ruleStall = io.pmuio.i1Stalli0 || io.pmuio.bothLsui0 || io.pmuio.LsuBri0 || io.pmuio.hitSubalui0
-  io.pmuio.loadRsNotreadyi0 := false.B //i0decodePkt.load && i0RsNotready && !io.pmuio.laterStageStalli0 && !ruleStall
-  io.pmuio.storeRsNotreadyi0 := false.B //i0decodePkt.store && !io.pmuio.laterStageStalli0 && !ruleStall && !io.pmuio.frontendi0 &&
-    //(!(lsuCtrli0.lsBypassCtrlE1.asUInt.orR) && i0rs1valid && (i0BypassCtlPkt.rs1bypasse2.asUInt.orR || i0BypassCtlPkt.rs1bypasse3.asUInt.orR) ||
-    //  !(lsuCtrli0.storeBypassCtrlE2.asUInt.orR) && i0rs2valid && (i0BypassCtlPkt.rs2bypasse2.asUInt.orR || i0BypassCtlPkt.rs2bypasse3.asUInt.orR))
-  io.pmuio.mulRsNotreadyi0 := false.B //i0decodePkt.muldiv && !MDUOpType.isDiv(io.in(0).bits.ctrl.fuOpType) && i0RsNotready && !io.pmuio.laterStageStalli0 && !ruleStall
-  io.pmuio.divRsNotreadyi0 := false.B //i0decodePkt.muldiv && MDUOpType.isDiv(io.in(0).bits.ctrl.fuOpType) && i0RsNotready && !io.pmuio.laterStageStalli0 && !ruleStall
+  io.pmuio.loadRsNotreadyi0 := io.in(0).valid && i0decodePkt.load && io.issueStall(0) && !io.pmuio.laterStageStalli0 && !ruleStall
+  io.pmuio.storeRsNotreadyi0 := io.in(0).valid && i0decodePkt.store && io.issueStall(0) && !io.pmuio.laterStageStalli0 && !ruleStall
+  io.pmuio.mulRsNotreadyi0 := i0decodePkt.muldiv && !MDUOpType.isDiv(io.in(0).bits.ctrl.fuOpType) && io.in(0).valid && io.issueStall(0) && !io.pmuio.laterStageStalli0 && !ruleStall
+  io.pmuio.divRsNotreadyi0 := i0decodePkt.muldiv && MDUOpType.isDiv(io.in(0).bits.ctrl.fuOpType) && io.in(0).valid && io.issueStall(0) && !io.pmuio.laterStageStalli0 && !ruleStall
 
 
 
