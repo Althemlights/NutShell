@@ -105,15 +105,27 @@ class SSDLSU extends  NutCoreModule with HasStoreBufferConst{
   io.dmem.resp.ready := true.B
   //store buffer
   val storeBuffer = Module(new StoreBuffer)
-  //MMIO OutBuffer
+  //MMIO & OutBuffer
   val outBuffer = Module(new Queue(new StoreBufferEntry, entries = 1, hasFlush = false))
   val MMIOStorePkt = Wire(Decoupled(new StoreBufferEntry))
+  val isMMIOStore = AddressSpace.isMMIO(addr) && isStore
+  val isMMIO = AddressSpace.isMMIO(addr)
+  val MMIOStorePending = lsuPipeStage4.right.valid && lsuPipeStage4.right.bits.isMMIOStore || outBuffer.io.deq.valid
+
+  outBuffer.io.enq.valid := lsuPipeStage4.right.valid && lsuPipeStage4.right.bits.isMMIOStore && !invalid(2)
+  outBuffer.io.enq.bits.data := lsuPipeStage4.right.bits.data
+  outBuffer.io.enq.bits.mask := lsuPipeStage4.right.bits.mask
+  outBuffer.io.enq.bits.size := lsuPipeStage4.right.bits.size
+  outBuffer.io.enq.bits.paddr := lsuPipeStage4.right.bits.paddr
+  outBuffer.io.deq.ready := MMIOStorePkt.ready
+  MMIOStorePkt.bits := outBuffer.io.deq.bits
+  MMIOStorePkt.valid := outBuffer.io.deq.valid
   MMIOStorePkt.ready := false.B
-  val MMIOStorePending = WireInit(false.B) //There is a MMIO store need to be processed
-//  BoringUtils.addSource(MMIOStorePkt.valid,"MMIOStorePktValid")
-//  BoringUtils.addSource(MMIOStorePkt.bits,"MMIOStorePktBits")
+  BoringUtils.addSource(MMIOStorePkt.valid,"MMIOStorePktValid")
+  BoringUtils.addSource(MMIOStorePkt.bits,"MMIOStorePktBits")
   BoringUtils.addSink(MMIOStorePkt.ready,"MMIOStorePktReady")
-//  BoringUtils.addSource(MMIOStorePending,"MMIOStorePending")
+  BoringUtils.addSource(MMIOStorePending,"MMIOStorePending")
+
   //stall signal
   val cacheStall = WireInit(false.B)
   BoringUtils.addSink(cacheStall,"cacheStall")
@@ -134,9 +146,9 @@ class SSDLSU extends  NutCoreModule with HasStoreBufferConst{
   lsuPipeIn(0).bits.func := func
   lsuPipeIn(0).bits.isCacheStore := cacheIn.fire() && cacheIn.bits.cmd === SimpleBusCmd.write
   lsuPipeIn(0).bits.pc := pc
-  lsuPipeIn(0).bits.isMMIOStore := DontCare
-  lsuPipeIn(0).bits.isMMIOStoreInvalid := DontCare
-  lsuPipeIn(0).bits.isMMIO := DontCare
+  lsuPipeIn(0).bits.isMMIOStore := isMMIOStore
+  lsuPipeIn(0).bits.isMMIOStoreInvalid := isMMIOStore
+  lsuPipeIn(0).bits.isMMIO := isMMIO
   lsuPipeOut(1).ready := !bufferFullStall
   lsuPipeStage3.io.isStall := false.B
   lsuPipeStage4.io.isStall := io.memStall //There is only one stall point in LSU
@@ -318,23 +330,6 @@ class SSDLSU extends  NutCoreModule with HasStoreBufferConst{
     LSUOpType.lhu  -> ZeroExt(rdataSel(15, 0), XLEN),
     LSUOpType.lwu  -> ZeroExt(rdataSel(31, 0), XLEN)
   ))
-  //MMIO
-  val isMMIOStore = AddressSpace.isMMIO(lsuPipeStage3.left.bits.paddr) && lsuPipeOut(0).bits.isStore
-  val isMMIO = !lsuPipeOut(0).bits.isStore && !lsuPipeOut(0).bits.isCacheStore && AddressSpace.isMMIO(lsuPipeOut(0).bits.paddr) || isMMIOStore
-  lsuPipeIn(1).bits.isMMIOStore := isMMIOStore
-  lsuPipeIn(1).bits.isMMIOStoreInvalid := isMMIOStore
-  lsuPipeIn(1).bits.isMMIO := isMMIO
-  MMIOStorePending := lsuPipeStage3.right.valid && lsuPipeStage3.right.bits.isMMIOStore && !lsuPipeStage3.right.bits.isMMIOStoreInvalid ||
-    lsuPipeStage4.right.valid && lsuPipeStage4.right.bits.isMMIOStore || outBuffer.io.deq.valid
-  //MMIO OutBuffer
-  outBuffer.io.enq.valid := lsuPipeStage4.right.valid && lsuPipeStage4.right.bits.isMMIOStore && !invalid(2)
-  outBuffer.io.enq.bits.data := lsuPipeStage4.right.bits.data
-  outBuffer.io.enq.bits.mask := lsuPipeStage4.right.bits.mask
-  outBuffer.io.enq.bits.size := lsuPipeStage4.right.bits.size
-  outBuffer.io.enq.bits.paddr := lsuPipeStage4.right.bits.paddr
-  outBuffer.io.deq.ready := MMIOStorePkt.ready
-  MMIOStorePkt.bits := outBuffer.io.deq.bits
-  MMIOStorePkt.valid := outBuffer.io.deq.valid
   //LSU out
   io.in.ready := lsuPipeIn(0).ready || loadCacheIn.ready
   io.out.valid := (io.dmem.resp.fire() || addrHitE3) && lsuPipeStage3.right.valid && !lsuPipeStage3.right.bits.isStore && !lsuPipeStage3.right.bits.isCacheStore
