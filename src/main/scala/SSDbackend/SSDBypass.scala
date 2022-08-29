@@ -144,15 +144,15 @@ class DecodeIO2BypassPkt extends Module {
     (i0decodePkt.load || i0decodePkt.store) &&  (i1decodePkt.load || i1decodePkt.store) ||
     i1decodePkt.branch && i0decodePkt.branch ||          //the condition when load instruction does not meet the launch request
     i0decodePkt.muldiv &&
-      (i0Hiti1Rs1 ||
-        (i0rs1hitStage >= 4.U && i0rs1hitStage <= 5.U) && FuType(i0rs1hitStage).subalu && !i0Hiti1Rs1 ||
-        (i0rs2hitStage >= 4.U && i0rs2hitStage <= 5.U) && FuType(i0rs2hitStage).subalu && !i0Hiti1Rs2 ||
-        (i0rs1hitStage >= 0.U && i0rs1hitStage <= 3.U) && (FuType(i0rs1hitStage).muldiv || FuType(i0rs1hitStage).subalu || FuType(i0rs1hitStage).load) && !i0Hiti1Rs1 ||
-        (i0rs2hitStage >= 0.U && i0rs2hitStage <= 3.U) && (FuType(i0rs2hitStage).muldiv || FuType(i0rs2hitStage).subalu || FuType(i0rs2hitStage).load) && !i0Hiti1Rs2) ||
+      (i0Hiti1Rs1 || i0Hiti1Rs2 ||
+        (i0rs1hitStage >= 4.U && i0rs1hitStage <= 5.U) && FuType(i0rs1hitStage).subalu ||
+        (i0rs2hitStage >= 4.U && i0rs2hitStage <= 5.U) && FuType(i0rs2hitStage).subalu ||
+        (i0rs1hitStage >= 0.U && i0rs1hitStage <= 3.U) && (FuType(i0rs1hitStage).muldiv || FuType(i0rs1hitStage).subalu || FuType(i0rs1hitStage).load) ||
+        (i0rs2hitStage >= 0.U && i0rs2hitStage <= 3.U) && (FuType(i0rs2hitStage).muldiv || FuType(i0rs2hitStage).subalu || FuType(i0rs2hitStage).load)) ||
     i0decodePkt.load &&
       (i0Hiti1Rs1 ||
-        (i0rs1hitStage >= 0.U && i0rs1hitStage <= 3.U) && FuType(i0rs1hitStage).subalu && !i0Hiti1Rs1 ||
-        (i0rs1hitStage >= 0.U && i0rs1hitStage <= 1.U) && (FuType(i0rs1hitStage).muldiv || FuType(i0rs1hitStage).load) && !i0Hiti1Rs1 ) ||
+        (i0rs1hitStage >= 0.U && i0rs1hitStage <= 3.U) && FuType(i0rs1hitStage).subalu ||
+        (i0rs1hitStage >= 0.U && i0rs1hitStage <= 1.U) && (FuType(i0rs1hitStage).muldiv || FuType(i0rs1hitStage).load)) ||
   i0decodePkt.store && ( i0Hiti1Rs1 || i0Hiti1Rs2 ||    //the condition when store instruction does not meet the launch request
       i0rs1hitStage === 0.U && (FuType(0).subalu || FuType(0).load || FuType(0).muldiv) ||
       i0rs1hitStage === 1.U && (FuType(1).subalu || FuType(1).load || FuType(1).muldiv) ||
