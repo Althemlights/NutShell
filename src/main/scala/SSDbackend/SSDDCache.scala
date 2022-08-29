@@ -107,7 +107,7 @@ class SSDCacheIO(implicit val cacheConfig: SSDCacheConfig) extends Bundle with H
   val in = Flipped(new SimpleBusUC(userBits = userBits, idBits = idBits))
   val flush = Input(Bool())
   val out = new SimpleBusC
-  //val mmio = new SimpleBusUC
+  val mmio = new SimpleBusUC
 }
 trait HasSSDCacheIO {
   implicit val cacheConfig: SSDCacheConfig
@@ -116,6 +116,7 @@ trait HasSSDCacheIO {
 
 sealed class SSDStage1IO(implicit val cacheConfig: SSDCacheConfig) extends CacheBundle {
   val req = new SimpleBusReqBundle(userBits = userBits, idBits = idBits)
+  val mmio = Output(Bool())
 }
 // meta read
 sealed class SSDCacheStage1(implicit val cacheConfig: SSDCacheConfig) extends CacheModule {
@@ -143,6 +144,7 @@ sealed class SSDCacheStage1(implicit val cacheConfig: SSDCacheConfig) extends Ca
   io.out.bits.req := io.in.bits
   io.out.valid := io.in.valid && io.metaReadBus.req.ready && io.dataReadBus.req.ready
   io.in.ready := io.out.ready && io.metaReadBus.req.ready && io.dataReadBus.req.ready
+  io.out.bits.mmio := AddressSpace.isMMIO(io.in.bits.addr)
 }
 
 
@@ -158,7 +160,7 @@ sealed class SSDCacheStage2(implicit val cacheConfig: SSDCacheConfig) extends Ca
     val dataWriteBus = CacheDataArrayWriteBus()
 
     val mem = new SimpleBusUC
-    //val mmio = new SimpleBusUC
+    val mmio = new SimpleBusUC
   }
 
   val io = IO(new SSDCacheStage2IO)
@@ -173,7 +175,7 @@ sealed class SSDCacheStage2(implicit val cacheConfig: SSDCacheConfig) extends Ca
   val hitVec = VecInit(metaWay.map(m => m.valid && (m.tag === addr.tag))).asUInt
   val hit = hitVec.orR && io.in.valid
   val miss = !(hitVec.orR) && io.in.valid
-  val mmio = AddressSpace.isMMIO(req.addr)
+  val mmio = io.in.valid && io.in.bits.mmio
   val storeHit = WireInit(false.B)
   if (cacheName == "dcache") {
     BoringUtils.addSink(storeHit,"storeHit")
@@ -201,8 +203,6 @@ sealed class SSDCacheStage2(implicit val cacheConfig: SSDCacheConfig) extends Ca
 
   val hitWrite = hit && req.isWrite()
 
-  val dataWriteTag = Cat(addr.index,  addr.wordIndex) === "h1fb".U
-  dontTouch(dataWriteTag)
 
   val dataHitWriteBus = Wire(CacheDataArrayWriteBus()).apply(
     data = Wire(new DataBundle).apply(MaskData(dataRead, req.wdata, wordMask)),
@@ -247,17 +247,53 @@ sealed class SSDCacheStage2(implicit val cacheConfig: SSDCacheConfig) extends Ca
 
   val afterFirstRead = RegInit(false.B)
   val readingFirst = !afterFirstRead && io.mem.resp.fire() && (state === s_memReadResp)
-  val inRdataRegDemand = RegEnable(io.mem.resp.bits.rdata, readingFirst)
+  val inRdataRegDemand = RegEnable(Mux(mmio, io.mmio.resp.bits.rdata, io.mem.resp.bits.rdata),
+    Mux(mmio, state === s_mmioResp, readingFirst))
 
+  // mmio
+  io.mmio.req.bits := req
+  io.mmio.resp.ready := true.B
+  io.mmio.req.valid := (state === s_mmioReq)
+  val outBufferValid = WireInit(false.B)
+  val mmioStorePending = WireInit(false.B)
+  //Optimal handling when there is mmio store
+  if (cacheName == "dcache") {
+    val MMIOStorePkt = Wire(Flipped(Decoupled(new StoreBufferEntry)))
+    MMIOStorePkt.valid := false.B
+    MMIOStorePkt.bits := 0.U.asTypeOf(new StoreBufferEntry)
+    BoringUtils.addSink(mmioStorePending,"MMIOStorePending")
+    BoringUtils.addSink(outBufferValid,"MMIOStorePktValid")
+    BoringUtils.addSink(MMIOStorePkt.bits,"MMIOStorePktBits")
+    BoringUtils.addSource(MMIOStorePkt.ready,"MMIOStorePktReady")
+    MMIOStorePkt.valid := outBufferValid && (state === s_mmioReq)
+    val mmioStoreReq = Wire(Flipped(Decoupled(new SimpleBusReqBundle(userBits = userBits, idBits = idBits))))
+    val mmioStoreReqLatch = RegEnable(mmioStoreReq.bits,mmioStoreReq.fire())
+    mmioStoreReq.ready := true.B
+    mmioStoreReq.valid := (state === s_mmioReq)
+    mmioStoreReq.bits.cmd := SimpleBusCmd.write
+    mmioStoreReq.bits.addr := MMIOStorePkt.bits.paddr
+    mmioStoreReq.bits.wdata := MMIOStorePkt.bits.data
+    mmioStoreReq.bits.size := MMIOStorePkt.bits.size
+    mmioStoreReq.bits.wmask := MMIOStorePkt.bits.mask
+
+    MMIOStorePkt.ready := io.mmio.req.ready
+
+    io.mmio.req.bits := Mux(mmioStorePending,mmioStoreReqLatch,req)
+  }
 
   switch(state) {
     is(s_idle) {
       afterFirstRead := false.B
 
-      when(miss && !io.flush && !storeHit) {
-        state := Mux(meta.dirty, s_memWriteReq, s_memReadReq)
+      when((miss && !storeHit || mmio) && !io.flush || mmioStorePending) {
+//        state := Mux(meta.dirty, s_memWriteReq, s_memReadReq)
+        state := Mux(mmioStorePending,Mux(outBufferValid,s_mmioReq,s_mmio_wait),Mux(mmio,s_mmioReq,Mux(meta.dirty, s_memWriteReq, s_memReadReq)))
       }
     }
+
+    is (s_mmio_wait) { when(!mmioStorePending) { state := s_idle }.elsewhen(outBufferValid) { state := s_mmioReq }}
+    is (s_mmioReq) { when (io.mmio.req.fire()) { state := s_mmioResp } }
+    is (s_mmioResp) { when (io.mmio.resp.fire()) { state := Mux(mmio, s_wait_resp, s_idle) }}
 
     is(s_memReadReq) {
       when(io.mem.req.fire()) {
@@ -362,7 +398,7 @@ class SSDCache(implicit val cacheConfig: SSDCacheConfig) extends CacheModule wit
   s2.io.flush := io.flush
   io.out.mem <> s2.io.mem
   io.out.coh := DontCare
-//  io.mmio <> s3.io.mmio
+  io.mmio <> s2.io.mmio
   
 
   metaArray.io.r(0) <> s1.io.metaReadBus
@@ -378,12 +414,12 @@ class SSDCache(implicit val cacheConfig: SSDCacheConfig) extends CacheModule wit
 
 
 object SSDCache {
-  def apply(in: SimpleBusUC, flush: Bool)(implicit cacheConfig: SSDCacheConfig) = {
+  def apply(in: SimpleBusUC, mmio: SimpleBusUC, flush: Bool)(implicit cacheConfig: SSDCacheConfig) = {
     val cache = Module(new SSDCache)
 
     cache.io.flush := flush
     cache.io.in <> in
-    
+    mmio <> cache.io.mmio
     cache.io.out
   }
 }
