@@ -184,7 +184,7 @@ class SSDbackend extends NutCoreModule with hasBypassConst {
     CSR.io.cfIn.redirect.btbIsBranch := pipeOut(6).bits.btbIsBranch
     CSR.io.cfIn.redirect.ghr         := pipeOut(6).bits.ghr
   }
-/
+
 
     dontTouch(CSR.io)
   //  val csrOut = csr.access(valid = fuValids(FuType.csr), src1 = src1, src2 = src2, func = fuOpType)
