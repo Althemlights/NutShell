@@ -194,7 +194,7 @@ class SSDCSRIO extends FunctionUnitIO {
   val wenFix = Output(Bool())
 }
 
-class SSDCSR extends NutCoreModule with HasCSRSSDConst{
+class SSDCSR(implicit val p: NutCoreConfig) extends NutCoreModule with HasCSRSSDConst{
   val io = IO(new SSDCSRIO)
 
   val (valid, src1, src2, func) = (io.in.valid, io.in.bits.src1, io.in.bits.src2, io.in.bits.func)
@@ -873,6 +873,37 @@ class SSDCSR extends NutCoreModule with HasCSRSSDConst{
   val nutcoretrap = WireInit(false.B)
   BoringUtils.addSink(nutcoretrap, "nutcoretrap")
   def readWithScala(addr: Int): UInt = mapping(addr)._1
+  if(!p.FPGAPlatform) {
+    val difftest = Module(new DifftestCSRState)
+    difftest.io.clock := clock
+    difftest.io.coreid := 0.U // TODO
+    difftest.io.priviledgeMode := RegNext(priviledgeMode)
+    difftest.io.mstatus := RegNext(mstatus)
+    difftest.io.sstatus := RegNext(mstatus & sstatusRmask)
+    difftest.io.mepc := RegNext(mepc)
+    difftest.io.sepc := RegNext(sepc)
+    difftest.io.mtval := RegNext(mtval)
+    difftest.io.stval := RegNext(stval)
+    difftest.io.mtvec := RegNext(mtvec)
+    difftest.io.stvec := RegNext(stvec)
+    difftest.io.mcause := RegNext(mcause)
+    difftest.io.scause := RegNext(scause)
+    difftest.io.satp := RegNext(satp)
+    difftest.io.mip := RegNext(mipReg)
+    difftest.io.mie := RegNext(mie)
+    difftest.io.mscratch := RegNext(mscratch)
+    difftest.io.sscratch := RegNext(sscratch)
+    difftest.io.mideleg := RegNext(mideleg)
+    difftest.io.medeleg := RegNext(medeleg)
+
+    val difftestArchEvent = Module(new DifftestArchEvent)
+    difftestArchEvent.io.clock := clock
+    difftestArchEvent.io.coreid := 0.U // TODO
+    difftestArchEvent.io.intrNO := RegNext(Mux(raiseIntr && io.instrValid && valid, intrNO, 0.U))
+    difftestArchEvent.io.cause := RegNext(Mux(raiseException && io.instrValid && valid, exceptionNO, 0.U))
+    difftestArchEvent.io.exceptionPC := RegNext(SignExt(io.cfIn.pc, XLEN))
+    difftestArchEvent.io.exceptionInst := RegNext(io.cfIn.instr)
+  }
 
   /*  if (!p.FPGAPlatform) {
       // to monitor

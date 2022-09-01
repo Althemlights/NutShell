@@ -117,8 +117,8 @@ class NutShell(implicit val p: NutCoreConfig) extends Module with HasSoCParamete
   clint.io.in <> mmioXbar.io.out(1).toAXI4Lite()
   val mtipSync = clint.io.extra.get.mtip
   val msipSync = clint.io.extra.get.msip
-  //BoringUtils.addSource(mtipSync, "mtip")
-  //BoringUtils.addSource(msipSync, "msip")
+  BoringUtils.addSource(mtipSync, "mtip")
+  BoringUtils.addSource(msipSync, "msip")
 
   val plic = Module(new AXI4PLIC(nrIntr = Settings.getInt("NrExtIntr"), nrHart = 1))
   plic.io.in <> mmioXbar.io.out(2).toAXI4Lite()
@@ -143,5 +143,11 @@ class NutShell(implicit val p: NutCoreConfig) extends Module with HasSoCParamete
 //    BoringUtilsConnect(ila.WBUrfDest  ,"ilaWBUrfDest")
 //    BoringUtilsConnect(ila.WBUrfData  ,"ilaWBUrfData")
 //    BoringUtilsConnect(ila.InstrCnt   ,"ilaInstrCnt")
+    ila.WBUpc     := 0.U
+    ila.WBUvalid  := 0.U
+    ila.WBUrfWen  := 0.U
+    ila.WBUrfDest := 0.U
+    ila.WBUrfData := 0.U
+    ila.InstrCnt  := 0.U
   }
 }
