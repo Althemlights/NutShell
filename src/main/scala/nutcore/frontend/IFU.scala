@@ -32,18 +32,18 @@ trait HasResetVector {
 
 class ICacheUserBundle extends NutCoreBundle {
   val pc = UInt(VAddrBits.W)
-  val brIdx = UInt(4.W) // mark if an inst is predicted to branch
+  val brIdx = UInt(8.W) // mark if an inst is predicted to branch
   val pnpc = UInt(VAddrBits.W)
-  val instValid = UInt(4.W) // mark which part of this inst line is valid
+  val instValid = UInt(8.W) // mark which part of this inst line is valid
   val ghr = UInt(GhrLength.W)
-  val btbIsBranch = UInt(4.W) // align with npc, need to delay one clock cycle
+  val btbIsBranch = UInt(8.W) // align with npc, need to delay one clock cycle
 }
 // Note: update ICacheUserBundleWidth when change ICacheUserBundle
 
 class IFU_ooo extends NutCoreModule with HasResetVector {
   val io = IO(new Bundle {
 
-    val imem = new SimpleBusUC(userBits = ICacheUserBundleWidth, addrBits = VAddrBits)
+    val imem = new SimpleBusUC(userBits = ICacheUserBundleWidth, addrBits = VAddrBits, dataWidth = 128)
     // val pc = Input(UInt(VAddrBits.W))
     val out = Decoupled(new InstFetchIO)
 
@@ -61,10 +61,10 @@ class IFU_ooo extends NutCoreModule with HasResetVector {
   //  val ghr_commit = RegInit(0.U(GhrLength.W))
   val pc = RegInit(resetVector.U(VAddrBits.W))
   // val pcBrIdx = RegInit(0.U(4.W))
-  val pcInstValid = RegInit("b1111".U)
+  val pcInstValid = RegInit("b11111111".U)
   val pcUpdate = Wire(Bool())
   pcUpdate := io.redirect.valid || io.imem.req.fire()
-  val snpc = Cat(pc(VAddrBits-1, 3), 0.U(3.W)) + CacheReadWidth.U  // IFU will always ask icache to fetch next instline
+  val snpc = Cat(pc(VAddrBits-1, 4), 0.U(4.W)) + CacheReadWidth.U  // IFU will always ask icache to fetch next instline
   // Note: we define instline as 8 Byte aligned data from icache
 
   // nlpxxx_latch is used for the situation when I$ is disabled
@@ -145,14 +145,18 @@ class IFU_ooo extends NutCoreModule with HasResetVector {
   dontTouch(io.redirect.pc)
   // instValid: which part of an instline contains an valid inst
   // e.g. 1100 means inst(s) in instline(63,32) is/are valid
-  val npcInstValid = Wire(UInt(4.W))
-  def genInstValid(pc: UInt) = LookupTree(pc(2,1), List(
-    "b00".U -> "b1111".U,
-    "b01".U -> "b1110".U,
-    "b10".U -> "b1100".U,
-    "b11".U -> "b1000".U
+  val npcInstValid = Wire(UInt(8.W))
+  def genInstValid(pc: UInt) = LookupTree(pc(3,1), List(
+    "b000".U -> "b11111111".U,
+    "b001".U -> "b11111110".U,
+    "b010".U -> "b11111100".U,
+    "b011".U -> "b11111000".U,
+    "b100".U -> "b11110000".U,
+    "b101".U -> "b11100000".U,
+    "b110".U -> "b11000000".U,
+    "b111".U -> "b10000000".U
   ))
-  npcInstValid := Mux(crosslineJump && !(state === s_crosslineJump) && !io.redirect.valid, "b0001".U, genInstValid(npc))
+  npcInstValid := Mux(crosslineJump && !(state === s_crosslineJump) && !io.redirect.valid, "b00000001".U, genInstValid(npc))
 
   // branch position index, 4 bit vector
   // e.g. brIdx 0010 means a branch is predicted/assigned at pc (offset 2)
@@ -217,10 +221,10 @@ class IFU_ooo extends NutCoreModule with HasResetVector {
   val icacheUserGen = Wire(new ICacheUserBundle)
   icacheUserGen.pc := pc
   icacheUserGen.pnpc := Mux(crosslineJump, nlp.io.out.target, npc)
-  icacheUserGen.brIdx := brIdx & pcInstValid
+  icacheUserGen.brIdx := Mux(pc(3), Cat(brIdx & pcInstValid(7,4),0.U(4.W)), Cat(0.U(4.W),brIdx & pcInstValid(3,0)))
   icacheUserGen.instValid := pcInstValid
   icacheUserGen.ghr := ghr
-  icacheUserGen.btbIsBranch := nlp.io.out.btbIsBranch
+  icacheUserGen.btbIsBranch := Cat(0.U(4.W),nlp.io.out.btbIsBranch)
 
   io.imem.req.bits.apply(addr = Cat(pc(VAddrBits-1,1),0.U(1.W)), //cache will treat it as Cat(pc(63,3),0.U(3.W))
     size = "b11".U, cmd = SimpleBusCmd.read, wdata = 0.U, wmask = 0.U, user = icacheUserGen.asUInt)
