@@ -22,9 +22,10 @@ import chisel3.util.experimental.BoringUtils
 import utils._
 import bus.simplebus._
 import chisel3.experimental.IO
+import SSDfrontend._
 
 class FrontendIO(implicit val p: NutCoreConfig) extends Bundle with HasNutCoreConst {
-  val imem = new SimpleBusUC(userBits = ICacheUserBundleWidth, addrBits = VAddrBits)
+  val imem = new SimpleBusUC(userBits = ICacheUserBundleWidth, addrBits = VAddrBits, dataWidth = 128)
   val out = Vec(4, Decoupled(new DecodeIO))
   val flushVec = Output(UInt(4.W))
   val redirect = Flipped(new RedirectIO)
@@ -47,8 +48,8 @@ class Frontend_ooo(implicit val p: NutCoreConfig) extends NutCoreModule with Has
   }
 
   val ifu  = Module(new IFU_ooo)
-  val ibf1 = Module(new IBF)  //copy register for high fanout signal
-  val ibf2 = Module(new IBF)
+  val ibf1 = Module(new SSDIBF)  //copy register for high fanout signal
+  val ibf2 = Module(new SSDIBF)
   val idu  = Module(new IDU)
 
 //  pipelineConnect2(ifu.io.out, ibf.io.in, ifu.io.flushVec(0))
