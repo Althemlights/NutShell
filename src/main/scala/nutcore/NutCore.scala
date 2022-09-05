@@ -17,6 +17,7 @@
 package nutcore
 
 import SSDbackend._
+import SSDfrontend._
 import chisel3._
 import chisel3.util._
 import chisel3.util.experimental.BoringUtils
@@ -53,8 +54,8 @@ trait HasNutCoreParameter {
 }
 
 trait HasNutCoreConst extends HasNutCoreParameter {
-  val CacheReadWidth = 8
-  val ICacheUserBundleWidth = VAddrBits*2 + 9 + GhrLength + 4
+  val CacheReadWidth = 16
+  val ICacheUserBundleWidth = VAddrBits*2 + GhrLength + 8*3
   val DCacheUserBundleWidth = 16
   val IndependentBru = if (Settings.get("EnableOutOfOrderExec")) true else false
 }
@@ -120,7 +121,7 @@ class NutCore(implicit val p: NutCoreConfig) extends NutCoreModule {
   for(i <- 0 to 3){frontend.io.out(i) <> SSDbackend.io.in(i)}
   val mmioXbar = Module(new SimpleBusCrossbarNto1(2))
   val s2NotReady = WireInit(false.B)
-  io.imem <> SSDCache(in = frontend.io.imem, mmio = mmioXbar.io.in(0), flush = (frontend.io.flushVec(0) | frontend.io.bpFlush))(SSDCacheConfig(ro = true, name = "icache", userBits = ICacheUserBundleWidth))
+  io.imem <> SSDICache(in = frontend.io.imem, mmio = mmioXbar.io.in(0), flush = (frontend.io.flushVec(0) | frontend.io.bpFlush))(SSDICacheConfig(ro = true, name = "icache", userBits = ICacheUserBundleWidth))
   io.dmem <> SSDCache(in = SSDbackend.io.dmem, mmio = mmioXbar.io.in(1), flush = false.B)(SSDCacheConfig(ro = true, name = "dcache"))
 
   // DMA?
