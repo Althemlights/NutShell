@@ -80,9 +80,9 @@ class SimpleBusReqBundle(val userBits: Int = 0, val addrBits: Int = 32, val idBi
   def isPrefetch() = cmd === SimpleBusCmd.prefetch
 }
 
-class SimpleBusRespBundle(val userBits: Int = 0, val idBits: Int = 0) extends SimpleBusBundle {
+class SimpleBusRespBundle(val userBits: Int = 0, val idBits: Int = 0, val dataWidth: Int = 64) extends SimpleBusBundle {
   val cmd = Output(SimpleBusCmd())
-  val rdata = Output(UInt(64.W))  // TODO: when frontend datapath support 32bit, set DataBits.W here
+  val rdata = Output(UInt(dataWidth.W))  // TODO: when frontend datapath support 32bit, set DataBits.W here
   val user = if (userBits > 0) Some(Output(UInt(userBits.W))) else None
   val id = if (idBits > 0) Some(Output(UInt(idBits.W))) else None
 
@@ -96,9 +96,9 @@ class SimpleBusRespBundle(val userBits: Int = 0, val idBits: Int = 0) extends Si
 }
 
 // Uncache
-class SimpleBusUC(val userBits: Int = 0, val addrBits: Int = 32, val idBits: Int = 0) extends SimpleBusBundle {
+class SimpleBusUC(val userBits: Int = 0, val addrBits: Int = 32, val idBits: Int = 0, val dataWidth: Int = 64) extends SimpleBusBundle {
   val req = Decoupled(new SimpleBusReqBundle(userBits, addrBits, idBits))
-  val resp = Flipped(Decoupled(new SimpleBusRespBundle(userBits, idBits)))
+  val resp = Flipped(Decoupled(new SimpleBusRespBundle(userBits, idBits, dataWidth)))
 
   def isWrite() = req.valid && req.bits.isWrite()
   def isRead()  = req.valid && req.bits.isRead()
