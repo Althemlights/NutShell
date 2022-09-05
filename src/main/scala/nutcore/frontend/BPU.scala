@@ -150,7 +150,6 @@ class BPU_ooo extends NutCoreModule {
   val NRras = 16
   val ras = Mem(NRras, UInt(VAddrBits.W))
   val sp = Counter(NRras)
-  val rasTarget = RegEnable(ras.read(sp.value), io.in.pc.valid)
 
   // update
   val req = WireInit(0.U.asTypeOf(new BPUUpdateReq))
@@ -207,6 +206,7 @@ class BPU_ooo extends NutCoreModule {
   (0 to 3).map(i => retIdx(i) := (btbRead(i)._type === BTBtype.C) && (brIdxOneHot(i)))
   val rasWen = retIdx.asUInt.orR()
   val rasEmpty = sp.value === 0.U
+  val rasTarget = RegEnable(Mux(rasWen,retPC,ras.read(sp.value)) ,io.in.pc.valid)
 
   when (rasWen)  {
     ras.write(sp.value + 1.U, retPC)  //TODO: modify for RVC
