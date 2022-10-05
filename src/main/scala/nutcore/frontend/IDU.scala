@@ -115,7 +115,7 @@ class Decoder(implicit val p: NutCoreConfig) extends NutCoreModule with HasInstr
 
   //output signals
   io.out.valid := io.in.valid
-  io.in.ready := io.out.ready && !hasIntr
+  io.in.ready := io.out.ready
   io.out.bits.cf <> io.in.bits
 
   // fix c_break
@@ -143,6 +143,16 @@ class Decoder(implicit val p: NutCoreConfig) extends NutCoreModule with HasInstr
   io.out.bits.ctrl.isNutCoreTrap := (instr === NutCoreTrap.TRAP) && io.in.valid
   io.isWFI := (instr === Priviledged.WFI) && io.in.valid
   io.isBranch := VecInit(RV32I_BRUInstr.table.map(i => i._2.tail(1) === fuOpType)).asUInt.orR && fuType === FuType.bru
+
+
+  //new signals
+  io.out.bits.ctrl.rs1Valid := ((!instr(14) && !instr(13) && !instr(2)) || (!instr(13)&&instr(11) && !instr(2)) || (instr(19)&&instr(13) && !instr(2)) ||
+    (!instr(13) && instr(10) && !instr(2)) || (instr(18) && instr(13) && !instr(2)) || (!instr(13) && instr(9) && !instr(2)) || (
+    instr(17) && instr(13) && !instr(2)) || (!instr(13) && instr(8) && !instr(2)) || (instr(16) && instr(13) && !instr(2)) || (
+    !instr(13) && instr(7) && !instr(2)) || (instr(15) && instr(13) && !instr(2)) || (!instr(4) && !instr(3)) || (!instr(6)
+     && !instr(2))) && rs1 =/= 0.U
+  io.out.bits.ctrl.rs2Valid := ((instr(5) && !instr(4) && !instr(2)) || (!instr(6) && instr(5) && !instr(2))) && rs2 =/= 0.U
+  io.out.bits.ctrl.rdValid := (!instr(5) && !instr(2)) || (instr(5) && instr(2)) || instr(4)
 
 }
 
