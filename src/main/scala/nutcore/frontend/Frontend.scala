@@ -51,13 +51,15 @@ class Frontend_ooo(implicit val p: NutCoreConfig) extends NutCoreModule with Has
   val ibf2 = Module(new IBF)
   val idu  = Module(new IDU)
 
-//  pipelineConnect2(ifu.io.out, ibf.io.in, ifu.io.flushVec(0))
+//  pipelineConnect2(ifu.io.out, ibf1.io.in, ifu.io.flushVec(0))
+//  pipelineConnect2(ifu.io.out, ibf2.io.in, ifu.io.flushVec(0))
+
   ifu.io.out <> ibf1.io.in
-  PipelineVector2Connect(new CtrlFlowIO, ibf1.io.out(0), ibf1.io.out(1), idu.io.in(0), idu.io.in(1), ifu.io.flushVec(1), if (EnableOutOfOrderExec) 8 else 4)
+  PipelineVector2Connect(new CtrlFlowIO, ibf1.io.out(0), ibf1.io.out(1), idu.io.in(0), idu.io.in(1), ifu.io.flushVec(1), 64)
   ibf1.io.flush := ifu.io.flushVec(1)
 
   ifu.io.out <> ibf2.io.in
-  PipelineVector2Connect(new CtrlFlowIO, ibf2.io.out(0), ibf2.io.out(1), idu.io.in(2), idu.io.in(3), ifu.io.flushVec(1), if (EnableOutOfOrderExec) 8 else 4)
+  PipelineVector2Connect(new CtrlFlowIO, ibf2.io.out(0), ibf2.io.out(1), idu.io.in(2), idu.io.in(3), ifu.io.flushVec(1), 64)
   ibf2.io.flush := ifu.io.flushVec(1)
 
   io.out <> idu.io.out
