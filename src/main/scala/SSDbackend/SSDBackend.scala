@@ -166,14 +166,14 @@ class SSDbackend extends NutCoreModule with hasBypassConst {
   ALU_1.access(pipeOut(1).valid && !BypassPkt(1).decodePkt.alu,aluValid(1),pipeOut(1).bits.rs1,pipeOut(1).bits.rs2,pipeOut(1).bits.fuOpType)
   ALU_6.access(false.B,
     aluValid(2),
-    Mux(mduStall || memStall,pipeOut(6).bits.rs1,coupledPipeRegStage6.io.right.bits.rs1),
-    Mux(mduStall || memStall,pipeOut(6).bits.rs2,coupledPipeRegStage6.io.right.bits.rs2),
-    Mux(mduStall || memStall,pipeOut(6).bits.fuOpType,coupledPipeRegStage6.io.right.bits.fuOpType))
+    Mux(pipeOut(6).valid, pipeOut(6).bits.rs1,coupledPipeRegStage6.io.right.bits.rs1),
+    Mux(pipeOut(6).valid, pipeOut(6).bits.rs2,coupledPipeRegStage6.io.right.bits.rs2),
+    Mux(pipeOut(6).valid, pipeOut(6).bits.fuOpType,coupledPipeRegStage6.io.right.bits.fuOpType))
   ALU_7.access(false.B,
     aluValid(3),
-    Mux(mduStall || memStall,pipeOut(7).bits.rs1,coupledPipeRegStage7.io.right.bits.rs1),
-    Mux(mduStall || memStall,pipeOut(7).bits.rs2,coupledPipeRegStage7.io.right.bits.rs2),
-    Mux(mduStall || memStall,pipeOut(7).bits.fuOpType,coupledPipeRegStage7.io.right.bits.fuOpType))
+    Mux(pipeOut(7).valid, pipeOut(7).bits.rs1,coupledPipeRegStage7.io.right.bits.rs1),
+    Mux(pipeOut(7).valid, pipeOut(7).bits.rs2,coupledPipeRegStage7.io.right.bits.rs2),
+    Mux(pipeOut(7).valid, pipeOut(7).bits.fuOpType,coupledPipeRegStage7.io.right.bits.fuOpType))
 
   //LSU
   val LSU = Module(new SSDLSU)
