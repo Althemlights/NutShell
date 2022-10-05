@@ -75,6 +75,16 @@ class DecodeIO2BypassPkt extends Module {
   i1rs1valid := io.in(1).bits.ctrl.src1Type === SrcType.reg && io.in(1).bits.ctrl.rfSrc1 =/= 0.U
   i1rs2valid := io.in(1).bits.ctrl.src2Type === SrcType.reg && io.in(1).bits.ctrl.rfSrc2 =/= 0.U
 
+  val i0rs1validTmp = io.in(0).bits.ctrl.rs1Valid
+  val i0rs2validTmp = io.in(0).bits.ctrl.rs2Valid
+  val i1rs1validTmp = io.in(1).bits.ctrl.rs1Valid
+  val i1rs2validTmp = io.in(1).bits.ctrl.rs2Valid
+
+  dontTouch(i0rs1validTmp)
+  dontTouch(i0rs2validTmp)
+  dontTouch(i1rs1validTmp)
+  dontTouch(i1rs2validTmp)
+
   //hit stage
   val i0rs1hitStage = WireInit(10.U(4.W))
   val i0rs2hitStage = WireInit(10.U(4.W))
@@ -99,10 +109,14 @@ class DecodeIO2BypassPkt extends Module {
 
   for (i <- 0 to 10) {
     if (i <= 9) {
-      i0rs1HitSel(i) := io.in(0).bits.ctrl.rfSrc1 === io.BypassPktTable(i).decodePkt.rd && io.BypassPktTable(i).decodePkt.rdvalid && io.BypassPktValid(i) && i0rs1valid
-      i0rs2HitSel(i) := io.in(0).bits.ctrl.rfSrc2 === io.BypassPktTable(i).decodePkt.rd && io.BypassPktTable(i).decodePkt.rdvalid && io.BypassPktValid(i) && i0rs2valid
-      i1rs1HitSel(i) := io.in(1).bits.ctrl.rfSrc1 === io.BypassPktTable(i).decodePkt.rd && io.BypassPktTable(i).decodePkt.rdvalid && io.BypassPktValid(i) && i1rs1valid
-      i1rs2HitSel(i) := io.in(1).bits.ctrl.rfSrc2 === io.BypassPktTable(i).decodePkt.rd && io.BypassPktTable(i).decodePkt.rdvalid && io.BypassPktValid(i) && i1rs2valid
+      i0rs1HitSel(i) := io.in(0).bits.ctrl.rfSrc1 === io.BypassPktTable(i).decodePkt.rd && io.BypassPktValid(i) && i0rs1valid
+      i0rs2HitSel(i) := io.in(0).bits.ctrl.rfSrc2 === io.BypassPktTable(i).decodePkt.rd && io.BypassPktValid(i) && i0rs2valid
+      i1rs1HitSel(i) := io.in(1).bits.ctrl.rfSrc1 === io.BypassPktTable(i).decodePkt.rd && io.BypassPktValid(i) && i1rs1valid
+      i1rs2HitSel(i) := io.in(1).bits.ctrl.rfSrc2 === io.BypassPktTable(i).decodePkt.rd && io.BypassPktValid(i) && i1rs2valid
+//      i0rs1HitSel(i) := io.in(0).bits.ctrl.rfSrc1 === io.BypassPktTable(i).decodePkt.rd && io.BypassPktTable(i).decodePkt.rdvalid && io.BypassPktValid(i) && i0rs1valid
+//      i0rs2HitSel(i) := io.in(0).bits.ctrl.rfSrc2 === io.BypassPktTable(i).decodePkt.rd && io.BypassPktTable(i).decodePkt.rdvalid && io.BypassPktValid(i) && i0rs2valid
+//      i1rs1HitSel(i) := io.in(1).bits.ctrl.rfSrc1 === io.BypassPktTable(i).decodePkt.rd && io.BypassPktTable(i).decodePkt.rdvalid && io.BypassPktValid(i) && i1rs1valid
+//      i1rs2HitSel(i) := io.in(1).bits.ctrl.rfSrc2 === io.BypassPktTable(i).decodePkt.rd && io.BypassPktTable(i).decodePkt.rdvalid && io.BypassPktValid(i) && i1rs2valid
     }
     else{
       i0rs1HitSel(10) := true.B
@@ -383,8 +397,8 @@ class DecodeIO2BypassPkt extends Module {
 
 object DecodeIO2decodePkt {
   def apply(in:DecodeIO,out:decodePkt){
-    out.rd <> in.ctrl.rfDest
-    out.rdvalid <> in.ctrl.rfWen
+    out.rd := Mux(in.ctrl.rdValid,in.ctrl.rfDest,0.U)
+    out.rdvalid <> in.ctrl.rdValid
     out.alu := in.ctrl.fuType === FuType.alu || in.ctrl.fuType === FuType.bru
     //subalu 会在其他模块覆盖掉
     out.muldiv := in.ctrl.fuType === FuType.mdu
