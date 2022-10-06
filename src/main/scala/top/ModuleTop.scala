@@ -14,7 +14,7 @@ import top.TopMain.args
 object moduleTop extends App{
   lazy val config = NutCoreConfig(FPGAPlatform = false)
   (new ChiselStage).execute(args, Seq(
-//    ChiselGeneratorAnnotation(() => new NutCore()(config)))
-    ChiselGeneratorAnnotation(() => new testModule))
+    ChiselGeneratorAnnotation(() => new NutCore()(config)))
+//    ChiselGeneratorAnnotation(() => new testModule))
   )
 }
