@@ -143,10 +143,45 @@ class SSDbackend extends NutCoreModule with hasBypassConst {
   Bypass.io.flush(2) := Redirect8.valid && pipeOut(8).valid
   Bypass.io.flush(3) := Redirect9.valid && pipeOut(9).valid
 
-  io.redirectOut := Mux(Redirect9.valid &&  pipeOut(9).valid && !pipeInvalid(11),Redirect9,
-    Mux(Redirect8.valid &&  pipeOut(8).valid && !pipeInvalid(10),Redirect8,
-      Mux(Redirect3.valid && pipeOut(3).valid,Redirect3,
-        Mux(Redirect2.valid && pipeOut(2).valid,Redirect2,0.U.asTypeOf(new RedirectIO)))))
+  val SSDCSR = Module(new SSDCSR)
+  SSDCSR.io.out.ready := true.B
+  val i0CSRValid = BypassPktValid(0) && (BypassPkt(0).decodePkt.csr)
+  val i1CSRValid = BypassPktValid(1) && (BypassPkt(1).decodePkt.csr)
+  val CSRValid = i0CSRValid || i1CSRValid
+  val CSRfunc = Mux(i1CSRValid,pipeRegStage1.right.bits.fuOpType,pipeRegStage0.right.bits.fuOpType)
+  val CSRsrc1 = Mux(i1CSRValid,pipeRegStage1.right.bits.rs1,pipeRegStage0.right.bits.rs1)
+  val CSRsrc2 = Mux(i1CSRValid,pipeRegStage1.right.bits.rs2,pipeRegStage0.right.bits.rs2)
+  SSDCSR.access(CSRValid,CSRsrc1,CSRsrc2,CSRfunc)
+  SSDCSR.io.cfIn := 0.U.asTypeOf(new CtrlFlowIO)
+  SSDCSR.io.isBackendException := false.B
+  SSDCSR.io.instrValid := CSRValid
+  when(i0CSRValid) {
+    SSDCSR.io.cfIn.pc                   := pipeOut(0).bits.pc
+    SSDCSR.io.cfIn.pnpc                 := pipeOut(0).bits.pnpc
+    SSDCSR.io.cfIn.instr                := pipeOut(0).bits.instr
+    SSDCSR.io.cfIn.brIdx                := pipeOut(0).bits.brIdx
+    SSDCSR.io.cfIn.isRVC                := pipeOut(0).bits.isRVC
+    SSDCSR.io.cfIn.isBranch             := pipeOut(0).bits.isBranch
+    SSDCSR.io.cfIn.redirect.btbIsBranch := pipeOut(0).bits.btbIsBranch
+    SSDCSR.io.cfIn.redirect.ghr         := pipeOut(0).bits.ghr
+  }.elsewhen(i1CSRValid) {
+    SSDCSR.io.cfIn.pc                   := pipeOut(1).bits.pc
+    SSDCSR.io.cfIn.pnpc                 := pipeOut(1).bits.pnpc
+    SSDCSR.io.cfIn.instr                := pipeOut(1).bits.instr
+    SSDCSR.io.cfIn.brIdx                := pipeOut(1).bits.brIdx
+    SSDCSR.io.cfIn.isRVC                := pipeOut(1).bits.isRVC
+    SSDCSR.io.cfIn.isBranch             := pipeOut(1).bits.isBranch
+    SSDCSR.io.cfIn.redirect.btbIsBranch := pipeOut(1).bits.btbIsBranch
+    SSDCSR.io.cfIn.redirect.ghr         := pipeOut(1).bits.ghr
+  }
+
+
+
+  io.redirectOut := Mux(SSDCSR.io.redirect.valid,SSDCSR.io.redirect,
+    Mux(Redirect9.valid &&  pipeOut(9).valid && !pipeInvalid(11),Redirect9,
+      Mux(Redirect8.valid &&  pipeOut(8).valid && !pipeInvalid(10),Redirect8,
+        Mux(Redirect3.valid && pipeOut(3).valid,Redirect3,
+          Mux(Redirect2.valid && pipeOut(2).valid,Redirect2,0.U.asTypeOf(new RedirectIO))))))
   finalBpuUpdateReq := Mux(pipeOut(9).bits.bpuUpdateReq.valid && pipeOut(9).fire() && !pipeInvalid(11),pipeOut(9).bits.bpuUpdateReq,
     Mux(pipeOut(8).bits.bpuUpdateReq.valid && pipeOut(8).fire() && !pipeInvalid(10),pipeOut(8).bits.bpuUpdateReq,0.U.asTypeOf(new BPUUpdateReq)))
   BoringUtils.addSource(finalBpuUpdateReq, "bpuUpdateReq")
@@ -340,8 +375,10 @@ class SSDbackend extends NutCoreModule with hasBypassConst {
   pipeOut(9).ready := true.B
 
   //e1
-  pipeIn(2).bits.rd := Mux(aluValid(0),ALU_0.io.out.bits,0.U(64.W))
-  pipeIn(3).bits.rd := Mux(aluValid(1),ALU_1.io.out.bits,0.U(64.W))
+  pipeIn(2).bits.rd := Mux(aluValid(0),ALU_0.io.out.bits,Mux(CSRValid,SSDCSR.io.out.bits,0.U(64.W)))
+  pipeIn(3).bits.rd := Mux(aluValid(1),ALU_1.io.out.bits,Mux(CSRValid,SSDCSR.io.out.bits,0.U(64.W)))
+//  pipeIn(2).bits.rd := Mux(CSRValid,SSDCSR.io.out.bits,Mux(aluValid(0),ALU_0.io.out.bits,0.U(64.W)))
+//  pipeIn(3).bits.rd :=  Mux(CSRValid,SSDCSR.io.out.bits,Mux(aluValid(1),ALU_1.io.out.bits,0.U(64.W)))
   pipeIn(2).bits.rs1 := BypassMux(ByPassEna(4), BypassPkt(0).lsuCtrl.lsBypassCtrlE1,lsuBypassPortE1, pipeOut(0).bits.rs1)
   pipeIn(3).bits.rs1 := BypassMux(ByPassEna(5), BypassPkt(1).lsuCtrl.lsBypassCtrlE1,lsuBypassPortE1, pipeOut(1).bits.rs1)
   pipeIn(2).bits.branchTaken := Mux(aluValid(0),ALU_0.io.branchTaken,0.U(64.W))
