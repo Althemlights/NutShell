@@ -406,6 +406,7 @@ object DecodeIO2decodePkt {
     out.store := LSUOpType.isStore(in.ctrl.fuOpType) && in.ctrl.fuType === FuType.lsu
     out.subalu := false.B
     out.branch := ALUOpType.isBru(in.ctrl.fuOpType) && in.ctrl.fuType === FuType.alu
+    out.csr    := in.ctrl.fuType === FuType.csr
   }
 }
 
