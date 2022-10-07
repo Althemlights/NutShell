@@ -145,8 +145,8 @@ class SSDbackend extends NutCoreModule with hasBypassConst {
 
   val SSDCSR = Module(new SSDCSR)
   SSDCSR.io.out.ready := true.B
-  val i0CSRValid = BypassPktValid(0) && (BypassPkt(0).decodePkt.csr)
-  val i1CSRValid = BypassPktValid(1) && (BypassPkt(1).decodePkt.csr)
+  val i0CSRValid = BypassPktValid(0) && (BypassPkt(0).decodePkt.csr) && (BypassPkt(0).decodePkt.skip)
+  val i1CSRValid = BypassPktValid(1) && (BypassPkt(1).decodePkt.csr) && (BypassPkt(1).decodePkt.skip)
   val CSRValid = i0CSRValid || i1CSRValid
   val CSRfunc = Mux(i1CSRValid,pipeRegStage1.right.bits.fuOpType,pipeRegStage0.right.bits.fuOpType)
   val CSRsrc1 = Mux(i1CSRValid,pipeRegStage1.right.bits.rs1,pipeRegStage0.right.bits.rs1)
@@ -703,6 +703,9 @@ class SSDbackend extends NutCoreModule with hasBypassConst {
   val rf_a0 = WireInit(0.U(64.W))
   BoringUtils.addSink(rf_a0, "rf_a0")
 
+  when(RegNext((pipeOut(0).bits.instr === 0x7b.U) || (pipeOut(1).bits.instr === 0x7b.U))) {
+    printf("y")
+  }
   if(SSDCoreConfig().EnableDifftest) {
     val dt_ic1 = Module(new DifftestInstrCommit)
     dt_ic1.io.clock := clock
@@ -735,9 +738,7 @@ class SSDbackend extends NutCoreModule with hasBypassConst {
     dt_ic0.io.wpdest := RegNext(Cat(0.U(3.W), regfile.io.writePorts(0).addr))
     dt_ic0.io.wdest := RegNext(Cat(0.U(3.W), regfile.io.writePorts(0).addr))
 
-    when((pipeOut(8).bits.instr === 0x7b.U) || (pipeOut(9).bits.instr === 0x7b.U)) {
-      printf("y")
-    }
+
     val dt_iw0 = Module(new DifftestIntWriteback)
     dt_iw0.io.clock := clock
     dt_iw0.io.coreid := 0.U

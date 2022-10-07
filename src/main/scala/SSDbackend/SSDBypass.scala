@@ -411,6 +411,7 @@ object DecodeIO2decodePkt {
     out.subalu := false.B
     out.branch := ALUOpType.isBru(in.ctrl.fuOpType) && in.ctrl.fuType === FuType.alu
     out.csr    := in.ctrl.fuType === FuType.csr
+    out.skip   := in.cf.instr =/= 0x7b.U
   }
 }
 
