@@ -92,5 +92,6 @@ class FuPkt extends NutCoreBundle {
   val btbIsBranch = Output(Bool())  //for update ghr
   //for ghr commit
   val branchTaken = Output(Bool())
+  val skipMcycle = Output(Bool())
 }
 
