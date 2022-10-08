@@ -189,6 +189,7 @@ class SSDCSRIO extends FunctionUnitIO {
 //  val imemMMU = Flipped(new MMUIO)
 //  val dmemMMU = Flipped(new MMUIO)
   val wenFix = Output(Bool())
+  val mcycleskip = Output(Bool())
 }
 
 class SSDCSR extends NutCoreModule with SSDHasCSRConst{
@@ -467,11 +468,12 @@ class SSDCSR extends NutCoreModule with SSDHasCSRConst{
     SSDCSROpType.clri -> (rdata & ~csri)
   ))
 
+
   // SATP wen check
   val satpLegalMode = (wdata.asTypeOf(new SatpStruct).mode === 0.U) || (wdata.asTypeOf(new SatpStruct).mode === 8.U)
 
   // General CSR wen check
-  val wen = (valid && func =/= SSDCSROpType.jmp) && (addr =/= Satp.U || satpLegalMode) && !io.isBackendException
+  val wen = (valid && func =/= SSDCSROpType.jmp)
   val isIllegalMode  = priviledgeMode < addr(9, 8)
   val justRead = (func === SSDCSROpType.set || func === SSDCSROpType.seti) && src1 === 0.U  // csrrs and csrrsi are exceptions when their src1 is zero
   val isIllegalWrite = wen && (addr(11, 10) === "b11".U) && !justRead  // Write a read-only CSR register
@@ -642,6 +644,7 @@ class SSDCSR extends NutCoreModule with SSDHasCSRConst{
   io.redirect.valid := (valid && func === SSDCSROpType.jmp) || raiseExceptionIntr || resetSatp
   io.redirect.rtype := 0.U
   io.redirect.target := Mux(resetSatp, io.cfIn.pc + 4.U, Mux(raiseExceptionIntr, trapTarget, retTarget))
+//  io.redirect.target := Settings.getLong("ResetVector").U
   io.redirect.ghr := 0.U
   io.redirect.ghrUpdateValid := false.B
   io.redirect.btbIsBranch := 0.U
@@ -872,69 +875,111 @@ class SSDCSR extends NutCoreModule with SSDHasCSRConst{
   BoringUtils.addSink(nutcoretrap, "nutcoretrap")
   def readWithScala(addr: Int): UInt = mapping(addr)._1
 
-  /*  if (!p.FPGAPlatform) {
-      // to monitor
-      BoringUtils.addSource(readWithScala(perfCntList("Mcycle")._1), "simCycleCnt")
-      BoringUtils.addSource(readWithScala(perfCntList("Minstret")._1), "simInstrCnt")
+  io.mcycleskip := (addr === 0xb00.U)
 
-      if (hasPerfCnt) {
-        // display all perfcnt when nutcoretrap is executed
-        val PrintPerfCntToCSV = true
-        when (nutcoretrap) {
-          printf("======== PerfCnt =========\n")
-          perfCntList.toSeq.sortBy(_._2._1).map { case (name, (addr, boringId)) =>
-            printf("%d <- " + name + "\n", readWithScala(addr)) }
-          if(PrintPerfCntToCSV){
-          printf("======== PerfCntCSV =========\n\n")
-          perfCntList.toSeq.sortBy(_._2._1).map { case (name, (addr, boringId)) =>
-            printf(name + ", ")}
-          printf("\n\n\n")
-          perfCntList.toSeq.sortBy(_._2._1).map { case (name, (addr, boringId)) =>
-            printf("%d, ", readWithScala(addr)) }
-          printf("\n\n\n")
-          }
-        }
-      }
+
+
+//      // to monitor
+//      BoringUtils.addSource(readWithScala(perfCntList("Mcycle")._1), "simCycleCnt")
+//      BoringUtils.addSource(readWithScala(perfCntList("Minstret")._1), "simInstrCnt")
+//
+//      if (hasPerfCnt) {
+//        // display all perfcnt when nutcoretrap is executed
+//        val PrintPerfCntToCSV = true
+//        when (nutcoretrap) {
+//          printf("======== PerfCnt =========\n")
+//          perfCntList.toSeq.sortBy(_._2._1).map { case (name, (addr, boringId)) =>
+//            printf("%d <- " + name + "\n", readWithScala(addr)) }
+//          if(PrintPerfCntToCSV){
+//          printf("======== PerfCntCSV =========\n\n")
+//          perfCntList.toSeq.sortBy(_._2._1).map { case (name, (addr, boringId)) =>
+//            printf(name + ", ")}
+//          printf("\n\n\n")
+//          perfCntList.toSeq.sortBy(_._2._1).map { case (name, (addr, boringId)) =>
+//            printf("%d, ", readWithScala(addr)) }
+//          printf("\n\n\n")
+//          }
+//        }
+//      }
 
       // for differential testing
-      val difftest = Module(new DifftestCSRState)
-      difftest.io.clock := clock
-      difftest.io.coreid := 0.U // TODO
-      difftest.io.priviledgeMode := RegNext(priviledgeMode)
-      difftest.io.mstatus := RegNext(mstatus)
-      difftest.io.sstatus := RegNext(mstatus & sstatusRmask)
-      difftest.io.mepc := RegNext(mepc)
-      difftest.io.sepc := RegNext(sepc)
-      difftest.io.mtval:= RegNext(mtval)
-      difftest.io.stval:= RegNext(stval)
-      difftest.io.mtvec := RegNext(mtvec)
-      difftest.io.stvec := RegNext(stvec)
-      difftest.io.mcause := RegNext(mcause)
-      difftest.io.scause := RegNext(scause)
-      difftest.io.satp := RegNext(satp)
-      difftest.io.mip := RegNext(mipReg)
-      difftest.io.mie := RegNext(mie)
-      difftest.io.mscratch := RegNext(mscratch)
-      difftest.io.sscratch := RegNext(sscratch)
-      difftest.io.mideleg := RegNext(mideleg)
-      difftest.io.medeleg := RegNext(medeleg)
+//      val difftest = Module(new DifftestCSRState)
+//      difftest.io.clock := clock
+//      difftest.io.coreid := 0.U // TODO
+//      difftest.io.priviledgeMode := RegNext(priviledgeMode)
+//      difftest.io.mstatus :=        RegNext(mstatus)
+//      difftest.io.sstatus :=        RegNext(mstatus & sstatusRmask)
+//      difftest.io.mepc :=           RegNext(mepc)
+//      difftest.io.sepc :=           RegNext(sepc)
+//      difftest.io.mtval:=           RegNext(mtval)
+//      difftest.io.stval:=           RegNext(stval)
+//      difftest.io.mtvec :=          RegNext(mtvec)
+//      difftest.io.stvec :=          RegNext(stvec)
+//      difftest.io.mcause :=         RegNext(mcause)
+//      difftest.io.scause :=         RegNext(scause)
+//      difftest.io.satp :=           RegNext(satp)
+//      difftest.io.mip :=            RegNext(mipReg)
+//      difftest.io.mie :=            RegNext(mie)
+//      difftest.io.mscratch :=       RegNext(mscratch)
+//      difftest.io.sscratch :=       RegNext(sscratch)
+//      difftest.io.mideleg :=        RegNext(mideleg)
+//      difftest.io.medeleg :=        RegNext(medeleg)
 
-      val difftestArchEvent = Module(new DifftestArchEvent)
-      difftestArchEvent.io.clock := clock
-      difftestArchEvent.io.coreid := 0.U // TODO
-      difftestArchEvent.io.intrNO := RegNext(Mux(raiseIntr && io.instrValid && valid, intrNO, 0.U))
-      difftestArchEvent.io.cause := RegNext(Mux(raiseException && io.instrValid && valid, exceptionNO, 0.U))
-      difftestArchEvent.io.exceptionPC := RegNext(SignExt(io.cfIn.pc, XLEN))
-      difftestArchEvent.io.exceptionInst := RegNext(io.cfIn.instr)
+  val difftest = Module(new DifftestCSRState)
+  difftest.io.clock := clock
+  difftest.io.coreid := 0.U // TODO
+  difftest.io.priviledgeMode := RegNext(RegNext(RegNext(RegNext(priviledgeMode))))
+  difftest.io.mstatus :=        RegNext(RegNext(RegNext(RegNext(mstatus))))
+  difftest.io.sstatus :=        RegNext(RegNext(RegNext(RegNext(mstatus & sstatusRmask))))
+  difftest.io.mepc :=           RegNext(RegNext(RegNext(RegNext(mepc))))
+  difftest.io.sepc :=           RegNext(RegNext(RegNext(RegNext(sepc))))
+  difftest.io.mtval:=           RegNext(RegNext(RegNext(RegNext(mtval))))
+  difftest.io.stval:=           RegNext(RegNext(RegNext(RegNext(stval))))
+  difftest.io.mtvec :=          RegNext(RegNext(RegNext(RegNext(mtvec))))
+  difftest.io.stvec :=          RegNext(RegNext(RegNext(RegNext(stvec))))
+  difftest.io.mcause :=         RegNext(RegNext(RegNext(RegNext(mcause))))
+  difftest.io.scause :=         RegNext(RegNext(RegNext(RegNext(scause))))
+  difftest.io.satp :=           RegNext(RegNext(RegNext(RegNext(satp))))
+  difftest.io.mip :=            RegNext(RegNext(RegNext(RegNext(mipReg))))
+  difftest.io.mie :=            RegNext(RegNext(RegNext(RegNext(mie))))
+  difftest.io.mscratch :=       RegNext(RegNext(RegNext(RegNext(mscratch))))
+  difftest.io.sscratch :=       RegNext(RegNext(RegNext(RegNext(sscratch))))
+  difftest.io.mideleg :=        RegNext(RegNext(RegNext(RegNext(mideleg))))
+  difftest.io.medeleg :=        RegNext(RegNext(RegNext(RegNext(medeleg))))
 
-    } else {
-      if (!p.FPGAPlatform) {
-        BoringUtils.addSource(readWithScala(perfCntList("Mcycle")._1), "simCycleCnt")
-        BoringUtils.addSource(readWithScala(perfCntList("Minstret")._1), "simInstrCnt")
-      } else {
-        BoringUtils.addSource(readWithScala(perfCntList("Minstret")._1), "ilaInstrCnt")
-      }
-    }*/
+  val difftestArchEvent = Module(new DifftestArchEvent)
+  difftestArchEvent.io.clock := clock
+  difftestArchEvent.io.coreid := 0.U // TODO
+//      difftestArchEvent.io.intrNO :=        RegNext(Mux(raiseIntr && io.instrValid && valid, intrNO, 0.U))
+//      difftestArchEvent.io.cause :=         RegNext(Mux(raiseException && io.instrValid && valid, exceptionNO, 0.U))
+//      difftestArchEvent.io.exceptionPC :=   RegNext(SignExt(io.cfIn.pc, XLEN))
+//      difftestArchEvent.io.exceptionInst := RegNext(io.cfIn.instr)
+  difftestArchEvent.io.intrNO :=        RegNext(RegNext(RegNext(RegNext(Mux(raiseIntr && io.instrValid && valid, intrNO, 0.U)))))
+  difftestArchEvent.io.cause :=         RegNext(RegNext(RegNext(RegNext(Mux(raiseException && io.instrValid && valid, exceptionNO, 0.U)))))
+  difftestArchEvent.io.exceptionPC :=   RegNext(RegNext(RegNext(RegNext(SignExt(io.cfIn.pc, XLEN)))))
+  difftestArchEvent.io.exceptionInst := RegNext(RegNext(RegNext(RegNext(io.cfIn.instr))))
+
+
+
+  when(valid && io.redirect.valid) {
+    printf("pc %x \n",io.cfIn.pc)
+    printf("valid %b",io.redirect.valid)
+    printf("target %b",io.redirect.target)
+  }
+  when((addr =/= 0xb00.U) && valid) {
+    printf("pc %x \n",io.cfIn.pc)
+  }
+  when((addr === Mtvec.U) && valid){
+    printf("pc %x \n",io.cfIn.pc)
+    printf("func %b \n",func)
+    printf("mtvec %x \n",mtvec)
+    printf("Regnext mtvec %x \n",RegNext(mtvec))
+    printf("wen %n \n",wen)
+    printf("valid %b",valid)
+    printf("wenbbq %b",(func =/= SSDCSROpType.jmp))
+    printf("%d \n",(wen && !isIllegalAccess))
+    printf("\\\\\\\\\\\\\\\\\\\\\\\\")
+  }
 }
 class CSR_fake extends NutCoreModule with SSDHasCSRConst {
   val io = IO(new SSDCSRIO)
