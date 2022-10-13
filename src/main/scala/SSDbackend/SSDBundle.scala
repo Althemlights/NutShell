@@ -92,5 +92,35 @@ class FuPkt extends NutCoreBundle {
   val btbIsBranch = Output(Bool())  //for update ghr
   //for ghr commit
   val branchTaken = Output(Bool())
+  //for difftest
+  val CSRregfile = new CSRregfile
+  val ArchEvent = new ArchEvent
+}
+class CSRregfile extends NutCoreBundle {
+  val priviledgeMode      =  Output(UInt(XLEN.W))
+  val mstatus      =  Output(UInt(XLEN.W))
+  val sstatus      =  Output(UInt(XLEN.W))
+  val mepc      =  Output(UInt(XLEN.W))
+  val sepc      =  Output(UInt(XLEN.W))
+  val mtval      =  Output(UInt(XLEN.W))
+  val stval      =  Output(UInt(XLEN.W))
+  val mtvec      =  Output(UInt(XLEN.W))
+  val stvec      =  Output(UInt(XLEN.W))
+  val mcause      =  Output(UInt(XLEN.W))
+  val scause      =  Output(UInt(XLEN.W))
+  val satp      =  Output(UInt(XLEN.W))
+  val mip      =  Output(UInt(XLEN.W))
+  val mie      =  Output(UInt(XLEN.W))
+  val mscratch      =  Output(UInt(XLEN.W))
+  val sscratch      =  Output(UInt(XLEN.W))
+  val mideleg      =  Output(UInt(XLEN.W))
+  val medeleg      =  Output(UInt(XLEN.W))
+}
+
+class ArchEvent extends NutCoreBundle {
+  val intrNO =        Output(UInt(32.W))
+  val cause =         Output(UInt(32.W))
+  val exceptionPC =   Output(UInt(64.W))
+  val exceptionInst = Output(UInt(32.W))
 }
 
