@@ -207,7 +207,7 @@ class SSDLSU extends  NutCoreModule with HasStoreBufferConst{
   cacheInArbiter0.io.in(1) <> loadCacheIn
   cacheInArbiter1.io.in(0) <> loadCacheIn
   cacheInArbiter1.io.in(1) <> storeCacheIn
-  storeCacheIn.ready := Mux(storeBuffer.io.isAlmostFull, cacheInArbiter0.io.in(0).ready, cacheInArbiter1.io.in(1).ready)
+  storeCacheIn.ready := Mux(storeBuffer.io.isFull, cacheInArbiter0.io.in(0).ready, cacheInArbiter1.io.in(1).ready)
 
   cacheIn.bits :=  Mux(storeBuffer.io.isAlmostFull,cacheInArbiter0.io.out.bits,cacheInArbiter1.io.out.bits)
   cacheIn.valid :=  Mux(storeBuffer.io.isAlmostFull,cacheInArbiter0.io.out.valid,cacheInArbiter1.io.out.valid)
