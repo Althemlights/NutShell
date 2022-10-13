@@ -189,6 +189,8 @@ class SSDCSRIO extends FunctionUnitIO {
 //  val imemMMU = Flipped(new MMUIO)
 //  val dmemMMU = Flipped(new MMUIO)
   val wenFix = Output(Bool())
+  val CSRregfile = new CSRregfile
+  val ArchEvent = new ArchEvent
 }
 
 class SSDCSR extends NutCoreModule with SSDHasCSRConst{
@@ -249,13 +251,15 @@ class SSDCSR extends NutCoreModule with SSDHasCSRConst{
     val s = new Priv
   }
 
+
+
   // Machine-Level CSRs
 
   val mtvec = RegInit(UInt(XLEN.W), 0.U)
   val mcounteren = RegInit(UInt(XLEN.W), 0.U)
   val mcause = RegInit(UInt(XLEN.W), 0.U)
   val mtval = RegInit(UInt(XLEN.W), 0.U)
-  val mepc = Reg(UInt(XLEN.W))
+  val mepc = RegInit(UInt(XLEN.W), 0.U)
 
   val mie = RegInit(0.U(XLEN.W))
   val mipWire = WireInit(0.U.asTypeOf(new Interrupt))
@@ -277,7 +281,7 @@ class SSDCSR extends NutCoreModule with SSDHasCSRConst{
   val marchid = RegInit(UInt(XLEN.W), 0.U) // return 0 to indicate the field is not implemented
   val mimpid = RegInit(UInt(XLEN.W), 0.U) // provides a unique encoding of the version of the processor implementation
   val mhartid = RegInit(UInt(XLEN.W), 0.U) // the hardware thread running the code
-  val mstatus = RegInit(UInt(XLEN.W), "h00001800".U)
+  val mstatus = RegInit(UInt(XLEN.W), 0.U)
   // val mstatus = RegInit(UInt(XLEN.W), "h8000c0100".U)
   // mstatus Value Table
   // | sd   |
@@ -338,7 +342,7 @@ class SSDCSR extends NutCoreModule with SSDHasCSRConst{
   val satp = RegInit(UInt(XLEN.W), 0.U)
   val sepc = RegInit(UInt(XLEN.W), 0.U)
   val scause = RegInit(UInt(XLEN.W), 0.U)
-  val stval = Reg(UInt(XLEN.W))
+  val stval = RegInit(UInt(XLEN.W), 0.U)
   val sscratch = RegInit(UInt(XLEN.W), 0.U)
   val scounteren = RegInit(UInt(XLEN.W), 0.U)
 
@@ -375,6 +379,18 @@ class SSDCSR extends NutCoreModule with SSDHasCSRConst{
   val perfCnts = List.fill(nrPerfCnts)(RegInit(0.U(64.W)))
   val perfCntsLoMapping = (0 until nrPerfCnts).map { case i => MaskedRegMap(0xb00 + i, perfCnts(i)) }
   val perfCntsHiMapping = (0 until nrPerfCnts).map { case i => MaskedRegMap(0xb80 + i, perfCnts(i)(63, 32)) }
+
+
+  //for difftest
+  val mcause_wire = WireInit(UInt(XLEN.W),0.U)
+  val mepc_wire = WireInit(UInt(XLEN.W),0.U)
+  val mstatus_wire = WireInit(UInt(XLEN.W),0.U)
+  val mie_wire = WireInit(UInt(XLEN.W),0.U)
+  mcause_wire := mcause
+  mepc_wire   := mepc
+  mstatus_wire := mstatus
+  mie_wire := mie
+
 
   // CSR reg map
   val mapping = Map(
@@ -674,6 +690,7 @@ class SSDCSR extends NutCoreModule with SSDHasCSRConst{
     mstatusNew.pie.m := true.B
     mstatusNew.mpp := ModeU
     mstatus := mstatusNew.asUInt
+    mstatus_wire := mstatusNew.asUInt
     lr := false.B
     retTarget := mepc(VAddrBits-1, 0)
   }
@@ -687,6 +704,7 @@ class SSDCSR extends NutCoreModule with SSDHasCSRConst{
     mstatusNew.pie.s := true.B
     mstatusNew.spp := ModeU
     mstatus := mstatusNew.asUInt
+    mstatus_wire := mstatusNew.asUInt
     lr := false.B
     retTarget := sepc(VAddrBits-1, 0)
   }
@@ -699,6 +717,7 @@ class SSDCSR extends NutCoreModule with SSDHasCSRConst{
     priviledgeMode := ModeU
     mstatusNew.pie.u := true.B
     mstatus := mstatusNew.asUInt
+    mstatus_wire := mstatusNew.asUInt
     retTarget := uepc(VAddrBits-1, 0)
   }
 
@@ -718,7 +737,9 @@ class SSDCSR extends NutCoreModule with SSDHasCSRConst{
       // trapTarget := stvec(VAddrBits-1. 0)
     }.otherwise {
       mcause := causeNO
+      mcause_wire := causeNO
       mepc := SignExt(io.cfIn.pc, XLEN)
+      mepc_wire := SignExt(io.cfIn.pc, XLEN)
       mstatusNew.mpp := priviledgeMode
       mstatusNew.pie.m := mstatusOld.ie.m
       mstatusNew.ie.m := false.B
@@ -734,6 +755,7 @@ class SSDCSR extends NutCoreModule with SSDHasCSRConst{
     // ))
 
     mstatus := mstatusNew.asUInt
+    mstatus_wire := mstatusNew.asUInt
   }
 
   io.in.ready := true.B
@@ -871,6 +893,52 @@ class SSDCSR extends NutCoreModule with SSDHasCSRConst{
   val nutcoretrap = WireInit(false.B)
   BoringUtils.addSink(nutcoretrap, "nutcoretrap")
   def readWithScala(addr: Int): UInt = mapping(addr)._1
+
+  val mtvec_wire = WireInit(UInt(XLEN.W),0.U)
+
+  mtvec_wire := mtvec
+  when(addr === Mtvec.U){
+    mtvec_wire := wdata
+  }.elsewhen(addr === Mepc.U) {
+    mepc_wire := wdata
+  }.elsewhen(addr === Mstatus.U) {
+    mstatus_wire := wdata
+  }.elsewhen(addr === Mie.U) {
+    mie_wire := wdata
+  }
+
+  BoringUtils.addSource(mtvec_wire,"mtvec_wire")
+  BoringUtils.addSource(mcause_wire,"mcause_wire")
+  BoringUtils.addSource(mepc_wire,"mepc_wire")
+  BoringUtils.addSource(mstatus_wire,"mstatus_wire")
+  BoringUtils.addSource(mie_wire,"mie_wire")
+
+
+  io.CSRregfile.priviledgeMode :=     priviledgeMode
+  io.CSRregfile.mstatus :=            mstatus
+  io.CSRregfile.sstatus :=            mstatus & sstatusRmask
+  io.CSRregfile.mepc     :=           mepc
+  io.CSRregfile.sepc     :=           sepc
+  io.CSRregfile.mtval    :=           mtval
+  io.CSRregfile.stval    :=           stval
+  io.CSRregfile.mtvec    :=           mtvec
+  io.CSRregfile.stvec    :=           stvec
+  io.CSRregfile.mcause   :=           mcause
+  io.CSRregfile.scause   :=           scause
+  io.CSRregfile.satp     :=           satp
+  io.CSRregfile.mip      :=           mipReg
+  io.CSRregfile.mie     :=            mie
+  io.CSRregfile.mscratch :=           mscratch
+  io.CSRregfile.sscratch :=           sscratch
+  io.CSRregfile.mideleg :=            mideleg
+  io.CSRregfile.medeleg :=            medeleg
+
+
+  io.ArchEvent.intrNO :=        Mux(raiseIntr && io.instrValid && valid, intrNO, 0.U)
+  io.ArchEvent.exceptionPC :=   SignExt(io.cfIn.pc, XLEN)
+  io.ArchEvent.exceptionInst := io.cfIn.instr
+  io.ArchEvent.cause := 0.U
+
 
   /*  if (!p.FPGAPlatform) {
       // to monitor
