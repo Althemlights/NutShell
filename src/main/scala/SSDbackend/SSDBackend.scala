@@ -58,6 +58,7 @@ class SSDbackend extends NutCoreModule with hasBypassConst {
 
   pipeFlush := Bypass.io.pipeFlush
   pipeInvalid := Bypass.io.pipeInvalid
+  
   for(i <- 0 to 3){
     pipeFire(2*i) := pipeOut(2*i).valid && pipeIn(2*i+2).ready
     pipeFire(2*i+1) := pipeOut(2*i+1).valid && pipeIn(2*i+3).ready
@@ -108,7 +109,7 @@ class SSDbackend extends NutCoreModule with hasBypassConst {
   val alu2pmu1 = Wire(new ALU2PMUIO)
   val alu2pmu6 = Wire(new ALU2PMUIO)
   val alu2pmu7 = Wire(new ALU2PMUIO)
-  val finalBpuUpdateReq = Wire(new BPUUpdateReq)
+  val mpBpuUpdateReq = Wire(new BPUUpdateReq)
   val ALUList = List(ALU_0,ALU_1,ALU_6,ALU_7)
   val pipeOut2ALUList = List(pipeOut(0),pipeOut(1),pipeOut(6),pipeOut(7))
   val pipeOut2Redirect = List(pipeOut(2),pipeOut(3),pipeOut(8),pipeOut(9))
@@ -136,6 +137,9 @@ class SSDbackend extends NutCoreModule with hasBypassConst {
     a.io.cfIn.redirect.ghr := b.bits.ghr
   }
   (ALURedirectList zip pipeOut2Redirect).foreach{ case(a,b) => a := b.bits.redirect}
+  // (ALURedirectList zip pipeOut2Redirect).foreach{ case(a,b) => a := 0.U.asTypeOf(new RedirectIO)}
+
+
   (bpuUpdateReqList zip ALUList).foreach{ case(a,b) => a := b.io.bpuUpdateReq}
   (alu2pmuList zip ALUList).foreach{ case(a,b) => a := b.io.alu2pmu}
   Bypass.io.flush(0) := Redirect2.valid && pipeOut(2).valid
@@ -147,12 +151,104 @@ class SSDbackend extends NutCoreModule with hasBypassConst {
     Mux(Redirect8.valid &&  pipeOut(8).valid && !pipeInvalid(10),Redirect8,
       Mux(Redirect3.valid && pipeOut(3).valid,Redirect3,
         Mux(Redirect2.valid && pipeOut(2).valid,Redirect2,0.U.asTypeOf(new RedirectIO)))))
-  finalBpuUpdateReq := Mux(pipeOut(9).bits.bpuUpdateReq.valid && pipeOut(9).fire() && !pipeInvalid(11),pipeOut(9).bits.bpuUpdateReq,
-    Mux(pipeOut(8).bits.bpuUpdateReq.valid && pipeOut(8).fire() && !pipeInvalid(10),pipeOut(8).bits.bpuUpdateReq,0.U.asTypeOf(new BPUUpdateReq)))
-  BoringUtils.addSource(finalBpuUpdateReq, "bpuUpdateReq")
-  //  BoringUtils.addSource(finalBpuUpdateReq, "ghrUpdateReq")
-  BoringUtils.addSource(finalBpuUpdateReq.valid,"pmuUpdateCnt")
-  dontTouch(finalBpuUpdateReq)
+
+  mpBpuUpdateReq := Mux(Redirect9.valid &&  pipeOut(9).valid && !pipeInvalid(11),pipeOut(9).bits.bpuUpdateReq,
+    Mux(Redirect8.valid &&  pipeOut(8).valid && !pipeInvalid(10),pipeOut(8).bits.bpuUpdateReq,
+      Mux(Redirect3.valid && pipeOut(3).valid,pipeOut(3).bits.bpuUpdateReq,
+        Mux(Redirect2.valid && pipeOut(2).valid,pipeOut(2).bits.bpuUpdateReq,0.U.asTypeOf(new BPUUpdateReq)))))
+
+  val i0E1redirect = RegNext(RegNext(RegNext(Redirect2.valid && pipeOut(2).valid)))
+  val i1E1redirect = RegNext(RegNext(RegNext(Redirect3.valid && pipeOut(3).valid)))
+
+  val i0WbBpuUpdateReq = Wire(new BPUUpdateReq)
+  val i1WbBpuUpdateReq = Wire(new BPUUpdateReq)
+
+  i0WbBpuUpdateReq := Mux(/*pipeOut(8).bits.bpuUpdateReq.valid &&**/ pipeOut(8).fire() && !pipeInvalid(10) && !i0E1redirect,pipeOut(8).bits.bpuUpdateReq,0.U.asTypeOf(new BPUUpdateReq))
+  i1WbBpuUpdateReq := Mux(/*pipeOut(9).bits.bpuUpdateReq.valid &&**/ pipeOut(9).fire() && !pipeInvalid(11) && !i1E1redirect,pipeOut(9).bits.bpuUpdateReq,0.U.asTypeOf(new BPUUpdateReq))
+
+  BoringUtils.addSource(i0WbBpuUpdateReq, "i0WbBpuUpdateReq")
+  BoringUtils.addSource(i1WbBpuUpdateReq, "i1WbBpuUpdateReq")
+
+  val isE1flush = (Redirect3.valid &&  pipeOut(3).valid ) || (Redirect2.valid &&  pipeOut(2).valid )
+  val isE4flush = (Redirect9.valid &&  pipeOut(9).valid && !pipeInvalid(11)) ||(Redirect8.valid &&  pipeOut(8).valid && !pipeInvalid(10))
+  //ghr - updating  e1
+  val ghrE1 = RegInit(0.U(5.W))
+  val ghrE4 = RegInit(0.U(5.W))
+  val i1Mp  = ALU_1.io.redirect.valid
+  // val i0E1Valid = ALU_0.io.bpuUpdateReq.valid &&  !isE1flush//fix bug
+  // val i1E1Valid = ALU_1.io.bpuUpdateReq.valid &&  !isE1flush//fix bug
+
+  val i0E1Valid = ALU_0.io.bpuUpdateReq.fuOpType(4) && (pipeOut(0).fire()) &&  !isE1flush
+  val i1E1Valid = ALU_1.io.bpuUpdateReq.fuOpType(4) && (pipeOut(1).fire()) &&  !isE1flush
+
+  val i0E1Taken = ALU_0.io.bpuUpdateReq.actualTaken
+  val i1E1Taken = ALU_1.io.bpuUpdateReq.actualTaken
+  when(isE4flush)
+  {
+    ghrE1 := ghrE4
+  }.elsewhen(( i1Mp || !i0E1Valid ) && i1E1Valid){
+    ghrE1 := Cat(ghrE1(3,0),i1E1Taken)
+  }.elsewhen( !i1Mp && i0E1Valid && i1E1Valid ){
+    ghrE1 := Cat(ghrE1(2,0),i1E1Taken,i0E1Taken)
+  }.elsewhen(i0E1Valid && !i1E1Valid){
+    ghrE1 := Cat(ghrE1(3,0),i0E1Taken)
+  }.elsewhen( !i0E1Valid && !i1E1Valid){
+    ghrE1 := ghrE1
+  }
+
+
+  // val i1E4Mp  = ALU_7.io.redirect.valid
+  val i1E4Mp  = ALU_7.io.bpuUpdateReq.isMissPredict 
+  val i0E4Valid = ALU_6.io.bpuUpdateReq.fuOpType(4) && (pipeOut(6).fire() && !isE4flush /**&& !pipeInvalid(10) && pipeOut(8).bits.pc =/= 0.U**/)   //.valid before
+  val i1E4Valid = ALU_7.io.bpuUpdateReq.fuOpType(4) && (pipeOut(7).fire() && !isE4flush /**&& !pipeInvalid(11) && pipeOut(9).bits.pc =/= 0.U**/) 
+
+  val i0E4Taken = ALU_6.io.bpuUpdateReq.actualTaken
+  val i1E4Taken = ALU_7.io.bpuUpdateReq.actualTaken
+
+  when(( i1E4Mp || !i0E4Valid ) && i1E4Valid){
+    ghrE4 := Cat(ghrE4(3,0),i1E4Taken)
+  }.elsewhen( !i1E4Mp && i0E4Valid && i1E4Valid ){
+    ghrE4 := Cat(ghrE4(2,0),i1E4Taken,i0E4Taken)
+  }.elsewhen(i0E4Valid && !i1E4Valid){
+    ghrE4 := Cat(ghrE4(3,0),i0E4Taken)
+  }.elsewhen( !i0E4Valid && !i1E4Valid){
+    ghrE4 := ghrE4
+  }
+
+
+  val exuMpEghr = mpBpuUpdateReq.ghrNotUpdated
+  val mpUpdate = Wire(new BPUUpdateReq)
+  mpUpdate := mpBpuUpdateReq
+  mpUpdate.ghrNotUpdated := Mux(isE4flush,ghrE4, ghrE1)
+
+  // mpBpuUpdateReq := Mux(pipeOut(9).bits.bpuUpdateReq.valid && pipeOut(9).fire() && !pipeInvalid(11),pipeOut(9).bits.bpuUpdateReq,
+  //   Mux(pipeOut(8).bits.bpuUpdateReq.valid && pipeOut(8).fire() && !pipeInvalid(10),pipeOut(8).bits.bpuUpdateReq,0.U.asTypeOf(new BPUUpdateReq)))
+
+
+
+  BoringUtils.addSource(mpUpdate, "mpbpuUpdateReq")
+  BoringUtils.addSource(exuMpEghr, "mpEghr")
+  //  BoringUtils.addSource(mpBpuUpdateReq, "ghrUpdateReq")
+  BoringUtils.addSource(mpBpuUpdateReq.valid,"pmuUpdateCnt")
+  dontTouch(mpBpuUpdateReq)
+
+  val i0Flush = Wire(UInt(2.W)) 
+  val i1Flush = Wire(UInt(2.W))
+  i0Flush := (Redirect9.valid && pipeOut(9).valid && !pipeInvalid(11)).asUInt + (Redirect8.valid && pipeOut(8).valid && !pipeInvalid(10)).asUInt
+  i1Flush := (Redirect3.valid && pipeOut(3).valid).asUInt +( Redirect2.valid && pipeOut(2).valid).asUInt
+
+  val i0FNum = RegInit(0.U(64.W))
+  val i1FNum = RegInit(0.U(64.W))
+  when(true.B){
+    i0FNum := i0FNum + i0Flush
+    i1FNum := i1FNum + i1Flush
+  }
+  when(RegNext(SSDcoretrap)){
+    printf("ex4 flush total : %x\n",i0FNum)
+    printf("ex1 flush total : %x\n",i1FNum)
+    
+  }
+
 
   val aluValid = VecInit(false.B,false.B,false.B,false.B)
   aluValid := Seq(
@@ -500,8 +596,8 @@ class SSDbackend extends NutCoreModule with hasBypassConst {
   val perfCntIO = Wire(new PMUIO1)
   PMU.io.in1 <> perfCntIO
 
-  perfCntIO.branchRight := ( pipeOut(8).fire() && !pipeInvalid(10) && pipeOut(8).bits.alu2pmu.branchRight).asUInt + ( pipeOut(9).fire() && !pipeInvalid(11) && pipeOut(9).bits.alu2pmu.branchRight).asUInt
-  perfCntIO.branchWrong := ( pipeOut(8).fire() && !pipeInvalid(10) && pipeOut(8).bits.alu2pmu.branchWrong).asUInt + ( pipeOut(9).fire() && !pipeInvalid(11) && pipeOut(9).bits.alu2pmu.branchWrong).asUInt
+  perfCntIO.branchRight := Cat(0.U,( pipeOut(8).fire() && !pipeInvalid(10) && pipeOut(8).bits.alu2pmu.branchRight).asUInt) + Cat(0.U,( pipeOut(9).fire() && !pipeInvalid(11) && pipeOut(9).bits.alu2pmu.branchRight).asUInt)
+  perfCntIO.branchWrong := Cat(0.U,( pipeOut(8).fire() && !pipeInvalid(10) && pipeOut(8).bits.alu2pmu.branchWrong).asUInt) + Cat(0.U,( pipeOut(9).fire() && !pipeInvalid(11) && pipeOut(9).bits.alu2pmu.branchWrong).asUInt)
   perfCntIO.jalRight    := ( pipeOut(8).fire() && !pipeInvalid(10) && pipeOut(8).bits.alu2pmu.jalRight).asUInt    + ( pipeOut(9).fire() && !pipeInvalid(11) && pipeOut(9).bits.alu2pmu.jalRight).asUInt
   perfCntIO.jalWrong    := ( pipeOut(8).fire() && !pipeInvalid(10) && pipeOut(8).bits.alu2pmu.jalWrong).asUInt    + ( pipeOut(9).fire() && !pipeInvalid(11) && pipeOut(9).bits.alu2pmu.jalWrong).asUInt
   perfCntIO.jalrRight   := ( pipeOut(8).fire() && !pipeInvalid(10) && pipeOut(8).bits.alu2pmu.jalrRight).asUInt   + ( pipeOut(9).fire() && !pipeInvalid(11) && pipeOut(9).bits.alu2pmu.jalrRight).asUInt
@@ -509,14 +605,23 @@ class SSDbackend extends NutCoreModule with hasBypassConst {
   perfCntIO.retRight    := ( pipeOut(8).fire() && !pipeInvalid(10) && pipeOut(8).bits.alu2pmu.retRight).asUInt    + ( pipeOut(9).fire() && !pipeInvalid(11) && pipeOut(9).bits.alu2pmu.retRight).asUInt
   perfCntIO.retWrong    := ( pipeOut(8).fire() && !pipeInvalid(10) && pipeOut(8).bits.alu2pmu.retWrong).asUInt    + ( pipeOut(9).fire() && !pipeInvalid(11) && pipeOut(9).bits.alu2pmu.retWrong).asUInt
   perfCntIO.branchTargetWrong    := ( pipeOut(8).fire() && !pipeInvalid(10) && pipeOut(8).bits.alu2pmu.branchTargetWrong).asUInt    + ( pipeOut(9).fire() && !pipeInvalid(11) && pipeOut(9).bits.alu2pmu.branchTargetWrong).asUInt
-  perfCntIO.branchDirectionWrong := ( pipeOut(8).fire() && !pipeInvalid(10) && pipeOut(8).bits.alu2pmu.branchDirectionWrong).asUInt + ( pipeOut(9).fire() && !pipeInvalid(11) && pipeOut(9).bits.alu2pmu.branchDirectionWrong).asUInt
+
+  //debug
+  if(SSDCoreConfig().EnableBPUCnt){
+
+      // myDebug(pipeOut(8).fire() && !pipeInvalid(10) && pipeOut(8).bits.alu2pmu.branchDirectionWrong,"i0 bracnh target wrong:pc [%x],target[%x]\n\n",pipeOut(8).bits.pc,pipeOut(8).bits.bpuUpdateReq.actualTarget)
+      // myDebug(pipeOut(9).fire() && !pipeInvalid(11) && pipeOut(9).bits.alu2pmu.branchDirectionWrong,"i1 bracnh target wrong:pc [%x],target[%x]\n\n",pipeOut(9).bits.pc,pipeOut(9).bits.bpuUpdateReq.actualTarget)
+        
+  }
+
+  perfCntIO.branchDirectionWrong := Cat(0.U,( pipeOut(8).fire() && !pipeInvalid(10) && pipeOut(8).bits.alu2pmu.branchDirectionWrong).asUInt) + Cat(0.U,( pipeOut(9).fire() && !pipeInvalid(11) && pipeOut(9).bits.alu2pmu.branchDirectionWrong).asUInt)
   //PMU instCnt signal
   val instIssueCntIO = Wire(new PMUIO2)
   val instCommitCntIO = Wire(new PMUIO2)
   PMU.io.in2Issue <> instIssueCntIO
   PMU.io.in2Commit <> instCommitCntIO
-  instIssueCntIO.branchInst := (pipeOut(0).fire() && pipeOut(0).bits.isBranch && ALUOpType.isBranch(pipeOut(0).bits.fuOpType)).asUInt +
-    (pipeOut(1).fire() && pipeOut(1).bits.isBranch && ALUOpType.isBranch(pipeOut(1).bits.fuOpType)).asUInt
+  instIssueCntIO.branchInst := Cat(0.U,(pipeOut(0).fire() && pipeOut(0).bits.isBranch && ALUOpType.isBranch(pipeOut(0).bits.fuOpType)).asUInt) +
+    Cat(0.U,(pipeOut(1).fire() && pipeOut(1).bits.isBranch && ALUOpType.isBranch(pipeOut(1).bits.fuOpType)).asUInt)
   instIssueCntIO.jalInst := (pipeOut(0).fire() && pipeOut(0).bits.isBranch && (ALUOpType.jal === pipeOut(0).bits.fuOpType || ALUOpType.call === pipeOut(0).bits.fuOpType)).asUInt +
     (pipeOut(1).fire() && pipeOut(1).bits.isBranch && (ALUOpType.jal === pipeOut(1).bits.fuOpType || ALUOpType.call === pipeOut(1).bits.fuOpType)).asUInt
   instIssueCntIO.jalrInst := (pipeOut(0).fire() && pipeOut(0).bits.isBranch && ALUOpType.jalr === pipeOut(0).bits.fuOpType).asUInt +
@@ -532,14 +637,14 @@ class SSDbackend extends NutCoreModule with hasBypassConst {
   instIssueCntIO.divInst := (pipeOut(0).fire()  && MDUOpType.isDiv(pipeOut(0).bits.fuOpType) && BypassPktValid(0) && BypassPkt(0).decodePkt.muldiv).asUInt +
     (pipeOut(1).fire() && MDUOpType.isDiv(pipeOut(1).bits.fuOpType) && BypassPktValid(1) && BypassPkt(1).decodePkt.muldiv).asUInt
 
-  instCommitCntIO.branchInst := ( pipeOut(8).fire() && !pipeInvalid(10) && pipeOut(8).bits.isBranch && ALUOpType.isBranch(pipeOut(8).bits.fuOpType)).asUInt +
-    ( pipeOut(9).fire() && !pipeInvalid(11) && pipeOut(9).bits.isBranch && ALUOpType.isBranch(pipeOut(9).bits.fuOpType)).asUInt
-  instCommitCntIO.jalInst := ( pipeOut(8).fire() && !pipeInvalid(10) && pipeOut(8).bits.isBranch && (ALUOpType.jal === pipeOut(8).bits.fuOpType || ALUOpType.call === pipeOut(8).bits.fuOpType)).asUInt +
-    ( pipeOut(9).fire() && !pipeInvalid(11) && pipeOut(9).bits.isBranch && (ALUOpType.jal === pipeOut(9).bits.fuOpType || ALUOpType.call === pipeOut(9).bits.fuOpType)).asUInt
-  instCommitCntIO.jalrInst := ( pipeOut(8).fire() && !pipeInvalid(10) && pipeOut(8).bits.isBranch && ALUOpType.jalr === pipeOut(8).bits.fuOpType).asUInt +
-    ( pipeOut(9).fire() && !pipeInvalid(11) && pipeOut(9).bits.isBranch && ALUOpType.jalr === pipeOut(9).bits.fuOpType).asUInt
-  instCommitCntIO.retInst := ( pipeOut(8).fire() && !pipeInvalid(10) && pipeOut(8).bits.isBranch && ALUOpType.ret === pipeOut(8).bits.fuOpType).asUInt +
-    ( pipeOut(9).fire() && !pipeInvalid(11) && pipeOut(9).bits.isBranch && ALUOpType.ret === pipeOut(9).bits.fuOpType).asUInt
+  instCommitCntIO.branchInst := Cat(0.U,( pipeOut(8).fire() && !pipeInvalid(10) && pipeOut(8).bits.isBranch && ALUOpType.isBranch(pipeOut(8).bits.fuOpType)).asUInt) +
+    Cat(0.U,( pipeOut(9).fire() && !pipeInvalid(11) && pipeOut(9).bits.isBranch && ALUOpType.isBranch(pipeOut(9).bits.fuOpType)).asUInt)
+  instCommitCntIO.jalInst := Cat(0.U,( pipeOut(8).fire() && !pipeInvalid(10) && pipeOut(8).bits.isBranch && (ALUOpType.jal === pipeOut(8).bits.fuOpType || ALUOpType.call === pipeOut(8).bits.fuOpType)).asUInt) +
+    Cat(0.U,( pipeOut(9).fire() && !pipeInvalid(11) && pipeOut(9).bits.isBranch && (ALUOpType.jal === pipeOut(9).bits.fuOpType || ALUOpType.call === pipeOut(9).bits.fuOpType)).asUInt)
+  instCommitCntIO.jalrInst := Cat(0.U,( pipeOut(8).fire() && !pipeInvalid(10) && pipeOut(8).bits.isBranch && ALUOpType.jalr === pipeOut(8).bits.fuOpType).asUInt) +
+    Cat(0.U,( pipeOut(9).fire() && !pipeInvalid(11) && pipeOut(9).bits.isBranch && ALUOpType.jalr === pipeOut(9).bits.fuOpType).asUInt)
+  instCommitCntIO.retInst := Cat(0.U,( pipeOut(8).fire() && !pipeInvalid(10) && pipeOut(8).bits.isBranch && ALUOpType.ret === pipeOut(8).bits.fuOpType).asUInt) +
+    Cat(0.U,( pipeOut(9).fire() && !pipeInvalid(11) && pipeOut(9).bits.isBranch && ALUOpType.ret === pipeOut(9).bits.fuOpType).asUInt)
   instCommitCntIO.loadInst := ( pipeOut(8).fire() && !pipeInvalid(10) && BypassPktValid(8) && BypassPkt(8).decodePkt.load).asUInt +
     ( pipeOut(9).fire() && !pipeInvalid(11) && BypassPktValid(9) && BypassPkt(9).decodePkt.load).asUInt
   instCommitCntIO.storeInst := ( pipeOut(8).fire() && !pipeInvalid(10) && BypassPktValid(8) && BypassPkt(8).decodePkt.store).asUInt +
@@ -549,7 +654,7 @@ class SSDbackend extends NutCoreModule with hasBypassConst {
   instCommitCntIO.divInst := ( pipeOut(8).fire() && !pipeInvalid(10)  && MDUOpType.isDiv(pipeOut(8).bits.fuOpType) && BypassPktValid(8) && BypassPkt(8).decodePkt.muldiv).asUInt +
     ( pipeOut(9).fire() && !pipeInvalid(11) && MDUOpType.isDiv(pipeOut(9).bits.fuOpType) && BypassPktValid(9) && BypassPkt(9).decodePkt.muldiv).asUInt
 
-  //  val bruCntCheck = finalBpuUpdateReq.valid.asUInt =/= ( instCommitCntIO.branchInst + instCommitCntIO.jalInst + instCommitCntIO.jalrInst + instCommitCntIO.retInst)
+  //  val bruCntCheck = mpBpuUpdateReq.valid.asUInt =/= ( instCommitCntIO.branchInst + instCommitCntIO.jalInst + instCommitCntIO.jalrInst + instCommitCntIO.retInst)
   //  dontTouch(bruCntCheck)
 
 

@@ -12,7 +12,7 @@ case class SSDCoreConfig(
                           EnablePerfCnt: Boolean = true,
                           EnableInstCnt: Boolean = false,
                           EnableCacheCnt: Boolean = false,
-                          EnableBPUCnt: Boolean = false,
+                          EnableBPUCnt: Boolean = true,
                           EnableGHRDebug: Boolean = false,
                           EnableBPUupdateDebug: Boolean = false,
                           EnableRetDebug: Boolean = false,

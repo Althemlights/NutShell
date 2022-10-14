@@ -60,10 +60,14 @@ class IFU_ooo extends NutCoreModule with HasResetVector {
   val ghr = RegInit(0.U(GhrLength.W))
   //  val ghr_commit = RegInit(0.U(GhrLength.W))
   val pc = RegInit(resetVector.U(VAddrBits.W))
+
+
+
   // val pcBrIdx = RegInit(0.U(4.W))
   val pcInstValid = RegInit("b11111111".U)
   val pcUpdate = Wire(Bool())
   pcUpdate := io.redirect.valid || io.imem.req.fire()
+
   val snpc = Cat(pc(VAddrBits-1, 4), 0.U(4.W)) + CacheReadWidth.U  // IFU will always ask icache to fetch next instline
   // Note: we define instline as 8 Byte aligned data from icache
 
@@ -123,16 +127,45 @@ class IFU_ooo extends NutCoreModule with HasResetVector {
   // next pc
   val npc = Wire(UInt(VAddrBits.W))
   npc := Mux(io.redirect.valid, io.redirect.target, Mux(state === s_crosslineJump, crosslineJumpTarget, Mux(bpuValid, pnpc, snpc)))
+
+  val godNpc = Wire(UInt(VAddrBits.W))
+  val godValid = Wire(UInt(8.W))
+
+  // npc := godNpc
+
+  if(SSDCoreConfig().EnableDifftest){
+    val predictor = Module(new DifftestPredictorNext)
+
+    val textCounter = RegInit(1.U(64.W))
+    when(pcUpdate){
+      textCounter := textCounter +1.U(64.W)
+    }
+    dontTouch(textCounter)
+    predictor.io.clock := clock
+    predictor.io.index := textCounter
+    predictor.io.pc := Cat(0.U((64 - VAddrBits).W),pc)
+    predictor.io.orinpc := Cat(0.U((64 - VAddrBits).W),npc)
+
+    godNpc := predictor.io.npc
+    godValid := predictor.io.valid
+    dontTouch(godNpc)
+    dontTouch(godValid)
+  }
+
+
+
+
+
   // val npcIsSeq = Mux(io.redirect.valid , false.B, Mux(state === s_crosslineJump, false.B, Mux(crosslineJump, true.B, Mux(nlp.io.out.valid, false.B, true.B)))) //for debug only
 
   //ghr & ghr update
-  val ghrUpdate = io.imem.req.fire() && nlp.io.out.ghrUpdateValid || io.redirect.ghrUpdateValid
-  val nghr = Wire(UInt(GhrLength.W))
-  nghr := Mux(io.redirect.ghrUpdateValid, io.redirect.ghr, Mux(nlp.io.out.ghrUpdateValid, nlp.io.out.ghr, ghr)) // crossline not considered
-  dontTouch(nghr)
-  when(ghrUpdate) {
-    ghr := nghr
-  }
+  // val ghrUpdate = io.imem.req.fire() && nlp.io.out.ghrUpdateValid || io.redirect.ghrUpdateValid
+  // val nghr = Wire(UInt(GhrLength.W))
+  // nghr := Mux(io.redirect.ghrUpdateValid, io.redirect.ghr, Mux(nlp.io.out.ghrUpdateValid, nlp.io.out.ghr, ghr)) // crossline not considered
+  // dontTouch(nghr)
+  // when(ghrUpdate) {
+  //   ghr := nghr
+  // }
 
   //for redirect debug
   val redirectCond = io.redirect.valid
@@ -157,10 +190,12 @@ class IFU_ooo extends NutCoreModule with HasResetVector {
     "b111".U -> "b10000000".U
   ))
   npcInstValid := Mux(crosslineJump && !(state === s_crosslineJump) && !io.redirect.valid, "b00000001".U, genInstValid(npc))
+  // npcInstValid := godValid
+
 
   // branch position index, 4 bit vector
   // e.g. brIdx 0010 means a branch is predicted/assigned at pc (offset 2)
-  val brIdx = Wire(UInt(4.W))
+  val brIdx = Wire(UInt(8.W))
   // predicted branch position index, 4 bit vector
   val pbrIdx = bpuBrIdx | (crosslineJump << 3)
   brIdx := Mux(io.redirect.valid, 0.U, Mux(state === s_crosslineJump, 0.U, pbrIdx))
@@ -169,7 +204,7 @@ class IFU_ooo extends NutCoreModule with HasResetVector {
   nlp.io.in.pc.valid := io.imem.req.fire() || io.redirect.valid// only predict when Icache accepts a request
   nlp.io.in.pc.bits := npc  // predict one cycle early
   nlp.io.flush := io.redirect.valid && false.B// redirect means BPU may need to be updated
-  nlp.io.in.ghr := nghr
+  // nlp.io.in.ghr := nghr
   // Multi-cycle branch predictor
   // Multi-cycle branch predictor will not be synthesized if EnableMultiCyclePredictor is set to false
   val mcp = Module(new DummyPredicter)
@@ -204,9 +239,12 @@ class IFU_ooo extends NutCoreModule with HasResetVector {
   //    ghr_commit := Cat(ghr_commit(GhrLength-2,0),ghr_update.actualTarget)
   //  }
 
+ 
+
   when (pcUpdate) {
     pc := npc
     pcInstValid := npcInstValid
+
     // pcBrIdx := brIdx // just for debug
     // printf("[IF1] pc=%x\n", pc)
   }
@@ -216,14 +254,19 @@ class IFU_ooo extends NutCoreModule with HasResetVector {
     crosslineJump,snpc,nlp.io.out.valid,nlp.io.out.target)
 
   io.flushVec := Mux(io.redirect.valid, Mux(io.redirect.rtype === 0.U, "b1111".U, "b0011".U), 0.U)
+
   io.bpFlush := false.B
 
   val icacheUserGen = Wire(new ICacheUserBundle)
   icacheUserGen.pc := pc
   icacheUserGen.pnpc := Mux(crosslineJump, nlp.io.out.target, npc)
-  icacheUserGen.brIdx := Mux(pc(3), Cat(brIdx & pcInstValid(7,4),0.U(4.W)), Cat(0.U(4.W),brIdx & pcInstValid(3,0)))
+  // icacheUserGen.brIdx := Mux(pc(3), Cat(brIdx & pcInstValid(7,4),0.U(4.W)), Cat(0.U(4.W),brIdx & pcInstValid(3,0)))
+  icacheUserGen.brIdx := brIdx
   icacheUserGen.instValid := pcInstValid
-  icacheUserGen.ghr := ghr
+
+  //////jpz addation!!
+  icacheUserGen.ghr := nlp.io.fghr
+
   icacheUserGen.btbIsBranch := Cat(0.U(4.W),nlp.io.out.btbIsBranch)
 
   io.imem.req.bits.apply(addr = Cat(pc(VAddrBits-1,1),0.U(1.W)), //cache will treat it as Cat(pc(63,3),0.U(3.W))
@@ -318,7 +361,11 @@ class IFU_embedded extends NutCoreModule with HasResetVector {
 
   // pc
   val pc = RegInit(resetVector.U(32.W))
-  val pcUpdate = io.redirect.valid || io.imem.req.fire()
+  // val pcUpdate = io.redirect.valid || io.imem.req.fire() //////////////////attention!!
+
+
+  val pcUpdate = io.imem.req.fire()
+
   val snpc = pc + 4.U  // sequential next pc
 
   val bpu = Module(new BPU_embedded)

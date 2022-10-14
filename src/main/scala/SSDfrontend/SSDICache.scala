@@ -140,8 +140,14 @@ sealed class SSDICacheStage1(implicit val cacheConfig: SSDICacheConfig) extends 
 
 
   io.out.bits.req := io.in.bits
+  // io.out.valid := Mux((RegNext(io.dataReadBus.req.bits.setIdx) === io.dataReadBus.req.bits.setIdx) && RegNext(io.in.fire()),0.U,io.in.valid && io.metaReadBus.req.ready && io.dataReadBus.req.ready)
+  // io.in.ready := Mux((RegNext(io.dataReadBus.req.bits.setIdx) === io.dataReadBus.req.bits.setIdx) && RegNext(io.in.fire()),0.U,io.out.ready && io.metaReadBus.req.ready && io.dataReadBus.req.ready)
+
   io.out.valid := io.in.valid && io.metaReadBus.req.ready && io.dataReadBus.req.ready
-  io.in.ready := io.out.ready && io.metaReadBus.req.ready && io.dataReadBus.req.ready
+  io.in.ready := io.out.ready && io.metaReadBus.req.ready && io.dataReadBus.req.ready 
+
+
+
   io.out.bits.mmio := AddressSpace.isMMIO(io.in.bits.addr)
 }
 

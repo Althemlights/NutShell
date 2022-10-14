@@ -121,8 +121,9 @@ class ALU(hasBru: Boolean = false) extends NutCoreModule {
 
   val isBranch = ALUOpType.isBranch(func)
   val isJump = ALUOpType.isJump(func)
-  val isBru = ALUOpType.isBru(func)
-  val taken = LookupTree(ALUOpType.getBranchType(func), branchOpTable) ^ ALUOpType.isBranchInvert(func)
+  val isBru = ALUOpType.isBru(func).suggestName("jpzIsbru")
+
+  val taken = LookupTree(ALUOpType.getBranchType(func), branchOpTable) ^ ALUOpType.isBranchInvert(func) || isJump
   val target = Mux(isBranch, io.cfIn.pc + io.offset, adderRes)(VAddrBits-1,0)
   val predictWrong = Mux(!taken && isBranch, io.cfIn.brIdx(0), !io.cfIn.brIdx(0) || (io.redirect.target =/= io.cfIn.pnpc))
   val isRVC = (io.cfIn.instr(1,0) =/= "b11".U)
@@ -135,7 +136,9 @@ class ALU(hasBru: Boolean = false) extends NutCoreModule {
   Debug(valid && (io.cfIn.instr(1,0) === "b11".U) =/= !isRVC, "[ERROR] pc %x inst %x rvc %x\n",io.cfIn.pc, io.cfIn.instr, isRVC)
   io.redirect.target := Mux(!taken && isBranch , Mux(isRVC, io.cfIn.pc + 2.U, io.cfIn.pc + 4.U), target)
   // with branch predictor, this is actually to fix the wrong prediction
+  
   io.redirect.valid := valid && isBru && predictWrong //|| branchPredictMiss //|| branchPredictWrong
+  // io.redirect.valid := 0.U
 
   io.redirect.ghrUpdateValid := valid && isBru && predictWrong //|| branchPredictMiss || branchPredictWrong // maybe = io.redirect.valid ?
   val redirectRtype = if (EnableOutOfOrderExec) 1.U else 0.U

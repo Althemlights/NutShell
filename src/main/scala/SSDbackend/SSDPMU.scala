@@ -191,6 +191,12 @@ class PMU extends Module{
   val instCntNum = 16
   val instCnts = List.fill(instCntNum)(RegInit(0.U(64.W)))
   val instIncrease = List.fill(instCntNum)(WireInit(0.U(2.W)))
+
+  val jCnts = RegInit(0.U(64.W))
+  when(true.B){
+    jCnts := jCnts + Cat(0.U,instIncrease(8)) + Cat(0.U,instIncrease(9)) + Cat(0.U,instIncrease(10))  +Cat(0.U,instIncrease(11))
+  }
+  dontTouch(jCnts)
   if(SSDCoreConfig().EnablePMU){(instCnts zip instIncrease).map{ case(a,b) => { a := a + b }}}
   instCntList.map{ case(a,(b,c)) => {instIncrease(b) := a}}
 
