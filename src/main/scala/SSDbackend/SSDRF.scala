@@ -21,9 +21,11 @@ class SSDRF extends Module{
     val readPorts = Vec(4,new RfReadPort)
     val writePorts = Vec(2,new RfWritePort)
     val debugPorts = Output(Vec(32,UInt(64.W)))
+    val mem = Output(Vec(32,UInt(63.W)))
   })
 
   val mem = Reg(Vec(32,UInt(64.W)))
+  io.mem := mem
 
   for (r <- io.readPorts) {
     val rdata = Mux(r.addr === 0.U, 0.U, mem(r.addr))
