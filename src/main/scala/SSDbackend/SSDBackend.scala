@@ -729,6 +729,22 @@ class SSDbackend extends NutCoreModule with hasBypassConst {
     mtvecFlag := false.B
   }
 
+  //putch for ysyx SoC
+  val a0 = WireInit(0.U(64.W))
+  val a0Wen0 = (pipeOut(8).bits.instr === 0x7b.U) && pipeOut(8).fire() && !pipeInvalid(10) && BypassPkt(8).decodePkt.rdvalid &&
+    BypassPkt(8).decodePkt.rd === "ha".U && regfile.io.writePorts(0).wen
+  val a0Wen1 = (pipeOut(9).bits.instr === 0x7b.U) && pipeOut(9).fire() && !pipeInvalid(11) && BypassPkt(9).decodePkt.rdvalid &&
+    BypassPkt(9).decodePkt.rd  === "ha".U && regfile.io.writePorts(1).wen
+  a0 := Mux(a0Wen0,pipeOut(8).bits.rd,Mux(a0Wen1,pipeOut(9).bits.rd,regfile.io.mem(10)))
+
+  when((pipeOut(8).bits.instr === 0x7b.U) &&  pipeOut(8).fire() && !pipeInvalid(10) ||
+    (pipeOut(9).bits.instr === 0x7b.U) &&  pipeOut(9).fire() && !pipeInvalid(11)){
+    printf("%c",a0.asUInt)
+  }
+//  when(RegNext((pipeOut(0).bits.instr === 0x7b.U) || (pipeOut(1).bits.instr === 0x7b.U))) {
+//    printf("y")
+//  }
+
   //  SSDCorePerfCntList.map { case (name, (addr, boringId)) =>
   //    BoringUtils.addSink(perfCntCond(addr), boringId)}
   //
@@ -753,9 +769,6 @@ class SSDbackend extends NutCoreModule with hasBypassConst {
   val rf_a0 = WireInit(0.U(64.W))
   BoringUtils.addSink(rf_a0, "rf_a0")
 
-  when(RegNext((pipeOut(0).bits.instr === 0x7b.U) || (pipeOut(1).bits.instr === 0x7b.U))) {
-    printf("y")
-  }
   if(SSDCoreConfig().EnableDifftest) {
     val dt_ic1 = Module(new DifftestInstrCommit)
     dt_ic1.io.clock := clock
@@ -766,7 +779,8 @@ class SSDbackend extends NutCoreModule with hasBypassConst {
     dt_ic1.io.instr := RegNext(pipeOut(9).bits.instr)
     dt_ic1.io.special := 0.U
 //    dt_ic1.io.skip := (RegNext(pipeOut(9).fire() && !pipeInvalid(11) && ((pipeOut(9).bits.csrInst && pipeOut(8).bits.instr=/=0x73.U && pipeOut(9).bits.instr=/=0x30571073.U && pipeOut(9).bits.instr=/=0x30031073.U && pipeOut(9).bits.instr =/=0x34139073.U && pipeOut(9).bits.instr =/= 0x30200073.U) || pipeOut(9).bits.isMMIO))) || RegNext(pipeOut(9).bits.instr === 0x7b.U)
-    dt_ic1.io.skip := (RegNext(pipeOut(9).fire() && !pipeInvalid(11) && (pipeOut(9).bits.isMMIO))) || RegNext(pipeOut(9).bits.instr === 0x7b.U) || RegNext(pipeOut(9).bits.instr === "hb0002973".U) //trap & csrr mcycle
+    dt_ic1.io.skip := (RegNext(pipeOut(9).fire() && !pipeInvalid(11) && (pipeOut(9).bits.isMMIO))) || RegNext(pipeOut(9).bits.instr === 0x7b.U) ||
+      RegNext(pipeOut(9).bits.instr(6,0) === "hb0002973".U(6,0) && pipeOut(9).bits.instr(31,12) === "hb0002973".U(31,12)) //trap & csrr mcycle
     dt_ic1.io.isRVC := false.B
     dt_ic1.io.scFailed := false.B
     dt_ic1.io.wen := RegNext(regfile.io.writePorts(1).wen)
@@ -783,7 +797,8 @@ class SSDbackend extends NutCoreModule with hasBypassConst {
     dt_ic0.io.instr := RegNext(pipeOut(8).bits.instr)
     dt_ic0.io.special := 0.U
 //    dt_ic0.io.skip := (RegNext(pipeOut(8).fire() && !pipeInvalid(10) && ((pipeOut(8).bits.csrInst && pipeOut(8).bits.instr=/=0x73.U && pipeOut(8).bits.instr=/=0x30571073.U && pipeOut(8).bits.instr=/=0x30031073.U && pipeOut(8).bits.instr =/=0x34139073.U && pipeOut(8).bits.instr =/= 0x30200073.U) || pipeOut(8).bits.isMMIO))) || RegNext(pipeOut(8).bits.instr === 0x7b.U)
-    dt_ic0.io.skip := (RegNext(pipeOut(8).fire() && !pipeInvalid(10) && (pipeOut(8).bits.isMMIO))) || RegNext(pipeOut(8).bits.instr === 0x7b.U) || RegNext(pipeOut(8).bits.instr === "hb0002973".U)
+    dt_ic0.io.skip := (RegNext(pipeOut(8).fire() && !pipeInvalid(10) && (pipeOut(8).bits.isMMIO))) || RegNext(pipeOut(8).bits.instr === 0x7b.U) ||
+      RegNext(pipeOut(8).bits.instr(6,0) === "hb0002973".U(6,0) && pipeOut(8).bits.instr(31,12) === "hb0002973".U(31,12))
     dt_ic0.io.isRVC := false.B
     dt_ic0.io.scFailed := false.B
     dt_ic0.io.wen := RegNext(regfile.io.writePorts(0).wen)
