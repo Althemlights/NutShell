@@ -403,8 +403,8 @@ class SSDbackend extends NutCoreModule with hasBypassConst {
   pipeIn(3).bits.branchTaken := Mux(aluValid(1),ALU_1.io.branchTaken,0.U(64.W))
   pipeIn(2).bits.bpuUpdateReq := Mux(bpuUpdataReq0.valid && pipeOut(0).valid,bpuUpdataReq0,0.U.asTypeOf(new BPUUpdateReq))
   pipeIn(3).bits.bpuUpdateReq := Mux(bpuUpdataReq1.valid && pipeOut(1).valid,bpuUpdataReq1,0.U.asTypeOf(new BPUUpdateReq))
-  pipeIn(2).bits.redirect := Mux(SSDCSR.io.redirect.valid&&i0CSRValid ,SSDCSR.io.redirect,Mux(ALU_0.io.redirect.valid && pipeOut(0).valid,ALU_0.io.redirect,0.U.asTypeOf(new RedirectIO)))
-  pipeIn(3).bits.redirect := Mux(SSDCSR.io.redirect.valid&&i1CSRValid ,SSDCSR.io.redirect,Mux(ALU_1.io.redirect.valid && pipeOut(1).valid,ALU_1.io.redirect,0.U.asTypeOf(new RedirectIO)))
+  pipeIn(2).bits.redirect := Mux(SSDCSR.io.redirect.valid && i0CSRValid ,SSDCSR.io.redirect,Mux(ALU_0.io.redirect.valid && pipeOut(0).valid,ALU_0.io.redirect,0.U.asTypeOf(new RedirectIO)))
+  pipeIn(3).bits.redirect := Mux(SSDCSR.io.redirect.valid && i1CSRValid ,SSDCSR.io.redirect,Mux(ALU_1.io.redirect.valid && pipeOut(1).valid,ALU_1.io.redirect,0.U.asTypeOf(new RedirectIO)))
   pipeIn(2).bits.alu2pmu := Mux(bpuUpdataReq0.valid && pipeOut(0).valid,alu2pmu0,0.U.asTypeOf(new ALU2PMUIO))
   pipeIn(3).bits.alu2pmu := Mux(bpuUpdataReq1.valid && pipeOut(1).valid,alu2pmu1,0.U.asTypeOf(new ALU2PMUIO))
   val mtvec_wire = WireInit(UInt(XLEN.W),0.U)
@@ -629,8 +629,6 @@ class SSDbackend extends NutCoreModule with hasBypassConst {
   instCommitCntIO.divInst := ( pipeOut(8).fire() && !pipeInvalid(10)  && MDUOpType.isDiv(pipeOut(8).bits.fuOpType) && BypassPktValid(8) && BypassPkt(8).decodePkt.muldiv).asUInt +
     ( pipeOut(9).fire() && !pipeInvalid(11) && MDUOpType.isDiv(pipeOut(9).bits.fuOpType) && BypassPktValid(9) && BypassPkt(9).decodePkt.muldiv).asUInt
 
-  //  val bruCntCheck = finalBpuUpdateReq.valid.asUInt =/= ( instCommitCntIO.branchInst + instCommitCntIO.jalInst + instCommitCntIO.jalrInst + instCommitCntIO.retInst)
-  //  dontTouch(bruCntCheck)
 
 
   //Pipeline basic information
@@ -721,6 +719,15 @@ class SSDbackend extends NutCoreModule with hasBypassConst {
   BoringUtils.addSource((pipeOut(8).bits.instr === "h0000006b".U || pipeOut(8).bits.instr === "h0005006b".U) &&  pipeOut(8).fire() && !pipeInvalid(10) ||
     (pipeOut(9).bits.instr === "h0000006b".U || pipeOut(9).bits.instr === "h0005006b".U) &&  pipeOut(9).fire() && !pipeInvalid(11),"SSDcoretrap")
   BoringUtils.addSink(SSDcoretrap,"SSDcoretrap")
+  //inst flag for mtvec
+  val mtvecFlag = Reg(Bool())
+  dontTouch(mtvecFlag)
+  when((pipeOut(8).bits.instr === "h30571073".U) &&  pipeOut(8).fire() && !pipeInvalid(10) ||
+    (pipeOut(9).bits.instr === "h30571073".U) &&  pipeOut(9).fire() && !pipeInvalid(11)){
+    mtvecFlag := true.B
+  }.otherwise{
+    mtvecFlag := false.B
+  }
 
   //  SSDCorePerfCntList.map { case (name, (addr, boringId)) =>
   //    BoringUtils.addSink(perfCntCond(addr), boringId)}
@@ -759,7 +766,7 @@ class SSDbackend extends NutCoreModule with hasBypassConst {
     dt_ic1.io.instr := RegNext(pipeOut(9).bits.instr)
     dt_ic1.io.special := 0.U
 //    dt_ic1.io.skip := (RegNext(pipeOut(9).fire() && !pipeInvalid(11) && ((pipeOut(9).bits.csrInst && pipeOut(8).bits.instr=/=0x73.U && pipeOut(9).bits.instr=/=0x30571073.U && pipeOut(9).bits.instr=/=0x30031073.U && pipeOut(9).bits.instr =/=0x34139073.U && pipeOut(9).bits.instr =/= 0x30200073.U) || pipeOut(9).bits.isMMIO))) || RegNext(pipeOut(9).bits.instr === 0x7b.U)
-    dt_ic1.io.skip := (RegNext(pipeOut(9).fire() && !pipeInvalid(11) && (pipeOut(9).bits.isMMIO))) || RegNext(pipeOut(9).bits.instr === 0x7b.U)
+    dt_ic1.io.skip := (RegNext(pipeOut(9).fire() && !pipeInvalid(11) && (pipeOut(9).bits.isMMIO))) || RegNext(pipeOut(9).bits.instr === 0x7b.U) || RegNext(pipeOut(9).bits.instr === "hb0002973".U) //trap & csrr mcycle
     dt_ic1.io.isRVC := false.B
     dt_ic1.io.scFailed := false.B
     dt_ic1.io.wen := RegNext(regfile.io.writePorts(1).wen)
@@ -776,7 +783,7 @@ class SSDbackend extends NutCoreModule with hasBypassConst {
     dt_ic0.io.instr := RegNext(pipeOut(8).bits.instr)
     dt_ic0.io.special := 0.U
 //    dt_ic0.io.skip := (RegNext(pipeOut(8).fire() && !pipeInvalid(10) && ((pipeOut(8).bits.csrInst && pipeOut(8).bits.instr=/=0x73.U && pipeOut(8).bits.instr=/=0x30571073.U && pipeOut(8).bits.instr=/=0x30031073.U && pipeOut(8).bits.instr =/=0x34139073.U && pipeOut(8).bits.instr =/= 0x30200073.U) || pipeOut(8).bits.isMMIO))) || RegNext(pipeOut(8).bits.instr === 0x7b.U)
-    dt_ic0.io.skip := (RegNext(pipeOut(8).fire() && !pipeInvalid(10) && (pipeOut(8).bits.isMMIO))) || RegNext(pipeOut(8).bits.instr === 0x7b.U)
+    dt_ic0.io.skip := (RegNext(pipeOut(8).fire() && !pipeInvalid(10) && (pipeOut(8).bits.isMMIO))) || RegNext(pipeOut(8).bits.instr === 0x7b.U) || RegNext(pipeOut(8).bits.instr === "hb0002973".U)
     dt_ic0.io.isRVC := false.B
     dt_ic0.io.scFailed := false.B
     dt_ic0.io.wen := RegNext(regfile.io.writePorts(0).wen)
