@@ -129,7 +129,7 @@ class SSDLSU extends  NutCoreModule with HasStoreBufferConst{
   //stall signal
   val cacheStall = WireInit(false.B)
   BoringUtils.addSink(cacheStall,"cacheStall")
-  val bufferFullStall = (!storeBuffer.io.in.ready && lsuPipeOut(1).bits.isStore)   //when almost full, still can store one
+  val  bufferFullStall = (storeBuffer.io.isAlmostFull && lsuPipeOut(1).bits.isStore) || storeBuffer.io.isFull  //when almost full, still can store one
   val pc = WireInit(0.U(VAddrBits.W))  //for LSU debug
   BoringUtils.addSink(pc,"lsuPC")  
   io.memStall := cacheStall && (isLoad || lsuPipeStage3.right.valid && !lsuPipeStage3.right.bits.isStore) || bufferFullStall
@@ -207,10 +207,10 @@ class SSDLSU extends  NutCoreModule with HasStoreBufferConst{
   cacheInArbiter0.io.in(1) <> loadCacheIn
   cacheInArbiter1.io.in(0) <> loadCacheIn
   cacheInArbiter1.io.in(1) <> storeCacheIn
-  storeCacheIn.ready := Mux(storeBuffer.io.isFull, cacheInArbiter0.io.in(0).ready, cacheInArbiter1.io.in(1).ready)
+  storeCacheIn.ready := Mux(storeBuffer.io.isAlmostFull || storeBuffer.io.isFull, cacheInArbiter0.io.in(0).ready, cacheInArbiter1.io.in(1).ready)
 
-  cacheIn.bits :=  Mux(storeBuffer.io.isAlmostFull,cacheInArbiter0.io.out.bits,cacheInArbiter1.io.out.bits)
-  cacheIn.valid :=  Mux(storeBuffer.io.isAlmostFull,cacheInArbiter0.io.out.valid,cacheInArbiter1.io.out.valid)
+  cacheIn.bits :=  Mux(storeBuffer.io.isAlmostFull || storeBuffer.io.isFull,cacheInArbiter0.io.out.bits,cacheInArbiter1.io.out.bits)
+  cacheIn.valid :=  Mux(storeBuffer.io.isAlmostFull || storeBuffer.io.isFull,cacheInArbiter0.io.out.valid,cacheInArbiter1.io.out.valid)
   cacheInArbiter0.io.out.ready := cacheIn.ready
   cacheInArbiter1.io.out.ready := cacheIn.ready
   //store buffer pointer
@@ -331,13 +331,16 @@ class SSDLSU extends  NutCoreModule with HasStoreBufferConst{
     LSUOpType.lwu  -> ZeroExt(rdataSel(31, 0), XLEN)
   ))
   //LSU out
+  val dmemFireLatch = RegInit(false.B)
+  when(bufferFullStall && io.dmem.resp.fire()){ dmemFireLatch := true.B
+  }.elsewhen(!bufferFullStall){ dmemFireLatch := false.B }
   io.in.ready := lsuPipeIn(0).ready || loadCacheIn.ready
-  io.out.valid := (io.dmem.resp.fire() || addrHitE3) && lsuPipeStage3.right.valid && !lsuPipeStage3.right.bits.isStore && !lsuPipeStage3.right.bits.isCacheStore
+  io.out.valid := (io.dmem.resp.fire() || dmemFireLatch || addrHitE3) && lsuPipeStage3.right.valid && !lsuPipeStage3.right.bits.isStore && !lsuPipeStage3.right.bits.isCacheStore
   dontTouch(io.out.valid)
   io.isMMIO := lsuPipeStage3.right.bits.isMMIO
   val partialLoad = !lsuPipeOut(0).bits.isStore && (lsuPipeOut(0).bits.func =/= LSUOpType.ld) && lsuPipeOut(0).valid
   val out = Mux(partialLoad,rdataFinal,Mux(addrHitE3,mergedDataE3,io.dmem.resp.bits.rdata))
-  val outLatch = RegEnable(out,io.out.valid)
+  val outLatch = RegEnable(out,io.out.valid && !dmemFireLatch)
   io.out.bits := Mux(io.out.valid,out,outLatch)
   //store buffer snapshit
   storeBuffer.io.in.valid := lsuPipeStage4.io.right.valid && lsuPipeStage4.io.right.bits.isStore && !lsuPipeStage4.io.right.bits.isMMIOStore && !invalid(2)
