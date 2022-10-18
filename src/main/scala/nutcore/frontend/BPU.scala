@@ -38,7 +38,7 @@ class TableAddr(val idxBits: Int) extends NutCoreBundle {
   def getIdx(x: UInt) = fromUInt(x).idx
 
   ///////////////////
-  def hashBTBAddr(pcIn :UInt) = pcIn(11,10) ^ pcIn(9,7) ^ pcIn(6,4)
+  def hashBTBAddr(pcIn :UInt) = pcIn(15,12) ^ pcIn(11,8) ^ pcIn(7,4)
 }
 
 object BTBtype {
@@ -83,7 +83,8 @@ class BPU_ooo extends NutCoreModule {
     val fghr = Output(UInt(GhrLength.W))
   })
   val icacheLine = 8//x2 byte
-  val btbSizePerBank = 8
+  val btbSizePerBank = 16
+  val btbAddrWidth = 4
   val bhtSizePerBank = 128
 
 
@@ -115,12 +116,13 @@ class BPU_ooo extends NutCoreModule {
     output
   }
   def hashBhtAddr(btbAddr:UInt, fghr:UInt) = {
-    val bhtAddr = Wire(UInt(4.W))
+    val bhtAddr = Wire(UInt(5.W))
     // val bhtAddr = Wire(UInt(5.W))
-    // bhtAddr := Cat(fghr(3,2) ^ Cat(fghr(4),btbAddr(2)),btbAddr(1,0)^fghr(1,0))
 
-    // bhtAddr := Cat(fghr(3,2) ^ Cat(fghr(4),btbAddr(0)),btbAddr(2,1)^fghr(1,0))
-    bhtAddr := fghr(3,0)
+    // bhtAddr := Cat(Cat(fghr(4,3),fghr(0)) ^ Cat(btbAddr(2,0)), fghr(2,1) ^ Cat(btbAddr(3),0.U)) =>84.6
+    bhtAddr :=  Cat(Cat(fghr(3,2),btbAddr(3)) ^ Cat(btbAddr(2,0)), Cat(fghr(0),fghr(1)) ^ Cat(fghr(4),1.U)) 
+    // bhtAddr := fghr(4,0)
+    
     bhtAddr
   }
 
@@ -171,8 +173,8 @@ class BPU_ooo extends NutCoreModule {
   }
 
   ///////////////modifuy!!///////////////////////
-  val bhtsize = 4
-  val lg2bht = 16
+  val bhtsize = 5
+  val lg2bht = 32
   val mergedGhr = Wire(UInt(5.W))
   val fghr = RegInit(0.U(5.W))
   val fghrNextState = WireInit(0.U(5.W))
@@ -183,7 +185,7 @@ class BPU_ooo extends NutCoreModule {
   // val bhtRdAddr = io.in.pc.bits(7,4)
   val bhtRdAddr = hashBhtAddr(btbRdAddr,fghrNextState)  //fix bug
 
-  val btbWrAddr = WireInit(0.U(3.W))
+  val btbWrAddr = WireInit(0.U(btbAddrWidth.W))
   val btbWrData = WireInit(0.U.asTypeOf(btbEntry()))
   val btbWrEWay0 = Wire(UInt(icacheLine.W))
   val btbWrEWay1 = Wire(UInt(icacheLine.W))
@@ -390,8 +392,8 @@ class BPU_ooo extends NutCoreModule {
   Mux(brIdx(4),"b00010000".U,Mux(brIdx(5),"b00100000".U,Mux(brIdx(6),"b01000000".U,Mux(brIdx(7),"b10000000".U,0.U))))
   ))))
   val retIdx = VecInit(Seq.fill(icacheLine)(false.B))
-  val retPC = Mux1H(brIdxOneHot,Seq(pcLatch+4.U,pcLatch+6.U,pcLatch+8.U,pcLatch+10.U))
-  (0 to 3).map(i => retIdx(i) := ((finalBtbRes(i).asTypeOf(btbEntry()))._type === BTBtype.C) && (brIdxOneHot(i)))
+  val retPC = Mux1H(brIdxOneHot,Seq(Cat(pcLatch(VAddrBits-1,4),0.U(4.W))+4.U,Cat(pcLatch(VAddrBits-1,4),0.U(4.W))+6.U,Cat(pcLatch(VAddrBits-1,4),0.U(4.W))+8.U,Cat(pcLatch(VAddrBits-1,4),0.U(4.W))+10.U,Cat(pcLatch(VAddrBits-1,4),0.U(4.W))+12.U,Cat(pcLatch(VAddrBits-1,4),0.U(4.W))+14.U,Cat(pcLatch(VAddrBits-1,4),0.U(4.W))+16.U,Cat(pcLatch(VAddrBits-1,4),0.U(3.W))+18.U))
+  (0 to icacheLine-1).map(i => retIdx(i) := ((finalBtbRes(i).asTypeOf(btbEntry()))._type === BTBtype.C) && (brIdxOneHot(i)))
   val rasWen = retIdx.asUInt.orR()
   val rasEmpty = sp.value === 0.U
   when (rasWen)  {

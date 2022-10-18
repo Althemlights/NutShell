@@ -928,32 +928,32 @@ class CSR(implicit val p: NutCoreConfig) extends NutCoreModule with HasCSRConst{
     }
   }*/
 }
-class CSR_fake(implicit val p: NutCoreConfig) extends NutCoreModule with HasCSRConst {
-  val io = IO(new CSRIO)
+// class CSR_fake(implicit val p: NutCoreConfig) extends NutCoreModule with HasCSRConst {
+//   val io = IO(new CSRIO)
 
-  val (valid, src1, src2, func) = (io.in.valid, io.in.bits.src1, io.in.bits.src2, io.in.bits.func)
+//   val (valid, src1, src2, func) = (io.in.valid, io.in.bits.src1, io.in.bits.src2, io.in.bits.func)
 
-  def access(valid: Bool, src1: UInt, src2: UInt, func: UInt): UInt = {
-    this.valid := valid
-    this.src1 := src1
-    this.src2 := src2
-    this.func := func
-    io.out.bits
-  }
+//   def access(valid: Bool, src1: UInt, src2: UInt, func: UInt): UInt = {
+//     this.valid := valid
+//     this.src1 := src1
+//     this.src2 := src2
+//     this.func := func
+//     io.out.bits
+//   }
 
-  io.redirect := 0.U.asTypeOf(new RedirectIO)
-  io.intrNO := 0.U(XLEN.W)
-  io.wenFix := false.B
+//   io.redirect := 0.U.asTypeOf(new RedirectIO)
+//   io.intrNO := 0.U(XLEN.W)
+//   io.wenFix := false.B
 
-  io.imemMMU.priviledgeMode := 3.U(2.W)
-  io.imemMMU.status_mxr := false.B
-  io.imemMMU.status_sum := false.B
+//   io.imemMMU.priviledgeMode := 3.U(2.W)
+//   io.imemMMU.status_mxr := false.B
+//   io.imemMMU.status_sum := false.B
 
-  io.dmemMMU.priviledgeMode := 3.U(2.W)
-  io.dmemMMU.status_mxr := false.B
-  io.dmemMMU.status_sum := false.B
+//   io.dmemMMU.priviledgeMode := 3.U(2.W)
+//   io.dmemMMU.status_mxr := false.B
+//   io.dmemMMU.status_sum := false.B
 
-  io.out.bits := 0.U(XLEN.W)
-  io.out.valid := false.B
-  io.in.ready := false.B
-}
+//   io.out.bits := 0.U(XLEN.W)
+//   io.out.valid := false.B
+//   io.in.ready := false.B
+// }

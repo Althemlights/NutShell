@@ -1,0 +1,137 @@
+[*]
+[*] GTKWave Analyzer v3.3.103 (w)1999-2019 BSI
+[*] Mon Oct 17 18:48:10 2022
+[*]
+[dumpfile] "/home/bread/xs-env/NutShell/build/2022-10-18@02:41:56.vcd"
+[dumpfile_mtime] "Mon Oct 17 18:43:02 2022"
+[dumpfile_size] 7289627264
+[savefile] "/home/bread/xs-env/NutShell/debg.gtkw"
+[timestart] 137313
+[size] 3040 1543
+[pos] 81 162
+*-2.000000 137334 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1
+[treeopen] TOP.
+[treeopen] TOP.SimTop.
+[treeopen] TOP.SimTop.soc.
+[treeopen] TOP.SimTop.soc.nutcore.
+[treeopen] TOP.SimTop.soc.nutcore.frontend.
+[treeopen] TOP.SimTop.soc.nutcore.frontend.ifu.
+[treeopen] TOP.SimTop.soc.nutcore.SSDbackend.
+[sst_width] 359
+[signals_width] 500
+[sst_expanded] 1
+[sst_vpaned_height] 998
+@28
+TOP.SimTop.soc.nutcore.SSDbackend.ALU0.io_redirect_valid
+@22
+TOP.SimTop.soc.nutcore.SSDbackend.ALU0.io_cfIn_pc[38:0]
+@200
+-
+@28
+TOP.SimTop.soc.nutcore.SSDbackend.ALU1.io_redirect_valid
+@22
+TOP.SimTop.soc.nutcore.SSDbackend.ALU1.io_cfIn_pc[38:0]
+@200
+-
+@28
+TOP.SimTop.soc.nutcore.SSDbackend.ALU6.io_redirect_valid
+@22
+TOP.SimTop.soc.nutcore.SSDbackend.ALU6.io_cfIn_pc[38:0]
+@200
+-
+@28
+TOP.SimTop.soc.nutcore.SSDbackend.ALU7.io_redirect_valid
+@22
+TOP.SimTop.soc.nutcore.SSDbackend.ALU7.io_cfIn_pc[38:0]
+@200
+-
+@24
+TOP.SimTop.soc.nutcore.SSDbackend.PMU.jCnts[63:0]
+@200
+-
+@c00022
+TOP.SimTop.soc.nutcore.frontend.ifu.npc[38:0]
+@28
+(0)TOP.SimTop.soc.nutcore.frontend.ifu.npc[38:0]
+(1)TOP.SimTop.soc.nutcore.frontend.ifu.npc[38:0]
+(2)TOP.SimTop.soc.nutcore.frontend.ifu.npc[38:0]
+(3)TOP.SimTop.soc.nutcore.frontend.ifu.npc[38:0]
+(4)TOP.SimTop.soc.nutcore.frontend.ifu.npc[38:0]
+(5)TOP.SimTop.soc.nutcore.frontend.ifu.npc[38:0]
+(6)TOP.SimTop.soc.nutcore.frontend.ifu.npc[38:0]
+(7)TOP.SimTop.soc.nutcore.frontend.ifu.npc[38:0]
+(8)TOP.SimTop.soc.nutcore.frontend.ifu.npc[38:0]
+(9)TOP.SimTop.soc.nutcore.frontend.ifu.npc[38:0]
+(10)TOP.SimTop.soc.nutcore.frontend.ifu.npc[38:0]
+(11)TOP.SimTop.soc.nutcore.frontend.ifu.npc[38:0]
+(12)TOP.SimTop.soc.nutcore.frontend.ifu.npc[38:0]
+(13)TOP.SimTop.soc.nutcore.frontend.ifu.npc[38:0]
+(14)TOP.SimTop.soc.nutcore.frontend.ifu.npc[38:0]
+(15)TOP.SimTop.soc.nutcore.frontend.ifu.npc[38:0]
+(16)TOP.SimTop.soc.nutcore.frontend.ifu.npc[38:0]
+(17)TOP.SimTop.soc.nutcore.frontend.ifu.npc[38:0]
+(18)TOP.SimTop.soc.nutcore.frontend.ifu.npc[38:0]
+(19)TOP.SimTop.soc.nutcore.frontend.ifu.npc[38:0]
+(20)TOP.SimTop.soc.nutcore.frontend.ifu.npc[38:0]
+(21)TOP.SimTop.soc.nutcore.frontend.ifu.npc[38:0]
+(22)TOP.SimTop.soc.nutcore.frontend.ifu.npc[38:0]
+(23)TOP.SimTop.soc.nutcore.frontend.ifu.npc[38:0]
+(24)TOP.SimTop.soc.nutcore.frontend.ifu.npc[38:0]
+(25)TOP.SimTop.soc.nutcore.frontend.ifu.npc[38:0]
+(26)TOP.SimTop.soc.nutcore.frontend.ifu.npc[38:0]
+(27)TOP.SimTop.soc.nutcore.frontend.ifu.npc[38:0]
+(28)TOP.SimTop.soc.nutcore.frontend.ifu.npc[38:0]
+(29)TOP.SimTop.soc.nutcore.frontend.ifu.npc[38:0]
+(30)TOP.SimTop.soc.nutcore.frontend.ifu.npc[38:0]
+(31)TOP.SimTop.soc.nutcore.frontend.ifu.npc[38:0]
+(32)TOP.SimTop.soc.nutcore.frontend.ifu.npc[38:0]
+(33)TOP.SimTop.soc.nutcore.frontend.ifu.npc[38:0]
+(34)TOP.SimTop.soc.nutcore.frontend.ifu.npc[38:0]
+(35)TOP.SimTop.soc.nutcore.frontend.ifu.npc[38:0]
+(36)TOP.SimTop.soc.nutcore.frontend.ifu.npc[38:0]
+(37)TOP.SimTop.soc.nutcore.frontend.ifu.npc[38:0]
+(38)TOP.SimTop.soc.nutcore.frontend.ifu.npc[38:0]
+@1401200
+-group_end
+@22
+TOP.SimTop.soc.nutcore.frontend.ifu.pc[38:0]
+@200
+-
+@28
+TOP.SimTop.soc.nutcore.frontend.ifu.nlp.fghrNextState[4:0]
+TOP.SimTop.soc.nutcore.frontend.ifu.nlp.fghr[4:0]
+@200
+-
+@22
+TOP.SimTop.soc.nutcore.frontend.ifu.nlp.btbWrData_tag[8:0]
+@28
+TOP.SimTop.soc.nutcore.frontend.ifu.nlp.btbWrEWay0[7:0]
+TOP.SimTop.soc.nutcore.frontend.ifu.nlp.mpWriteValid
+@23
+TOP.SimTop.soc.nutcore.frontend.ifu.nlp.mpbpuUpdateReq_actualTarget[38:0]
+@200
+-
+@28
+TOP.SimTop.soc.nutcore.frontend.ifu.nlp.bhtWrEMp[7:0]
+TOP.SimTop.soc.nutcore.frontend.ifu.nlp.bhtWrE1[7:0]
+TOP.SimTop.soc.nutcore.frontend.ifu.nlp.bhtWrE2[7:0]
+@200
+-
+@28
+TOP.SimTop.soc.nutcore.frontend.ifu.nlp.bhtList_0_6[1:0]
+@200
+-
+@28
+TOP.SimTop.soc.nutcore.SSDbackend.PMU.io_in1_retWrong[2:0]
+TOP.SimTop.soc.nutcore.SSDbackend.PMU.io_in1_retRight[2:0]
+@200
+-
+@22
+TOP.SimTop.soc.nutcore.SSDbackend.ALU6.io_cfIn_pc[38:0]
+TOP.SimTop.soc.nutcore.SSDbackend.ALU7.io_cfIn_pc[38:0]
+@200
+-
+@22
+TOP.SimTop.soc.nutcore.frontend.ifu.nlp.rasTarget[38:0]
+[pattern_trace] 1
+[pattern_trace] 0

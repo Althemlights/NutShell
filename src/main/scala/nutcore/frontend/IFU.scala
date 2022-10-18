@@ -128,28 +128,28 @@ class IFU_ooo extends NutCoreModule with HasResetVector {
   val npc = Wire(UInt(VAddrBits.W))
   npc := Mux(io.redirect.valid, io.redirect.target, Mux(state === s_crosslineJump, crosslineJumpTarget, Mux(bpuValid, pnpc, snpc)))
 
-  val godNpc = Wire(UInt(VAddrBits.W))
-  val godValid = Wire(UInt(8.W))
+  // val godNpc = Wire(UInt(VAddrBits.W))
+  // val godValid = Wire(UInt(8.W))
 
   // npc := godNpc
 
   if(SSDCoreConfig().EnableDifftest){
-    val predictor = Module(new DifftestPredictorNext)
+    // val predictor = Module(new DifftestPredictorNext)
 
-    val textCounter = RegInit(1.U(64.W))
-    when(pcUpdate){
-      textCounter := textCounter +1.U(64.W)
-    }
-    dontTouch(textCounter)
-    predictor.io.clock := clock
-    predictor.io.index := textCounter
-    predictor.io.pc := Cat(0.U((64 - VAddrBits).W),pc)
-    predictor.io.orinpc := Cat(0.U((64 - VAddrBits).W),npc)
+    // val textCounter = RegInit(1.U(64.W))
+    // when(pcUpdate){
+    //   textCounter := textCounter +1.U(64.W)
+    // }
+    // dontTouch(textCounter)
+    // predictor.io.clock := clock
+    // predictor.io.index := textCounter
+    // predictor.io.pc := Cat(0.U((64 - VAddrBits).W),pc)
+    // predictor.io.orinpc := Cat(0.U((64 - VAddrBits).W),npc)
 
-    godNpc := predictor.io.npc
-    godValid := predictor.io.valid
-    dontTouch(godNpc)
-    dontTouch(godValid)
+    // godNpc := predictor.io.npc
+    // godValid := predictor.io.valid
+    // dontTouch(godNpc)
+    // dontTouch(godValid)
   }
 
 
