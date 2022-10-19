@@ -122,7 +122,7 @@ class BPU_ooo extends NutCoreModule {
     // bhtAddr := Cat(Cat(fghr(4,3),fghr(0)) ^ Cat(btbAddr(2,0)), fghr(2,1) ^ Cat(btbAddr(3),0.U)) =>84.6
     bhtAddr :=  Cat(Cat(fghr(3,2),btbAddr(3)) ^ Cat(btbAddr(2,0)), Cat(fghr(0),fghr(1)) ^ Cat(fghr(4),1.U)) 
     // bhtAddr := fghr(4,0)
-    
+
     bhtAddr
   }
 
@@ -165,10 +165,11 @@ class BPU_ooo extends NutCoreModule {
   val NRbtb =512
   val btbAddr = new TableAddr(log2Up(NRbtb >> 2))
   def btbEntry() = new Bundle {
-    val tag = UInt(9.W)
+    // val tag = UInt(9.W) old version
+    val tag = UInt(12.W)
     val target = UInt(VAddrBits.W)
     val _type = UInt(2.W)
-    val crosslineJump = Bool()
+    // val crosslineJump = Bool()
     val valid = Bool()
   }
 
@@ -231,19 +232,19 @@ class BPU_ooo extends NutCoreModule {
   val tagMatchWay1 = Wire(Vec(icacheLine,Bool()))
   
   (0 to icacheLine-1).map(i => (
-    tagMatchWay0(i) := btbTwoWaysRegOut(0)(i).valid && !flush && (btbTwoWaysRegOut(0)(i).tag === (pcLatch(23,15) ^ pcLatch(14,6)))
+    tagMatchWay0(i) := btbTwoWaysRegOut(0)(i).valid && !flush && (btbTwoWaysRegOut(0)(i).tag === (pcLatch(15,4)))
   ))
 
   (0 to icacheLine-1).map(i => (
-    tagMatchWay1(i) := btbTwoWaysRegOut(1)(i).valid && !flush && (btbTwoWaysRegOut(1)(i).tag === (pcLatch(23,15) ^ pcLatch(14,6)))
+    tagMatchWay1(i) := btbTwoWaysRegOut(1)(i).valid && !flush && (btbTwoWaysRegOut(1)(i).tag === (pcLatch(15,4)))
   ))
 
 
   //both way could hit
   val finalBtbRes = List.fill(icacheLine)(Wire(UInt()))
   (0 to icacheLine-1).map(i => (
-    finalBtbRes(i) := Fill(52,tagMatchWay0(i)) & btbTwoWaysRegOut(0)(i).asUInt |
-                      Fill(52,tagMatchWay1(i)) & btbTwoWaysRegOut(1)(i).asUInt
+    finalBtbRes(i) := Fill(58,tagMatchWay0(i)) & btbTwoWaysRegOut(0)(i).asUInt |
+                      Fill(58,tagMatchWay1(i)) & btbTwoWaysRegOut(1)(i).asUInt
   ))
   val wayHit = Wire(Vec(icacheLine,Bool()))
   (0 to icacheLine-1).map(i => (
@@ -438,10 +439,12 @@ class BPU_ooo extends NutCoreModule {
   ////////////////////////////////
   
 
-  btbWrData.tag :=  req.pc(23,15) ^ req.pc(14,6)
+  // btbWrData.tag :=  req.pc(23,15) ^ req.pc(14,6)
+  btbWrData.tag :=  req.pc(15,4)
+
   btbWrData.target := mpActualTarget
   btbWrData._type := mpType
-  btbWrData.crosslineJump := 0.U
+  // btbWrData.crosslineJump := 0.U
   btbWrData.valid := true.B
 
   bhtWrEMp := Fill(icacheLine , req.valid & ~(req.fuOpType === BTBtype.R) & ~(req.fuOpType === BTBtype.J)& ~(req.fuOpType === BTBtype.C)) & decode38(mpBank)
