@@ -224,6 +224,25 @@ class SSDbackend extends NutCoreModule with hasBypassConst {
   // mpBpuUpdateReq := Mux(pipeOut(9).bits.bpuUpdateReq.valid && pipeOut(9).fire() && !pipeInvalid(11),pipeOut(9).bits.bpuUpdateReq,
   //   Mux(pipeOut(8).bits.bpuUpdateReq.valid && pipeOut(8).fire() && !pipeInvalid(10),pipeOut(8).bits.bpuUpdateReq,0.U.asTypeOf(new BPUUpdateReq)))
 
+  val retRetire = (pipeOut(9).fire() && !pipeInvalid(11) && pipeOut(9).bits.isBranch && ALUOpType.ret === pipeOut(9).bits.fuOpType) && (pipeOut(8).fire() && !pipeInvalid(10) && pipeOut(8).bits.isBranch && ALUOpType.ret === pipeOut(8).bits.fuOpType)
+  BoringUtils.addSource(retRetire,"backendRetRetire")
+  if(SSDCoreConfig().EnablePerfCnt){
+    // myDebug(pipeOut(9).fire() && !pipeInvalid(11) && pipeOut(9).bits.isBranch && ALUOpType.isBranch(pipeOut(9).bits.fuOpType),"i1 bran comm:pc:[%x] fghr[%b] pre [%b]\n",pipeOut(9).bits.bpuUpdateReq.pc,pipeOut(9).bits.bpuUpdateReq.ghrNotUpdated,pipeOut(9).bits.bpuUpdateReq.isMissPredict)
+    // myDebug(pipeOut(9).fire() && !pipeInvalid(11) && pipeOut(9).bits.isBranch && (ALUOpType.jal === pipeOut(9).bits.fuOpType || ALUOpType.call === pipeOut(9).bits.fuOpType),"i1  jal comm:pc:[%x] fghr[%b] pre [%b]\n",pipeOut(9).bits.bpuUpdateReq.pc,pipeOut(9).bits.bpuUpdateReq.ghrNotUpdated,pipeOut(9).bits.bpuUpdateReq.isMissPredict)
+    // myDebug(pipeOut(9).fire() && !pipeInvalid(11) && pipeOut(9).bits.isBranch && ALUOpType.jalr === pipeOut(9).bits.fuOpType,"i1 jalr comm:pc:[%x] fghr[%b] pre [%b]\n",pipeOut(9).bits.bpuUpdateReq.pc,pipeOut(9).bits.bpuUpdateReq.ghrNotUpdated,pipeOut(9).bits.bpuUpdateReq.isMissPredict)
+    // myDebug(pipeOut(9).fire() && !pipeInvalid(11) && pipeOut(9).bits.isBranch && ALUOpType.ret === pipeOut(9).bits.fuOpType,"i1 ret  comm:pc:[%x] fghr[%b] pre [%b]\n",pipeOut(9).bits.bpuUpdateReq.pc,pipeOut(9).bits.bpuUpdateReq.ghrNotUpdated,pipeOut(9).bits.bpuUpdateReq.isMissPredict)
+
+    // myDebug(pipeOut(8).fire() && !pipeInvalid(10) && pipeOut(8).bits.isBranch && ALUOpType.isBranch(pipeOut(8).bits.fuOpType),"i0 bran comm:pc:[%x] fghr[%b] pre [%b]\n",pipeOut(8).bits.bpuUpdateReq.pc,pipeOut(8).bits.bpuUpdateReq.ghrNotUpdated,pipeOut(8).bits.bpuUpdateReq.isMissPredict)
+
+    // myDebug(pipeOut(8).fire() && !pipeInvalid(10) && pipeOut(8).bits.isBranch && (ALUOpType.jal === pipeOut(8).bits.fuOpType || ALUOpType.call === pipeOut(8).bits.fuOpType),"i0  jal comm:pc:[%x] fghr[%b] pre [%b]\n",pipeOut(8).bits.bpuUpdateReq.pc,pipeOut(8).bits.bpuUpdateReq.ghrNotUpdated,pipeOut(8).bits.bpuUpdateReq.isMissPredict)
+
+    // myDebug(pipeOut(8).fire() && !pipeInvalid(10) && pipeOut(8).bits.isBranch && ALUOpType.jalr === pipeOut(8).bits.fuOpType,"i0 jalr comm:pc:[%x] fghr[%b] pre [%b]\n",pipeOut(8).bits.bpuUpdateReq.pc,pipeOut(8).bits.bpuUpdateReq.ghrNotUpdated,pipeOut(8).bits.bpuUpdateReq.isMissPredict)
+
+    // myDebug(pipeOut(8).fire() && !pipeInvalid(10) && pipeOut(8).bits.isBranch && ALUOpType.ret === pipeOut(8).bits.fuOpType,"i0 ret  comm:pc:[%x] fghr[%b] pre [%b]\n",pipeOut(8).bits.bpuUpdateReq.pc,pipeOut(8).bits.bpuUpdateReq.ghrNotUpdated,pipeOut(8).bits.bpuUpdateReq.isMissPredict)
+
+    
+
+  } //SSDCore Performance Counter
 
 
   BoringUtils.addSource(mpUpdate, "mpbpuUpdateReq")

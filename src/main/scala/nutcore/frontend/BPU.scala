@@ -120,8 +120,8 @@ class BPU_ooo extends NutCoreModule {
     // val bhtAddr = Wire(UInt(5.W))
 
     // bhtAddr := Cat(Cat(fghr(4,3),fghr(0)) ^ Cat(btbAddr(2,0)), fghr(2,1) ^ Cat(btbAddr(3),0.U)) =>84.6
-    bhtAddr :=  Cat(Cat(fghr(3,2),btbAddr(3)) ^ Cat(btbAddr(2,0)), Cat(fghr(0),fghr(1)) ^ Cat(fghr(4),1.U)) 
-    // bhtAddr := fghr(4,0)
+    // bhtAddr :=  Cat(Cat(fghr(3,2),btbAddr(3)) ^ Cat(btbAddr(2,0)), Cat(fghr(0),fghr(1)) ^ Cat(fghr(4),1.U)) 
+    bhtAddr := fghr(4,0)
 
     bhtAddr
   }
@@ -397,15 +397,23 @@ class BPU_ooo extends NutCoreModule {
   (0 to icacheLine-1).map(i => retIdx(i) := ((finalBtbRes(i).asTypeOf(btbEntry()))._type === BTBtype.C) && (brIdxOneHot(i)))
   val rasWen = retIdx.asUInt.orR()
   val rasEmpty = sp.value === 0.U
+
+  val retRetire = WireInit(false.B)
+  BoringUtils.addSink(retRetire,"backendRetRetire")
   when (rasWen)  {
     ras.write(sp.value + 1.U, retPC)  //TODO: modify for RVC
     sp.value := sp.value + 1.U
+  }.elsewhen(retRetire){
+    when(sp.value === 0.U) {
+        // RAS empty, do nothing
+      }
+    sp.value := Mux(sp.value===0.U, 0.U, sp.value - 1.U)
   }.elsewhen (req.valid && req.fuOpType === ALUOpType.ret) {
       when(sp.value === 0.U) {
         // RAS empty, do nothing
       }
-          sp.value := Mux(sp.value===0.U, 0.U, sp.value - 1.U)
-    }
+      sp.value := Mux(sp.value===0.U, 0.U, sp.value - 1.U)
+  }
 
   // val pcLatchFetch = genFetchMask(pcLatch)
 
@@ -450,6 +458,35 @@ class BPU_ooo extends NutCoreModule {
   bhtWrEMp := Fill(icacheLine , req.valid & ~(req.fuOpType === BTBtype.R) & ~(req.fuOpType === BTBtype.J)& ~(req.fuOpType === BTBtype.C)) & decode38(mpBank)
   bhtWrE1  := Fill(icacheLine , i0wb.valid) & decode38(i0Bank)
   bhtWrE2  := Fill(icacheLine , i1wb.valid) & decode38(i1Bank)
+
+
+  ////addation
+  val count=0;
+  if(SSDCoreConfig().EnablePerfCnt){
+    // myDebug(i1wb.valid,"i1wb misp pc:[%x] write ghr[%b] \n",i1wb.pc,eghr)
+    // myDebug(i0wb.valid,"i0wb misp pc:[%x] write ghr[%b] \n",i0wb.pc,eghr)
+    // myDebug(mpValid,"misp misp pc:[%x] write ghr[%b] \n",req.pc,eghr)
+    
+    // if(
+    // myDebug(pipeOut(9).fire() && !pipeInvalid(11) && pipeOut(9).bits.isBranch && (ALUOpType.jal === pipeOut(9).bits.fuOpType || ALUOpType.call === pipeOut(9).bits.fuOpType),"i1  jal comm:pc:[%x] fghr[%b] pre [%b]\n",pipeOut(9).bits.bpuUpdateReq.pc,pipeOut(9).bits.bpuUpdateReq.ghrNotUpdated,pipeOut(9).bits.bpuUpdateReq.isMissPredict)
+    // myDebug(pipeOut(9).fire() && !pipeInvalid(11) && pipeOut(9).bits.isBranch && ALUOpType.jalr === pipeOut(9).bits.fuOpType,"i1 jalr comm:pc:[%x] fghr[%b] pre [%b]\n",pipeOut(9).bits.bpuUpdateReq.pc,pipeOut(9).bits.bpuUpdateReq.ghrNotUpdated,pipeOut(9).bits.bpuUpdateReq.isMissPredict)
+    // myDebug(pipeOut(9).fire() && !pipeInvalid(11) && pipeOut(9).bits.isBranch && ALUOpType.ret === pipeOut(9).bits.fuOpType,"i1 ret  comm:pc:[%x] fghr[%b] pre [%b]\n",pipeOut(9).bits.bpuUpdateReq.pc,pipeOut(9).bits.bpuUpdateReq.ghrNotUpdated,pipeOut(9).bits.bpuUpdateReq.isMissPredict)
+
+    // myDebug(pipeOut(8).fire() && !pipeInvalid(10) && pipeOut(8).bits.isBranch && ALUOpType.isBranch(pipeOut(8).bits.fuOpType),"i0 bran comm:pc:[%x] fghr[%b] pre [%b]\n",pipeOut(8).bits.bpuUpdateReq.pc,pipeOut(8).bits.bpuUpdateReq.ghrNotUpdated,pipeOut(8).bits.bpuUpdateReq.isMissPredict)
+
+    // myDebug(pipeOut(8).fire() && !pipeInvalid(10) && pipeOut(8).bits.isBranch && (ALUOpType.jal === pipeOut(8).bits.fuOpType || ALUOpType.call === pipeOut(8).bits.fuOpType),"i0  jal comm:pc:[%x] fghr[%b] pre [%b]\n",pipeOut(8).bits.bpuUpdateReq.pc,pipeOut(8).bits.bpuUpdateReq.ghrNotUpdated,pipeOut(8).bits.bpuUpdateReq.isMissPredict)
+
+    // myDebug(pipeOut(8).fire() && !pipeInvalid(10) && pipeOut(8).bits.isBranch && ALUOpType.jalr === pipeOut(8).bits.fuOpType,"i0 jalr comm:pc:[%x] fghr[%b] pre [%b]\n",pipeOut(8).bits.bpuUpdateReq.pc,pipeOut(8).bits.bpuUpdateReq.ghrNotUpdated,pipeOut(8).bits.bpuUpdateReq.isMissPredict)
+
+    // myDebug(pipeOut(8).fire() && !pipeInvalid(10) && pipeOut(8).bits.isBranch && ALUOpType.ret === pipeOut(8).bits.fuOpType,"i0 ret  comm:pc:[%x] fghr[%b] pre [%b]\n",pipeOut(8).bits.bpuUpdateReq.pc,pipeOut(8).bits.bpuUpdateReq.ghrNotUpdated,pipeOut(8).bits.bpuUpdateReq.isMissPredict)
+
+    
+
+  } 
+
+
+
+
 
 
   // ghr

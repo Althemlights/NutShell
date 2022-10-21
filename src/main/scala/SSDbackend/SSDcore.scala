@@ -8,7 +8,7 @@ case class SSDCoreConfig(
                           EnablePMU : Boolean = true,
                           EnablePipestageDebug : Boolean = false,
                           EnableLSUDebug : Boolean = false,
-                          EnableStallCnt: Boolean = true,
+                          EnableStallCnt: Boolean = false,
                           EnablePerfCnt: Boolean = true,
                           EnableInstCnt: Boolean = false,
                           EnableCacheCnt: Boolean = false,
