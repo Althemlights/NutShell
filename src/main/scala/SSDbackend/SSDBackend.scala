@@ -412,11 +412,19 @@ class SSDbackend extends NutCoreModule with hasBypassConst {
   val mepc_wire = WireInit(UInt(XLEN.W),0.U)
   val mstatus_wire = WireInit(UInt(XLEN.W),0.U)
   val mie_wire = WireInit(UInt(XLEN.W),0.U)
+  val mtval_wire = WireInit(UInt(XLEN.W),0.U)
+  val mscratch_wire = WireInit(UInt(XLEN.W),0.U)
+  val mideleg_wire = WireInit(UInt(XLEN.W),0.U)
+  val medeleg_wire = WireInit(UInt(XLEN.W),0.U)
   BoringUtils.addSink(mtvec_wire,"mtvec_wire")
   BoringUtils.addSink(mcause_wire,"mcause_wire")
   BoringUtils.addSink(mepc_wire,"mepc_wire")
   BoringUtils.addSink(mstatus_wire,"mstatus_wire")
   BoringUtils.addSink(mie_wire,"mie_wire")
+  BoringUtils.addSink(mtval_wire,"mtval_wire")
+  BoringUtils.addSink(mscratch_wire,"mscratch_wire")
+  BoringUtils.addSink(mideleg_wire,"mideleg_wire")
+  BoringUtils.addSink(medeleg_wire,"medeleg_wire")
 
   pipeIn(2).bits.CSRregfile :=  SSDCSR.io.CSRregfile
   pipeIn(3).bits.CSRregfile :=  SSDCSR.io.CSRregfile
@@ -430,6 +438,14 @@ class SSDbackend extends NutCoreModule with hasBypassConst {
   pipeIn(3).bits.CSRregfile.mstatus := mstatus_wire
   pipeIn(2).bits.CSRregfile.mie := mie_wire
   pipeIn(3).bits.CSRregfile.mie := mie_wire
+  pipeIn(2).bits.CSRregfile.mtval := mtval_wire
+  pipeIn(3).bits.CSRregfile.mtval := mtval_wire
+  pipeIn(2).bits.CSRregfile.mscratch := mscratch_wire
+  pipeIn(3).bits.CSRregfile.mscratch := mscratch_wire
+  pipeIn(2).bits.CSRregfile.mideleg := mideleg_wire
+  pipeIn(3).bits.CSRregfile.mideleg := mideleg_wire
+  pipeIn(2).bits.CSRregfile.medeleg := medeleg_wire
+  pipeIn(3).bits.CSRregfile.medeleg := medeleg_wire
 
   pipeIn(2).bits.ArchEvent :=  Mux(RegNext(CSRValid),Mux(RegNext(i0CSRValid),SSDCSR.io.ArchEvent,0.U.asTypeOf(new ArchEvent)),0.U.asTypeOf(new ArchEvent))
   pipeIn(3).bits.ArchEvent :=  Mux(RegNext(CSRValid),Mux(RegNext(i1CSRValid),SSDCSR.io.ArchEvent,0.U.asTypeOf(new ArchEvent)),0.U.asTypeOf(new ArchEvent))
