@@ -895,16 +895,33 @@ class SSDCSR extends NutCoreModule with SSDHasCSRConst{
   def readWithScala(addr: Int): UInt = mapping(addr)._1
 
   val mtvec_wire = WireInit(UInt(XLEN.W),0.U)
+  val mtval_wire = WireInit(UInt(XLEN.W),0.U)
+  val mscratch_wire = WireInit(UInt(XLEN.W),0.U)
+  val mideleg_wire = WireInit(UInt(XLEN.W),0.U)
+  val medeleg_wire = WireInit(UInt(XLEN.W),0.U)
 
   mtvec_wire := mtvec
-  when(addr === Mtvec.U){
+  mtval_wire := mtval
+  mscratch_wire := mscratch
+  mideleg_wire := mideleg
+  medeleg_wire := medeleg
+
+  when(addr === Mtvec.U && io.in.valid){
     mtvec_wire := wdata
-  }.elsewhen(addr === Mepc.U) {
+  }.elsewhen(addr === Mepc.U && io.in.valid) {
     mepc_wire := wdata
-  }.elsewhen(addr === Mstatus.U) {
+  }.elsewhen(addr === Mstatus.U && io.in.valid) {
     mstatus_wire := wdata
-  }.elsewhen(addr === Mie.U) {
+  }.elsewhen(addr === Mie.U && io.in.valid) {
     mie_wire := wdata
+  }.elsewhen(addr === Mtval.U && io.in.valid){
+    mtval_wire := wdata
+  }.elsewhen(addr === Mideleg.U && io.in.valid){
+    mideleg_wire := wdata
+  }.elsewhen(addr === Medeleg.U && io.in.valid){
+    medeleg_wire := wdata
+  }.elsewhen(addr === Mscratch.U && io.in.valid){
+    mscratch_wire := wdata
   }
 
   BoringUtils.addSource(mtvec_wire,"mtvec_wire")
@@ -912,6 +929,10 @@ class SSDCSR extends NutCoreModule with SSDHasCSRConst{
   BoringUtils.addSource(mepc_wire,"mepc_wire")
   BoringUtils.addSource(mstatus_wire,"mstatus_wire")
   BoringUtils.addSource(mie_wire,"mie_wire")
+  BoringUtils.addSource(mtval_wire,"mtval_wire")
+  BoringUtils.addSource(mscratch_wire,"mscratch_wire")
+  BoringUtils.addSource(medeleg_wire,"medeleg_wire")
+  BoringUtils.addSource(mideleg_wire,"mideleg_wire")
 
 
   io.CSRregfile.priviledgeMode :=     priviledgeMode
