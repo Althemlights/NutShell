@@ -206,7 +206,7 @@ class BPU_ooo extends NutCoreModule {
   val retPC = Mux1H(brIdxOneHot,Seq(pcLatch+4.U,pcLatch+6.U,pcLatch+8.U,pcLatch+10.U))
   (0 to 3).map(i => retIdx(i) := (btbRead(i)._type === BTBtype.C) && (brIdxOneHot(i)))
   val rasWen = retIdx.asUInt.orR()
-  val rasEmpty = sp.value === 0.U
+  val rasEmpty = RegEnable(sp.value === 0.U, io.in.pc.valid)
 
   when (rasWen)  {
     ras.write(sp.value + 1.U, retPC)  //TODO: modify for RVC
