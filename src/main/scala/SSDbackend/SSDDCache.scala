@@ -33,7 +33,7 @@ case class SSDCacheConfig (
                          userBits: Int = 0,
                          idBits: Int = 0,
 
-                         totalSize: Int = 32, // Kbytes
+                         totalSize: Int = 16, // Kbytes
                          ways: Int = 4
                        )
 
@@ -403,8 +403,10 @@ class SSDCache(implicit val cacheConfig: SSDCacheConfig) extends CacheModule wit
   val s1 = Module(new SSDCacheStage1)
   val s2 = Module(new SSDCacheStage2)
 
-  val metaArray = Module(new SRAMTemplateWithArbiter(nRead = 1, new MetaBundle, set = Sets, way = Ways, shouldReset = true))
+  val metaArray = Module(new MetaSRAMTemplateWithArbiter(nRead = 1, new MetaBundle, set = Sets, way = Ways, shouldReset = true))
   val dataArray = Module(new SRAMTemplateWithArbiter(nRead = 2, new DataBundle, set = Sets * LineBeats, way = Ways))
+//  val metaArray = Module(new MetaSRAMTemplateWithArbiter(nRead = 1, new MetaBundle, set = Sets, way = Ways, shouldReset = true))
+//  val dataArray = Module(new DataSRAMTemplateWithArbiter(nRead = 2, new DataBundle, set = Sets * LineBeats, way = Ways))
 
   if (cacheName == "icache") {
     metaArray.reset := reset.asBool
