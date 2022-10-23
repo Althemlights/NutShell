@@ -153,11 +153,15 @@ class DecodeIO2BypassPkt extends Module {
   val Valid = VecInit(Seq.fill(10)(false.B))
   for (i <- 0 to 9) Valid(i) := io.BypassPktValid(i)
 
+  val instInPipe =  Valid(0) || Valid(1) || Valid(2) || Valid(3) || Valid(4) ||
+    Valid(5) || Valid(6) || Valid(7) || Valid(8) || Valid(9)
+
   io.issueStall(0) := (io.in(0).bits.ctrl.rfSrc1 === i1decodePkt.rd && i0rs1valid ||
     io.in(0).bits.ctrl.rfSrc2 === i1decodePkt.rd && i0rs2valid) && i1decodePkt.rdvalid && i1decodePkt.alu && io.out1.bits.decodePkt.subalu ||
     (i0decodePkt.load || i0decodePkt.store) &&  (i1decodePkt.load || i1decodePkt.store) || (i0decodePkt.csr && i1decodePkt.csr) ||
-    (i1decodePkt.branch || i1decodePkt.csr) && (i0decodePkt.csr || i1decodePkt.branch) ||
-    (i0decodePkt.muldiv || i0decodePkt.csr) &&
+    (i1decodePkt.csr && i0decodePkt.branch) ||
+    i0decodePkt.csr ||
+    i0decodePkt.muldiv &&
       (i0Hiti1Rs1 || i0Hiti1Rs2 ||
         (i0rs1hitStage >= 4.U && i0rs1hitStage <= 5.U) && FuType(i0rs1hitStage).subalu ||
         (i0rs2hitStage >= 4.U && i0rs2hitStage <= 5.U) && FuType(i0rs2hitStage).subalu ||
@@ -177,7 +181,8 @@ class DecodeIO2BypassPkt extends Module {
 
 
   io.issueStall(1) :=
-     (i1decodePkt.muldiv || i1decodePkt.csr) &&
+    i1decodePkt.csr && instInPipe ||
+     (i1decodePkt.muldiv) &&
       ((i1rs1hitStage >= 4.U && i1rs1hitStage <= 5.U) && FuType(i1rs1hitStage).subalu ||
         (i1rs2hitStage >= 4.U && i1rs2hitStage <= 5.U) && FuType(i1rs2hitStage).subalu ||
         (i1rs1hitStage >= 0.U && i1rs1hitStage <= 3.U) && (FuType(i1rs1hitStage).muldiv || FuType(i1rs1hitStage).subalu || FuType(i1rs1hitStage).load) ||
