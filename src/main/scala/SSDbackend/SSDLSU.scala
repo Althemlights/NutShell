@@ -332,7 +332,7 @@ class SSDLSU extends  NutCoreModule with HasStoreBufferConst{
   ))
   //LSU out
   val dmemFireLatch = RegInit(false.B)
-  when(bufferFullStall && io.dmem.resp.fire()){ dmemFireLatch := true.B
+  when(io.memStall && io.dmem.resp.fire()){ dmemFireLatch := true.B
   }.elsewhen(!bufferFullStall){ dmemFireLatch := false.B }
   io.in.ready := lsuPipeIn(0).ready || loadCacheIn.ready
   io.out.valid := (io.dmem.resp.fire() || dmemFireLatch || addrHitE3) && lsuPipeStage3.right.valid && !lsuPipeStage3.right.bits.isStore && !lsuPipeStage3.right.bits.isCacheStore
@@ -353,7 +353,7 @@ class SSDLSU extends  NutCoreModule with HasStoreBufferConst{
   val storeCond = lsuPipeOut(0).fire() && lsuPipeOut(0).bits.isStore
   dontTouch(loadCond)
   dontTouch(storeCond)
-  val tag = lsuPipeOut(0).bits.paddr === "h80008fd8".U
+  val tag = lsuPipeOut(0).bits.paddr === "h80022b70".U
   dontTouch(tag)
 
   if(SSDCoreConfig().EnableLSUDebug){
