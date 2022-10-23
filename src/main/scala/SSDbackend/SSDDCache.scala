@@ -156,6 +156,8 @@ sealed class SSDCacheStage2(implicit val cacheConfig: SSDCacheConfig) extends Ca
     val flush = Input(Bool())
     val metaReadResp = Flipped(Vec(Ways, new MetaBundle))
     val dataReadResp = Flipped(Vec(Ways, new DataBundle))
+
+    val dataReadBus = CacheDataArrayReadBus()
     val metaWriteBus = CacheMetaArrayWriteBus()
     val dataWriteBus = CacheDataArrayWriteBus()
 
@@ -169,7 +171,6 @@ sealed class SSDCacheStage2(implicit val cacheConfig: SSDCacheConfig) extends Ca
   val dataWriteArb = Module(new Arbiter(CacheDataArrayWriteBus().req.bits, 2))
 
   val metaWay = io.metaReadResp
-  val dataWay = io.dataReadResp
   val req = io.in.bits.req
   val addr = req.addr.asTypeOf(addrBundle)
   val hitVec = VecInit(metaWay.map(m => m.valid && (m.tag === addr.tag))).asUInt
@@ -182,7 +183,8 @@ sealed class SSDCacheStage2(implicit val cacheConfig: SSDCacheConfig) extends Ca
   }
 
 
-  val victimWaymask = if (Ways > 1) (1.U << LFSR64()(log2Up(Ways) - 1, 0)) else "b1".U
+//  val victimWaymask = if (Ways > 1) (1.U << LFSR64()(log2Up(Ways) - 1, 0)) else "b1".U
+  val victimWaymask = 3.U //Set 3 as default
   val invalidVec = VecInit(metaWay.map(m => !m.valid)).asUInt
   val hasInvalidWay = invalidVec.orR
   val refillInvalidWaymask = Mux(invalidVec >= 8.U, "b1000".U,
@@ -201,12 +203,13 @@ sealed class SSDCacheStage2(implicit val cacheConfig: SSDCacheConfig) extends Ca
   val wordMask = Mux(req.isWrite(), MaskExpand(req.wmask), 0.U(DataBits.W))
 
 
+
   val hitWrite = hit && req.isWrite()
 
 
   val dataHitWriteBus = Wire(CacheDataArrayWriteBus()).apply(
     data = Wire(new DataBundle).apply(MaskData(dataRead, req.wdata, wordMask)),
-    valid = hitWrite, setIdx = Cat(addr.index,  addr.wordIndex), waymask = waymask)
+    valid = hitWrite, setIdx = Cat(addr.index,addr.wordIndex), waymask = waymask)
 
   val metaHitWriteBus = Wire(CacheMetaArrayWriteBus()).apply(
     valid = hitWrite && !meta.dirty, setIdx = getMetaIdx(req.addr), waymask = waymask,
@@ -228,7 +231,20 @@ sealed class SSDCacheStage2(implicit val cacheConfig: SSDCacheConfig) extends Ca
   val readBeatCnt = Counter(LineBeats)
   val writeBeatCnt = Counter(LineBeats)
 
+  val s2_idle :: s2_dataReadWait :: s2_dataOK :: Nil = Enum(3)
+  val state2 = RegInit(s2_idle)
+
+  io.dataReadBus.apply(valid = state === s_memWriteReq && state2 === s2_idle,
+    setIdx = Cat(addr.index, writeBeatCnt.value))
+  val dataWay = RegEnable(io.dataReadBus.resp.data, state2 === s2_dataReadWait)
   val dataHitWay = Mux1H(waymask, dataWay).data
+
+
+  switch (state2) {
+    is (s2_idle) { when (io.dataReadBus.req.fire()) { state2 := s2_dataReadWait } }
+    is (s2_dataReadWait) { state2 := s2_dataOK }
+    is (s2_dataOK) { when (io.mem.req.fire() || hitReadBurst && io.out.ready) { state2 := s2_idle } }
+  }
 
   // critical word first read
   val raddr = (if (XLEN == 64) Cat(req.addr(PAddrBits - 1, 3), 0.U(3.W))
@@ -241,8 +257,11 @@ sealed class SSDCacheStage2(implicit val cacheConfig: SSDCacheConfig) extends Ca
     cmd = cmd, size = (if (XLEN == 64) "b11".U else "b10".U),
     wdata = dataHitWay, wmask = Fill(DataBytes, 1.U))
 
+  val addrTag = Mux(state === s_memReadReq, raddr, waddr) === "h80022b40".U
+  dontTouch(addrTag)
+
   io.mem.resp.ready := true.B
-  io.mem.req.valid := (state === s_memReadReq) || ((state === s_memWriteReq) )
+  io.mem.req.valid := (state === s_memReadReq) || ((state === s_memWriteReq) && (state2 === s2_dataOK))
 
 
   val afterFirstRead = RegInit(false.B)
@@ -346,8 +365,10 @@ sealed class SSDCacheStage2(implicit val cacheConfig: SSDCacheConfig) extends Ca
   val metaRefillWriteBus = Wire(CacheMetaArrayWriteBus()).apply(
     valid = (state === s_memReadResp) && io.mem.resp.fire() && io.mem.resp.bits.isReadLast(),
     data = Wire(new MetaBundle).apply(valid = true.B, tag = addr.tag, dirty = req.isWrite()),
-    setIdx = getMetaIdx(req.addr), waymask = waymask
-  )
+    setIdx = getMetaIdx(req.addr), waymask = waymask)
+
+  val writeDirtyTag = (state === s_memWriteReq) && io.mem.req.bits.addr.asUInt >= "h80022b40".U && io.mem.req.bits.addr.asUInt < "h80022b80".U
+  dontTouch(writeDirtyTag)
 
   metaWriteArb.io.in(0) <> metaHitWriteBus.req
   metaWriteArb.io.in(1) <> metaRefillWriteBus.req
@@ -383,7 +404,7 @@ class SSDCache(implicit val cacheConfig: SSDCacheConfig) extends CacheModule wit
   val s2 = Module(new SSDCacheStage2)
 
   val metaArray = Module(new SRAMTemplateWithArbiter(nRead = 1, new MetaBundle, set = Sets, way = Ways, shouldReset = true))
-  val dataArray = Module(new SRAMTemplateWithArbiter(nRead = 1, new DataBundle, set = Sets * LineBeats, way = Ways))
+  val dataArray = Module(new SRAMTemplateWithArbiter(nRead = 2, new DataBundle, set = Sets * LineBeats, way = Ways))
 
   if (cacheName == "icache") {
     metaArray.reset := reset.asBool
@@ -403,13 +424,18 @@ class SSDCache(implicit val cacheConfig: SSDCacheConfig) extends CacheModule wit
 
   metaArray.io.r(0) <> s1.io.metaReadBus
   dataArray.io.r(0) <> s1.io.dataReadBus
+  dataArray.io.r(1) <> s2.io.dataReadBus
 
   metaArray.io.w <> s2.io.metaWriteBus
   dataArray.io.w <> s2.io.dataWriteBus
 
   s2.io.metaReadResp := s1.io.metaReadBus.resp.data
   s2.io.dataReadResp := s1.io.dataReadBus.resp.data
-  
+
+  //test tmp
+  val dataIndexTag = dataArray.io.w.req.valid && dataArray.io.w.req.bits.setIdx === "h16e".U
+  dontTouch(dataIndexTag)
+
 }
 
 
