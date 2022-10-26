@@ -97,7 +97,7 @@ class BPU_ooo extends NutCoreModule {
   ))
 
   // BTB
-  val NRbtb = 2048
+  val NRbtb = 256
   val NRbht = 2048
   val btbAddr = new TableAddr(log2Up(NRbtb >> 2))
   def btbEntry() = new Bundle {
@@ -108,7 +108,7 @@ class BPU_ooo extends NutCoreModule {
     val valid = Bool()
   }
 
-  val btb = List.fill(4)(Module(new SRAMTemplate(btbEntry(), set = NRbtb >> 2, shouldReset = true, holdRead = true, singlePort = true)))
+  val btb = List.fill(4)(Module(new BTBSRAMTemplate(btbEntry(), set = NRbtb >> 2, shouldReset = true, holdRead = true, singlePort = true)))
   // flush BTB when executing fence.i
   val flushBTB = WireInit(false.B)
   val flushTLB = WireInit(false.B)

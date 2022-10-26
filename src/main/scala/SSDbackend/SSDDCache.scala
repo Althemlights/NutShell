@@ -200,6 +200,7 @@ sealed class SSDCacheStage2(implicit val cacheConfig: SSDCacheConfig) extends Ca
 
 
   val dataRead = Mux1H(waymask, io.dataReadResp).data
+  dontTouch(dataRead)
   val wordMask = Mux(req.isWrite(), MaskExpand(req.wmask), 0.U(DataBits.W))
 
 
@@ -404,7 +405,7 @@ class SSDCache(implicit val cacheConfig: SSDCacheConfig) extends CacheModule wit
   val s2 = Module(new SSDCacheStage2)
 
   val metaArray = Module(new MetaSRAMTemplateWithArbiter(nRead = 1, new MetaBundle, set = Sets, way = Ways, shouldReset = true))
-  val dataArray = Module(new SRAMTemplateWithArbiter(nRead = 2, new DataBundle, set = Sets * LineBeats, way = Ways))
+  val dataArray = Module(new ysyxSRAMTemplateWithArbiter(nRead = 2, new DataBundle, set = Sets * LineBeats, way = Ways))
 //  val metaArray = Module(new MetaSRAMTemplateWithArbiter(nRead = 1, new MetaBundle, set = Sets, way = Ways, shouldReset = true))
 //  val dataArray = Module(new DataSRAMTemplateWithArbiter(nRead = 2, new DataBundle, set = Sets * LineBeats, way = Ways))
 
