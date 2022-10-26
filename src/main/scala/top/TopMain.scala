@@ -18,9 +18,8 @@ package top
 
 import nutcore.NutCoreConfig
 import system.NutShell
-import device.{AXI4VGA}
+import device.AXI4VGA
 import sim.SimTop
-
 import chisel3._
 import chisel3.stage._
 
@@ -50,6 +49,7 @@ object TopMain extends App {
     case "pynq"   => PynqSettings()
     case "axu3cg" => Axu3cgSettings()
     case "PXIe"   => PXIeSettings()
+    case "soctest" => SoCTestSettings()
   } ) ++ ( core match {
     case "inorder"  => InOrderSettings()
     case "ooo"  => OOOSettings()
@@ -63,13 +63,16 @@ object TopMain extends App {
     case (f, v) =>
       println(f + " = " + v)
   }
-  if (board == "sim") {
+  if (board == "sim" || board == "soctest") {
     (new ChiselStage).execute(args, Seq(
       ChiselGeneratorAnnotation(() => new SimTop))
     )
   } else {
-    (new ChiselStage).execute(args, Seq(
-      ChiselGeneratorAnnotation(() => new Top))
-    )
+    // Driver.execute(args, () => new Top)
+    (new chisel3.stage.ChiselStage).execute(args, Seq(
+      chisel3.stage.ChiselGeneratorAnnotation(() => new Top)))
+//      firrtl.stage.RunFirrtlTransformAnnotation(new AddModulePrefix()),
+//      ModulePrefixAnnotation("ysyx_210000_")
+
   }
 }
