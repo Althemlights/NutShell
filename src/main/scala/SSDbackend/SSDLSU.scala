@@ -106,7 +106,7 @@ class SSDLSU extends  NutCoreModule with HasStoreBufferConst{
   //store buffer
   val storeBuffer = Module(new StoreBuffer)
   //MMIO & OutBuffer
-  val outBuffer = Module(new Queue(new StoreBufferEntry, entries = 1, hasFlush = false))
+  val outBuffer = Module(new Queue(new StoreBufferEntry, entries = 1))
   val MMIOStorePkt = Wire(Decoupled(new StoreBufferEntry))
   val isMMIOStore = AddressSpace.isMMIO(addr) && isStore
   val isMMIO = AddressSpace.isMMIO(addr)

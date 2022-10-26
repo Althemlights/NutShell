@@ -31,7 +31,7 @@ class XSFunctionUnitInput(val len: Int) extends Bundle {
 
 class XSFunctionUnitIO(val len: Int) extends Bundle {
   val in = Flipped(DecoupledIO(new XSFunctionUnitInput(len)))
-
+  val ctrl = Input(new MulDivCtrl)
   val out = DecoupledIO(new XSFuOutput(len))
 
 }
@@ -97,7 +97,7 @@ class MulDivCtrl extends Bundle{
 class AbstractMultiplier(len: Int) extends XSFunctionUnit(
   len
 ){
-  val ctrl = IO(Input(new MulDivCtrl))
+//  val ctrl = IO(Input(new MulDivCtrl))
 }
 
 class NaiveMultiplier(len: Int, val latency: Int)
@@ -110,7 +110,7 @@ class NaiveMultiplier(len: Int, val latency: Int)
   val mulRes = src1.asSInt() * src2.asSInt()
 
   var dataVec = Seq(mulRes.asUInt())
-  var ctrlVec = Seq(ctrl)
+  var ctrlVec = Seq(io.ctrl)
 
   for(i <- 1 to latency){
     dataVec = dataVec :+ PipelineReg(i)(dataVec(i-1))
@@ -255,7 +255,7 @@ class ArrayMultiplier(len: Int) extends AbstractMultiplier(len) with HasPipeline
   dontTouch(mulDataModule.io.regEnables)
   val result = mulDataModule.io.result
 
-  var ctrlVec = Seq(ctrl)
+  var ctrlVec = Seq(io.ctrl)
   for(i <- 1 to latency){
     ctrlVec = ctrlVec :+ PipelineReg(i)(ctrlVec(i-1))
   }

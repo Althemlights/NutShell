@@ -178,9 +178,9 @@ class SSDMDU extends NutCoreModule {
   mul.io.in.bits.src(0) := LookupTree(func(1,0), mulInputFuncTable.map(p => (p._1(1,0), p._2._1(src1))))
   mul.io.in.bits.src(1) := LookupTree(func(1,0), mulInputFuncTable.map(p => (p._1(1,0), p._2._2(src2))))
   mul.io.in.bits.src(2) := DontCare
-  mul.ctrl.sign := DontCare
-  mul.ctrl.isW := isW
-  mul.ctrl.isHi := isHi
+  mul.io.ctrl.sign := DontCare
+  mul.io.ctrl.isW := isW
+  mul.io.ctrl.isHi := isHi
   mul.io.out.ready := io.out.ready
 
   val divInputFunc = (x: UInt) => Mux(isW, Mux(isDivSign, SignExt(x(31,0), XLEN), ZeroExt(x(31,0), XLEN)), x)

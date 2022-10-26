@@ -19,9 +19,9 @@ class ModuleTest extends Module{
   multplierTest.io.in.bits.src(1) := 2.U(64.W)
   multplierTest.io.in.bits.src(2) := DontCare
   multplierTest.io.out.ready := true.B
-  multplierTest.ctrl.sign := true.B
-  multplierTest.ctrl.isW := true.B
-  multplierTest.ctrl.isHi := false.B
+  multplierTest.io.ctrl.sign := true.B
+  multplierTest.io.ctrl.isW := true.B
+  multplierTest.io.ctrl.isHi := false.B
   dontTouch(multplierTest.io.in)
   dontTouch(multplierTest.io.out)
 

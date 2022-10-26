@@ -427,14 +427,15 @@ class PipeCtl extends Module{
     val i1pipeStall = Input(Bool())
     val memStall = Input(Bool())
     val flush = Input(Vec(4,Bool()))  //flushPoint(0,3) -> alu0,alu1,sub_alu0,sub_alu1
+    val pipeCtl = new StallFlushIO
   })
-  val pipeCtl = IO(new StallFlushIO)
-  dontTouch(io.flush)
+//  val pipeCtl = IO(new StallFlushIO)
+//  dontTouch(io.flush)
 
   // stall vec
-  pipeCtl.stall(0) := io.i1pipeStall
-  pipeCtl.stall(1) := io.i0pipeStall
-  pipeCtl.stall(2) := io.memStall
+  io.pipeCtl.stall(0) := io.i1pipeStall
+  io.pipeCtl.stall(1) := io.i0pipeStall
+  io.pipeCtl.stall(2) := io.memStall
 
   //flush/invalid vec
   val allStageFlushVec = VecInit(Seq.fill(10)(false.B))
@@ -462,8 +463,8 @@ class PipeCtl extends Module{
   subalu0FlushList.foreach{ case i => when(io.flush(2) === true.B){allStageFlushVec(i) := io.flush(2)}}
   subalu1FlushList.foreach{ case i => when(io.flush(3) === true.B){allStageFlushVec(i) := io.flush(3)}}
 
-  pipeCtl.invalid := allStageInvalidVec
-  pipeCtl.flush := allStageFlushVec
+  io.pipeCtl.invalid := allStageInvalidVec
+  io.pipeCtl.flush := allStageFlushVec
 
 
 }
@@ -531,8 +532,8 @@ class Bypass extends Module{
 
   io.issueStall := DecodeIO2BypassPkt.io.issueStall
   io.decodeBypassPkt <> Seq(DecodeIO2BypassPkt.io.out0,DecodeIO2BypassPkt.io.out1)
-  io.pipeFlush := PipelineCtl.pipeCtl.flush
-  io.pipeInvalid := PipelineCtl.pipeCtl.invalid
+  io.pipeFlush := PipelineCtl.io.pipeCtl.flush
+  io.pipeInvalid := PipelineCtl.io.pipeCtl.invalid
 
   //LSU pipeline bypass ctrl
   io.LSUBypassCtrl.lsBypassCtrli0E1 := Mux(pipeOut(0).valid && (BypassPkt(0).decodePkt.store || BypassPkt(0).decodePkt.load),pipeOut(0).bits.lsuCtrl.lsBypassCtrlE1,
@@ -556,8 +557,8 @@ class Bypass extends Module{
     a.io.left <> pipeIn(b)
     a.io.right <> pipeOut(b)
     a.io.rightOutFire <> pipeFire(b)
-    a.io.isFlush <> PipelineCtl.pipeCtl.flush(b)
-    a.io.inValid <> PipelineCtl.pipeCtl.invalid(b)
+    a.io.isFlush <> PipelineCtl.io.pipeCtl.flush(b)
+    a.io.inValid <> PipelineCtl.io.pipeCtl.invalid(b)
   }
   pipeStage0.io.isStall := DecodeIO2BypassPkt.io.issueStall(0)
   pipeStage1.io.isStall := DecodeIO2BypassPkt.io.issueStall(1)
@@ -585,8 +586,8 @@ class Bypass extends Module{
     a.io.left <> pipeIn(b)
     a.io.right <> pipeOut(b)
     a.io.rightOutFire <> pipeFire(b)
-    a.io.isFlush <> PipelineCtl.pipeCtl.flush(b)
-    a.io.inValid <> PipelineCtl.pipeCtl.invalid(b)
+    a.io.isFlush <> PipelineCtl.io.pipeCtl.flush(b)
+    a.io.inValid <> PipelineCtl.io.pipeCtl.invalid(b)
   }
 
 
