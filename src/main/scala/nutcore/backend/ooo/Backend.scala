@@ -22,7 +22,7 @@ import chisel3.util.experimental.BoringUtils
 
 import utils._
 import bus.simplebus._
-import difftest._
+//import difftest._
 
 trait HasBackendConst{
   // val multiIssue = true

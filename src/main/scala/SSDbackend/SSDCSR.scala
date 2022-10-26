@@ -23,7 +23,7 @@ import chisel3.util._
 import chisel3.util.experimental.BoringUtils
 import utils._
 import top.Settings
-import difftest._
+//import difftest._
 import nutcore.{CtrlFlowIO, FunctionUnitIO, NutCoreModule, RedirectIO}
 
 object SSDCSROpType {

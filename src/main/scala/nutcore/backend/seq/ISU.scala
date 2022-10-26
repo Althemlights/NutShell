@@ -21,7 +21,7 @@ import chisel3.util._
 import chisel3.util.experimental.BoringUtils
 
 import utils._
-import difftest._
+//import difftest._
 
 // Sequential Inst Issue Unit 
 class ISU(implicit val p: NutCoreConfig) extends NutCoreModule with HasRegFileParameter {
