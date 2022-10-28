@@ -16,7 +16,7 @@
 
 package sim
 
-import system._
+import system.{ysyx_229999, _}
 import nutcore.NutCoreConfig
 import chisel3._
 import chisel3.util._
@@ -36,7 +36,7 @@ class SimTop extends Module {
   })
 
   lazy val config = NutCoreConfig(FPGAPlatform = false)
-  val nutshell = Module(new NutShell()(config))
+  val nutshell = Module(new ysyx_229999()(config))
 
   if (Settings.get("SoCTest")) {
 

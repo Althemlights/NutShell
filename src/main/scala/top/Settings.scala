@@ -90,7 +90,31 @@ object SoCTestSettings {
     "EnableDebug" -> false,
     "FPGAPlatform" -> false,
     "HasL2cache" -> false,
-    "HasPrefetch" -> false
+    "HasPrefetch" -> false,
+
+    "MemMapBase" -> 0x0000000000000000L,
+    "MemMapRegionBits" -> 0,
+//    "MMIOBase" -> 0x0000000040000000L,
+//    "MMIOSize" -> 0x0000000040000000L,
+//    "ResetVector" -> 0x80000000L,
+//    "NrExtIntr" -> 1,
+//
+//    "HasL2cache" -> false,
+//    "HasPrefetch" -> false,
+    "EnableMultiIssue" -> true,
+    "EnableOutOfOrderExec" -> true,
+    "HasDTLB" -> true,
+    "HasITLB" -> true,
+    "HasDcache" -> true,
+    "HasIcache" -> true,
+    "MmodeOnly" -> false,
+    "IsRV32" -> false,
+
+//    "FPGAPlatform" -> false,
+//    "EnableILA" -> true,
+    "EnableDebug" -> false,
+    "EnableRVC" -> true
+//    "SoCTest" -> false
   )
 }
 
@@ -113,7 +137,7 @@ object EmbededSettings {
 }
 
 object Settings {
-  var settings: Map[String, AnyVal] = DefaultSettings()
+  var settings: Map[String, AnyVal] = SoCTestSettings()
   def get(field: String) = {
     settings(field).asInstanceOf[Boolean]
   }

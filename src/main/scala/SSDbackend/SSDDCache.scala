@@ -277,6 +277,7 @@ sealed class SSDCacheStage2(implicit val cacheConfig: SSDCacheConfig) extends Ca
   val outBufferValid = WireInit(false.B)
   val mmioStorePending = WireInit(false.B)
   //Optimal handling when there is mmio store
+
   if (cacheName == "dcache") {
     val MMIOStorePkt = Wire(Flipped(Decoupled(new StoreBufferEntry)))
     MMIOStorePkt.valid := false.B

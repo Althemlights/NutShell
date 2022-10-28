@@ -16,16 +16,74 @@
 
 package top
 
+import bus.axi4.ysyxAXI4IO
 import nutcore.NutCoreConfig
-import system.NutShell
+import system.ysyx_229999
 import device.AXI4VGA
 import sim.SimTop
 import chisel3._
 import chisel3.stage._
+class riscv_cpu_io extends Bundle {
+  val master = new ysyxAXI4IO()
+  val slave  = Flipped(new ysyxAXI4IO())
+  val interrupt = Input(Bool())
+}
+class ysyx_210062 extends Module {
+  val io : riscv_cpu_io = IO(new riscv_cpu_io)
+  val core = Module(new ysyx_229999()(NutCoreConfig()))
+  core.io.master := DontCare
+  core.io.slave := DontCare
+
+  core.io.master.ar.ready     := io.master.arready
+  io.master.arvalid         := core.io.master.ar.valid
+  io.master.araddr          := core.io.master.ar.bits.addr
+  io.master.arid            := core.io.master.ar.bits.id
+  io.master.arlen           := core.io.master.ar.bits.len
+  io.master.arsize          := core.io.master.ar.bits.size
+  io.master.arburst         := core.io.master.ar.bits.burst
+
+
+  core.io.master.r.valid      := io.master.rvalid
+  io.master.rready          := core.io.master.r.ready
+  core.io.master.r.bits.resp  := io.master.rresp
+  core.io.master.r.bits.data  := io.master.rdata
+  core.io.master.r.bits.last  := io.master.rlast
+  core.io.master.r.bits.id    := io.master.rid
+
+
+  core.io.master.aw.ready     := io.master.awready
+  io.master.awvalid         := core.io.master.aw.valid
+  io.master.awaddr          := core.io.master.aw.bits.addr
+  io.master.awid            := core.io.master.aw.bits.id
+  io.master.awlen           := core.io.master.aw.bits.len
+  io.master.awsize          := core.io.master.aw.bits.size
+  io.master.awburst         := core.io.master.aw.bits.burst
+
+  core.io.master.w.ready      := io.master.wready
+  io.master.wvalid          := core.io.master.w.valid
+  io.master.wdata           := core.io.master.w.bits.data
+  io.master.wlast           := core.io.master.w.bits.last
+  io.master.wstrb           := core.io.master.w.bits.strb
+
+  io.master.bready          := core.io.master.b.ready
+  core.io.master.b.valid      := io.master.bvalid
+  core.io.master.b.bits.resp  := io.master.bresp
+  core.io.master.b.bits.id    := io.master.bid
+
+  io.slave := DontCare
+  io.slave.arready := false.B
+  io.slave.rvalid  := false.B
+  io.slave.awready := false.B
+  io.slave.wready  := false.B
+  io.slave.bvalid  := false.B
+//  io.interrupt := false.B
+  core.io.interrupt := false.B
+}
+
 
 class Top extends Module {
   val io = IO(new Bundle{})
-  val nutshell = Module(new NutShell()(NutCoreConfig()))
+  val nutshell = Module(new ysyx_229999()(NutCoreConfig()))
   val vga = Module(new AXI4VGA)
 
   nutshell.io := DontCare
@@ -64,15 +122,34 @@ object TopMain extends App {
       println(f + " = " + v)
   }
   if (board == "sim" || board == "soctest") {
-    (new ChiselStage).execute(args, Seq(
-      ChiselGeneratorAnnotation(() => new SimTop))
-    )
+//    (new ChiselStage).execute(args, Seq(
+//      ChiselGeneratorAnnotation(() => new SimTop))
+//    )
+    // Driver.execute(args, () => new Top)
+    (new chisel3.stage.ChiselStage).execute(args, Seq(
+      chisel3.stage.ChiselGeneratorAnnotation(() => new ysyx_210062()),
+      firrtl.stage.RunFirrtlTransformAnnotation(new AddModulePrefix()),
+      ModulePrefixAnnotation("ysyx_210062_")
+    ))
   } else {
     // Driver.execute(args, () => new Top)
     (new chisel3.stage.ChiselStage).execute(args, Seq(
-      chisel3.stage.ChiselGeneratorAnnotation(() => new Top)))
-//      firrtl.stage.RunFirrtlTransformAnnotation(new AddModulePrefix()),
-//      ModulePrefixAnnotation("ysyx_210000_")
-
+      chisel3.stage.ChiselGeneratorAnnotation(() => new Top()),
+      firrtl.stage.RunFirrtlTransformAnnotation(new AddModulePrefix()),
+      ModulePrefixAnnotation("ysyx_210062_")
+    ))
   }
+}
+
+object ysyx extends App{
+  lazy val config = NutCoreConfig(FPGAPlatform = false)
+  //  (new ChiselStage).execute(args, Seq(
+  //    ChiselGeneratorAnnotation(() => new NutCore()(config)))
+  ////    ChiselGeneratorAnnotation(() => new testModule))
+  //  )
+  (new chisel3.stage.ChiselStage).execute(args, Seq(
+    chisel3.stage.ChiselGeneratorAnnotation(() =>new ysyx_210062()),
+    firrtl.stage.RunFirrtlTransformAnnotation(new AddModulePrefix()),
+    ModulePrefixAnnotation("ysyx_210062_")
+  ))
 }
