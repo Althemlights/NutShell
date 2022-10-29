@@ -179,11 +179,11 @@ sealed class SSDCacheStage2(implicit val cacheConfig: SSDCacheConfig) extends Ca
   val mmio = io.in.valid && io.in.bits.mmio
   val storeHit = WireInit(false.B)
   if (cacheName == "dcache") {
-    BoringUtils.addSink(storeHit,"storeHit")
+    BoringUtils.addSink(storeHit, "storeHit")
   }
 
 
-//  val victimWaymask = if (Ways > 1) (1.U << LFSR64()(log2Up(Ways) - 1, 0)) else "b1".U
+  //  val victimWaymask = if (Ways > 1) (1.U << LFSR64()(log2Up(Ways) - 1, 0)) else "b1".U
   val victimWaymask = 3.U //Set 3 as default
   val invalidVec = VecInit(metaWay.map(m => !m.valid)).asUInt
   val hasInvalidWay = invalidVec.orR
@@ -204,13 +204,12 @@ sealed class SSDCacheStage2(implicit val cacheConfig: SSDCacheConfig) extends Ca
   val wordMask = Mux(req.isWrite(), MaskExpand(req.wmask), 0.U(DataBits.W))
 
 
-
   val hitWrite = hit && req.isWrite()
 
 
   val dataHitWriteBus = Wire(CacheDataArrayWriteBus()).apply(
     data = Wire(new DataBundle).apply(MaskData(dataRead, req.wdata, wordMask)),
-    valid = hitWrite, setIdx = Cat(addr.index,addr.wordIndex), waymask = waymask)
+    valid = hitWrite, setIdx = Cat(addr.index, addr.wordIndex), waymask = waymask)
 
   val metaHitWriteBus = Wire(CacheMetaArrayWriteBus()).apply(
     valid = hitWrite && !meta.dirty, setIdx = getMetaIdx(req.addr), waymask = waymask,
@@ -241,10 +240,20 @@ sealed class SSDCacheStage2(implicit val cacheConfig: SSDCacheConfig) extends Ca
   val dataHitWay = Mux1H(waymask, dataWay).data
 
 
-  switch (state2) {
-    is (s2_idle) { when (io.dataReadBus.req.fire()) { state2 := s2_dataReadWait } }
-    is (s2_dataReadWait) { state2 := s2_dataOK }
-    is (s2_dataOK) { when (io.mem.req.fire() || hitReadBurst && io.out.ready) { state2 := s2_idle } }
+  switch(state2) {
+    is(s2_idle) {
+      when(io.dataReadBus.req.fire()) {
+        state2 := s2_dataReadWait
+      }
+    }
+    is(s2_dataReadWait) {
+      state2 := s2_dataOK
+    }
+    is(s2_dataOK) {
+      when(io.mem.req.fire() || hitReadBurst && io.out.ready) {
+        state2 := s2_idle
+      }
+    }
   }
 
   // critical word first read
@@ -267,8 +276,7 @@ sealed class SSDCacheStage2(implicit val cacheConfig: SSDCacheConfig) extends Ca
 
   val afterFirstRead = RegInit(false.B)
   val readingFirst = !afterFirstRead && io.mem.resp.fire() && (state === s_memReadResp)
-  val inRdataRegDemand = RegEnable(Mux(mmio, io.mmio.resp.bits.rdata, io.mem.resp.bits.rdata),
-    Mux(mmio, state === s_mmioResp, readingFirst))
+
 
   // mmio
   io.mmio.req.bits := req
@@ -282,13 +290,13 @@ sealed class SSDCacheStage2(implicit val cacheConfig: SSDCacheConfig) extends Ca
     val MMIOStorePkt = Wire(Flipped(Decoupled(new StoreBufferEntry)))
     MMIOStorePkt.valid := false.B
     MMIOStorePkt.bits := 0.U.asTypeOf(new StoreBufferEntry)
-    BoringUtils.addSink(mmioStorePending,"MMIOStorePending")
-    BoringUtils.addSink(outBufferValid,"MMIOStorePktValid")
-    BoringUtils.addSink(MMIOStorePkt.bits,"MMIOStorePktBits")
-    BoringUtils.addSource(MMIOStorePkt.ready,"MMIOStorePktReady")
+    BoringUtils.addSink(mmioStorePending, "MMIOStorePending")
+    BoringUtils.addSink(outBufferValid, "MMIOStorePktValid")
+    BoringUtils.addSink(MMIOStorePkt.bits, "MMIOStorePktBits")
+    BoringUtils.addSource(MMIOStorePkt.ready, "MMIOStorePktReady")
     MMIOStorePkt.valid := outBufferValid && (state === s_mmioReq)
     val mmioStoreReq = Wire(Flipped(Decoupled(new SimpleBusReqBundle(userBits = userBits, idBits = idBits))))
-    val mmioStoreReqLatch = RegEnable(mmioStoreReq.bits,mmioStoreReq.fire())
+    val mmioStoreReqLatch = RegEnable(mmioStoreReq.bits, mmioStoreReq.fire())
     mmioStoreReq.ready := true.B
     mmioStoreReq.valid := (state === s_mmioReq)
     mmioStoreReq.bits.cmd := SimpleBusCmd.write
@@ -299,22 +307,45 @@ sealed class SSDCacheStage2(implicit val cacheConfig: SSDCacheConfig) extends Ca
 
     MMIOStorePkt.ready := io.mmio.req.ready
 
-    io.mmio.req.bits := Mux(mmioStorePending,mmioStoreReqLatch,req)
+    io.mmio.req.bits := Mux(mmioStorePending, mmioStoreReqLatch, req)
   }
 
+  // for inst in flash, the max fetch width is 32bit
+  val FlashWidth = 4 // 4 Byte
+  val mmioCnt = Counter(8 / FlashWidth)
+  val FlashInst = RegInit(0.U(64.W))
+  if (cacheName == "icache") {
+    io.mmio.req.bits.addr := Mux(mmio, req.addr + (mmioCnt.value << 2).asUInt, req.addr)
+    io.mmio.req.bits.size := Mux(mmio, "b10".U, "b11".U)
+  }
+
+  if(cacheName == "dcache"){
   switch(state) {
     is(s_idle) {
       afterFirstRead := false.B
 
       when((miss && !storeHit || mmio) && !io.flush || mmioStorePending) {
-//        state := Mux(meta.dirty, s_memWriteReq, s_memReadReq)
-        state := Mux(mmioStorePending,Mux(outBufferValid,s_mmioReq,s_mmio_wait),Mux(mmio,s_mmioReq,Mux(meta.dirty, s_memWriteReq, s_memReadReq)))
+        //        state := Mux(meta.dirty, s_memWriteReq, s_memReadReq)
+        state := Mux(mmioStorePending, Mux(outBufferValid, s_mmioReq, s_mmio_wait), Mux(mmio, s_mmioReq, Mux(meta.dirty, s_memWriteReq, s_memReadReq)))
       }
     }
-
-    is (s_mmio_wait) { when(!mmioStorePending) { state := s_idle }.elsewhen(outBufferValid) { state := s_mmioReq }}
-    is (s_mmioReq) { when (io.mmio.req.fire()) { state := s_mmioResp } }
-    is (s_mmioResp) { when (io.mmio.resp.fire()) { state := Mux(mmio, s_wait_resp, s_idle) }}
+      is(s_mmio_wait) {
+        when(!mmioStorePending) {
+          state := s_idle
+        }.elsewhen(outBufferValid) {
+          state := s_mmioReq
+        }
+      }
+      is(s_mmioReq) {
+        when(io.mmio.req.fire()) {
+          state := s_mmioResp
+        }
+      }
+      is(s_mmioResp) {
+        when(io.mmio.resp.fire()) {
+          state := Mux(mmio, s_wait_resp, s_idle)
+        }
+      }
 
     is(s_memReadReq) {
       when(io.mem.req.fire()) {
@@ -353,6 +384,70 @@ sealed class SSDCacheStage2(implicit val cacheConfig: SSDCacheConfig) extends Ca
       }
     }
   }
+}
+  if(cacheName == "icache") {
+    switch(state) {
+      is(s_idle) {
+        afterFirstRead := false.B
+
+        when((miss && !storeHit || mmio) && !io.flush || mmioStorePending) {
+          //        state := Mux(meta.dirty, s_memWriteReq, s_memReadReq)
+          state := Mux(mmioStorePending, Mux(outBufferValid, s_mmioReq, s_mmio_wait), Mux(mmio, s_mmioReq, Mux(meta.dirty, s_memWriteReq, s_memReadReq)))
+        }
+      }
+
+      is(s_mmioReq) {
+        when(io.mmio.req.fire()) {
+          state := s_mmioResp
+          mmioCnt.inc()
+        }
+      }
+      is(s_mmioResp) {
+        when(io.mmio.resp.fire()) {
+          state := Mux(mmioCnt.inc === 1.U, s_mmioReq, s_wait_resp)
+          FlashInst := Cat(FlashInst(31, 0), io.mmio.resp.bits.rdata(31, 0))
+        }
+      }
+
+
+      is(s_memReadReq) {
+        when(io.mem.req.fire()) {
+          state := s_memReadResp
+          readBeatCnt.value := addr.wordIndex
+        }
+      }
+
+      is(s_memReadResp) {
+        when(io.mem.resp.fire()) {
+          afterFirstRead := true.B
+          readBeatCnt.inc()
+          when(io.mem.resp.bits.isReadLast()) {
+            state := s_wait_resp
+          }
+        }
+      }
+
+      is(s_memWriteReq) {
+        when(io.mem.req.fire()) {
+          writeBeatCnt.inc()
+        }
+        when(io.mem.req.bits.isWriteLast() && io.mem.req.fire()) {
+          state := s_memWriteResp
+        }
+      }
+
+      is(s_memWriteResp) {
+        when(io.mem.resp.fire()) {
+          state := s_memReadReq
+        }
+      }
+      is(s_wait_resp) {
+        when(io.out.fire() || needFlush) {
+          state := s_idle
+        }
+      }
+    }
+  }
 
   val dataRefill = MaskData(io.mem.resp.bits.rdata, req.wdata, Mux(readingFirst, wordMask, 0.U(DataBits.W)))
   dontTouch(dataRefill)
@@ -381,7 +476,16 @@ sealed class SSDCacheStage2(implicit val cacheConfig: SSDCacheConfig) extends Ca
 
   //out is valid when cacheline is refilled
   io.out.valid := io.in.valid && !needFlush && Mux(hit || storeHit, true.B, state === s_wait_resp)
-  io.out.bits.rdata := Mux(hit,dataRead,inRdataRegDemand)
+  val inRdataRegDemand = RegEnable(Mux(mmio, io.mmio.resp.bits.rdata, io.mem.resp.bits.rdata),
+    Mux(mmio, state === s_mmioResp, readingFirst))
+  io.out.bits.rdata := Mux(hit, dataRead, inRdataRegDemand)
+
+  if(cacheName == "icache"){
+    val memDataLatch = RegEnable(io.mem.resp.bits.rdata, readingFirst)
+    val mmioRdataLatch = FlashInst
+    val icacheDataLatch = Mux(mmio,mmioRdataLatch,memDataLatch)
+    io.out.bits.rdata := Mux(hit, dataRead, inRdataRegDemand)
+  }
   io.out.bits.cmd := Mux(io.in.bits.req.isRead(), SimpleBusCmd.readLast, Mux(io.in.bits.req.isWrite(), SimpleBusCmd.writeResp, DontCare))//DontCare, added by lemover
 
   // With critical-word first, the pipeline registers between
