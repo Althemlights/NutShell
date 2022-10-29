@@ -316,7 +316,8 @@ sealed class SSDCacheStage2(implicit val cacheConfig: SSDCacheConfig) extends Ca
   val FlashInst = RegInit(0.U(64.W))
   if (cacheName == "icache") {
     io.mmio.req.bits.addr := Mux(mmio, req.addr + (mmioCnt.value << 2).asUInt, req.addr)
-    io.mmio.req.bits.size := Mux(mmio, "b10".U, "b11".U)
+//    io.mmio.req.bits.size := Mux(mmio, "b10".U, "b11".U)
+    io.mmio.req.bits.size := "b10".U
   }
 
   if(cacheName == "dcache"){
@@ -399,13 +400,14 @@ sealed class SSDCacheStage2(implicit val cacheConfig: SSDCacheConfig) extends Ca
       is(s_mmioReq) {
         when(io.mmio.req.fire()) {
           state := s_mmioResp
-          mmioCnt.inc()
+
         }
       }
       is(s_mmioResp) {
         when(io.mmio.resp.fire()) {
-          state := Mux(mmioCnt.inc === 1.U, s_mmioReq, s_wait_resp)
-          FlashInst := Cat(FlashInst(31, 0), io.mmio.resp.bits.rdata(31, 0))
+          state := Mux(mmioCnt.inc === 1.U,s_wait_resp, s_mmioReq)
+          FlashInst := Cat(io.mmio.resp.bits.rdata(31, 0) ,FlashInst(63, 32))
+          mmioCnt.inc()
         }
       }
 
@@ -484,7 +486,7 @@ sealed class SSDCacheStage2(implicit val cacheConfig: SSDCacheConfig) extends Ca
     val memDataLatch = RegEnable(io.mem.resp.bits.rdata, readingFirst)
     val mmioRdataLatch = FlashInst
     val icacheDataLatch = Mux(mmio,mmioRdataLatch,memDataLatch)
-    io.out.bits.rdata := Mux(hit, dataRead, inRdataRegDemand)
+    io.out.bits.rdata := Mux(hit, dataRead, icacheDataLatch)
   }
   io.out.bits.cmd := Mux(io.in.bits.req.isRead(), SimpleBusCmd.readLast, Mux(io.in.bits.req.isWrite(), SimpleBusCmd.writeResp, DontCare))//DontCare, added by lemover
 
