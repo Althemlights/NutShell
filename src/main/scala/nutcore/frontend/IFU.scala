@@ -267,7 +267,7 @@ class IFU_ooo extends NutCoreModule with HasResetVector {
   //////jpz addation!!
   icacheUserGen.ghr := nlp.io.fghr
 
-  icacheUserGen.btbIsBranch := Cat(0.U(4.W),nlp.io.out.btbIsBranch)
+  icacheUserGen.btbIsBranch := nlp.io.out.btbIsBranch
 
   io.imem.req.bits.apply(addr = Cat(pc(VAddrBits-1,1),0.U(1.W)), //cache will treat it as Cat(pc(63,3),0.U(3.W))
     size = "b11".U, cmd = SimpleBusCmd.read, wdata = 0.U, wmask = 0.U, user = icacheUserGen.asUInt)

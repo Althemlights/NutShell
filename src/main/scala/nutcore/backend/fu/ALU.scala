@@ -142,7 +142,7 @@ class ALU(hasBru: Boolean = false) extends NutCoreModule {
 
   io.redirect.ghrUpdateValid := valid && isBru && predictWrong //|| branchPredictMiss || branchPredictWrong // maybe = io.redirect.valid ?
   val redirectRtype = if (EnableOutOfOrderExec) 1.U else 0.U
-  io.redirect.btbIsBranch := DontCare
+  io.redirect.btbIsBranch := io.cfIn.redirect.btbIsBranch(0)
   io.redirect.rtype := redirectRtype
   //io.redirect.ghr := Mux((branchPredictMiss || valid && isBru && isBranch && (taken =/= io.cfIn.brIdx(0))),Cat(io.cfIn.redirect.ghr(GhrLength-2,0),taken),io.cfIn.redirect.ghr)
   io.redirect.ghr := Cat(io.cfIn.redirect.ghr(GhrLength-2,0),taken)

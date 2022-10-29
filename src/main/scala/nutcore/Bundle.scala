@@ -47,7 +47,7 @@ class RedirectIO extends NutCoreBundle {
   val valid = Output(Bool())
   val ghr = Output(UInt(GhrLength.W))
   val ghrUpdateValid = Output(Bool())
-  val btbIsBranch = Output(UInt(4.W))
+  val btbIsBranch = Output(UInt(8.W))
   //for debug
   val pc = Output(UInt(VAddrBits.W))
 }
@@ -181,7 +181,7 @@ class InstFetchIO extends NutCoreBundle {
   val instr = Output(UInt(128.W))
   val checkPointGHR = Output(UInt(GhrLength.W))
   val ghr = Output(UInt(GhrLength.W))
-  val btbIsBranch = Output(UInt(4.W))
+  val btbIsBranch = Output(UInt(8.W))
 }
 
 // Micro OP

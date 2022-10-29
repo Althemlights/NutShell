@@ -123,7 +123,8 @@ class SSDbackend extends NutCoreModule with hasBypassConst {
   ALU_1.io.cfIn := 0.U.asTypeOf(new CtrlFlowIO)
   ALU_6.io.cfIn := 0.U.asTypeOf(new CtrlFlowIO)
   ALU_7.io.cfIn := 0.U.asTypeOf(new CtrlFlowIO)
-
+  val aluValid = VecInit(false.B,false.B,false.B,false.B)
+  
   (ALUList zip pipeOut2ALUList).foreach{ case(a,b) =>
     a.io.offset := b.bits.offset
     a.io.out.ready := true.B
@@ -157,32 +158,46 @@ class SSDbackend extends NutCoreModule with hasBypassConst {
       Mux(Redirect3.valid && pipeOut(3).valid,pipeOut(3).bits.bpuUpdateReq,
         Mux(Redirect2.valid && pipeOut(2).valid,pipeOut(2).bits.bpuUpdateReq,0.U.asTypeOf(new BPUUpdateReq)))))
 
-  val i0E1redirect = RegNext(RegNext(RegNext(Redirect2.valid && pipeOut(2).valid)))
-  val i1E1redirect = RegNext(RegNext(RegNext(Redirect3.valid && pipeOut(3).valid)))
+  val i0E3redirect = RegEnable(Redirect2.valid && pipeOut(2).valid,!(pipeRegStage6.io.isStall))
+  val i0E4redirect = RegEnable(i0E3redirect,!(pipeRegStage6.io.isStall))
+  val i0E1HaveRedirected = RegEnable(i0E4redirect,!pipeRegStage6.io.isStall)
+
+  val i1E3redirect = RegEnable(Redirect3.valid && pipeOut(3).valid,!(pipeRegStage7.io.isStall))
+  val i1E4redirect = RegEnable(i1E3redirect,!(pipeRegStage7.io.isStall))
+  val i1E1HaveRedirected = RegEnable(i1E4redirect,!pipeRegStage7.io.isStall)
+
+
+  val i0E5redirect = Redirect8.valid &&  pipeOut(8).valid && !pipeInvalid(10)
+  val i1E5redirect = Redirect9.valid &&  pipeOut(9).valid && !pipeInvalid(11)
 
   val i0WbBpuUpdateReq = Wire(new BPUUpdateReq)
   val i1WbBpuUpdateReq = Wire(new BPUUpdateReq)
 
-  i0WbBpuUpdateReq := Mux(/*pipeOut(8).bits.bpuUpdateReq.valid &&**/ pipeOut(8).fire() && !pipeInvalid(10) && !i0E1redirect,pipeOut(8).bits.bpuUpdateReq,0.U.asTypeOf(new BPUUpdateReq))
-  i1WbBpuUpdateReq := Mux(/*pipeOut(9).bits.bpuUpdateReq.valid &&**/ pipeOut(9).fire() && !pipeInvalid(11) && !i1E1redirect,pipeOut(9).bits.bpuUpdateReq,0.U.asTypeOf(new BPUUpdateReq))
+  i0WbBpuUpdateReq := Mux(/*pipeOut(8).bits.bpuUpdateReq.valid &&**/ pipeOut(8).fire() && !pipeInvalid(10) && !i0E1HaveRedirected && !(i0E5redirect || i1E4redirect),pipeOut(8).bits.bpuUpdateReq,0.U.asTypeOf(new BPUUpdateReq))
+  i1WbBpuUpdateReq := Mux(/*pipeOut(9).bits.bpuUpdateReq.valid &&**/ pipeOut(9).fire() && !pipeInvalid(11) && !i1E1HaveRedirected && !(i1E5redirect),pipeOut(9).bits.bpuUpdateReq,0.U.asTypeOf(new BPUUpdateReq))
 
   BoringUtils.addSource(i0WbBpuUpdateReq, "i0WbBpuUpdateReq")
   BoringUtils.addSource(i1WbBpuUpdateReq, "i1WbBpuUpdateReq")
 
-  val isE1flush = (Redirect3.valid &&  pipeOut(3).valid ) || (Redirect2.valid &&  pipeOut(2).valid )
+  val overAllFlushValid = io.redirectOut.valid
+  // val oafvf = RegNext(overAllFlushValid)
   val isE4flush = (Redirect9.valid &&  pipeOut(9).valid && !pipeInvalid(11)) ||(Redirect8.valid &&  pipeOut(8).valid && !pipeInvalid(10))
+  // val isE1flush = (Redirect3.valid &&  pipeOut(3).valid ) || (Redirect2.valid &&  pipeOut(2).valid )
+
   //ghr - updating  e1
   val ghrE1 = RegInit(0.U(5.W))
   val ghrE4 = RegInit(0.U(5.W))
+
+  val i0E1Valid = ALU_0.io.bpuUpdateReq.fuOpType(4) && (pipeOut(0).fire()) &&  !overAllFlushValid  && (ALU_0.io.redirect.btbIsBranch(0) || ALU_0.io.bpuUpdateReq.isMissPredict)
+  val i1E1Valid = ALU_1.io.bpuUpdateReq.fuOpType(4) && (pipeOut(1).fire()) &&  !overAllFlushValid  && (ALU_1.io.redirect.btbIsBranch(0) || ALU_1.io.bpuUpdateReq.isMissPredict)
+
+
+
   val i1Mp  = ALU_1.io.redirect.valid
-  // val i0E1Valid = ALU_0.io.bpuUpdateReq.valid &&  !isE1flush//fix bug
-  // val i1E1Valid = ALU_1.io.bpuUpdateReq.valid &&  !isE1flush//fix bug
 
-  val i0E1Valid = ALU_0.io.bpuUpdateReq.fuOpType(4) && (pipeOut(0).fire()) &&  !isE1flush
-  val i1E1Valid = ALU_1.io.bpuUpdateReq.fuOpType(4) && (pipeOut(1).fire()) &&  !isE1flush
 
-  val i0E1Taken = ALU_0.io.bpuUpdateReq.actualTaken
-  val i1E1Taken = ALU_1.io.bpuUpdateReq.actualTaken
+  val i0E1Taken = Mux(aluValid(0),ALU_0.io.bpuUpdateReq.actualTaken,ALU_0.io.cfIn.brIdx(0))
+  val i1E1Taken = Mux(aluValid(1),ALU_1.io.bpuUpdateReq.actualTaken,ALU_1.io.cfIn.brIdx(0))
   when(isE4flush)
   {
     ghrE1 := ghrE4
@@ -199,8 +214,8 @@ class SSDbackend extends NutCoreModule with hasBypassConst {
 
   // val i1E4Mp  = ALU_7.io.redirect.valid
   val i1E4Mp  = ALU_7.io.bpuUpdateReq.isMissPredict 
-  val i0E4Valid = ALU_6.io.bpuUpdateReq.fuOpType(4) && (pipeOut(6).fire() && !isE4flush /**&& !pipeInvalid(10) && pipeOut(8).bits.pc =/= 0.U**/)   //.valid before
-  val i1E4Valid = ALU_7.io.bpuUpdateReq.fuOpType(4) && (pipeOut(7).fire() && !isE4flush /**&& !pipeInvalid(11) && pipeOut(9).bits.pc =/= 0.U**/) 
+  val i0E4Valid = ALU_6.io.bpuUpdateReq.fuOpType(4) && (pipeOut(6).fire() ) && (ALU_6.io.redirect.btbIsBranch(0) || ALU_6.io.bpuUpdateReq.isMissPredict)
+  val i1E4Valid = ALU_7.io.bpuUpdateReq.fuOpType(4) && (pipeOut(7).fire() ) && (ALU_7.io.redirect.btbIsBranch(0) || ALU_7.io.bpuUpdateReq.isMissPredict)
 
   val i0E4Taken = ALU_6.io.bpuUpdateReq.actualTaken
   val i1E4Taken = ALU_7.io.bpuUpdateReq.actualTaken
@@ -230,7 +245,7 @@ class SSDbackend extends NutCoreModule with hasBypassConst {
     // myDebug(pipeOut(9).fire() && !pipeInvalid(11) && pipeOut(9).bits.isBranch && ALUOpType.isBranch(pipeOut(9).bits.fuOpType),"i1 bran comm:pc:[%x] fghr[%b] pre [%b]\n",pipeOut(9).bits.bpuUpdateReq.pc,pipeOut(9).bits.bpuUpdateReq.ghrNotUpdated,pipeOut(9).bits.bpuUpdateReq.isMissPredict)
     // myDebug(pipeOut(9).fire() && !pipeInvalid(11) && pipeOut(9).bits.isBranch && (ALUOpType.jal === pipeOut(9).bits.fuOpType || ALUOpType.call === pipeOut(9).bits.fuOpType),"i1  jal comm:pc:[%x] fghr[%b] pre [%b]\n",pipeOut(9).bits.bpuUpdateReq.pc,pipeOut(9).bits.bpuUpdateReq.ghrNotUpdated,pipeOut(9).bits.bpuUpdateReq.isMissPredict)
     // myDebug(pipeOut(9).fire() && !pipeInvalid(11) && pipeOut(9).bits.isBranch && ALUOpType.jalr === pipeOut(9).bits.fuOpType,"i1 jalr comm:pc:[%x] fghr[%b] pre [%b]\n",pipeOut(9).bits.bpuUpdateReq.pc,pipeOut(9).bits.bpuUpdateReq.ghrNotUpdated,pipeOut(9).bits.bpuUpdateReq.isMissPredict)
-    // myDebug(pipeOut(9).fire() && !pipeInvalid(11) && pipeOut(9).bits.isBranch && ALUOpType.ret === pipeOut(9).bits.fuOpType,"i1 ret  comm:pc:[%x] fghr[%b] pre [%b]\n",pipeOut(9).bits.bpuUpdateReq.pc,pipeOut(9).bits.bpuUpdateReq.ghrNotUpdated,pipeOut(9).bits.bpuUpdateReq.isMissPredict)
+    // myDebug(pipeOut(9).fire() && !pipeInvalid(11) && pipeOut(9).bits.isBranch && ALUOpType.ret === pipeOut(9).bits.fuOpType,"i1  ret comm:pc:[%x] fghr[%b] pre [%b]\n",pipeOut(9).bits.bpuUpdateReq.pc,pipeOut(9).bits.bpuUpdateReq.ghrNotUpdated,pipeOut(9).bits.bpuUpdateReq.isMissPredict)
 
     // myDebug(pipeOut(8).fire() && !pipeInvalid(10) && pipeOut(8).bits.isBranch && ALUOpType.isBranch(pipeOut(8).bits.fuOpType),"i0 bran comm:pc:[%x] fghr[%b] pre [%b]\n",pipeOut(8).bits.bpuUpdateReq.pc,pipeOut(8).bits.bpuUpdateReq.ghrNotUpdated,pipeOut(8).bits.bpuUpdateReq.isMissPredict)
 
@@ -238,7 +253,7 @@ class SSDbackend extends NutCoreModule with hasBypassConst {
 
     // myDebug(pipeOut(8).fire() && !pipeInvalid(10) && pipeOut(8).bits.isBranch && ALUOpType.jalr === pipeOut(8).bits.fuOpType,"i0 jalr comm:pc:[%x] fghr[%b] pre [%b]\n",pipeOut(8).bits.bpuUpdateReq.pc,pipeOut(8).bits.bpuUpdateReq.ghrNotUpdated,pipeOut(8).bits.bpuUpdateReq.isMissPredict)
 
-    // myDebug(pipeOut(8).fire() && !pipeInvalid(10) && pipeOut(8).bits.isBranch && ALUOpType.ret === pipeOut(8).bits.fuOpType,"i0 ret  comm:pc:[%x] fghr[%b] pre [%b]\n",pipeOut(8).bits.bpuUpdateReq.pc,pipeOut(8).bits.bpuUpdateReq.ghrNotUpdated,pipeOut(8).bits.bpuUpdateReq.isMissPredict)
+    // myDebug(pipeOut(8).fire() && !pipeInvalid(10) && pipeOut(8).bits.isBranch && ALUOpType.ret === pipeOut(8).bits.fuOpType,"i0  ret comm:pc:[%x] fghr[%b] pre [%b]\n",pipeOut(8).bits.bpuUpdateReq.pc,pipeOut(8).bits.bpuUpdateReq.ghrNotUpdated,pipeOut(8).bits.bpuUpdateReq.isMissPredict)
 
     
 
@@ -269,7 +284,7 @@ class SSDbackend extends NutCoreModule with hasBypassConst {
   }
 
 
-  val aluValid = VecInit(false.B,false.B,false.B,false.B)
+
   aluValid := Seq(
     pipeOut(0).valid && BypassPkt(0).decodePkt.alu && !BypassPkt(0).decodePkt.subalu,
     pipeOut(1).valid && BypassPkt(1).decodePkt.alu && !BypassPkt(1).decodePkt.subalu,

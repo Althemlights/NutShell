@@ -82,10 +82,7 @@ class BPU_ooo extends NutCoreModule {
 
     val fghr = Output(UInt(GhrLength.W))
   })
-  val icacheLine = 8//x2 byte
-  val btbSizePerBank = 16
-  val btbAddrWidth = 4
-  val bhtSizePerBank = 128
+
 
 
   val flush = BoolStopWatch(io.flush, io.in.pc.valid, startHighPriority = true)
@@ -120,8 +117,8 @@ class BPU_ooo extends NutCoreModule {
     // val bhtAddr = Wire(UInt(5.W))
 
     // bhtAddr := Cat(Cat(fghr(4,3),fghr(0)) ^ Cat(btbAddr(2,0)), fghr(2,1) ^ Cat(btbAddr(3),0.U)) =>84.6
-    // bhtAddr :=  Cat(Cat(fghr(3,2),btbAddr(3)) ^ Cat(btbAddr(2,0)), Cat(fghr(0),fghr(1)) ^ Cat(fghr(4),1.U)) 
-    bhtAddr := fghr(4,0)
+    bhtAddr :=  Cat(Cat(fghr(3,2),btbAddr(3)) ^ Cat(btbAddr(2,0)), Cat(fghr(0),fghr(1)) ^ Cat(fghr(4),1.U)) 
+    // bhtAddr := fghr(4,0)
 
     bhtAddr
   }
@@ -174,8 +171,12 @@ class BPU_ooo extends NutCoreModule {
   }
 
   ///////////////modifuy!!///////////////////////
-  val bhtsize = 5
-  val lg2bht = 32
+  val icacheLine = 8//x2 byte
+  val btbSizePerBank = 16
+  val btbAddrWidth = 4
+
+  val bhtSizePerBank = 32
+  val bhtAddrWidth = 5
   val mergedGhr = Wire(UInt(5.W))
   val fghr = RegInit(0.U(5.W))
   val fghrNextState = WireInit(0.U(5.W))
@@ -261,7 +262,7 @@ class BPU_ooo extends NutCoreModule {
   BoringUtils.addSink(i0wb, "i0WbBpuUpdateReq")
   BoringUtils.addSink(i1wb, "i1WbBpuUpdateReq")
 
-  val mpBank = req.pc(3,1)
+  val mpBank = req.pc(3,if(icacheLine == 4) 2 else 1)
   val mpBtbIndex = btbAddr.hashBTBAddr(req.pc)
 
 
@@ -291,9 +292,9 @@ class BPU_ooo extends NutCoreModule {
 
   // Experiments show this is the best priority scheme for same bank/index writes at the same time.
   
-  val bhtWrAddr0 = Wire(UInt(bhtsize.W))
-  val bhtWrAddr1 = Wire(UInt(bhtsize.W))
-  val bhtWrAddr2 = Wire(UInt(bhtsize.W)) 
+  val bhtWrAddr0 = Wire(UInt(bhtAddrWidth.W))
+  val bhtWrAddr1 = Wire(UInt(bhtAddrWidth.W))
+  val bhtWrAddr2 = Wire(UInt(bhtAddrWidth.W)) 
 
   
   /***********************update region end**************************/
@@ -308,13 +309,13 @@ class BPU_ooo extends NutCoreModule {
   val bhtValid = wayHit
 
   val bhtReadPort = VecInit(
-    Seq.tabulate(lg2bht)(i => (
+    Seq.tabulate(bhtSizePerBank)(i => (
       VecInit(
         Seq.fill(icacheLine)(0.U(2.W))
       )
     ))
   )
-  val bhtBankSel = List.tabulate(lg2bht)(i => (
+  val bhtBankSel = List.tabulate(bhtSizePerBank)(i => (
     List.tabulate(icacheLine)( j => (
       Wire(Bool())
     ))
@@ -327,8 +328,8 @@ class BPU_ooo extends NutCoreModule {
   val bhtMpNewCnt = Mux(mpActualTaken,    Mux(bhtMpOricnt === "b11".U,bhtMpOricnt,bhtMpOricnt+1.U),Mux(bhtMpOricnt === "b00".U,bhtMpOricnt,bhtMpOricnt-1.U) )
   val bhtD1NewCnt = Mux(i0wb.actualTaken, Mux(bhtD1OriCnt === "b11".U,bhtD1OriCnt,bhtD1OriCnt+1.U),Mux(bhtD1OriCnt === "b00".U,bhtD1OriCnt,bhtD1OriCnt-1.U) )
   val bhtD2NewCnt = Mux(i1wb.actualTaken, Mux(bhtD2OriCnt === "b11".U,bhtD2OriCnt,bhtD2OriCnt+1.U),Mux(bhtD2OriCnt === "b00".U,bhtD2OriCnt,bhtD2OriCnt-1.U) )
+  val bhtList = List.tabulate(bhtSizePerBank)(i => (
 
-  val bhtList = List.tabulate(lg2bht)(i => (
     List.tabulate(icacheLine)(j => (
       RegEnable(Mux((bhtWrAddr2 === i.U) && bhtWrE2(j) ,bhtD2NewCnt,
         Mux((bhtWrAddr1 === i.U) &&bhtWrE1(j) ,bhtD1NewCnt,
@@ -337,14 +338,12 @@ class BPU_ooo extends NutCoreModule {
     ))
   ))
   
-
-  (0 to lg2bht-1).map(i => (
+  (0 to bhtSizePerBank-1).map(i => (
     (0 to icacheLine-1).map( j=> (
       bhtBankSel(i)(j) := (bhtWrAddr0 === i.U) && bhtWrEMp(j) | (bhtWrAddr1 === i.U) && bhtWrE1(j) | (bhtWrAddr2 === i.U) && bhtWrE2(j)
     ))
   ))
-  
-  (0 to lg2bht-1).map(i => (
+  (0 to bhtSizePerBank-1).map(i => (
     (0 to icacheLine-1).map(j => (
       bhtReadPort(i)(j) := bhtList(i)(j)
     ))
@@ -417,7 +416,7 @@ class BPU_ooo extends NutCoreModule {
 
   // val pcLatchFetch = genFetchMask(pcLatch)
 
-  (0 to icacheLine-1).map(i => brIdx(i) := pcLatchValid(i).asBool && Mux(finalBtbRes(i).asTypeOf(btbEntry())._type === BTBtype.R, !rasEmpty, bhtDir(i) ) && (finalBtbRes(i).asTypeOf(btbEntry())).valid)
+  (0 to icacheLine-1).map(i => brIdx(i) := pcLatchValid(i).asBool && Mux(finalBtbRes(i).asTypeOf(btbEntry())._type === BTBtype.R, !rasEmpty, bhtDir(i) ) )
 
   io.brIdx := outputHold(brIdx,validLatch) 
 
@@ -441,7 +440,8 @@ class BPU_ooo extends NutCoreModule {
   io.out.ghrUpdateValid :=0.U
   val btbIsBranch = Wire(Vec(icacheLine,Bool()))
   (0 to icacheLine-1).map(i => (
-    btbIsBranch(i) := finalBtbRes(i).asTypeOf(btbEntry()).valid && (finalBtbRes(i).asTypeOf(btbEntry())._type === BTBtype.B)
+    // btbIsBranch(i) := finalBtbRes(i).asTypeOf(btbEntry()).valid && (finalBtbRes(i).asTypeOf(btbEntry())._type === BTBtype.B)
+    btbIsBranch(i) := wayHit(i)
   ))
   io.out.btbIsBranch := outputHold(btbIsBranch.asUInt(),validLatch)
   ////////////////////////////////
@@ -463,9 +463,9 @@ class BPU_ooo extends NutCoreModule {
   ////addation
   val count=0;
   if(SSDCoreConfig().EnablePerfCnt){
-    // myDebug(i1wb.valid,"i1wb misp pc:[%x] write ghr[%b] \n",i1wb.pc,eghr)
-    // myDebug(i0wb.valid,"i0wb misp pc:[%x] write ghr[%b] \n",i0wb.pc,eghr)
-    // myDebug(mpValid,"misp misp pc:[%x] write ghr[%b] \n",req.pc,eghr)
+    // myDebug(i1wb.valid,"i1wb misp pc:[%x] write ghr[%b] \n",i1wb.pc,i1wb.ghrNotUpdated)
+    // myDebug(i0wb.valid,"i0wb misp pc:[%x] write ghr[%b] \n",i0wb.pc,i0wb.ghrNotUpdated)
+    // myDebug(mpValid,"misp misp pc:[%x] write ghr[%b] write btb idx[%d] wr btb en[%b]\n",req.pc,eghr,btbAddr.hashBTBAddr(req.pc),mpWriteValid)
     
     // if(
     // myDebug(pipeOut(9).fire() && !pipeInvalid(11) && pipeOut(9).bits.isBranch && (ALUOpType.jal === pipeOut(9).bits.fuOpType || ALUOpType.call === pipeOut(9).bits.fuOpType),"i1  jal comm:pc:[%x] fghr[%b] pre [%b]\n",pipeOut(9).bits.bpuUpdateReq.pc,pipeOut(9).bits.bpuUpdateReq.ghrNotUpdated,pipeOut(9).bits.bpuUpdateReq.isMissPredict)
@@ -525,22 +525,22 @@ class BPU_ooo extends NutCoreModule {
 
   //bht access 
   val SSDcoretrap = WireInit(false.B)
+  val space = bhtSizePerBank
   BoringUtils.addSink(SSDcoretrap,"SSDcoretrap")
-  val space = lg2bht
   val bhtCnts = List.fill(space)(RegInit(0.U(64.W)))
   val total = RegInit(0.U(64.W))
   if(SSDCoreConfig().EnableBPUCnt){
+    for(i <- 0 to bhtSizePerBank-1){
 
-    for(i <- 0 to lg2bht-1){
       when((bhtRdAddr === i.U)  && io.in.pc.valid){
         bhtCnts(i) := bhtCnts(i) + 1.U
         total := total+1.U
       }
     }
     when(RegNext(SSDcoretrap)) {
-      (0 to lg2bht-1).map { i => {printf( " %d access ->  %d\n",i.U, bhtCnts(i))}
-      }
+      (0 to bhtSizePerBank-1).map { i => {printf( " %d access ->  %d\n",i.U, bhtCnts(i))}
       printf("total access -> %d\n ",total)
+      }
     }
   }
   // flush BTB when executing fence.i
