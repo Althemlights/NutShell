@@ -80,7 +80,8 @@ class IBF extends NutCoreModule with HasInstrType with HasIBUFConst{
   val ibufWen = io.in.fire() // i.e. ringBufferAllowin && io.in.valid
   def ibufWrite(targetSlot: Int, shiftSize: UInt){
     ringInstBuffer(targetSlot.U + ringBufferHead) := instrVec(shiftSize + targetSlot.U)
-    pcRingMeta(targetSlot.U + ringBufferHead) := Cat(io.in.bits.pc(VAddrBits-1, 3), shiftSize + targetSlot.U, 0.U(1.W))
+//    pcRingMeta(targetSlot.U + ringBufferHead) := Cat(io.in.bits.pc(VAddrBits-1, 3), shiftSize + targetSlot.U, 0.U(1.W))
+    pcRingMeta(targetSlot.U + ringBufferHead) := io.in.bits.pc(VAddrBits-1, 3) + shiftSize + targetSlot.U, 0.U(1.W))
     npcRingMeta(targetSlot.U + ringBufferHead) := io.in.bits.pnpc
     validRingMeta(targetSlot.U + ringBufferHead) := true.B
     branchRingMeta(targetSlot.U + ringBufferHead) := io.in.bits.brIdx(shiftSize + targetSlot.U)
