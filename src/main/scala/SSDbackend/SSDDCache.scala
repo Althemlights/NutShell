@@ -184,7 +184,7 @@ sealed class SSDCacheStage2(implicit val cacheConfig: SSDCacheConfig) extends Ca
 
 
 //  val victimWaymask = if (Ways > 1) (1.U << LFSR64()(log2Up(Ways) - 1, 0)) else "b1".U
-  val victimWaymask = 3.U //Set 3 as default
+  val victimWaymask = 8.U //Set 3 as default
   val invalidVec = VecInit(metaWay.map(m => !m.valid)).asUInt
   val hasInvalidWay = invalidVec.orR
   val refillInvalidWaymask = Mux(invalidVec >= 8.U, "b1000".U,
