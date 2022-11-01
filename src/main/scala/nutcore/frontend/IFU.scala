@@ -152,8 +152,7 @@ class IFU_ooo extends NutCoreModule with HasResetVector {
     "b10".U -> "b1100".U,
     "b11".U -> "b1000".U
   ))
-  npcInstValid := Mux(crosslineJump && !(state === s_crosslineJump) && !io.redirect.valid, "b0001".U,
-    Mux(AddressSpace.isMMIO(npc),"b1111".U,genInstValid(npc)))
+  npcInstValid := Mux(crosslineJump && !(state === s_crosslineJump) && !io.redirect.valid, "b0001".U,genInstValid(npc))
 
   // branch position index, 4 bit vector
   // e.g. brIdx 0010 means a branch is predicted/assigned at pc (offset 2)

@@ -314,6 +314,8 @@ sealed class SSDCacheStage2(implicit val cacheConfig: SSDCacheConfig) extends Ca
   val FlashWidth = 4 // 4 Byte
   val mmioCnt = Counter(8 / FlashWidth)
   val FlashInst = RegInit(0.U(64.W))
+  val mmioReqOnce = req.addr(2)
+  val mmioCntMax = Mux(mmioReqOnce,0.U,1.U)
   if (cacheName == "icache") {
     io.mmio.req.bits.addr := Mux(mmio, req.addr + (mmioCnt.value << 2).asUInt, req.addr)
 //    io.mmio.req.bits.size := Mux(mmio, "b10".U, "b11".U)
@@ -405,8 +407,10 @@ sealed class SSDCacheStage2(implicit val cacheConfig: SSDCacheConfig) extends Ca
       }
       is(s_mmioResp) {
         when(io.mmio.resp.fire()) {
-          state := Mux(mmioCnt.inc === 1.U,s_wait_resp, s_mmioReq)
+          state := Mux(mmioCnt.value === mmioCntMax,s_wait_resp, s_mmioReq)
           FlashInst := Cat(io.mmio.resp.bits.rdata(31, 0) ,FlashInst(63, 32))
+        }
+        when(io.mmio.resp.fire() && !mmioReqOnce) {
           mmioCnt.inc()
         }
       }
@@ -484,7 +488,7 @@ sealed class SSDCacheStage2(implicit val cacheConfig: SSDCacheConfig) extends Ca
 
   if(cacheName == "icache"){
     val memDataLatch = RegEnable(io.mem.resp.bits.rdata, readingFirst)
-    val mmioRdataLatch = FlashInst
+    val mmioRdataLatch = Mux(mmioReqOnce,Cat(FlashInst(63,32),0.U(32.W)),FlashInst)
     val icacheDataLatch = Mux(mmio,mmioRdataLatch,memDataLatch)
     io.out.bits.rdata := Mux(hit, dataRead, icacheDataLatch)
   }
