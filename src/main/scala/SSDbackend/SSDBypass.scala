@@ -156,6 +156,9 @@ class DecodeIO2BypassPkt extends Module {
   val instInPipe =  Valid(0) || Valid(1) || Valid(2) || Valid(3) || Valid(4) ||
     Valid(5) || Valid(6) || Valid(7) || Valid(8) || Valid(9)
 
+  val mouvalid = ((io.in(0).bits.ctrl.fuType === "b100".U) && io.in(0).valid) || ((io.in(1).bits.ctrl.fuType === "b100".U) && io.in(1).valid)
+  dontTouch(mouvalid)
+  
   io.issueStall(0) := (io.in(0).bits.ctrl.rfSrc1 === i1decodePkt.rd && i0rs1valid ||
     io.in(0).bits.ctrl.rfSrc2 === i1decodePkt.rd && i0rs2valid) && i1decodePkt.rdvalid && i1decodePkt.alu && io.out1.bits.decodePkt.subalu ||
     (i0decodePkt.load || i0decodePkt.store) &&  (i1decodePkt.load || i1decodePkt.store) || (i0decodePkt.csr && i1decodePkt.csr) ||
