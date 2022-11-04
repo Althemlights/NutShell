@@ -601,7 +601,7 @@ class flushDCache(implicit val cacheConfig: SSDCacheConfig) extends CacheModule 
 
   switch(offset_state) {
     is(offset_idle) {
-      when(offset_state === dirty_true) {
+      when(idx_state === dirty_true) {
         offset_state := read_req
       }
     }
@@ -644,7 +644,7 @@ class flushDCache(implicit val cacheConfig: SSDCacheConfig) extends CacheModule 
   io.metaWriteBus.apply(valid = offset_state === offset_done,
     data = Wire(new MetaBundle).apply(tag = Mux1H(MemValid(wayCnt.value),io.metaReadBus.resp.data).tag, valid = true.B, dirty = false.B),
     setIdx = idxCnt.value, waymask = MemValid(wayCnt.value))
-  io.mem.req.bits.apply(addr = Cat(Mux1H(MemValid(wayCnt.value),io.metaReadBus.resp.data).tag,idxCnt.value,offsetCnt.value),
+  io.mem.req.bits.apply(addr = Cat((Mux1H(MemValid(wayCnt.value),io.metaReadBus.resp.data).tag),idxCnt.value,offsetCnt.value,(0.U(3.W))),
     cmd = SimpleBusCmd.write, size = "b11".U,
     wdata = Mux1H(MemValid(wayCnt.value),io.dataReadBus.resp.data).data, wmask = Fill(DataBytes, 1.U))
   io.mem.req.valid := (offset_state === read_resp)
