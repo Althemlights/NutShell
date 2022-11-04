@@ -164,6 +164,7 @@ class DecodeIO2BypassPkt extends Module {
   mou.io.in.valid := i1decodePkt.mou && io.in(1).valid
   mou.io.in.bits.func := 0.U
   mou.io.out.ready := true.B
+  mou.io.flush := !mou.io.in.valid
 
   io.issueStall(0) := (io.in(0).bits.ctrl.rfSrc1 === i1decodePkt.rd && i0rs1valid ||
     io.in(0).bits.ctrl.rfSrc2 === i1decodePkt.rd && i0rs2valid) && i1decodePkt.rdvalid && i1decodePkt.alu && io.out1.bits.decodePkt.subalu ||

@@ -28,10 +28,10 @@ class SSDMOU extends NutCoreModule{
       }
     }
     is(pipeline_check) {
-      when(!io.pipelinevalid) {
-        state1 := sbcheck
-      }.elsewhen(io.flush) {
+      when(io.flush) {
         state1 := s1_idle
+      }.elsewhen(!io.pipelinevalid) {
+        state1 := sbcheck
       }
     }
     is(sbcheck) {

@@ -47,8 +47,8 @@ object PipelineVector2Connect {
         ringBufferHead := ringBufferHead + enqueueSize
     }
 
-    in1.ready := (ringBufferAllowin || !in1.valid) && out1.ready
-    in2.ready := (ringBufferAllowin || !in2.valid) && out2.ready
+    in1.ready := (ringBufferAllowin || !in1.valid)
+    in2.ready := (ringBufferAllowin || !in2.valid)
 
     //dequeue socket 1
     val deq1_StartIndex = ringBufferTail
