@@ -20,6 +20,7 @@ class decodePkt extends  NutCoreBundle{
   val branch = Output(Bool())
   val csr = Output(Bool())
   val skip = Output(Bool())
+  val mou  = Output(Bool())
 }
 trait hasBypassConst{
   def E0BypassPort = 12  // 0->9: alu1,alu0,e21,e20,e31,e30,mem3,mdu3,subalu1,subalu0,e51,e50
