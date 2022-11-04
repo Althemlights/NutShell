@@ -575,11 +575,11 @@ class DataSRAMTemplateWithArbiter[T <: Data](nRead: Int, gen: T, set: Int, way: 
   }}
 }
 
-class MetaSRAMTemplateWithArbiter[T <: Data](nRead: Int, gen: T, set: Int, way: Int = 1,
+class MetaSRAMTemplateWithArbiter[T <: Data](nRead: Int, nWrite: Int = 1, gen: T, set: Int, way: Int = 1,
                                              shouldReset: Boolean = false) extends Module {
   val io = IO(new Bundle {
     val r = Flipped(Vec(nRead, new SRAMReadBus(gen, set, way)))
-    val w = Flipped(new SRAMWriteBus(gen, set, way))
+    val w = Flipped(Vec(nWrite, new SRAMWriteBus(gen, set, way)))
   })
 
   //  val ram = if (isData) Module(new DataSRAMTemplate(gen, set, way, shouldReset, holdRead = false, singlePort = true))
@@ -590,7 +590,10 @@ class MetaSRAMTemplateWithArbiter[T <: Data](nRead: Int, gen: T, set: Int, way: 
   //    val ram = Module(new MetaSRAMTemplate(gen, set, way, shouldReset, holdRead = false, singlePort = true))
   //  }
   println("len: %d, set: %d, way: %d\n", gen.getWidth.W, set, way)
-  ram.io.w <> io.w
+  val writeArb = Module(new Arbiter(chiselTypeOf(io.w(0).req.bits), nWrite))
+  writeArb.io.in <> io.w.map(_.req)
+  ram.io.w.req <> writeArb.io.out
+
 
   val readArb = Module(new Arbiter(chiselTypeOf(io.r(0).req.bits), nRead))
   readArb.io.in <> io.r.map(_.req)
