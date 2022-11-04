@@ -4,7 +4,8 @@ import bus.simplebus.SimpleBusCmd
 import chisel3._
 import nutcore._
 import chisel3.util._
-import utils._
+import chisel3.util.experimental.BoringUtils
+import _root_.utils._
 
 trait HasStoreBufferConst{
   val StoreBufferSize = 16
@@ -94,6 +95,7 @@ class StoreBuffer extends NutCoreModule with HasStoreBufferConst{
   io.isAlmostFull := (writeAddr === readAddr - 1.U) && writeFlag =/= readFlag
   io.isFull := writeAddr === readAddr && writeFlag =/= readFlag
   io.isEmpty := writeAddr === readAddr && writeFlag === readFlag
+  BoringUtils.addSource(io.isEmpty, "sbIsempty")
 
   //merge check & merge
   for(i <- 0 to 2*StoreBufferSize-1){
