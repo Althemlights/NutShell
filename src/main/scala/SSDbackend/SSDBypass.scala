@@ -19,6 +19,7 @@ package SSDbackend
 import chisel3._
 import _root_.utils.PipelineConnect
 import chisel3.util._
+import chisel3.util.experimental.BoringUtils
 import chisel3.{Flipped, Module, _}
 import nutcore._
 
@@ -158,11 +159,16 @@ class DecodeIO2BypassPkt extends Module {
 
   val mouvalid = ((io.in(0).bits.ctrl.fuType === "b100".U) && io.in(0).valid) || ((io.in(1).bits.ctrl.fuType === "b100".U) && io.in(1).valid)
   dontTouch(mouvalid)
-  
+  val mou = Module(new SSDMOU)
+  mou.io.pipelinevalid := instInPipe
+  mou.io.in.valid := i1decodePkt.mou && io.in(1).valid
+  mou.io.in.bits.func := 0.U
+  mou.io.out.ready := true.B
+
   io.issueStall(0) := (io.in(0).bits.ctrl.rfSrc1 === i1decodePkt.rd && i0rs1valid ||
     io.in(0).bits.ctrl.rfSrc2 === i1decodePkt.rd && i0rs2valid) && i1decodePkt.rdvalid && i1decodePkt.alu && io.out1.bits.decodePkt.subalu ||
     (i0decodePkt.load || i0decodePkt.store) &&  (i1decodePkt.load || i1decodePkt.store) || (i0decodePkt.csr && i1decodePkt.csr) ||
-    (i1decodePkt.csr && i0decodePkt.branch) ||
+    (i1decodePkt.csr && i0decodePkt.branch) || (i0decodePkt.mou) ||
     i0decodePkt.csr ||
     i0decodePkt.muldiv &&
       (i0Hiti1Rs1 || i0Hiti1Rs2 ||
@@ -184,7 +190,7 @@ class DecodeIO2BypassPkt extends Module {
 
 
   io.issueStall(1) :=
-    i1decodePkt.csr && instInPipe ||
+    i1decodePkt.csr && instInPipe || (i1decodePkt.mou && (! mou.io.out.valid)) ||
      (i1decodePkt.muldiv) &&
       ((i1rs1hitStage >= 4.U && i1rs1hitStage <= 5.U) && FuType(i1rs1hitStage).subalu ||
         (i1rs2hitStage >= 4.U && i1rs2hitStage <= 5.U) && FuType(i1rs2hitStage).subalu ||
@@ -203,7 +209,8 @@ class DecodeIO2BypassPkt extends Module {
         i1rs2hitStage === 1.U && FuType(1).subalu
         )
 
-
+  mou.io.flush := !(io.issueStall(1))
+//  BoringUtils.addSource((!io.issueStall(1)), "issueStall_flush")
   //Signal to PMU
   //Normal Bound
   dontTouch(io.pmuio)
@@ -421,6 +428,7 @@ object DecodeIO2decodePkt {
     out.branch := ALUOpType.isBru(in.ctrl.fuOpType) && in.ctrl.fuType === FuType.alu
     out.csr    := in.ctrl.fuType === FuType.csr
     out.skip   := in.cf.instr =/= 0x7b.U
+    out.mou    := in.ctrl.fuType === FuType.mou
   }
 }
 
