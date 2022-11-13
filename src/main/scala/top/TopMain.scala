@@ -28,7 +28,7 @@ class riscv_cpu_io extends Bundle {
   val slave  = Flipped(new ysyxAXI4IO())
   val interrupt = Input(Bool())
 }
-class ysyx_210062 extends Module {
+class ysyx extends Module {
   val io : riscv_cpu_io = IO(new riscv_cpu_io)
   val core = Module(new ysyx_229999()(NutCoreConfig()))
   core.io.master := DontCare
@@ -88,8 +88,8 @@ class Top extends Module {
 
   nutshell.io := DontCare
   vga.io := DontCare
-  dontTouch(nutshell.io)
-  dontTouch(vga.io)
+//  dontTouch(nutshell.io)
+//  dontTouch(vga.io)
 }
 
 object TopMain extends App {
@@ -127,7 +127,7 @@ object TopMain extends App {
 //    )
     // Driver.execute(args, () => new Top)
     (new chisel3.stage.ChiselStage).execute(args, Seq(
-      chisel3.stage.ChiselGeneratorAnnotation(() => new ysyx_210062()),
+      chisel3.stage.ChiselGeneratorAnnotation(() => new ysyx()),
       firrtl.stage.RunFirrtlTransformAnnotation(new AddModulePrefix()),
       ModulePrefixAnnotation("ysyx_210062_")
     ))
@@ -148,8 +148,8 @@ object ysyx extends App{
   ////    ChiselGeneratorAnnotation(() => new testModule))
   //  )
   (new chisel3.stage.ChiselStage).execute(args, Seq(
-    chisel3.stage.ChiselGeneratorAnnotation(() =>new ysyx_210062()),
+    chisel3.stage.ChiselGeneratorAnnotation(() =>new ysyx()),
     firrtl.stage.RunFirrtlTransformAnnotation(new AddModulePrefix()),
-    ModulePrefixAnnotation("ysyx_210062_")
+    ModulePrefixAnnotation("ysyx_229999_")
   ))
 }
