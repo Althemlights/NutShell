@@ -202,7 +202,7 @@ sealed class SSDCacheStage2(implicit val cacheConfig: SSDCacheConfig) extends Ca
 
 
   val dataRead = Mux1H(waymask, io.dataReadResp).data
-  dontTouch(dataRead)
+//  dontTouch(dataRead)
   val wordMask = Mux(req.isWrite(), MaskExpand(req.wmask), 0.U(DataBits.W))
 
 
@@ -270,7 +270,7 @@ sealed class SSDCacheStage2(implicit val cacheConfig: SSDCacheConfig) extends Ca
     wdata = dataHitWay, wmask = Fill(DataBytes, 1.U))
 
   val addrTag = Mux(state === s_memReadReq, raddr, waddr) === "h80022b40".U
-  dontTouch(addrTag)
+//  dontTouch(addrTag)
 
   io.mem.resp.ready := true.B
   io.mem.req.valid := (state === s_memReadReq) || ((state === s_memWriteReq) && (state2 === s2_dataOK))
@@ -286,6 +286,7 @@ sealed class SSDCacheStage2(implicit val cacheConfig: SSDCacheConfig) extends Ca
   io.mmio.req.valid := (state === s_mmioReq)
   val outBufferValid = WireInit(false.B)
   val mmioStorePending = WireInit(false.B)
+  val outBufferFire = WireInit(false.B)
   //Optimal handling when there is mmio store
 
   if (cacheName == "dcache") {
@@ -296,9 +297,10 @@ sealed class SSDCacheStage2(implicit val cacheConfig: SSDCacheConfig) extends Ca
     BoringUtils.addSink(outBufferValid, "MMIOStorePktValid")
     BoringUtils.addSink(MMIOStorePkt.bits, "MMIOStorePktBits")
     BoringUtils.addSource(MMIOStorePkt.ready, "MMIOStorePktReady")
+    BoringUtils.addSink(outBufferFire, "outBufferFire")
     MMIOStorePkt.valid := outBufferValid && (state === s_mmioReq)
     val mmioStoreReq = Wire(Flipped(Decoupled(new SimpleBusReqBundle(userBits = userBits, idBits = idBits))))
-    val mmioStoreReqLatch = RegEnable(mmioStoreReq.bits, mmioStoreReq.fire())
+    val mmioStoreReqLatch = RegEnable(mmioStoreReq.bits, outBufferValid)
     mmioStoreReq.ready := true.B
     mmioStoreReq.valid := (state === s_mmioReq)
     mmioStoreReq.bits.cmd := SimpleBusCmd.write
@@ -307,7 +309,7 @@ sealed class SSDCacheStage2(implicit val cacheConfig: SSDCacheConfig) extends Ca
     mmioStoreReq.bits.size := MMIOStorePkt.bits.size
     mmioStoreReq.bits.wmask := MMIOStorePkt.bits.mask
 
-    MMIOStorePkt.ready := io.mmio.req.ready
+    MMIOStorePkt.ready := io.mmio.req.fire() && (state === s_mmioReq)
 
     io.mmio.req.bits := Mux(mmioStorePending, mmioStoreReqLatch, req)
   }
@@ -389,6 +391,9 @@ sealed class SSDCacheStage2(implicit val cacheConfig: SSDCacheConfig) extends Ca
       }
     }
   }
+//    val flush_mmio_xbar = WireInit(false.B)
+//    flush_mmio_xbar := (state === s_mmioResp) && (needFlush || io.flush)
+//    BoringUtils.addSource(flush_mmio_xbar, "flush_mmio_xbar")
 }
   if(cacheName == "icache") {
     switch(state) {
@@ -458,7 +463,7 @@ sealed class SSDCacheStage2(implicit val cacheConfig: SSDCacheConfig) extends Ca
   }
 
   val dataRefill = MaskData(io.mem.resp.bits.rdata, req.wdata, Mux(readingFirst, wordMask, 0.U(DataBits.W)))
-  dontTouch(dataRefill)
+//  dontTouch(dataRefill)
   val dataRefillWriteBus = Wire(CacheDataArrayWriteBus).apply(
     valid = (state === s_memReadResp) && io.mem.resp.fire(), setIdx = Cat(addr.index, readBeatCnt.value),
     data = Wire(new DataBundle).apply(dataRefill), waymask = waymask)
@@ -473,7 +478,7 @@ sealed class SSDCacheStage2(implicit val cacheConfig: SSDCacheConfig) extends Ca
     setIdx = getMetaIdx(req.addr), waymask = waymask)
 
   val writeDirtyTag = (state === s_memWriteReq) && io.mem.req.bits.addr.asUInt >= "h80022b40".U && io.mem.req.bits.addr.asUInt < "h80022b80".U
-  dontTouch(writeDirtyTag)
+//  dontTouch(writeDirtyTag)
 
   metaWriteArb.io.in(0) <> metaHitWriteBus.req
   metaWriteArb.io.in(1) <> metaRefillWriteBus.req
@@ -702,7 +707,7 @@ class SSDCache(implicit val cacheConfig: SSDCacheConfig) extends CacheModule wit
 
     //test tmp
     val dataIndexTag = dataArray.io.w.req.valid && dataArray.io.w.req.bits.setIdx === "h16e".U
-    dontTouch(dataIndexTag)
+//    dontTouch(dataIndexTag)
   }
 
   if (cacheName == "dcache") {
@@ -741,9 +746,12 @@ class SSDCache(implicit val cacheConfig: SSDCacheConfig) extends CacheModule wit
     s2.io.metaReadResp := s1.io.metaReadBus.resp.data
     s2.io.dataReadResp := s1.io.dataReadBus.resp.data
 
+    val sdtag = (s2.io.mem.req.valid && (s2.io.mem.req.bits.addr === "hfc011718".U))
+    dontTouch(sdtag)
+
     //test tmp
     val dataIndexTag = dataArray.io.w.req.valid && dataArray.io.w.req.bits.setIdx === "h16e".U
-    dontTouch(dataIndexTag)
+//    dontTouch(dataIndexTag)
   }
 
 
