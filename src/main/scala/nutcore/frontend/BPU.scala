@@ -140,11 +140,12 @@ class BPU_ooo extends NutCoreModule {
   (0 to 3).map(i => (btbIsBranch(i) := btbRead(i).valid && (btbRead(i)._type === BTBtype.B) && pcLatchValid(i).asBool && btbRead(i).tag === btbAddr.getTag(pcLatch)))
   io.out.btbIsBranch := outputHold(btbIsBranch.asUInt(),validLatch)
   // PHT
-  val pht = List.fill(4)(Mem(NRbht >> 2, UInt(2.W)))
+//  val pht = List.fill(4)(Mem(NRbht >> 2, UInt(2.W)))
+  val pht = List.fill(4)(RegInit(VecInit(Seq.fill(NRbht >> 2)((2.U(2.W))))))
   val phtTaken = Wire(Vec(4, Bool()))
   val phtindex = getPhtIndex(io.in.pc.bits,io.in.ghr)
-  (0 to 3).map(i => (phtTaken(i) := RegEnable(pht(i).read(phtindex)(1), io.in.pc.valid)))
-  dontTouch(phtTaken)
+  (0 to 3).map(i => (phtTaken(i) := RegEnable(pht(i)(phtindex)(1), io.in.pc.valid)))
+//  dontTouch(phtTaken)
 
   // RAS
   val NRras = 16
@@ -156,7 +157,7 @@ class BPU_ooo extends NutCoreModule {
   val req = WireInit(0.U.asTypeOf(new BPUUpdateReq))
   val btbWrite = WireInit(0.U.asTypeOf(btbEntry()))
   BoringUtils.addSink(req, "bpuUpdateReq")
-  dontTouch(btbWrite)
+//  dontTouch(btbWrite)
 
   btbWrite.tag := btbAddr.getTag(req.pc)
   btbWrite.target := req.actualTarget
@@ -176,18 +177,19 @@ class BPU_ooo extends NutCoreModule {
   val reqLatch = RegEnable(req,req.valid)
   val phtReadIndex = getPhtIndex(req.pc,req.ghrNotUpdated)
   val phtWriteIndex = getPhtIndex(reqLatch.pc,reqLatch.ghrNotUpdated)
-  dontTouch(phtReadIndex)
-  dontTouch(phtWriteIndex)
-  dontTouch(phtWriteIndex)
-  val getpht = LookupTree(req.pc(2,1), List.tabulate(4)(i => (i.U -> pht(i).read(phtReadIndex))))
+//  dontTouch(phtReadIndex)
+//  dontTouch(phtWriteIndex)
+//  dontTouch(phtWriteIndex)
+  val getpht = LookupTree(req.pc(2,1), List.tabulate(4)(i => (i.U -> pht(i)(phtReadIndex))))
   val cnt = RegEnable(getpht,req.valid)
   val taken = reqLatch.actualTaken
   val newCnt = Mux(taken, cnt + 1.U, cnt - 1.U)
   val wen = (taken && (cnt =/= "b11".U)) || (!taken && (cnt =/= "b00".U))
   when (reqLatch.valid && ALUOpType.isBranch(reqLatch.fuOpType) && wen) {
-      (0 to 3).map(i => when(i.U === reqLatch.pc(2,1)){pht(i).write(phtWriteIndex, newCnt)})
+//      (0 to 3).map(i => when(i.U === reqLatch.pc(2,1)){pht(i).write(phtWriteIndex, newCnt)})
+    (0 to 3).map(i => when(i.U === reqLatch.pc(2,1)){pht(i)(phtWriteIndex) := newCnt})
   }
-  dontTouch(newCnt)
+//  dontTouch(newCnt)
 //  when (req.valid) {
 //    when (req.fuOpType === ALUOpType.call)  {
 //      ras.write(sp.value + 1.U, Mux(req.isRVC, req.pc + 2.U, req.pc + 4.U))
@@ -259,8 +261,8 @@ class BPU_ooo extends NutCoreModule {
   io.out.ghr := outputHold(ghrUpdated,validLatch)
   io.out.ghrUpdateValid := outputHold(ghrUpdateValid,validLatch)
   io.out.pc := io.in.pc.bits //not used
-  dontTouch(frontMask)
-  dontTouch(frontBranchNum)
+//  dontTouch(frontMask)
+//  dontTouch(frontBranchNum)
 
   //BPU brancn inst update req debug
   val cond = req.btbType === BTBtype.B && req.valid
