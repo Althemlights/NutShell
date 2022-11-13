@@ -514,8 +514,8 @@ class SSDCSR extends NutCoreModule with SSDHasCSRConst{
   val isSret = addr === privSret   && func === SSDCSROpType.jmp && !io.isBackendException
   val isUret = addr === privUret   && func === SSDCSROpType.jmp && !io.isBackendException
 
-  Debug(wen, "csr write: pc %x addr %x rdata %x wdata %x func %x\n", io.cfIn.pc, addr, rdata, wdata, func)
-  Debug(wen, "[MST] time %d pc %x mstatus %x mideleg %x medeleg %x mode %x\n", GTimer(), io.cfIn.pc, mstatus, mideleg , medeleg, priviledgeMode)
+//  Debug(wen, "csr write: pc %x addr %x rdata %x wdata %x func %x\n", io.cfIn.pc, addr, rdata, wdata, func)
+//  Debug(wen, "[MST] time %d pc %x mstatus %x mideleg %x medeleg %x mode %x\n", GTimer(), io.cfIn.pc, mstatus, mideleg , medeleg, priviledgeMode)
 
   // MMU Permission Check
 
@@ -662,11 +662,11 @@ class SSDCSR extends NutCoreModule with SSDHasCSRConst{
   io.redirect.ghrUpdateValid := false.B
   io.redirect.btbIsBranch := 0.U
   io.redirect.pc := io.cfIn.pc
-  Debug(raiseExceptionIntr, "excin %b excgen %b", csrExceptionVec.asUInt(), iduExceptionVec.asUInt())
-  Debug(raiseExceptionIntr, "int/exc: pc %x int (%d):%x exc: (%d):%x\n",io.cfIn.pc, intrNO, io.cfIn.intrVec.asUInt, exceptionNO, raiseExceptionVec.asUInt)
-  Debug(raiseExceptionIntr, "[MST] time %d pc %x mstatus %x mideleg %x medeleg %x mode %x\n", GTimer(), io.cfIn.pc, mstatus, mideleg , medeleg, priviledgeMode)
-  Debug(io.redirect.valid, "redirect to %x\n", io.redirect.target)
-  Debug(resetSatp, "satp reset\n")
+//  Debug(raiseExceptionIntr, "excin %b excgen %b", csrExceptionVec.asUInt(), iduExceptionVec.asUInt())
+//  Debug(raiseExceptionIntr, "int/exc: pc %x int (%d):%x exc: (%d):%x\n",io.cfIn.pc, intrNO, io.cfIn.intrVec.asUInt, exceptionNO, raiseExceptionVec.asUInt)
+//  Debug(raiseExceptionIntr, "[MST] time %d pc %x mstatus %x mideleg %x medeleg %x mode %x\n", GTimer(), io.cfIn.pc, mstatus, mideleg , medeleg, priviledgeMode)
+//  Debug(io.redirect.valid, "redirect to %x\n", io.redirect.target)
+//  Debug(resetSatp, "satp reset\n")
 
   // Branch control
 

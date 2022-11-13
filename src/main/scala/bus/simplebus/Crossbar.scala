@@ -18,7 +18,7 @@ package bus.simplebus
 
 import chisel3._
 import chisel3.util._
-
+import chisel3.util.experimental.BoringUtils
 import utils._
 
 class SimpleBusCrossbar1toN(addressSpace: List[(Long, Long)]) extends Module {
@@ -40,13 +40,13 @@ class SimpleBusCrossbar1toN(addressSpace: List[(Long, Long)]) extends Module {
   val outSelResp = io.out(outSelIdxResp)
   val reqInvalidAddr = io.in.req.valid && !outSelVec.asUInt.orR
 
-  when((io.in.req.valid && !outSelVec.asUInt.orR) || (io.in.req.valid && outSelVec.asUInt.andR)){
-    Debug(){
-      printf("crossbar access bad addr %x, time %d\n", addr, GTimer())
-    }
-  }
+//  when((io.in.req.valid && !outSelVec.asUInt.orR) || (io.in.req.valid && outSelVec.asUInt.andR)){
+//    Debug(){
+//      printf("crossbar access bad addr %x, time %d\n", addr, GTimer())
+//    }
+//  }
   // assert(!io.in.req.valid || outSelVec.asUInt.orR, "address decode error, bad addr = 0x%x\n", addr)
-  assert(!(io.in.req.valid && outSelVec.asUInt.andR), "address decode error, bad addr = 0x%x\n", addr)
+//  assert(!(io.in.req.valid && outSelVec.asUInt.andR), "address decode error, bad addr = 0x%x\n", addr)
 
   // bind out.req channel
   (io.out zip outSelVec).map { case (o, v) => {
@@ -63,29 +63,33 @@ class SimpleBusCrossbar1toN(addressSpace: List[(Long, Long)]) extends Module {
     is (s_resp) { when (outSelResp.resp.fire()) { state := s_idle } }
     is (s_error) { when(io.in.resp.fire()){ state := s_idle } }
   }
+  val outError = Wire(new SimpleBusRespBundle)
+  outError.cmd := "b0110".U
+  outError.rdata := 0.U
 
+//  val respError = Flipped(new SimpleBusRespBundle(0, 0))
   io.in.resp.valid := outSelResp.resp.fire() || state === s_error
-  io.in.resp.bits <> outSelResp.resp.bits
+  io.in.resp.bits <> Mux(state === s_error,outError,outSelResp.resp.bits)
   // io.in.resp.bits.exc.get := state === s_error
   outSelResp.resp.ready := io.in.resp.ready
   io.in.req.ready := outSel.req.ready || reqInvalidAddr
 
-  Debug() {
-    when (state === s_idle && io.in.req.valid) {
-      printf(p"${GTimer()}: xbar: in.req: ${io.in.req.bits}\n")
-    }
-
-    when (outSel.req.fire()) {
-      printf(p"${GTimer()}: xbar: outSelIdx = ${outSelIdx}, outSel.req: ${outSel.req.bits}\n")
-    }
-    when (outSel.resp.fire()) {
-      printf(p"${GTimer()}: xbar: outSelIdx= ${outSelIdx}, outSel.resp: ${outSel.resp.bits}\n")
-    }
-
-    when (io.in.resp.fire()) {
-      printf(p"${GTimer()}: xbar: in.resp: ${io.in.resp.bits}\n")
-    }
-  }
+//  Debug() {
+//    when (state === s_idle && io.in.req.valid) {
+//      printf(p"${GTimer()}: xbar: in.req: ${io.in.req.bits}\n")
+//    }
+//
+//    when (outSel.req.fire()) {
+//      printf(p"${GTimer()}: xbar: outSelIdx = ${outSelIdx}, outSel.req: ${outSel.req.bits}\n")
+//    }
+//    when (outSel.resp.fire()) {
+//      printf(p"${GTimer()}: xbar: outSelIdx= ${outSelIdx}, outSel.resp: ${outSel.resp.bits}\n")
+//    }
+//
+//    when (io.in.resp.fire()) {
+//      printf(p"${GTimer()}: xbar: in.resp: ${io.in.resp.bits}\n")
+//    }
+//  }
 }
 
 class SimpleBusCrossbarNto1(n: Int, userBits:Int = 0) extends Module {
@@ -93,7 +97,8 @@ class SimpleBusCrossbarNto1(n: Int, userBits:Int = 0) extends Module {
     val in = Flipped(Vec(n, new SimpleBusUC(userBits)))
     val out = new SimpleBusUC(userBits)
   })
-
+//  val flush_mmio_xbar = WireInit(false.B)
+//  BoringUtils.addSink(flush_mmio_xbar, "flush_mmio_xbar")
   val s_idle :: s_readResp :: s_writeResp :: Nil = Enum(3)
   val state = RegInit(s_idle)
 
@@ -180,13 +185,13 @@ class SimpleBusAutoIDCrossbarNto1(n: Int, userBits: Int = 0) extends Module {
     }
   }
 
-  Debug(){
-    when(io.out.req.fire()){
-      printf("[Crossbar REQ] addr %x cmd %x select %b\n", io.out.req.bits.addr, io.out.req.bits.cmd, reqSelectVec)
-    }
-    when(io.out.resp.fire()){
-      printf("[Crossbar RESP] data %x select %b\n", io.out.resp.bits.rdata, io.out.resp.bits.id.get)
-    }
-  }
+//  Debug(){
+//    when(io.out.req.fire()){
+//      printf("[Crossbar REQ] addr %x cmd %x select %b\n", io.out.req.bits.addr, io.out.req.bits.cmd, reqSelectVec)
+//    }
+//    when(io.out.resp.fire()){
+//      printf("[Crossbar RESP] data %x select %b\n", io.out.resp.bits.rdata, io.out.resp.bits.id.get)
+//    }
+//  }
 
 }
