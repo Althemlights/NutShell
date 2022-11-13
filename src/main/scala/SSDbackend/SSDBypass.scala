@@ -81,20 +81,20 @@ class DecodeIO2BypassPkt extends Module {
   val i1rs1validTmp = io.in(1).bits.ctrl.rs1Valid
   val i1rs2validTmp = io.in(1).bits.ctrl.rs2Valid
 
-  dontTouch(i0rs1validTmp)
-  dontTouch(i0rs2validTmp)
-  dontTouch(i1rs1validTmp)
-  dontTouch(i1rs2validTmp)
+//  dontTouch(i0rs1validTmp)
+//  dontTouch(i0rs2validTmp)
+//  dontTouch(i1rs1validTmp)
+//  dontTouch(i1rs2validTmp)
 
   //hit stage
   val i0rs1hitStage = WireInit(10.U(4.W))
   val i0rs2hitStage = WireInit(10.U(4.W))
   val i1rs1hitStage = WireInit(10.U(4.W))
   val i1rs2hitStage = WireInit(10.U(4.W))
-  dontTouch(i0rs1hitStage)
-  dontTouch(i0rs2hitStage)
-  dontTouch(i1rs1hitStage)
-  dontTouch(i1rs2hitStage)
+//  dontTouch(i0rs1hitStage)
+//  dontTouch(i0rs2hitStage)
+//  dontTouch(i1rs1hitStage)
+//  dontTouch(i1rs2hitStage)
 
 
   val i0rs1HitSel = VecInit(Seq.fill(11)(false.B))
@@ -158,13 +158,18 @@ class DecodeIO2BypassPkt extends Module {
     Valid(5) || Valid(6) || Valid(7) || Valid(8) || Valid(9)
 
   val mouvalid = ((io.in(0).bits.ctrl.fuType === "b100".U) && io.in(0).valid) || ((io.in(1).bits.ctrl.fuType === "b100".U) && io.in(1).valid)
-  dontTouch(mouvalid)
+//  dontTouch(mouvalid)
   val mou = Module(new SSDMOU)
   mou.io.pipelinevalid := instInPipe
   mou.io.in.valid := i1decodePkt.mou && io.in(1).valid
   mou.io.in.bits.func := 0.U
   mou.io.out.ready := true.B
   mou.io.flush := !mou.io.in.valid
+  //for mdu not ready
+  val mduNotReady0 = i0decodePkt.muldiv && ((FuType(0).muldiv && Valid(0)) || (FuType(1).muldiv && Valid(1)) ||
+    (FuType(2).muldiv && Valid(2)) || (FuType(3).muldiv && Valid(3)))
+  val mduNotReady1 = i1decodePkt.muldiv && ((FuType(0).muldiv && Valid(0)) || (FuType(1).muldiv && Valid(1)) ||
+    (FuType(2).muldiv && Valid(2)) || (FuType(3).muldiv && Valid(3)))
 
   io.issueStall(0) := (io.in(0).bits.ctrl.rfSrc1 === i1decodePkt.rd && i0rs1valid ||
     io.in(0).bits.ctrl.rfSrc2 === i1decodePkt.rd && i0rs2valid) && i1decodePkt.rdvalid && i1decodePkt.alu && io.out1.bits.decodePkt.subalu ||
@@ -187,6 +192,7 @@ class DecodeIO2BypassPkt extends Module {
       i0rs2hitStage === 0.U && FuType(0).subalu ||
       i0rs2hitStage === 1.U && FuType(1).subalu
       ) ||
+    mduNotReady0 ||
     io.issueStall(1)
 
 
@@ -208,13 +214,14 @@ class DecodeIO2BypassPkt extends Module {
         i1rs1hitStage === 3.U && FuType(3).subalu ||
         i1rs2hitStage === 0.U && FuType(0).subalu ||
         i1rs2hitStage === 1.U && FuType(1).subalu
-        )
+        ) ||
+      mduNotReady1
 
   mou.io.flush := !(io.issueStall(1))
 //  BoringUtils.addSource((!io.issueStall(1)), "issueStall_flush")
   //Signal to PMU
   //Normal Bound
-  dontTouch(io.pmuio)
+//  dontTouch(io.pmuio)
   io.pmuio.normali0 := io.in(0).fire()
   io.pmuio.normali1 := io.in(1).fire()
   //Wrong Prediction Bound
@@ -400,8 +407,8 @@ class DecodeIO2BypassPkt extends Module {
     i1rs2hitStage === 4.U && (FuType(4).subalu) && i1decodePkt.store,
     i1rs2hitStage === 5.U && (FuType(5).subalu) && i1decodePkt.store
   )
-  dontTouch(lsuCtrli0)
-  dontTouch(lsuCtrli1)
+//  dontTouch(lsuCtrli0)
+//  dontTouch(lsuCtrli1)
   io.out0.bits.lsuCtrl := lsuCtrli0
   io.out1.bits.lsuCtrl := lsuCtrli1
 
