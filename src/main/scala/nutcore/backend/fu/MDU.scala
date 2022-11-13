@@ -99,7 +99,7 @@ class Divider(len: Int = 64) extends NutCoreModule {
   val aValx2Reg = RegEnable(Cat(aVal, "b0".U), newReq || anotherReq)
 
   val cnt = Counter(len)
-  dontTouch(cnt.value)
+//  dontTouch(cnt.value)
   when (newReq) {
     state := s_log2
   } .elsewhen (state === s_log2) {

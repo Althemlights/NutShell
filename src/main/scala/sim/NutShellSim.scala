@@ -84,7 +84,7 @@ class SimTop extends Module {
     ysyxSoC.io.uart_rx := 1.U
     */
 
-    dontTouch(nutshell.io)
+//    dontTouch(nutshell.io)
 
     //  } else {
     //    val mem = Module(new AXI4RAM(memByte = 128 * 1024 * 1024, useBlackBox = true))

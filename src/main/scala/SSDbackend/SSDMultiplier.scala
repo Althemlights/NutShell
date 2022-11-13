@@ -252,7 +252,7 @@ class ArrayMultiplier(len: Int) extends AbstractMultiplier(len) with HasPipeline
   mulDataModule.io.a := io.in.bits.src(0)
   mulDataModule.io.b := io.in.bits.src(1)
   mulDataModule.io.regEnables := VecInit((1 to latency) map (i => regEnable(i)))
-  dontTouch(mulDataModule.io.regEnables)
+//  dontTouch(mulDataModule.io.regEnables)
   val result = mulDataModule.io.result
 
   var ctrlVec = Seq(io.ctrl)

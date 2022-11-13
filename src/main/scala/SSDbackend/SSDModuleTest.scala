@@ -22,8 +22,8 @@ class ModuleTest extends Module{
   multplierTest.io.ctrl.sign := true.B
   multplierTest.io.ctrl.isW := true.B
   multplierTest.io.ctrl.isHi := false.B
-  dontTouch(multplierTest.io.in)
-  dontTouch(multplierTest.io.out)
+//  dontTouch(multplierTest.io.in)
+//  dontTouch(multplierTest.io.out)
 
   //SSDMDU test
   val mdu = Module(new SSDMDU)
@@ -35,6 +35,6 @@ class ModuleTest extends Module{
   val mduSrc2 = cnt1
   val mduFunc = 4.U
   mdu.access(mduValid,mduSrc1,mduSrc2,mduFunc)
-  dontTouch(mdu.io.in)
-  dontTouch(mdu.io.out)
+//  dontTouch(mdu.io.in)
+//  dontTouch(mdu.io.out)
 }

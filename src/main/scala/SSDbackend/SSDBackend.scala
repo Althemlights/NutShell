@@ -76,7 +76,7 @@ class SSDbackend extends NutCoreModule with hasBypassConst {
   issueStall := Bypass.io.issueStall
   val BypassPkt = Wire(Vec(10,new BypassPkt))
   val BypassPktE0 = Wire(Vec(2,Decoupled(new BypassPkt)))
-  dontTouch(BypassPktE0)
+//  dontTouch(BypassPktE0)
   val BypassPktValid = Wire(Vec(10,Bool()))
   BypassPkt := Bypass.io.BypassPkt
   BypassPktE0 := Bypass.io.decodeBypassPkt
@@ -201,7 +201,7 @@ class SSDbackend extends NutCoreModule with hasBypassConst {
   BoringUtils.addSource(finalBpuUpdateReq, "bpuUpdateReq")
   //  BoringUtils.addSource(finalBpuUpdateReq, "ghrUpdateReq")
   BoringUtils.addSource(finalBpuUpdateReq.valid,"pmuUpdateCnt")
-  dontTouch(finalBpuUpdateReq)
+//  dontTouch(finalBpuUpdateReq)
 
   val aluValid = VecInit(false.B,false.B,false.B,false.B)
   aluValid := Seq(
@@ -227,7 +227,7 @@ class SSDbackend extends NutCoreModule with hasBypassConst {
   //LSU
   val LSU = Module(new SSDLSU)
   io.dmem <> LSU.io.dmem
-  dontTouch(io.dmem.resp.ready)
+//  dontTouch(io.dmem.resp.ready)
   LSU.io.out.ready := true.B//!(Redirect6.valid || Redirect7.valid)
   memStall := LSU.io.memStall
   LSU.io.storeBypassCtrl <> Bypass.io.LSUBypassCtrl.storeBypassCtrlE2
@@ -250,8 +250,8 @@ class SSDbackend extends NutCoreModule with hasBypassConst {
     LSU.io.invalid(1) := false.B
     LSU.io.invalid(2) := ALU_7.io.redirect.valid && BypassPktValid(6) && BypassPkt(6).decodePkt.store
 
-  dontTouch(i0LSUValid)
-  dontTouch(i1LSUValid)
+//  dontTouch(i0LSUValid)
+//  dontTouch(i1LSUValid)
   val LSUValid = i0LSUValid || i1LSUValid
   val LSUfunc = Mux(i1LSUValid,pipeRegStage3.right.bits.fuOpType,pipeRegStage2.right.bits.fuOpType)
   val LSUsrc1 = Mux(i1LSUValid,pipeRegStage3.right.bits.rs1,pipeRegStage2.right.bits.rs1)
@@ -268,8 +268,7 @@ class SSDbackend extends NutCoreModule with hasBypassConst {
   val MDUsrc1 = Mux(i1MDUValid,pipeRegStage1.right.bits.rs1,pipeRegStage0.right.bits.rs1)
   val MDUsrc2 = Mux(i1MDUValid,pipeRegStage1.right.bits.rs2,pipeRegStage0.right.bits.rs2)
   MDU.access(MDUValid,MDUsrc1,MDUsrc2,MDUfunc)
-  mduStall := (BypassPkt(4).decodePkt.muldiv && pipeRegStage4.right.valid || BypassPkt(5).decodePkt.muldiv && pipeRegStage5.right.valid) && !MDU.io.out.valid ||
-    MDUValid && !MDU.io.in.ready
+  mduStall := (BypassPkt(4).decodePkt.muldiv && pipeRegStage4.right.valid || BypassPkt(5).decodePkt.muldiv && pipeRegStage5.right.valid) && !MDU.io.out.valid
   //Bypass signal and data port
   val ByPassEna = Wire(Vec(14,Bool()))
   ByPassEna := Seq(
@@ -309,11 +308,11 @@ class SSDbackend extends NutCoreModule with hasBypassConst {
   StoreBypassPortE2 := Seq(coupledPipeIn(0).bits.rd,coupledPipeIn(1).bits.rd,coupledPipeIn(2).bits.rd,coupledPipeIn(3).bits.rd,coupledPipeOut(2).bits.rd,coupledPipeOut(3).bits.rd)
   
   LSU.io.storeBypassPort <> StoreBypassPortE2
-  dontTouch(BypassPortE0)
-  dontTouch(BypassPortE2)
-  dontTouch(BypassPortE3)
-  dontTouch(lsuBypassPortE1)
-  dontTouch(StoreBypassPortE2)
+//  dontTouch(BypassPortE0)
+//  dontTouch(BypassPortE2)
+//  dontTouch(BypassPortE3)
+//  dontTouch(lsuBypassPortE1)
+//  dontTouch(StoreBypassPortE2)
   //decode & issue
   //rs1 data type: pc, regfile or bypassa
   //rs2 data type: imm, regfilw or bypass
@@ -561,15 +560,15 @@ class SSDbackend extends NutCoreModule with hasBypassConst {
   val ghrTag = Mux(i0IsBranch,pipeOut(8).bits.bpuUpdateReq.ghrNotUpdated =/= GHRCommit,
     Mux(i1IsBranch,pipeOut(9).bits.bpuUpdateReq.ghrNotUpdated =/= GHRCommit,false.B))
   //assert(RegNext(!ghrTag))
-  dontTouch(branchInstPC)
-  dontTouch(nextGHRCommit)
-  dontTouch(GHRCommit)
-  if(SSDCoreConfig().EnableGHRDebug){
-    myDebug(GHRCommitUpdate,"pc = %x, taken: %b, GHR now: %b, GHR compared %b\n",
-      branchInstPC,Mux(i0IsBranch,pipeOut(8).bits.branchTaken,pipeOut(9).bits.branchTaken).asUInt,GHRCommit,ghrCompared)
-  }
-  dontTouch(ghrTag)
-  dontTouch(ghrCompared)
+//  dontTouch(branchInstPC)
+//  dontTouch(nextGHRCommit)
+//  dontTouch(GHRCommit)
+//  if(SSDCoreConfig().EnableGHRDebug){
+//    myDebug(GHRCommitUpdate,"pc = %x, taken: %b, GHR now: %b, GHR compared %b\n",
+//      branchInstPC,Mux(i0IsBranch,pipeOut(8).bits.branchTaken,pipeOut(9).bits.branchTaken).asUInt,GHRCommit,ghrCompared)
+//  }
+//  dontTouch(ghrTag)
+//  dontTouch(ghrCompared)
   //Call/Ret Debug
   val i0Call = pipeOut(8).fire() && !pipeInvalid(10) && ALUOpType.call === pipeOut(8).bits.fuOpType
   val i1Call = pipeOut(9).fire() && !pipeInvalid(11) && ALUOpType.call === pipeOut(9).bits.fuOpType
@@ -577,21 +576,21 @@ class SSDbackend extends NutCoreModule with hasBypassConst {
   val i1Ret = pipeOut(9).fire() && !pipeInvalid(11) && ALUOpType.ret === pipeOut(9).bits.fuOpType
   val CallCond = i0Call || i1Call
   val RetCond = i0Ret || i1Ret
-  dontTouch(CallCond)
-  dontTouch(RetCond)
+//  dontTouch(CallCond)
+//  dontTouch(RetCond)
   val CallPC = Mux(CallCond,Mux(i0Call,pipeOut(8).bits.pc,pipeOut(9).bits.pc),0.U)
   val RetPC = Mux(RetCond,Mux(i0Ret,pipeOut(8).bits.pc,pipeOut(9).bits.pc),0.U)
   val RetWrong = RetCond &&  Mux(i0Ret,pipeOut(8).bits.alu2pmu.retWrong,pipeOut(9).bits.alu2pmu.retWrong)
-  dontTouch(RetWrong)
-  if(SSDCoreConfig().EnableRetDebug){
-    myDebug(CallCond,"Call: pc = %x, Targe = %x \n",
-      CallPC,Mux(i0Call,pipeOut(8).bits.bpuUpdateReq.actualTarget,pipeOut(9).bits.bpuUpdateReq.actualTarget).asUInt)
-  }
-  if(SSDCoreConfig().EnableRetDebug){
-    myDebug(RetCond,"Ret : pc = %x, Targe = %x, isMisPredict = %b \n",
-      RetPC,Mux(i0Ret,pipeOut(8).bits.bpuUpdateReq.actualTarget,pipeOut(9).bits.bpuUpdateReq.actualTarget).asUInt,
-      Mux(i0Ret,pipeOut(8).bits.alu2pmu.retWrong,pipeOut(9).bits.alu2pmu.retWrong).asUInt)
-  }
+//  dontTouch(RetWrong)
+//  if(SSDCoreConfig().EnableRetDebug){
+//    myDebug(CallCond,"Call: pc = %x, Targe = %x \n",
+//      CallPC,Mux(i0Call,pipeOut(8).bits.bpuUpdateReq.actualTarget,pipeOut(9).bits.bpuUpdateReq.actualTarget).asUInt)
+//  }
+//  if(SSDCoreConfig().EnableRetDebug){
+//    myDebug(RetCond,"Ret : pc = %x, Targe = %x, isMisPredict = %b \n",
+//      RetPC,Mux(i0Ret,pipeOut(8).bits.bpuUpdateReq.actualTarget,pipeOut(9).bits.bpuUpdateReq.actualTarget).asUInt,
+//      Mux(i0Ret,pipeOut(8).bits.alu2pmu.retWrong,pipeOut(9).bits.alu2pmu.retWrong).asUInt)
+//  }
   //PMU perfCnt signal
   val perfCntIO = Wire(new PMUIO1)
   PMU.io.in1 <> perfCntIO
@@ -648,63 +647,63 @@ class SSDbackend extends NutCoreModule with hasBypassConst {
 
 
   //Pipeline basic information
-  def instTypePrint(valid:Bool, BypassPkt: BypassPkt)={
-    val aluCond = BypassPkt.decodePkt.alu && !BypassPkt.decodePkt.subalu
-    val subaluCond = BypassPkt.decodePkt.alu &&  BypassPkt.decodePkt.subalu
-    val loadCond = BypassPkt.decodePkt.load
-    val storeCond = BypassPkt.decodePkt.store
-    val elseCond = !aluCond && !subaluCond && !loadCond && !storeCond && valid || ! valid
-    myDebug(valid && aluCond,   " ALU   ")
-    myDebug(valid && subaluCond," SubALU")
-    myDebug(valid && loadCond,  " Load  ")
-    myDebug(valid && storeCond, " Store ")
-    myDebug(elseCond,           "       ")
-  }
-  def rsrdPrintf (valid:Bool, pipeinfo:FuPkt )={
-    myDebug(valid && pipeinfo.debugInfo.rs1Valid,"rs1[%x]: %x ;",pipeinfo.debugInfo.rs1,pipeinfo.rs1)
-    myDebug(valid && pipeinfo.debugInfo.rs1Pc,   "rs1[pc ]: %x ;",pipeinfo.pc)
-    myDebug(valid && pipeinfo.debugInfo.rs2Valid,"rs2[%x]: %x ;",pipeinfo.debugInfo.rs2,pipeinfo.rs2)
-    myDebug(valid && pipeinfo.debugInfo.rs2Imm,  "rs2[imm]: %x ;",pipeinfo.offset)
-    myDebug(valid && pipeinfo.debugInfo.rdValid, "rd [%x]: %x ;",pipeinfo.debugInfo.rd,pipeinfo.rd)
-    myDebug(valid && !pipeinfo.debugInfo.rdValid,"             \n")
-  }
-  def pipeInPrintf (valid:Bool, pipeIn:FuPkt )={
-    myDebug(valid,"rs1:%x, rs2:%x, rd:%x",pipeIn.rs1,pipeIn.rs2,pipeIn.rd)
-  }
-  val tag = pipeIn(0).bits.pc === "h800000d8".U || pipeIn(1).bits.pc === "h800000d8".U
-  dontTouch(tag)
-  if(SSDCoreConfig().EnablePipestageDebug){
-    printf("=========================================================\n")
-    printf("--------------------- Pipeline state --------------------\n")
-    printf("=========================================================\n")
-    for(i <- 0 to 4){
-      myDebug(pipeOut(2*i).valid,"| %x | %x ",(2*i).U,pipeOut(2*i).bits.pc)
-      myDebug(!pipeOut(2*i).valid,"| %x |            ",(2*i).U)
-      instTypePrint(Bypass.io.BypassPktValid(2*i),Bypass.io.BypassPkt(2*i))
-      myDebug(pipeOut(2*i+1).valid,"| %x | %x ",(2*i+1).U,pipeOut(2*i+1).bits.pc)
-      myDebug(!pipeOut(2*i+1).valid,"| %x |            ",(2*i+1).U)
-      instTypePrint(Bypass.io.BypassPktValid(2*i+1),Bypass.io.BypassPkt(2*i+1))
-      printf("|\n")
-    }
-    printf("=========================================================\n")
-    printf("---------------------- rd / rs info ---------------------\n")
-    printf("=========================================================\n")
-    for(i <- 0 to 9){
-      printf("Pipe%x: ",i.U)
-      rsrdPrintf(pipeOut(i).valid,pipeOut(i).bits)
-      printf("\n")
-    }
-    printf("=========================================================\n")
-    printf("--------------------- Pipeline Input --------------------\n")
-    printf("=========================================================\n")
-    for(i <- 0 to 9){
-      printf("Pipe%x: ",i.U)
-      pipeInPrintf(pipeIn(i).valid,pipeIn(i).bits)
-      printf("\n")
-    }
-    printf("=========================================================\n")
-
-  } //SSDCore Performance Counter
+//  def instTypePrint(valid:Bool, BypassPkt: BypassPkt)={
+//    val aluCond = BypassPkt.decodePkt.alu && !BypassPkt.decodePkt.subalu
+//    val subaluCond = BypassPkt.decodePkt.alu &&  BypassPkt.decodePkt.subalu
+//    val loadCond = BypassPkt.decodePkt.load
+//    val storeCond = BypassPkt.decodePkt.store
+//    val elseCond = !aluCond && !subaluCond && !loadCond && !storeCond && valid || ! valid
+//    myDebug(valid && aluCond,   " ALU   ")
+//    myDebug(valid && subaluCond," SubALU")
+//    myDebug(valid && loadCond,  " Load  ")
+//    myDebug(valid && storeCond, " Store ")
+//    myDebug(elseCond,           "       ")
+//  }
+//  def rsrdPrintf (valid:Bool, pipeinfo:FuPkt )={
+//    myDebug(valid && pipeinfo.debugInfo.rs1Valid,"rs1[%x]: %x ;",pipeinfo.debugInfo.rs1,pipeinfo.rs1)
+//    myDebug(valid && pipeinfo.debugInfo.rs1Pc,   "rs1[pc ]: %x ;",pipeinfo.pc)
+//    myDebug(valid && pipeinfo.debugInfo.rs2Valid,"rs2[%x]: %x ;",pipeinfo.debugInfo.rs2,pipeinfo.rs2)
+//    myDebug(valid && pipeinfo.debugInfo.rs2Imm,  "rs2[imm]: %x ;",pipeinfo.offset)
+//    myDebug(valid && pipeinfo.debugInfo.rdValid, "rd [%x]: %x ;",pipeinfo.debugInfo.rd,pipeinfo.rd)
+//    myDebug(valid && !pipeinfo.debugInfo.rdValid,"             \n")
+//  }
+//  def pipeInPrintf (valid:Bool, pipeIn:FuPkt )={
+//    myDebug(valid,"rs1:%x, rs2:%x, rd:%x",pipeIn.rs1,pipeIn.rs2,pipeIn.rd)
+//  }
+//  val tag = pipeIn(0).bits.pc === "h800000d8".U || pipeIn(1).bits.pc === "h800000d8".U
+//  dontTouch(tag)
+//  if(SSDCoreConfig().EnablePipestageDebug){
+//    printf("=========================================================\n")
+//    printf("--------------------- Pipeline state --------------------\n")
+//    printf("=========================================================\n")
+//    for(i <- 0 to 4){
+//      myDebug(pipeOut(2*i).valid,"| %x | %x ",(2*i).U,pipeOut(2*i).bits.pc)
+//      myDebug(!pipeOut(2*i).valid,"| %x |            ",(2*i).U)
+//      instTypePrint(Bypass.io.BypassPktValid(2*i),Bypass.io.BypassPkt(2*i))
+//      myDebug(pipeOut(2*i+1).valid,"| %x | %x ",(2*i+1).U,pipeOut(2*i+1).bits.pc)
+//      myDebug(!pipeOut(2*i+1).valid,"| %x |            ",(2*i+1).U)
+//      instTypePrint(Bypass.io.BypassPktValid(2*i+1),Bypass.io.BypassPkt(2*i+1))
+//      printf("|\n")
+//    }
+//    printf("=========================================================\n")
+//    printf("---------------------- rd / rs info ---------------------\n")
+//    printf("=========================================================\n")
+//    for(i <- 0 to 9){
+//      printf("Pipe%x: ",i.U)
+//      rsrdPrintf(pipeOut(i).valid,pipeOut(i).bits)
+//      printf("\n")
+//    }
+//    printf("=========================================================\n")
+//    printf("--------------------- Pipeline Input --------------------\n")
+//    printf("=========================================================\n")
+//    for(i <- 0 to 9){
+//      printf("Pipe%x: ",i.U)
+//      pipeInPrintf(pipeIn(i).valid,pipeIn(i).bits)
+//      printf("\n")
+//    }
+//    printf("=========================================================\n")
+//
+//  } //SSDCore Performance Counter
   val SSDCorePerfCntList = Map(
     "i0Issue"   -> (0x0, "perfCntI0Issue"      ),
     "i1Issue"   -> (0x1, "perfCntI1Issue"      ),
@@ -737,7 +736,7 @@ class SSDbackend extends NutCoreModule with hasBypassConst {
   BoringUtils.addSink(SSDcoretrap,"SSDcoretrap")
   //inst flag for mtvec
   val mtvecFlag = Reg(Bool())
-  dontTouch(mtvecFlag)
+//  dontTouch(mtvecFlag)
   when((pipeOut(8).bits.instr === "h30571073".U) &&  pipeOut(8).fire() && !pipeInvalid(10) ||
     (pipeOut(9).bits.instr === "h30571073".U) &&  pipeOut(9).fire() && !pipeInvalid(11)){
     mtvecFlag := true.B

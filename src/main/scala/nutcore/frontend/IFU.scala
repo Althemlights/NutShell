@@ -102,7 +102,7 @@ class IFU_ooo extends NutCoreModule with HasResetVector {
   // the next inst provided by icache should be predicted npc, instead of sequential npc
   //
   // There is another way: BPU uses "high 16 bit half" pc to index not-compressed crossline branch insts.
-  dontTouch(nlp.io.out)
+//  dontTouch(nlp.io.out)
   val crosslineJump = nlp.io.crosslineJump
   val s_idle :: s_crosslineJump :: Nil = Enum(2)
   val state = RegInit(s_idle)
@@ -129,7 +129,7 @@ class IFU_ooo extends NutCoreModule with HasResetVector {
   val ghrUpdate = io.imem.req.fire() && nlp.io.out.ghrUpdateValid || io.redirect.ghrUpdateValid
   val nghr = Wire(UInt(GhrLength.W))
   nghr := Mux(io.redirect.ghrUpdateValid, io.redirect.ghr, Mux(nlp.io.out.ghrUpdateValid, nlp.io.out.ghr, ghr)) // crossline not considered
-  dontTouch(nghr)
+//  dontTouch(nghr)
   when(ghrUpdate) {
     ghr := nghr
   }
@@ -142,7 +142,7 @@ class IFU_ooo extends NutCoreModule with HasResetVector {
       nlp.getPhtIndex(io.redirect.target,io.redirect.ghr))
   }
 
-  dontTouch(io.redirect.pc)
+//  dontTouch(io.redirect.pc)
   // instValid: which part of an instline contains an valid inst
   // e.g. 1100 means inst(s) in instline(63,32) is/are valid
   val npcInstValid = Wire(UInt(4.W))
@@ -257,7 +257,7 @@ class IFU_ooo extends NutCoreModule with HasResetVector {
   //  nlpResultQueue.io.deq.ready := io.imem.resp.fire()
 
 
-  dontTouch(io.out)
+//  dontTouch(io.out)
   io.out.bits.icachePF := io.ipf
   // assert(!io.out.bits.icachePF)
   io.out.valid := io.imem.resp.valid && !io.flushVec(0)

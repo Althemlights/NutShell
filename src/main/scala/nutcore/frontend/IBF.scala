@@ -36,7 +36,7 @@ class IBF extends NutCoreModule with HasInstrType with HasIBUFConst{
     val out = Vec(2, Decoupled(new CtrlFlowIO))
     val flush = Input(Bool())
   })
-  dontTouch(io.in.bits.ghr)
+//  dontTouch(io.in.bits.ghr)
   //ibuf reg
   // val instBuffer = RegInit(0.U(ibufBitSize.W))
   val ringInstBuffer = RegInit(VecInit(Seq.fill(ibufSize)(0.U(16.W))))

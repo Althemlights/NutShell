@@ -96,8 +96,8 @@ class PMU extends Module{
     in0.loadRsNotreadyi0+in0.storeRsNotreadyi0+in0.mulRsNotreadyi0+in0.divRsNotreadyi0
 //  assert(issue1Num === 1.U)
 //  assert(issue0Num === 1.U)
-  dontTouch(issue1Num)
-  dontTouch(issue0Num)
+//  dontTouch(issue1Num)
+//  dontTouch(issue0Num)
 
   //stall counter
   val StallCntList = Map(

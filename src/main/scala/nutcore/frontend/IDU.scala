@@ -171,7 +171,7 @@ class IDU(implicit val p: NutCoreConfig) extends NutCoreModule with HasInstrType
   io.out(1) <> decoder2.io.out
 
   val mouvalid = ((io.out(0).bits.ctrl.fuType === "b100".U) && io.out(0).valid) || ((io.out(1).bits.ctrl.fuType === "b100".U) && io.out(1).valid)
-  dontTouch(mouvalid)
+//  dontTouch(mouvalid)
   //copy register for high fanout signal
   io.in(2) <> decoder3.io.in
   io.in(3) <> decoder4.io.in
