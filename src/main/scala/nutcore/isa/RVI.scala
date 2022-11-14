@@ -16,6 +16,8 @@
 
 package nutcore
 
+import SSDbackend.ALUOpType
+import SSDfrontend.BTBtype
 import chisel3._
 import chisel3.util._
 

@@ -14,15 +14,14 @@
  * See the Mulan PSL v2 for more details.
  ***************************************************************************************/
 
-package nutcore
+package SSDbackend
 
-import SSDbackend._
+import SSDfrontend.BPUUpdateReq
 import chisel3._
 import chisel3.util._
-import chisel3.util.experimental.BoringUtils
-import utils._
+import nutcore._
+import _root_.utils._
 //import difftest._
-import top.Settings
 
 object ALUOpType {
   def add  = "b1000000".U

@@ -1,5 +1,6 @@
 package SSDbackend
 
+import SSDfrontend.BPUUpdateReq
 import chisel3._
 import nutcore._
 

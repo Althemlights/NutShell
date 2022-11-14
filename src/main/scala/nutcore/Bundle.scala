@@ -64,12 +64,7 @@ class RedirectIO_nooo extends NutCoreBundle {
 }
 
 
-class MisPredictionRecIO extends NutCoreBundle {
-  val redirect = new RedirectIO
-  val valid = Output(Bool())
-  val checkpoint = Output(UInt(brTagWidth.W))
-  val prfidx = Output(UInt(prfAddrWidth.W))
-}
+
 
 class BypassIO extends  Bundle{
   val isALU = Output(Bool())
@@ -111,16 +106,7 @@ class CommitIO extends NutCoreBundle {
   val commits = Output(Vec(FuType.num, UInt(XLEN.W)))
 }
 
-class OOCommitIO extends NutCoreBundle with HasBackendConst{
-  val decode = new DecodeIO
-  val isMMIO = Output(Bool())
-  val intrNO = Output(UInt(XLEN.W))
-  val commits = Output(UInt(XLEN.W))
-  val prfidx = Output(UInt(prfAddrWidth.W)) //also as robidx
-  val exception = Output(Bool())
-  val store = Output(Bool())
-  val brMask = Output(UInt(checkpointSize.W))
-}
+
 
 class FunctionUnitIO extends NutCoreBundle {
   val in = Flipped(Decoupled(new Bundle {
@@ -190,12 +176,3 @@ class InstFetchIO extends NutCoreBundle {
 }
 
 // Micro OP
-class RenamedDecodeIO extends NutCoreBundle with HasBackendConst {
-  val decode = new DecodeIO
-  val prfDest = Output(UInt(prfAddrWidth.W))
-  val prfSrc1 = Output(UInt(prfAddrWidth.W))
-  val prfSrc2 = Output(UInt(prfAddrWidth.W))
-  val src1Rdy = Output(Bool())
-  val src2Rdy = Output(Bool())
-  val brMask = Output(UInt(checkpointSize.W))
-}

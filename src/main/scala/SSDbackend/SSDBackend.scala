@@ -1,5 +1,6 @@
 package SSDbackend
 
+import SSDfrontend.BPUUpdateReq
 import bus.simplebus.SimpleBusUC
 import chisel3.{Mux, _}
 import chisel3.util._

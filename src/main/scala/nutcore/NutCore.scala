@@ -17,6 +17,7 @@
 package nutcore
 
 import SSDbackend._
+import SSDfrontend.Frontend_ooo
 import chisel3._
 import chisel3.util._
 import chisel3.util.experimental.BoringUtils
@@ -63,8 +64,8 @@ trait HasNutCoreLog { this: RawModule =>
   implicit val moduleName: String = this.name
 }
 
-abstract class NutCoreModule extends Module with HasNutCoreParameter with HasNutCoreConst with HasExceptionNO with HasBackendConst with HasNutCoreLog
-abstract class NutCoreBundle extends Bundle with HasNutCoreParameter with HasNutCoreConst with HasBackendConst
+abstract class NutCoreModule extends Module with HasNutCoreParameter with HasNutCoreConst with HasExceptionNO with HasNutCoreLog
+abstract class NutCoreBundle extends Bundle with HasNutCoreParameter with HasNutCoreConst
 
 case class NutCoreConfig (
                            FPGAPlatform: Boolean = true,
@@ -99,11 +100,7 @@ class NutCore(implicit val p: NutCoreConfig) extends NutCoreModule {
   val io = IO(new NutCoreIO)
 
   // Frontend
-  val frontend = (Settings.get("IsRV32"), Settings.get("EnableOutOfOrderExec")) match {
-    case (true, _)      => Module(new Frontend_embedded)
-    case (false, true)  => Module(new Frontend_ooo)
-    case (false, false) => Module(new Frontend_inorder)
-  }
+  val frontend = Module(new Frontend_ooo)
 
   // Backend
   val BoolTmp0 = WireInit(false.B)
