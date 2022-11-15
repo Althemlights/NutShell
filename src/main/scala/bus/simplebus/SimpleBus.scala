@@ -16,10 +16,9 @@
 
 package bus.simplebus
 
+import XiaoHe.HasNutCoreParameter
 import chisel3._
 import chisel3.util._
-
-import nutcore.HasNutCoreParameter
 import utils._
 import bus.axi4._
 import bus.memport._

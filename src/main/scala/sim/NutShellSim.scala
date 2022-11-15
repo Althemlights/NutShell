@@ -16,18 +16,17 @@
 
 package sim
 
-import system.{ysyx_229999, _}
-import nutcore.NutCoreConfig
+import XiaoHe.NutCoreConfig
+import system._
 import chisel3._
 import chisel3.util._
 import chisel3.util.experimental.BoringUtils
 import bus.axi4._
 import device.AXI4RAM
-import nutcore._
 import _root_.utils.GTimer
 //import difftest._
 import top.Settings
-
+import XiaoHe.HasNutCoreParameter
 class SimTop extends Module {
   val io = IO(new Bundle {
     //    val logCtrl = new LogCtrlIO

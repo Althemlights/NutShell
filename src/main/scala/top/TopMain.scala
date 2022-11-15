@@ -16,8 +16,8 @@
 
 package top
 
+import XiaoHe.NutCoreConfig
 import bus.axi4.ysyxAXI4IO
-import nutcore.NutCoreConfig
 import system.ysyx_229999
 import device.AXI4VGA
 import sim.SimTop
@@ -151,5 +151,18 @@ object ysyx extends App{
     chisel3.stage.ChiselGeneratorAnnotation(() =>new ysyx()),
     firrtl.stage.RunFirrtlTransformAnnotation(new AddModulePrefix()),
     ModulePrefixAnnotation("ysyx_229999_")
+  ))
+}
+
+object ysyx_test extends App{
+  lazy val config = NutCoreConfig(FPGAPlatform = false)
+  //  (new ChiselStage).execute(args, Seq(
+  //    ChiselGeneratorAnnotation(() => new NutCore()(config)))
+  ////    ChiselGeneratorAnnotation(() => new testModule))
+  //  )
+  (new chisel3.stage.ChiselStage).execute(args, Seq(
+    chisel3.stage.ChiselGeneratorAnnotation(() =>new ysyx()),
+    firrtl.stage.RunFirrtlTransformAnnotation(new AddModulePrefix()),
+    ModulePrefixAnnotation("ysyx_210062_")
   ))
 }

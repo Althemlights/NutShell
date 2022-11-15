@@ -5,9 +5,8 @@ package bus.axi4
 import chisel3._
 import chisel3.internal.firrtl.Width
 import chisel3.util._
-import nutcore.HasNutCoreParameter
 import utils._
-
+import XiaoHe.HasNutCoreParameter
 object AXI4Parameters extends HasNutCoreParameter {
   // These are all fixed by the AXI4 standard:
   val lenBits   = 8

@@ -18,9 +18,8 @@ package bus.simplebus
 
 import chisel3._
 import chisel3.util._
-
+import XiaoHe.HasNutCoreParameter
 import utils._
-import nutcore.HasNutCoreParameter
 
 class SimpleBusAddressMapper(map: (Int, Long)) extends Module with HasNutCoreParameter {
   val io = IO(new Bundle {

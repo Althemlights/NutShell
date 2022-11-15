@@ -16,11 +16,10 @@
 
 package system
 
-import nutcore.{NutCore, NutCoreConfig, HasNutCoreParameter, AddressSpace, Cache, CacheConfig}
+import XiaoHe.{AddressSpace, HasNutCoreParameter}
 import bus.axi4.{AXI4, AXI4Lite}
 import bus.simplebus._
 import utils._
-
 import chisel3._
 import chisel3.util._
 import chisel3.util.experimental.BoringUtils
