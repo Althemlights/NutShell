@@ -41,7 +41,7 @@ class ILABundle extends NutCoreBundle {
   val InstrCnt = UInt(64.W)
 }
 
-class ysyx_229999(implicit val p: NutCoreConfig) extends Module with HasSoCParameter {
+class XiaoHe(implicit val p: NutCoreConfig) extends Module with HasSoCParameter {
   val io = IO(new Bundle{
     val master = new AXI4
     val mmio = if (Settings.get("SoCTest")) null else { if (p.FPGAPlatform) { new AXI4 } else { new SimpleBusUC } }

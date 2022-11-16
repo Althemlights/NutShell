@@ -17,7 +17,7 @@ object moduleTop extends App{
 ////    ChiselGeneratorAnnotation(() => new testModule))
 //  )
   (new chisel3.stage.ChiselStage).execute(args, Seq(
-    chisel3.stage.ChiselGeneratorAnnotation(() =>Module(new ysyx_229999()(config))),
+    chisel3.stage.ChiselGeneratorAnnotation(() =>Module(new XiaoHe()(config))),
     firrtl.stage.RunFirrtlTransformAnnotation(new AddModulePrefix()),
     ModulePrefixAnnotation("ysyx_210062_")
   ))

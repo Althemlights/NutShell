@@ -18,10 +18,10 @@ package sim
 
 import chisel3._
 import chisel3.util._
-
 import bus.simplebus._
 import bus.axi4._
-import device._
+import device.{AXI4UART, _}
+import difftest.UARTIO
 //import difftest._
 
 class SimMMIO extends Module {
@@ -29,7 +29,7 @@ class SimMMIO extends Module {
     val rw = Flipped(new SimpleBusUC)
     val meip = Output(Bool())
     val dma = new AXI4
-//    val uart = new UARTIO
+    val uart = new UARTIO
   })
 
   val devAddrSpace = List(
@@ -45,13 +45,13 @@ class SimMMIO extends Module {
   val xbar = Module(new SimpleBusCrossbar1toN(devAddrSpace))
   xbar.io.in <> io.rw
 
-//  val uart = Module(new AXI4UART)
+  val uart = Module(new AXI4UART)
   val vga = Module(new AXI4VGA(sim = true))
   val flash = Module(new AXI4Flash)
   val sd = Module(new AXI4DummySD)
   val meipGen = Module(new AXI4MeipGen)
   val dma = Module(new AXI4DMA)
-//  uart.io.in <> xbar.io.out(0).toAXI4Lite()
+  uart.io.in <> xbar.io.out(0).toAXI4Lite()
   vga.io.in.fb <> xbar.io.out(1).toAXI4Lite()
   vga.io.in.ctrl <> xbar.io.out(2).toAXI4Lite()
   flash.io.in <> xbar.io.out(3).toAXI4Lite()
@@ -60,6 +60,6 @@ class SimMMIO extends Module {
   dma.io.in <> xbar.io.out(6).toAXI4Lite()
   io.dma <> dma.io.extra.get.dma
   io.meip := meipGen.io.extra.get.meip
-//  uart.io.extra.get <> io.uart
+  uart.io.extra.get <> io.uart
   vga.io.vga := DontCare
 }

@@ -40,7 +40,9 @@ object DefaultSettings {
     "EnableILA" -> true,
     "EnableDebug" -> false,
     "EnableRVC" -> true,
-    "SoCTest" -> false
+    "SoCTest" -> false,
+    "CLINTBase" -> 0x0000000038000000L,
+    "PLICBase" -> 0x000000003c000000L
   )
 }
 
@@ -137,7 +139,7 @@ object EmbededSettings {
 }
 
 object Settings {
-  var settings: Map[String, AnyVal] = SoCTestSettings()
+  var settings: Map[String, AnyVal] = DefaultSettings()
   def get(field: String) = {
     settings(field).asInstanceOf[Boolean]
   }

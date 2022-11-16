@@ -18,7 +18,7 @@ package top
 
 import XiaoHe.NutCoreConfig
 import bus.axi4.ysyxAXI4IO
-import system.ysyx_229999
+import system.{XiaoHe}
 import device.AXI4VGA
 import sim.SimTop
 import chisel3._
@@ -30,7 +30,7 @@ class riscv_cpu_io extends Bundle {
 }
 class ysyx extends Module {
   val io : riscv_cpu_io = IO(new riscv_cpu_io)
-  val core = Module(new ysyx_229999()(NutCoreConfig()))
+  val core = Module(new XiaoHe()(NutCoreConfig()))
   core.io.master := DontCare
   core.io.slave := DontCare
 
@@ -83,7 +83,7 @@ class ysyx extends Module {
 
 class Top extends Module {
   val io = IO(new Bundle{})
-  val nutshell = Module(new ysyx_229999()(NutCoreConfig()))
+  val nutshell = Module(new XiaoHe()(NutCoreConfig()))
   val vga = Module(new AXI4VGA)
 
   nutshell.io := DontCare
@@ -164,5 +164,16 @@ object ysyx_test extends App{
     chisel3.stage.ChiselGeneratorAnnotation(() =>new ysyx()),
     firrtl.stage.RunFirrtlTransformAnnotation(new AddModulePrefix()),
     ModulePrefixAnnotation("ysyx_210062_")
+  ))
+}
+
+object XiaoHeSim extends App{
+  lazy val config = NutCoreConfig(FPGAPlatform = false)
+  //  (new ChiselStage).execute(args, Seq(
+  //    ChiselGeneratorAnnotation(() => new NutCore()(config)))
+  ////    ChiselGeneratorAnnotation(() => new testModule))
+  //  )
+  (new chisel3.stage.ChiselStage).execute(args, Seq(
+    chisel3.stage.ChiselGeneratorAnnotation(() =>new SimTop())
   ))
 }
