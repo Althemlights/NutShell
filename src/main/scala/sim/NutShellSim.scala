@@ -113,7 +113,7 @@ class SimTop extends Module {
 
   dt_ic0.io.clock   := clock
   dt_ic0.io.coreid  := 0.U
-  dt_ic0.io.index   := 0.U
+  dt_ic0.io.index   := 1.U
   dt_ic0.io.valid   := dt_ic0_valid
   dt_ic0.io.pc      := dt_ic0_pc
   dt_ic0.io.instr   := dt_ic0_instr

@@ -18,11 +18,13 @@ package top
 
 import XiaoHe.NutCoreConfig
 import bus.axi4.ysyxAXI4IO
-import system.{XiaoHe}
+import system.XiaoHe
 import device.AXI4VGA
 import sim.SimTop
 import chisel3._
 import chisel3.stage._
+import top.XiaoHeSim.args
+import top.ysyx.args
 class riscv_cpu_io extends Bundle {
   val master = new ysyxAXI4IO()
   val slave  = Flipped(new ysyxAXI4IO())
@@ -121,22 +123,16 @@ object TopMain extends App {
     case (f, v) =>
       println(f + " = " + v)
   }
-  if (board == "sim" || board == "soctest") {
-//    (new ChiselStage).execute(args, Seq(
-//      ChiselGeneratorAnnotation(() => new SimTop))
-//    )
-    // Driver.execute(args, () => new Top)
+  if (board == "sim") {
     (new chisel3.stage.ChiselStage).execute(args, Seq(
-      chisel3.stage.ChiselGeneratorAnnotation(() => new ysyx()),
-      firrtl.stage.RunFirrtlTransformAnnotation(new AddModulePrefix()),
-      ModulePrefixAnnotation("ysyx_210062_")
+      chisel3.stage.ChiselGeneratorAnnotation(() =>new SimTop())
     ))
   } else {
     // Driver.execute(args, () => new Top)
     (new chisel3.stage.ChiselStage).execute(args, Seq(
-      chisel3.stage.ChiselGeneratorAnnotation(() => new Top()),
+      chisel3.stage.ChiselGeneratorAnnotation(() =>new ysyx()),
       firrtl.stage.RunFirrtlTransformAnnotation(new AddModulePrefix()),
-      ModulePrefixAnnotation("ysyx_210062_")
+      ModulePrefixAnnotation("ysyx_229999_")
     ))
   }
 }
@@ -154,25 +150,8 @@ object ysyx extends App{
   ))
 }
 
-object ysyx_test extends App{
-  lazy val config = NutCoreConfig(FPGAPlatform = false)
-  //  (new ChiselStage).execute(args, Seq(
-  //    ChiselGeneratorAnnotation(() => new NutCore()(config)))
-  ////    ChiselGeneratorAnnotation(() => new testModule))
-  //  )
-  (new chisel3.stage.ChiselStage).execute(args, Seq(
-    chisel3.stage.ChiselGeneratorAnnotation(() =>new ysyx()),
-    firrtl.stage.RunFirrtlTransformAnnotation(new AddModulePrefix()),
-    ModulePrefixAnnotation("ysyx_210062_")
-  ))
-}
-
 object XiaoHeSim extends App{
   lazy val config = NutCoreConfig(FPGAPlatform = false)
-  //  (new ChiselStage).execute(args, Seq(
-  //    ChiselGeneratorAnnotation(() => new NutCore()(config)))
-  ////    ChiselGeneratorAnnotation(() => new testModule))
-  //  )
   (new chisel3.stage.ChiselStage).execute(args, Seq(
     chisel3.stage.ChiselGeneratorAnnotation(() =>new SimTop())
   ))

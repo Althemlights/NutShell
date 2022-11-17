@@ -68,7 +68,7 @@ abstract class NutCoreModule extends Module with HasNutCoreParameter with HasNut
 abstract class NutCoreBundle extends Bundle with HasNutCoreParameter with HasNutCoreConst
 
 case class NutCoreConfig (
-                           FPGAPlatform: Boolean = true,
+                           FPGAPlatform: Boolean = false,
                            EnableDebug: Boolean = Settings.get("EnableDebug"),
                            EnhancedLog: Boolean = true
                          )
