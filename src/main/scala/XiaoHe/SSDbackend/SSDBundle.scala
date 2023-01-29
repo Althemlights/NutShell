@@ -25,7 +25,7 @@ class decodePkt extends  NutCoreBundle{
   val mou  = Output(Bool())
 }
 trait hasBypassConst{
-  def E0BypassPort = 12  // 0->9: alu1,alu0,e21,e20,e31,e30,mem3,mdu3,subalu1,subalu0,e51,e50
+  def E0BypassPort = 10  // 0->9: alu1,alu0,e21,e20,e31,e30,mem3,mdu3,subalu1,subalu0,e51,e50
   def E2BypassPort = 2   // 0->1: e51,e50
   def E3BypassPort = 5   // 0->8 : e30,e40,e41,e50,e51
   def E1StoreBypassPort = 4

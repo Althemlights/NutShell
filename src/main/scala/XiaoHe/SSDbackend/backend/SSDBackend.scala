@@ -299,9 +299,25 @@ class SSDbackend extends NutCoreModule with hasBypassConst {
   val BypassPortE3 = Wire(Vec(E3BypassPort,UInt(64.W)))
   val lsuBypassPortE1 = Wire(Vec(E1StoreBypassPort,UInt(64.W)))
   val StoreBypassPortE2 = Wire(Vec(E2StoreBypassPort,UInt(64.W)))
-  BypassPortE0 := Seq(pipeIn(2).bits.rd,pipeIn(3).bits.rd,pipeIn(4).bits.rd,pipeIn(5).bits.rd,
-    pipeIn(6).bits.rd,pipeIn(7).bits.rd,LSU.io.out.bits,MDU.io.out.bits,
-    pipeIn(8).bits.rd,pipeIn(9).bits.rd,pipeOut(8).bits.rd,pipeOut(9).bits.rd)
+  BypassPortE0 := Seq(pipeIn(2).bits.rd,
+    pipeIn(3).bits.rd,
+    pipeIn(4).bits.rd,
+    pipeIn(5).bits.rd,
+    Mux(BypassPkt(4).decodePkt.load, LSU.io.out.bits,
+      Mux(BypassPkt(4).decodePkt.muldiv, MDU.io.out.bits,
+        pipeIn(6).bits.rd)),
+    Mux(BypassPkt(5).decodePkt.load, LSU.io.out.bits,
+      Mux(BypassPkt(5).decodePkt.muldiv,MDU.io.out.bits,
+        pipeIn(7).bits.rd)),
+
+    // pipeIn(7).bits.rd,
+    // LSU.io.out.bits,
+    // MDU.io.out.bits,
+    pipeIn(8).bits.rd,
+    pipeIn(9).bits.rd,
+    pipeOut(8).bits.rd,
+    pipeOut(9).bits.rd)
+  
   BypassPortE2 := Seq(coupledPipeOut(2).bits.rd,coupledPipeOut(3).bits.rd)
   BypassPortE3 := Seq(coupledPipeIn(1).bits.rd,coupledPipeIn(2).bits.rd,coupledPipeIn(3).bits.rd,coupledPipeOut(2).bits.rd,coupledPipeOut(3).bits.rd)
 
