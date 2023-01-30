@@ -41,16 +41,16 @@ class SSDbackend extends NutCoreModule with hasBypassConst {
 
 
   //e1 -e5 register
-  val pipeRegStage0 = Module(new stallPointConnect(new FuPkt)).suggestName("pipeStage0")
-  val pipeRegStage1 = Module(new stallPointConnect(new FuPkt)).suggestName("pipeStage1")
-  val pipeRegStage2 = Module(new normalPipeConnect(new FuPkt)).suggestName("pipeStage2")
-  val pipeRegStage3 = Module(new normalPipeConnect(new FuPkt)).suggestName("pipeStage3")
-  val pipeRegStage4 = Module(new normalPipeConnect(new FuPkt)).suggestName("pipeStage4")
-  val pipeRegStage5 = Module(new normalPipeConnect(new FuPkt)).suggestName("pipeStage5")
-  val pipeRegStage6 = Module(new stallPointConnect(new FuPkt)).suggestName("pipeStage6")
-  val pipeRegStage7 = Module(new stallPointConnect(new FuPkt)).suggestName("pipeStage7")
-  val pipeRegStage8 = Module(new normalPipeConnect(new FuPkt)).suggestName("pipeStage8")
-  val pipeRegStage9 = Module(new normalPipeConnect(new FuPkt)).suggestName("pipeStage9")
+  val I0E1Reg = Module(new stallPointConnect(new FuPkt)).suggestName("I0E1Reg")
+  val I1E1Reg = Module(new stallPointConnect(new FuPkt)).suggestName("I1E1Reg")
+  val I0E2Reg = Module(new normalPipeConnect(new FuPkt)).suggestName("I0E2Reg")
+  val I1E2Reg = Module(new normalPipeConnect(new FuPkt)).suggestName("I1E2Reg")
+  val I0E3Reg = Module(new normalPipeConnect(new FuPkt)).suggestName("I0E3Reg")
+  val I1E3Reg = Module(new normalPipeConnect(new FuPkt)).suggestName("I1E3Reg")
+  val I0E4Reg = Module(new stallPointConnect(new FuPkt)).suggestName("I0E4Reg")
+  val I1E4Reg = Module(new stallPointConnect(new FuPkt)).suggestName("I1E4Reg")
+  val I0WBReg = Module(new normalPipeConnect(new FuPkt)).suggestName("I0WBReg")
+  val I1WBReg = Module(new normalPipeConnect(new FuPkt)).suggestName("I1WBReg")
 
   val coupledPipeRegStage6 = Module(new normalPipeConnect(new FuPkt)).suggestName("coupledPipeStage6")
   val coupledPipeRegStage7 = Module(new normalPipeConnect(new FuPkt)).suggestName("coupledPipeStage7")
@@ -100,9 +100,9 @@ class SSDbackend extends NutCoreModule with hasBypassConst {
   val i0CSRValid = BypassPktValid(0) && (BypassPkt(0).decodePkt.csr) && (BypassPkt(0).decodePkt.skip)
   val i1CSRValid = BypassPktValid(1) && (BypassPkt(1).decodePkt.csr) && (BypassPkt(1).decodePkt.skip)
   val CSRValid = i0CSRValid || i1CSRValid
-  val CSRfunc = Mux(i1CSRValid,pipeRegStage1.right.bits.fuOpType,pipeRegStage0.right.bits.fuOpType)
-  val CSRsrc1 = Mux(i1CSRValid,pipeRegStage1.right.bits.rs1,pipeRegStage0.right.bits.rs1)
-  val CSRsrc2 = Mux(i1CSRValid,pipeRegStage1.right.bits.rs2,pipeRegStage0.right.bits.rs2)
+  val CSRfunc = Mux(i1CSRValid,I1E1Reg.right.bits.fuOpType,I0E1Reg.right.bits.fuOpType)
+  val CSRsrc1 = Mux(i1CSRValid,I1E1Reg.right.bits.rs1,I0E1Reg.right.bits.rs1)
+  val CSRsrc2 = Mux(i1CSRValid,I1E1Reg.right.bits.rs2,I0E1Reg.right.bits.rs2)
   SSDCSR.access(CSRValid,CSRsrc1,CSRsrc2,CSRfunc)
   SSDCSR.io.cfIn := 0.U.asTypeOf(new CtrlFlowIO)
   SSDCSR.io.isBackendException := false.B
@@ -212,8 +212,8 @@ class SSDbackend extends NutCoreModule with hasBypassConst {
     pipeOut(7).valid && BypassPkt(7).decodePkt.alu && BypassPkt(7).decodePkt.subalu
   )
 
-  ALU_0.access(pipeOut(0).valid && !BypassPkt(0).decodePkt.alu,aluValid(0),pipeOut(0).bits.rs1,pipeOut(0).bits.rs2,pipeOut(0).bits.fuOpType)
-  ALU_1.access(pipeOut(1).valid && !BypassPkt(1).decodePkt.alu,aluValid(1),pipeOut(1).bits.rs1,pipeOut(1).bits.rs2,pipeOut(1).bits.fuOpType)
+  ALU_0.access(pipeOut(0).valid && !BypassPkt(0).decodePkt.alu, aluValid(0),pipeOut(0).bits.rs1,pipeOut(0).bits.rs2,pipeOut(0).bits.fuOpType)
+  ALU_1.access(pipeOut(1).valid && !BypassPkt(1).decodePkt.alu, aluValid(1),pipeOut(1).bits.rs1,pipeOut(1).bits.rs2,pipeOut(1).bits.fuOpType)
   ALU_6.access(false.B,
     aluValid(2),
     Mux(pipeOut(6).valid, pipeOut(6).bits.rs1,coupledPipeRegStage6.io.right.bits.rs1),
@@ -254,10 +254,10 @@ class SSDbackend extends NutCoreModule with hasBypassConst {
 //  dontTouch(i0LSUValid)
 //  dontTouch(i1LSUValid)
   val LSUValid = i0LSUValid || i1LSUValid
-  val LSUfunc = Mux(i1LSUValid,pipeRegStage3.right.bits.fuOpType,pipeRegStage2.right.bits.fuOpType)
-  val LSUsrc1 = Mux(i1LSUValid,pipeRegStage3.right.bits.rs1,pipeRegStage2.right.bits.rs1)
-  val LSUsrc2 = Mux(i1LSUValid,pipeRegStage3.right.bits.rs2,pipeRegStage2.right.bits.rs2)
-  val LSUoffset = Mux(i1LSUValid,pipeRegStage3.right.bits.offset,pipeRegStage2.right.bits.offset)
+  val LSUfunc = Mux(i1LSUValid,I1E2Reg.right.bits.fuOpType,I0E2Reg.right.bits.fuOpType)
+  val LSUsrc1 = Mux(i1LSUValid,I1E2Reg.right.bits.rs1,I0E2Reg.right.bits.rs1)
+  val LSUsrc2 = Mux(i1LSUValid,I1E2Reg.right.bits.rs2,I0E2Reg.right.bits.rs2)
+  val LSUoffset = Mux(i1LSUValid,I1E2Reg.right.bits.offset,I0E2Reg.right.bits.offset)
   LSU.access(LSUValid,LSUsrc1,LSUsrc2,LSUfunc,LSUoffset)
   //MDU
   val MDU = Module(new SSDMDU)
@@ -265,11 +265,11 @@ class SSDbackend extends NutCoreModule with hasBypassConst {
   val i0MDUValid = BypassPktValid(0) && (BypassPkt(0).decodePkt.muldiv)
   val i1MDUValid = BypassPktValid(1) && (BypassPkt(1).decodePkt.muldiv)
   val MDUValid = i0MDUValid || i1MDUValid
-  val MDUfunc = Mux(i1MDUValid,pipeRegStage1.right.bits.fuOpType,pipeRegStage0.right.bits.fuOpType)
-  val MDUsrc1 = Mux(i1MDUValid,pipeRegStage1.right.bits.rs1,pipeRegStage0.right.bits.rs1)
-  val MDUsrc2 = Mux(i1MDUValid,pipeRegStage1.right.bits.rs2,pipeRegStage0.right.bits.rs2)
+  val MDUfunc = Mux(i1MDUValid,I1E1Reg.right.bits.fuOpType,I0E1Reg.right.bits.fuOpType)
+  val MDUsrc1 = Mux(i1MDUValid,I1E1Reg.right.bits.rs1,I0E1Reg.right.bits.rs1)
+  val MDUsrc2 = Mux(i1MDUValid,I1E1Reg.right.bits.rs2,I0E1Reg.right.bits.rs2)
   MDU.access(MDUValid,MDUsrc1,MDUsrc2,MDUfunc)
-  mduStall := (BypassPkt(4).decodePkt.muldiv && pipeRegStage4.right.valid || BypassPkt(5).decodePkt.muldiv && pipeRegStage5.right.valid) && !MDU.io.out.valid
+  mduStall := (BypassPkt(4).decodePkt.muldiv && I0E3Reg.right.valid || BypassPkt(5).decodePkt.muldiv && I1E3Reg.right.valid) && !MDU.io.out.valid
   //Bypass signal and data port
   val ByPassEna = Wire(Vec(14,Bool()))
   ByPassEna := Seq(
@@ -529,7 +529,7 @@ class SSDbackend extends NutCoreModule with hasBypassConst {
   //  val moduleTest = Module(new ModuleTest)
   //pipe connect
 
-  val stallStageList = List(pipeRegStage0,pipeRegStage1,pipeRegStage6,pipeRegStage7)
+  val stallStageList = List(I0E1Reg,I1E1Reg,I0E4Reg,I1E4Reg)
   val stallIndexList = List(0,1,6,7)
   (stallStageList zip stallIndexList).foreach{case (a,b) =>
     a.io.left <> pipeIn(b)
@@ -538,12 +538,12 @@ class SSDbackend extends NutCoreModule with hasBypassConst {
     a.io.isFlush <> pipeFlush(b)
     a.io.inValid <> pipeInvalid(b)
   }
-  pipeRegStage0.io.isStall := issueStall(0)
-  pipeRegStage1.io.isStall := issueStall(1)
-  pipeRegStage6.io.isStall := memStall || mduStall
-  pipeRegStage7.io.isStall := memStall || mduStall
+  I0E1Reg.io.isStall := issueStall(0)   //i0 (sec)
+  I1E1Reg.io.isStall := issueStall(1)   //i1 (pri)
+  I0E4Reg.io.isStall := memStall || mduStall
+  I1E4Reg.io.isStall := memStall || mduStall
 
-  val normalStageList = List(pipeRegStage2,pipeRegStage3,pipeRegStage4,pipeRegStage5,pipeRegStage8,pipeRegStage9)
+  val normalStageList = List(I0E2Reg,I1E2Reg,I0E3Reg,I1E3Reg,I0WBReg,I1WBReg)
   val normalIndexList = List(2,3,4,5,8,9)
 
   (normalStageList zip normalIndexList).foreach{case (a,b) =>
