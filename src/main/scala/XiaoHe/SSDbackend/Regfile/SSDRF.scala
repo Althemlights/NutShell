@@ -38,7 +38,7 @@ class SSDRF extends Module{
       }
     }
   }.otherwise{
-    mem(io.writePorts(0).addr) := io.writePorts(0).data
+    mem(io.writePorts(1).addr) := io.writePorts(1).data
   }
   BoringUtils.addSource(mem(10), "rf_a0")
   for (i <- 0 to 31){

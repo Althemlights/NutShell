@@ -43,7 +43,7 @@ class stallPointConnect[T <: Data](gen : T) extends Module {
   when (isFlush) { valid := false.B }
 
   left.ready := right.ready && !isStall
-  right.bits := RegEnable(left.bits, left.valid && left.ready && !inValid)
+  right.bits := RegEnable(left.bits, 0.U.asTypeOf(gen) , left.valid && left.ready && !inValid)
   right.valid := valid //&& !isFlush
 
 
@@ -64,7 +64,7 @@ class normalPipeConnect[T <: Data](gen : T) extends Module {
   when (isFlush) { valid := false.B }
 
   left.ready := right.ready
-  right.bits := RegEnable(left.bits, left.valid && right.ready && !inValid)
+  right.bits := RegEnable(left.bits, 0.U.asTypeOf(gen) ,left.valid && right.ready && !inValid)
   right.valid := valid //&& !isFlush
 
 
