@@ -652,6 +652,8 @@ class SSDbackend extends NutCoreModule with hasBypassConst {
     (pipeOut(1).fire() && !MDUOpType.isDiv(pipeOut(1).bits.fuOpType) && BypassPktValid(1) && BypassPkt(1).decodePkt.muldiv).asUInt
   instIssueCntIO.divInst := (pipeOut(0).fire()  && MDUOpType.isDiv(pipeOut(0).bits.fuOpType) && BypassPktValid(0) && BypassPkt(0).decodePkt.muldiv).asUInt +
     (pipeOut(1).fire() && MDUOpType.isDiv(pipeOut(1).bits.fuOpType) && BypassPktValid(1) && BypassPkt(1).decodePkt.muldiv).asUInt
+  instIssueCntIO.aluInst := (pipeOut(0).fire() && (!pipeOut(0).bits.isBranch) && ALUOpType.isAlu(pipeOut(0).bits.fuOpType)).asUInt +
+    (pipeOut(1).fire() && (!pipeOut(1).bits.isBranch) && ALUOpType.isAlu(pipeOut(1).bits.fuOpType)).asUInt
 
   instCommitCntIO.branchInst := ( pipeOut(8).fire() && !pipeInvalid(10) && pipeOut(8).bits.isBranch && ALUOpType.isBranch(pipeOut(8).bits.fuOpType)).asUInt +
     ( pipeOut(9).fire() && !pipeInvalid(11) && pipeOut(9).bits.isBranch && ALUOpType.isBranch(pipeOut(9).bits.fuOpType)).asUInt
@@ -669,8 +671,13 @@ class SSDbackend extends NutCoreModule with hasBypassConst {
     ( pipeOut(9).fire() && !pipeInvalid(11) && !MDUOpType.isDiv(pipeOut(9).bits.fuOpType) && BypassPktValid(9) && BypassPkt(9).decodePkt.muldiv).asUInt
   instCommitCntIO.divInst := ( pipeOut(8).fire() && !pipeInvalid(10)  && MDUOpType.isDiv(pipeOut(8).bits.fuOpType) && BypassPktValid(8) && BypassPkt(8).decodePkt.muldiv).asUInt +
     ( pipeOut(9).fire() && !pipeInvalid(11) && MDUOpType.isDiv(pipeOut(9).bits.fuOpType) && BypassPktValid(9) && BypassPkt(9).decodePkt.muldiv).asUInt
+  instCommitCntIO.aluInst := ( pipeOut(8).fire() && !pipeInvalid(10) && (!pipeOut(8).bits.isBranch) && ALUOpType.isAlu(pipeOut(8).bits.fuOpType)).asUInt +
+    ( pipeOut(9).fire() && !pipeInvalid(11) && (!pipeOut(9).bits.isBranch) && ALUOpType.isAlu(pipeOut(9).bits.fuOpType)).asUInt
 
-
+  BoringUtils.addSource(memStall,"memStallCycle")
+  BoringUtils.addSource(memStall & (!RegNext(memStall)),"memStallCnt")
+  BoringUtils.addSource(mduStall,"mduStallCycle")
+  BoringUtils.addSource(mduStall & (!RegNext(mduStall)),"mduStallCnt")
 
   //Pipeline basic information
 //  def instTypePrint(valid:Bool, BypassPkt: BypassPkt)={

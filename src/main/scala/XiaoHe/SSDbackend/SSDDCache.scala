@@ -516,8 +516,26 @@ sealed class SSDCacheStage2(implicit val cacheConfig: SSDCacheConfig) extends Ca
   if (cacheName == "dcache"){
     BoringUtils.addSource(cacheStall,"cacheStall")
     BoringUtils.addSink(s1NotReady,"s1NotReady")
-    cacheStall := miss || state =/= s_idle || s1NotReady}
+    cacheStall := miss || state =/= s_idle || s1NotReady
+    BoringUtils.addSource(miss,"dcacheMissCycle")
+    BoringUtils.addSource((miss & (!RegNext(miss))),"dcacheMissCnt")
+    BoringUtils.addSource(s1NotReady&(!RegNext(s1NotReady)),"s1NotReadyCnt")
+    BoringUtils.addSource(cacheStall&(!RegNext(cacheStall)),"cacheStallCnt")
+  }
 
+//  if (cacheName == "dcache") {
+//    BoringUtils.addSink(storeHit,"storeHit")
+//    BoringUtils.addSource(io.isFinish && io.in.bits.req.cmd === SimpleBusCmd.read,"dcacheLoad")
+//    BoringUtils.addSource(io.isFinish && io.in.bits.req.cmd === SimpleBusCmd.write,"dcacheStore")
+//    BoringUtils.addSource(io.isFinish && io.in.bits.req.cmd === SimpleBusCmd.read && miss && !storeHit ,"dcacheLoadMiss")
+//    BoringUtils.addSource(io.isFinish && io.in.bits.req.cmd === SimpleBusCmd.write && miss ,"dcacheStoreMiss")
+//  }
+//  if (cacheName == "icache") {
+//    BoringUtils.addSource(io.isFinish && io.in.bits.req.cmd === SimpleBusCmd.read,"icacheLoad")
+//    BoringUtils.addSource(io.isFinish && io.in.bits.req.cmd === SimpleBusCmd.write,"icacheStore")
+//    BoringUtils.addSource(io.isFinish && io.in.bits.req.cmd === SimpleBusCmd.read && miss  ,"icacheLoadMiss")
+//    BoringUtils.addSource(io.isFinish && io.in.bits.req.cmd === SimpleBusCmd.write && miss ,"icacheStoreMiss")
+//  }
 }
 
 class flushDCache(implicit val cacheConfig: SSDCacheConfig) extends CacheModule {

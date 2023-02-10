@@ -57,6 +57,7 @@ object ALUOpType {
   def call = "b1011100".U  //0x5c
   def ret  = "b1011110".U  //0x5e
 
+  def isAlu(func: UInt) = !func(4)
   def isAdd(func: UInt) = func(6)
   def pcPlus2(func: UInt) = func(5)
   def isBru(func: UInt) = func(4)
