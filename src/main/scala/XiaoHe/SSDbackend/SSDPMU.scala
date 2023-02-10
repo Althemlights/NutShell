@@ -248,11 +248,11 @@ class PMU extends Module{
     "issueStalli1Cnt"              ->   (0x07,  "issueStalli1Cnt"),
     "i1Hiti0Block"                    ->   (0x08,  "i1Hiti0Block"  ),
     "i1StoreBlock"              ->   (0x09,  "i1StoreBlock"),
-    "i1dependi0"                ->   (0x0a,  "i1dependi0"),
+    "i1dependi0subalu"                ->   (0x0a,  "i1dependi0subalu"),
     "i1i0loadstore"              ->   (0x0b,  "i1i0loadstore"),
     "i1muldiv"              ->   (0x0c,  "i1muldiv"),
     "i1load"                ->   (0x0d,  "i1load"),
-    "i1Hiti0"              ->   (0x0e,  "i1Hiti0")
+    "i1loadHitlater"              ->   (0x0e,  "i1loadHitlater")
   )
 
   val stall1CntNum = 16
