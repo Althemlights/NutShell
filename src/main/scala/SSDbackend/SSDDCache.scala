@@ -50,7 +50,7 @@ sealed trait HasCacheConst {
   val TotalSize = cacheConfig.totalSize
   val Ways = cacheConfig.ways
   val LineSize = XLEN // byte
-  val LineBeats = LineSize / 8 //DATA WIDTH 64
+  val LineBeats = LineSize / 8 //DATA W64IDTH 
   val Sets = TotalSize * 1024 / LineSize / Ways
   val OffsetBits = log2Up(LineSize)
   val IndexBits = log2Up(Sets)
@@ -129,7 +129,7 @@ sealed class SSDCacheStage1(implicit val cacheConfig: SSDCacheConfig) extends Ca
   val io = IO(new SSDCacheStage1IO)
 
   // read meta array and data array
-  val readBusValid = io.in.fire()
+  val readBusValid = io.in.fire
   io.metaReadBus.apply(valid = readBusValid, setIdx = getMetaIdx(io.in.bits.addr))
   io.dataReadBus.apply(valid = readBusValid, setIdx = getDataIdx(io.in.bits.addr))
 
@@ -241,9 +241,9 @@ sealed class SSDCacheStage2(implicit val cacheConfig: SSDCacheConfig) extends Ca
 
 
   switch (state2) {
-    is (s2_idle) { when (io.dataReadBus.req.fire()) { state2 := s2_dataReadWait } }
+    is (s2_idle) { when (io.dataReadBus.req.fire) { state2 := s2_dataReadWait } }
     is (s2_dataReadWait) { state2 := s2_dataOK }
-    is (s2_dataOK) { when (io.mem.req.fire() || hitReadBurst && io.out.ready) { state2 := s2_idle } }
+    is (s2_dataOK) { when (io.mem.req.fire || hitReadBurst && io.out.ready) { state2 := s2_idle } }
   }
 
   // critical word first read
@@ -265,7 +265,7 @@ sealed class SSDCacheStage2(implicit val cacheConfig: SSDCacheConfig) extends Ca
 
 
   val afterFirstRead = RegInit(false.B)
-  val readingFirst = !afterFirstRead && io.mem.resp.fire() && (state === s_memReadResp)
+  val readingFirst = !afterFirstRead && io.mem.resp.fire && (state === s_memReadResp)
   val inRdataRegDemand = RegEnable(Mux(mmio, io.mmio.resp.bits.rdata, io.mem.resp.bits.rdata),
     Mux(mmio, state === s_mmioResp, readingFirst))
 
@@ -286,7 +286,7 @@ sealed class SSDCacheStage2(implicit val cacheConfig: SSDCacheConfig) extends Ca
     BoringUtils.addSource(MMIOStorePkt.ready,"MMIOStorePktReady")
     MMIOStorePkt.valid := outBufferValid && (state === s_mmioReq)
     val mmioStoreReq = Wire(Flipped(Decoupled(new SimpleBusReqBundle(userBits = userBits, idBits = idBits))))
-    val mmioStoreReqLatch = RegEnable(mmioStoreReq.bits,mmioStoreReq.fire())
+    val mmioStoreReqLatch = RegEnable(mmioStoreReq.bits,mmioStoreReq.fire)
     mmioStoreReq.ready := true.B
     mmioStoreReq.valid := (state === s_mmioReq)
     mmioStoreReq.bits.cmd := SimpleBusCmd.write
@@ -311,18 +311,18 @@ sealed class SSDCacheStage2(implicit val cacheConfig: SSDCacheConfig) extends Ca
     }
 
     is (s_mmio_wait) { when(!mmioStorePending) { state := s_idle }.elsewhen(outBufferValid) { state := s_mmioReq }}
-    is (s_mmioReq) { when (io.mmio.req.fire()) { state := s_mmioResp } }
-    is (s_mmioResp) { when (io.mmio.resp.fire()) { state := Mux(mmio, s_wait_resp, s_idle) }}
+    is (s_mmioReq) { when (io.mmio.req.fire) { state := s_mmioResp } }
+    is (s_mmioResp) { when (io.mmio.resp.fire) { state := Mux(mmio, s_wait_resp, s_idle) }}
 
     is(s_memReadReq) {
-      when(io.mem.req.fire()) {
+      when(io.mem.req.fire) {
         state := s_memReadResp
         readBeatCnt.value := addr.wordIndex
       }
     }
 
     is(s_memReadResp) {
-      when(io.mem.resp.fire()) {
+      when(io.mem.resp.fire) {
         afterFirstRead := true.B
         readBeatCnt.inc()
         when(io.mem.resp.bits.isReadLast()) {
@@ -332,21 +332,21 @@ sealed class SSDCacheStage2(implicit val cacheConfig: SSDCacheConfig) extends Ca
     }
 
     is(s_memWriteReq) {
-      when(io.mem.req.fire()) {
+      when(io.mem.req.fire) {
         writeBeatCnt.inc()
       }
-      when(io.mem.req.bits.isWriteLast() && io.mem.req.fire()) {
+      when(io.mem.req.bits.isWriteLast() && io.mem.req.fire) {
         state := s_memWriteResp
       }
     }
 
     is(s_memWriteResp) {
-      when(io.mem.resp.fire()) {
+      when(io.mem.resp.fire) {
         state := s_memReadReq
       }
     }
     is(s_wait_resp) {
-      when(io.out.fire() || needFlush) {
+      when(io.out.fire || needFlush) {
         state := s_idle
       }
     }
@@ -355,7 +355,7 @@ sealed class SSDCacheStage2(implicit val cacheConfig: SSDCacheConfig) extends Ca
   val dataRefill = MaskData(io.mem.resp.bits.rdata, req.wdata, Mux(readingFirst, wordMask, 0.U(DataBits.W)))
   dontTouch(dataRefill)
   val dataRefillWriteBus = Wire(CacheDataArrayWriteBus).apply(
-    valid = (state === s_memReadResp) && io.mem.resp.fire(), setIdx = Cat(addr.index, readBeatCnt.value),
+    valid = (state === s_memReadResp) && io.mem.resp.fire, setIdx = Cat(addr.index, readBeatCnt.value),
     data = Wire(new DataBundle).apply(dataRefill), waymask = waymask)
 
   dataWriteArb.io.in(0) <> dataHitWriteBus.req
@@ -363,7 +363,7 @@ sealed class SSDCacheStage2(implicit val cacheConfig: SSDCacheConfig) extends Ca
   io.dataWriteBus.req <> dataWriteArb.io.out
 
   val metaRefillWriteBus = Wire(CacheMetaArrayWriteBus()).apply(
-    valid = (state === s_memReadResp) && io.mem.resp.fire() && io.mem.resp.bits.isReadLast(),
+    valid = (state === s_memReadResp) && io.mem.resp.fire && io.mem.resp.bits.isReadLast(),
     data = Wire(new MetaBundle).apply(valid = true.B, tag = addr.tag, dirty = req.isWrite()),
     setIdx = getMetaIdx(req.addr), waymask = waymask)
 
@@ -398,15 +398,14 @@ sealed class SSDCacheStage2(implicit val cacheConfig: SSDCacheConfig) extends Ca
     cacheStall := miss || state =/= s_idle || s1NotReady}
 
 }
+
 class SSDCache(implicit val cacheConfig: SSDCacheConfig) extends CacheModule with HasSSDCacheIO {
   // cache pipeline
   val s1 = Module(new SSDCacheStage1)
   val s2 = Module(new SSDCacheStage2)
 
   val metaArray = Module(new MetaSRAMTemplateWithArbiter(nRead = 1, new MetaBundle, set = Sets, way = Ways, shouldReset = true))
-  val dataArray = Module(new SRAMTemplateWithArbiter(nRead = 2, new DataBundle, set = Sets * LineBeats, way = Ways))
-//  val metaArray = Module(new MetaSRAMTemplateWithArbiter(nRead = 1, new MetaBundle, set = Sets, way = Ways, shouldReset = true))
-//  val dataArray = Module(new DataSRAMTemplateWithArbiter(nRead = 2, new DataBundle, set = Sets * LineBeats, way = Ways))
+  val dataArray = Module(new DataSRAMTemplateWithArbiter(nRead = 2, new DataBundle, set = Sets * LineBeats, way = Ways))
 
   if (cacheName == "icache") {
     metaArray.reset := reset.asBool
@@ -415,7 +414,7 @@ class SSDCache(implicit val cacheConfig: SSDCacheConfig) extends CacheModule wit
   s1.io.in <> io.in.req
 
   
-  PipelineConnect(s1.io.out, s2.io.in, s2.io.out.fire(), io.flush)
+  PipelineConnect(s1.io.out, s2.io.in, s2.io.out.fire, io.flush)
 
   io.in.resp <> s2.io.out
   s2.io.flush := io.flush

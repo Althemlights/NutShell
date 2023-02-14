@@ -1,0 +1,80 @@
+add-riscv-tests.bin
+addi-riscv-tests.bin
+Core 0: [32mHIT GOOD TRAP at pc = 0x800002c8
+addiw-riscv-tests.bin
+Core 0: [32mHIT GOOD TRAP at pc = 0x800002c8
+addw-riscv-tests.bin
+and-riscv-tests.bin
+andi-riscv-tests.bin
+Core 0: [32mHIT GOOD TRAP at pc = 0x80000248
+auipc-riscv-tests.bin
+Core 0: [32mHIT GOOD TRAP at pc = 0x80000080
+beq-riscv-tests.bin
+Core 0: [32mHIT GOOD TRAP at pc = 0x80000308
+bge-riscv-tests.bin
+Core 0: [32mHIT GOOD TRAP at pc = 0x80000348
+bgeu-riscv-tests.bin
+blt-riscv-tests.bin
+Core 0: [32mHIT GOOD TRAP at pc = 0x80000308
+bltu-riscv-tests.bin
+Core 0: [32mHIT GOOD TRAP at pc = 0x800003c8
+bne-riscv-tests.bin
+Core 0: [32mHIT GOOD TRAP at pc = 0x80000308
+jal-riscv-tests.bin
+Core 0: [32mHIT GOOD TRAP at pc = 0x80000088
+jalr-riscv-tests.bin
+Core 0: [32mHIT GOOD TRAP at pc = 0x80000148
+lb-riscv-tests.bin
+Core 0: [32mHIT GOOD TRAP at pc = 0x80000288
+lbu-riscv-tests.bin
+Core 0: [32mHIT GOOD TRAP at pc = 0x80000288
+ld-riscv-tests.bin
+lh-riscv-tests.bin
+Core 0: [32mHIT GOOD TRAP at pc = 0x80000288
+lhu-riscv-tests.bin
+Core 0: [32mHIT GOOD TRAP at pc = 0x800002c8
+lui-riscv-tests.bin
+Core 0: [32mHIT GOOD TRAP at pc = 0x80000088
+lw-riscv-tests.bin
+Core 0: [32mHIT GOOD TRAP at pc = 0x800002c8
+lwu-riscv-tests.bin
+Core 0: [32mHIT GOOD TRAP at pc = 0x80000308
+or-riscv-tests.bin
+ori-riscv-tests.bin
+Core 0: [32mHIT GOOD TRAP at pc = 0x80000208
+sb-riscv-tests.bin
+Core 0: [31mHIT BAD TRAP at pc = 0x80000448
+sd-riscv-tests.bin
+sh-riscv-tests.bin
+simple-riscv-tests.bin
+Core 0: [32mHIT GOOD TRAP at pc = 0x80000048
+sll-riscv-tests.bin
+slli-riscv-tests.bin
+Core 0: [32mHIT GOOD TRAP at pc = 0x80000348
+slliw-riscv-tests.bin
+Core 0: [32mHIT GOOD TRAP at pc = 0x80000348
+sllw-riscv-tests.bin
+slt-riscv-tests.bin
+slti-riscv-tests.bin
+Core 0: [32mHIT GOOD TRAP at pc = 0x800002c8
+sltiu-riscv-tests.bin
+Core 0: [32mHIT GOOD TRAP at pc = 0x800002c8
+sltu-riscv-tests.bin
+sra-riscv-tests.bin
+srai-riscv-tests.bin
+Core 0: [32mHIT GOOD TRAP at pc = 0x80000308
+sraiw-riscv-tests.bin
+Core 0: [32mHIT GOOD TRAP at pc = 0x800003c8
+sraw-riscv-tests.bin
+srl-riscv-tests.bin
+srli-riscv-tests.bin
+Core 0: [32mHIT GOOD TRAP at pc = 0x80000348
+srliw-riscv-tests.bin
+Core 0: [32mHIT GOOD TRAP at pc = 0x80000348
+srlw-riscv-tests.bin
+sub-riscv-tests.bin
+subw-riscv-tests.bin
+sw-riscv-tests.bin
+xor-riscv-tests.bin
+xori-riscv-tests.bin
+Core 0: [32mHIT GOOD TRAP at pc = 0x80000208

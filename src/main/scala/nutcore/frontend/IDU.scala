@@ -22,8 +22,10 @@ import chisel3.util.experimental.BoringUtils
 
 import utils._
 import difftest._
+import chipsalliance.rocketchip.config.Parameters
+import system.HasNutCoreParameters
 
-class Decoder(implicit val p: NutCoreConfig) extends NutCoreModule with HasInstrType {
+class Decoder(implicit p: Parameters) extends NutCoreModule with HasInstrType {
   val io = IO(new Bundle {
     val in = Flipped(Decoupled(new CtrlFlowIO))
     val out = Decoupled(new DecodeIO)
@@ -121,7 +123,7 @@ class Decoder(implicit val p: NutCoreConfig) extends NutCoreModule with HasInstr
   // fix c_break
 
 
-  Debug(io.out.fire(), "issue: pc %x npc %x instr %x\n", io.out.bits.cf.pc, io.out.bits.cf.pnpc, io.out.bits.cf.instr)
+  Debug(io.out.fire, "issue: pc %x npc %x instr %x\n", io.out.bits.cf.pc, io.out.bits.cf.pnpc, io.out.bits.cf.instr)
 
   val intrVec = WireInit(0.U(12.W))
   BoringUtils.addSink(intrVec, "intrVecIDU")
@@ -156,7 +158,7 @@ class Decoder(implicit val p: NutCoreConfig) extends NutCoreModule with HasInstr
 
 }
 
-class IDU(implicit val p: NutCoreConfig) extends NutCoreModule with HasInstrType {
+class IDU(implicit val p: Parameters) extends NutCoreModule with HasInstrType with HasNutCoreParameters {
   val io = IO(new Bundle {
     val in = Vec(4, Flipped(Decoupled(new CtrlFlowIO)))
     val out = Vec(4, Decoupled(new DecodeIO))
@@ -185,7 +187,7 @@ class IDU(implicit val p: NutCoreConfig) extends NutCoreModule with HasInstrType
   /*val runahead = Module(new DifftestRunaheadEvent)
   runahead.io.clock         := clock
   runahead.io.coreid        := 0.U
-  runahead.io.valid         := io.out(0).fire()
+  runahead.io.valid         := io.out(0).fire
   runahead.io.branch        := decoder1.io.isBranch
   runahead.io.pc            := io.out(0).bits.cf.pc
   runahead.io.checkpoint_id := checkpoint_id*/
@@ -198,7 +200,7 @@ class IDU(implicit val p: NutCoreConfig) extends NutCoreModule with HasInstrType
   //   printf("fire pc %x branch %x inst %x\n", runahead.io.pc, runahead.io.branch, io.out(0).bits.cf.instr)
   // }
 
-  if (!p.FPGAPlatform) {
+  if (!FPGAPlatform) {
     //BoringUtils.addSource(decoder1.io.isWFI | decoder2.io.isWFI, "isWFI")
   }
 }

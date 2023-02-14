@@ -63,7 +63,7 @@ class IFU_ooo extends NutCoreModule with HasResetVector {
   // val pcBrIdx = RegInit(0.U(4.W))
   val pcInstValid = RegInit("b1111".U)
   val pcUpdate = Wire(Bool())
-  pcUpdate := io.redirect.valid || io.imem.req.fire()
+  pcUpdate := io.redirect.valid || io.imem.req.fire
   val snpc = Cat(pc(VAddrBits-1, 3), 0.U(3.W)) + CacheReadWidth.U  // IFU will always ask icache to fetch next instline
   // Note: we define instline as 8 Byte aligned data from icache
 
@@ -79,7 +79,7 @@ class IFU_ooo extends NutCoreModule with HasResetVector {
     nlptarget_latch := nlp.io.out.target
   }
 
-  when (io.imem.req.fire() || io.redirect.valid) {
+  when (io.imem.req.fire || io.redirect.valid) {
     nlpvalidreg := false.B
     nlpbridx_latch := 0.U
     nlptarget_latch := 0.U
@@ -126,7 +126,7 @@ class IFU_ooo extends NutCoreModule with HasResetVector {
   // val npcIsSeq = Mux(io.redirect.valid , false.B, Mux(state === s_crosslineJump, false.B, Mux(crosslineJump, true.B, Mux(nlp.io.out.valid, false.B, true.B)))) //for debug only
 
   //ghr & ghr update
-  val ghrUpdate = io.imem.req.fire() && nlp.io.out.ghrUpdateValid || io.redirect.ghrUpdateValid
+  val ghrUpdate = io.imem.req.fire && nlp.io.out.ghrUpdateValid || io.redirect.ghrUpdateValid
   val nghr = Wire(UInt(GhrLength.W))
   nghr := Mux(io.redirect.ghrUpdateValid, io.redirect.ghr, Mux(nlp.io.out.ghrUpdateValid, nlp.io.out.ghr, ghr)) // crossline not considered
   dontTouch(nghr)
@@ -162,14 +162,14 @@ class IFU_ooo extends NutCoreModule with HasResetVector {
   brIdx := Mux(io.redirect.valid, 0.U, Mux(state === s_crosslineJump, 0.U, pbrIdx))
 
   // BP will be disabled shortly after a redirect request
-  nlp.io.in.pc.valid := io.imem.req.fire() || io.redirect.valid// only predict when Icache accepts a request
+  nlp.io.in.pc.valid := io.imem.req.fire || io.redirect.valid// only predict when Icache accepts a request
   nlp.io.in.pc.bits := npc  // predict one cycle early
   nlp.io.flush := io.redirect.valid && false.B// redirect means BPU may need to be updated
   nlp.io.in.ghr := nghr
   // Multi-cycle branch predictor
   // Multi-cycle branch predictor will not be synthesized if EnableMultiCyclePredictor is set to false
   val mcp = Module(new DummyPredicter)
-  mcp.io.in.pc.valid := io.imem.req.fire()
+  mcp.io.in.pc.valid := io.imem.req.fire
   mcp.io.in.pc.bits := pc
   mcp.io.flush := io.redirect.valid
   mcp.io.ignore := state === s_crosslineJump
@@ -183,7 +183,7 @@ class IFU_ooo extends NutCoreModule with HasResetVector {
   mcpResultQueue.io.enq.valid := mcp.io.valid
   mcpResultQueue.io.enq.bits.redirect := mcp.io.out
   mcpResultQueue.io.enq.bits.brIdx := mcp.io.brIdx
-  mcpResultQueue.io.deq.ready := io.imem.resp.fire()
+  mcpResultQueue.io.deq.ready := io.imem.resp.fire
 
   val validMCPRedirect =
     mcpResultQueue.io.deq.bits.redirect.valid && //mcp predicts branch
@@ -193,7 +193,7 @@ class IFU_ooo extends NutCoreModule with HasResetVector {
 
   //val bp2 = Module(new BPU_nodelay)
   //bp2.io.in.bits := io.out.bits
-  //bp2.io.in.valid := io.imem.resp.fire()
+  //bp2.io.in.valid := io.imem.resp.fire
   //  val ghr_update = WireInit(0.U.asTypeOf(new BPUUpdateReq))
   //  BoringUtils.addSink(ghr_update, "ghrUpdateReq")
   //  when(ghr_update.valid && ALUOpType.isBranch(ghr_update.fuOpType)) {
@@ -231,8 +231,8 @@ class IFU_ooo extends NutCoreModule with HasResetVector {
   io.out.bits := DontCare
   //inst path only uses 32bit inst, get the right inst according to pc(2)
 
-  Debug(io.imem.req.fire(), "[IFI] pc=%x user=%x redirect %x pcInstValid %b brIdx %b npc %x pc %x pnpc %x\n", io.imem.req.bits.addr, io.imem.req.bits.user.getOrElse(0.U), io.redirect.valid, pcInstValid.asUInt, (pcInstValid & brIdx).asUInt, npc, pc, nlp.io.out.target)
-  Debug(io.out.fire(), "[IFO] pc=%x user=%x inst=%x npc=%x bridx %b valid %b ipf %x\n", io.out.bits.pc, io.imem.resp.bits.user.get, io.out.bits.instr, io.out.bits.pnpc, io.out.bits.brIdx.asUInt, io.out.bits.instValid.asUInt, io.ipf)
+  Debug(io.imem.req.fire, "[IFI] pc=%x user=%x redirect %x pcInstValid %b brIdx %b npc %x pc %x pnpc %x\n", io.imem.req.bits.addr, io.imem.req.bits.user.getOrElse(0.U), io.redirect.valid, pcInstValid.asUInt, (pcInstValid & brIdx).asUInt, npc, pc, nlp.io.out.target)
+  Debug(io.out.fire, "[IFO] pc=%x user=%x inst=%x npc=%x bridx %b valid %b ipf %x\n", io.out.bits.pc, io.imem.resp.bits.user.get, io.out.bits.instr, io.out.bits.pnpc, io.out.bits.brIdx.asUInt, io.out.bits.instValid.asUInt, io.ipf)
 
   // io.out.bits.instr := (if (XLEN == 64) io.imem.resp.bits.rdata.asTypeOf(Vec(2, UInt(32.W)))(io.out.bits.pc(2))
   //  else io.imem.resp.bits.rdata)
@@ -252,9 +252,9 @@ class IFU_ooo extends NutCoreModule with HasResetVector {
   //
   //  val nlpResultQueue = Module(new Queue(new nlpResult, entries = 3, hasFlush = true))
   //  nlpResultQueue.io.flush.get := io.redirect.valid || io.bpFlush
-  //  nlpResultQueue.io.enq.valid := RegNext(io.imem.req.fire() || io.redirect.valid)
+  //  nlpResultQueue.io.enq.valid := RegNext(io.imem.req.fire || io.redirect.valid)
   //  nlpResultQueue.io.enq.bits.btbIsBranchEntry := nlp.io.out.btbIsBranch
-  //  nlpResultQueue.io.deq.ready := io.imem.resp.fire()
+  //  nlpResultQueue.io.deq.ready := io.imem.resp.fire
 
 
   dontTouch(io.out)
@@ -288,7 +288,7 @@ class IFU_ooo extends NutCoreModule with HasResetVector {
     (0 until 4).map(i => maybeBranch(i) := preDecodeIsBranch(io.out.bits.instr(16*(i+1)-1, 16*i))) //TODO: use icache pre-decode result
     // When branch predicter set non-sequential npc for a non-branch inst,
     // flush IFU, fetch sequential inst instead.
-    when((brIdxByPredictor & ~maybeBranch.asUInt).orR && io.out.fire()){
+    when((brIdxByPredictor & ~maybeBranch.asUInt).orR && io.out.fire){
       Debug("[ERROR] FixInvalidBranchPredict\n")
       io.bpFlush := true.B
       io.out.bits.brIdx := 0.U
@@ -298,7 +298,7 @@ class IFU_ooo extends NutCoreModule with HasResetVector {
     // TODO: update BPU
   }
 
-  //BoringUtils.addSource(BoolStopWatch(io.imem.req.valid, io.imem.resp.fire()), "perfCntCondMimemStall")
+  //BoringUtils.addSource(BoolStopWatch(io.imem.req.valid, io.imem.resp.fire), "perfCntCondMimemStall")
   //BoringUtils.addSource(io.flushVec.orR, "perfCntCondMifuFlush")
 }
 
@@ -314,7 +314,7 @@ class IFU_embedded extends NutCoreModule with HasResetVector {
 
   // pc
   val pc = RegInit(resetVector.U(32.W))
-  val pcUpdate = io.redirect.valid || io.imem.req.fire()
+  val pcUpdate = io.redirect.valid || io.imem.req.fire
   val snpc = pc + 4.U  // sequential next pc
 
   val bpu = Module(new BPU_embedded)
@@ -323,7 +323,7 @@ class IFU_embedded extends NutCoreModule with HasResetVector {
   val pnpc = bpu.io.out.target
   val npc = Mux(io.redirect.valid, io.redirect.target, Mux(bpu.io.out.valid, pnpc, snpc))
 
-  bpu.io.in.pc.valid := io.imem.req.fire() // only predict when Icache accepts a request
+  bpu.io.in.pc.valid := io.imem.req.fire // only predict when Icache accepts a request
   bpu.io.in.pc.bits := npc  // predict one cycle early
   bpu.io.flush := io.redirect.valid
 
@@ -345,10 +345,10 @@ class IFU_embedded extends NutCoreModule with HasResetVector {
   }
   io.out.valid := io.imem.resp.valid && !io.flushVec(0)
 
-  Debug(io.imem.req.fire(), "[IFI] pc=%x user=%x redirect %x npc %x pc %x pnpc %x\n", io.imem.req.bits.addr, io.imem.req.bits.user.getOrElse(0.U), io.redirect.valid, npc, pc, bpu.io.out.target)
-  Debug(io.out.fire(), "[IFO] pc=%x user=%x inst=%x npc=%x ipf %x\n", io.out.bits.pc, io.imem.resp.bits.user.get, io.out.bits.instr, io.out.bits.pnpc, io.ipf)
+  Debug(io.imem.req.fire, "[IFI] pc=%x user=%x redirect %x npc %x pc %x pnpc %x\n", io.imem.req.bits.addr, io.imem.req.bits.user.getOrElse(0.U), io.redirect.valid, npc, pc, bpu.io.out.target)
+  Debug(io.out.fire, "[IFO] pc=%x user=%x inst=%x npc=%x ipf %x\n", io.out.bits.pc, io.imem.resp.bits.user.get, io.out.bits.instr, io.out.bits.pnpc, io.ipf)
 
-  //BoringUtils.addSource(BoolStopWatch(io.imem.req.valid, io.imem.resp.fire()), "perfCntCondMimemStall")
+  //BoringUtils.addSource(BoolStopWatch(io.imem.req.valid, io.imem.resp.fire), "perfCntCondMimemStall")
   //BoringUtils.addSource(io.flushVec.orR, "perfCntCondMifuFlush")
 }
 
@@ -366,7 +366,7 @@ class IFU_inorder extends NutCoreModule with HasResetVector {
 
   // pc
   val pc = RegInit(resetVector.U(VAddrBits.W))
-  val pcUpdate = io.redirect.valid || io.imem.req.fire()
+  val pcUpdate = io.redirect.valid || io.imem.req.fire
   val snpc = Mux(pc(1), pc + 2.U, pc + 4.U)  // sequential next pc
 
   val bp1 = Module(new BPU_inorder)
@@ -395,7 +395,7 @@ class IFU_inorder extends NutCoreModule with HasResetVector {
   brIdx := Cat(npcIsSeq, Mux(io.redirect.valid, 0.U, pbrIdx))
   //TODO: BP will be disabled shortly after a redirect request
 
-  bp1.io.in.pc.valid := io.imem.req.fire() // only predict when Icache accepts a request
+  bp1.io.in.pc.valid := io.imem.req.fire // only predict when Icache accepts a request
   bp1.io.in.pc.bits := npc  // predict one cycle early
 
   // Debug(bp1.io.in.pc.valid, p"pc: ${Hexadecimal(pc)} npc: ${Hexadecimal(npc)}\n")
@@ -422,8 +422,8 @@ class IFU_inorder extends NutCoreModule with HasResetVector {
   io.out.bits := DontCare
   //inst path only uses 32bit inst, get the right inst according to pc(2)
 
-  Debug(io.imem.req.fire(), "[IFI] pc=%x user=%x %x %x %x \n", io.imem.req.bits.addr, io.imem.req.bits.user.getOrElse(0.U), io.redirect.valid, pbrIdx, brIdx)
-  Debug(io.out.fire(), "[IFO] pc=%x inst=%x\n", io.out.bits.pc, io.out.bits.instr)
+  Debug(io.imem.req.fire, "[IFI] pc=%x user=%x %x %x %x \n", io.imem.req.bits.addr, io.imem.req.bits.user.getOrElse(0.U), io.redirect.valid, pbrIdx, brIdx)
+  Debug(io.out.fire, "[IFO] pc=%x inst=%x\n", io.out.bits.pc, io.out.bits.instr)
 
   // io.out.bits.instr := (if (XLEN == 64) io.imem.resp.bits.rdata.asTypeOf(Vec(2, UInt(32.W)))(io.out.bits.pc(2))
   //  else io.imem.resp.bits.rdata)
@@ -436,6 +436,6 @@ class IFU_inorder extends NutCoreModule with HasResetVector {
   io.out.bits.exceptionVec(instrPageFault) := io.ipf
   io.out.valid := io.imem.resp.valid && !io.flushVec(0)
 
-  //BoringUtils.addSource(BoolStopWatch(io.imem.req.valid, io.imem.resp.fire()), "perfCntCondMimemStall")
+  //BoringUtils.addSource(BoolStopWatch(io.imem.req.valid, io.imem.resp.fire), "perfCntCondMimemStall")
   //BoringUtils.addSource(io.flushVec.orR, "perfCntCondMifuFlush")
 }

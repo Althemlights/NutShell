@@ -23,31 +23,43 @@ import chisel3._
 import chisel3.util._
 import chisel3.util.experimental.BoringUtils
 
-import bus.axi4._
-import device.AXI4RAM
+//import bus.axi4._
+//import device.AXI4RAM
 import nutcore._
 import utils.GTimer
 import difftest._
+import freechips.rocketchip.amba.axi4.{AXI4Xbar, AXI4Delayer}
+import freechips.rocketchip.tilelink._
+import freechips.rocketchip.diplomacy.{AddressSet, LazyModule, LazyModuleImp}
+import top.DefaultConfig
+import chipsalliance.rocketchip.config.Parameters
+import device.AXI4MemorySlave
 
-class SimTop extends Module {
+class SimTop(implicit p: Parameters) extends Module {
   val io = IO(new Bundle{
     val logCtrl = new LogCtrlIO
     val perfInfo = new PerfInfoIO
     val uart = new UARTIO
   })
+  val l_soc = LazyModule(new NutShell())
+  val soc = Module(l_soc.module)
+  val l_simAXIMem = AXI4MemorySlave(
+    l_soc.memAXI4SlaveNode,
+    128 * 1024 * 1024,
+    useBlackBox = true,
+    dynamicLatency = false
+  )
+  //val simAXIMem = Module(l_simAXIMem.module)
+  //l_simAXIMem.io_axi4 <> soc.memory
+    
 
-  lazy val config = NutCoreConfig(FPGAPlatform = false)
-  val soc = Module(new NutShell()(config))
-  val mem = Module(new AXI4RAM(memByte = 128 * 1024 * 1024, useBlackBox = true))
-  // Be careful with the commit checking of emu.
-  // A large delay will make emu incorrectly report getting stuck.
-  val memdelay = Module(new AXI4Delayer(0))
+
   val mmio = Module(new SimMMIO)
+  //val soc = l_soc.module
 
   soc.io.frontend <> mmio.io.dma
-
-  memdelay.io.in <> soc.io.mem
-  mem.io.in <> memdelay.io.out
+  val simAXIMem = Module(l_simAXIMem.module)
+  l_simAXIMem.io_axi4 <> soc.memory
 
   mmio.io.rw <> soc.io.mmio
 
@@ -66,4 +78,5 @@ class SimTop extends Module {
   BoringUtils.addSink(dummyWire, "DISPLAY_ENABLE")
 
   io.uart <> mmio.io.uart
+  
 }

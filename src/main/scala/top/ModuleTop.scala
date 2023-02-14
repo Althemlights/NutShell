@@ -9,12 +9,11 @@ import sim.SimTop
 import system._
 import top.TopMain.args
 
-
+import freechips.rocketchip.diplomacy.{DisableMonitors, LazyModule, LazyModuleImp}
 
 object moduleTop extends App{
-  lazy val config = NutCoreConfig(FPGAPlatform = false)
+  lazy val config = new DefaultConfig(FPGAPlatform = false)
   (new ChiselStage).execute(args, Seq(
-    ChiselGeneratorAnnotation(() => new NutCore()(config)))
-//    ChiselGeneratorAnnotation(() => new testModule))
+    ChiselGeneratorAnnotation(DisableMonitors(p => LazyModule(new NutCore()(p)))(config).module _))
   )
 }

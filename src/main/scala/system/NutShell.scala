@@ -20,7 +20,18 @@ import nutcore._
 import bus.axi4.{AXI4, AXI4Lite}
 import bus.simplebus._
 import device.{AXI4CLINT, AXI4PLIC}
-import top.Settings
+import top._
+
+import huancun.debug.TLLogger
+import huancun.{HCCacheParamsKey, HuanCun}
+import freechips.rocketchip.amba.axi4._ 
+import freechips.rocketchip.tilelink._ 
+import chipsalliance.rocketchip.config.Parameters
+import freechips.rocketchip.diplomacy.{LazyModule, LazyModuleImp, MemoryDevice, AddressSet, InModuleBody, TransferSizes, RegionType}
+import utils._
+import huancun._
+import chipsalliance.rocketchip.config._
+//import freechips.rocketchip.diplomacy.{AddressSet, LazyModule, LazyModuleImp}
 
 import chisel3._
 import chisel3.util._
@@ -41,65 +52,94 @@ class ILABundle extends NutCoreBundle {
   val InstrCnt = UInt(64.W)
 }
 
-class NutShell(implicit val p: NutCoreConfig) extends Module with HasSoCParameter {
+class NutShell()(implicit p: Parameters) extends LazyModule {
+  val nutcore = LazyModule(new NutCore())
+  //val l2cache = LazyModule(new HuanCun())
+  /*private val l2cache = coreParams.L2CacheParamsOpt.map(l2param =>
+    LazyModule(new HuanCun()(new Config((_, _, _) => {
+      case HCCacheParamsKey => l2param.copy(enableTopDown = env.EnableTopDown)
+    })))
+  )*/
+  val l2cache = LazyModule(new HuanCun()(new Config((_, _, _) => {
+    case HCCacheParamsKey => HCCacheParameters(
+      name = s"L2",
+      level = 2,
+      inclusive = false,
+      clientCaches = Seq(CacheParameters(sets = 32, ways = 8, blockGranularity = 5, name = "L2")),
+      prefetch = Some(huancun.prefetch.BOPParameters()),
+      reqField = Seq(),
+      echoField = Seq()
+    )
+  })))
+  //val imem = LazyModule(new SB2AXI4MasterNode(true))
+  //val dmemory_port = TLIdentityNode()
+  //dmemory_port := l2cache.node := nutcore.dcache.clientNode
+
+  //axi4ram slave node
+  val device = new MemoryDevice
+  val memRange = AddressSet(0x00000000L, 0xfffffffffL).subtract(AddressSet(0x0L, 0x7fffffffL))
+  val memAXI4SlaveNode = AXI4SlaveNode(Seq(
+    AXI4SlavePortParameters(
+      slaves = Seq(
+        AXI4SlaveParameters(
+          address = memRange,
+          regionType = RegionType.UNCACHED,
+          executable = true,
+          supportsRead = TransferSizes(1, 64),
+          supportsWrite = TransferSizes(1, 64),
+          interleavedId = Some(0),
+          resources = device.reg("mem")
+        )
+      ),
+      beatBytes = 32
+    )
+  ))
+
+  /*val xbar = AXI4Xbar()
+  xbar := AXI4UserYanker() := AXI4Deinterleaver(64) := TLToAXI4() :*= TLIdentityNode() := l2cache.node := nutcore.dcache.clientNode
+  xbar := imem.node
+  memAXI4SlaveNode :=* xbar*/
+  val tlBus = TLXbar()
+  tlBus := nutcore.dcache.clientNode
+  tlBus := nutcore.icache.clientNode
+  memAXI4SlaveNode := AXI4UserYanker() := AXI4Deinterleaver(64) := TLToAXI4() :*= TLIdentityNode() := l2cache.node :=* tlBus
+  /*val memory = InModuleBody {
+    memAXI4SlaveNode.makeIOs()
+  }*/
+
+  lazy val module = new NutShellImp(this)
+}
+
+class NutShellImp(outer: NutShell) extends LazyModuleImp(outer) with HasNutCoreParameters with HasSoCParameter{
   val io = IO(new Bundle{
-    val mem = new AXI4
-    val mmio = (if (p.FPGAPlatform) { new AXI4 } else { new SimpleBusUC })
+    //val mem = new AXI4
+    val mmio = (if (FPGAPlatform) { new AXI4 } else { new SimpleBusUC })
     val frontend = Flipped(new AXI4)
     val meip = Input(UInt(Settings.getInt("NrExtIntr").W))
-    val ila = if (p.FPGAPlatform && EnableILA) Some(Output(new ILABundle)) else None
+    val ila = if (FPGAPlatform && EnableILA) Some(Output(new ILABundle)) else None
   })
 
-  val nutcore = Module(new NutCore)
-//  val cohMg = Module(new CoherenceManager)
-  val xbar = Module(new SimpleBusCrossbarNto1(2))
-//  cohMg.io.in <> nutcore.io.imem.mem
-//  nutcore.io.dmem.coh <> cohMg.io.out.coh
-  xbar.io.in(0) <> nutcore.io.imem.mem //cohMg.io.out.mem
-  xbar.io.in(1) <> nutcore.io.dmem.mem
+  //val memory = IO(outer.memory.cloneType)
+  val memory = outer.memAXI4SlaveNode.makeIOs()
+  val nutcore = outer.nutcore.module
+  //val imem = outer.imem.module
 
   val axi2sb = Module(new AXI42SimpleBusConverter())
   axi2sb.io.in <> io.frontend
   nutcore.io.frontend <> axi2sb.io.out
-
-  val memport = xbar.io.out.toMemPort()
-  memport.resp.bits.data := DontCare
-  memport.resp.valid := DontCare
-  memport.req.ready := DontCare
-
-  val mem = if (HasL2cache) {
-    val l2cacheOut = Wire(new SimpleBusC)
-    val l2cacheIn = if (HasPrefetch) {
-      val prefetcher = Module(new Prefetcher)
-      val l2cacheIn = Wire(new SimpleBusUC)
-      prefetcher.io.in <> xbar.io.out.req
-      l2cacheIn.req <> prefetcher.io.out
-      xbar.io.out.resp <> l2cacheIn.resp
-      l2cacheIn
-    } else xbar.io.out
-    val l2Empty = Wire(Bool())
-    l2cacheOut <> Cache(in = l2cacheIn, mmio = 0.U.asTypeOf(new SimpleBusUC) :: Nil, flush = "b00".U, empty = l2Empty, enable = true)(
-      CacheConfig(name = "l2cache", totalSize = 128, cacheLevel = 2))
-    l2cacheOut.coh.resp.ready := true.B
-    l2cacheOut.coh.req.valid := false.B
-    l2cacheOut.coh.req.bits := DontCare
-    l2cacheOut.mem
-  } else {
-    xbar.io.out
-  }
-
-  val memMapRegionBits = Settings.getInt("MemMapRegionBits")
-  val memMapBase = Settings.getLong("MemMapBase")
-  val memAddrMap = Module(new SimpleBusAddressMapper((memMapRegionBits, memMapBase)))
-  memAddrMap.io.in <> mem
-  io.mem <> memAddrMap.io.out.toAXI4(true)
   
-  nutcore.io.imem.coh.resp.ready := true.B
+  /*val memMapRegionBits = Settings.getInt("MemMapRegionBits")
+  val memMapBase = Settings.getLong("MemMapBase")
+  val memAddrMap = Module(new SimpleBusAddressMapper((memMapRegionBits, memMapBase)))*/
+  //memAddrMap.io.in <> mem
+  //memAddrMap.io.in <> nutcore.io.imem.mem
+  
+  //io.mem <> memAddrMap.io.out.toAXI4(true)
+  //imem.io.in <> memAddrMap.io.out
+
+  /*nutcore.io.imem.coh.resp.ready := true.B
   nutcore.io.imem.coh.req.valid := false.B
-  nutcore.io.imem.coh.req.bits := DontCare
-  nutcore.io.dmem.coh.resp.ready := true.B
-  nutcore.io.dmem.coh.req.valid := false.B
-  nutcore.io.dmem.coh.req.bits := DontCare
+  nutcore.io.imem.coh.req.bits := DontCare*/
 
   val addrSpace = List(
     (Settings.getLong("MMIOBase"), Settings.getLong("MMIOSize")), // external devices
@@ -110,10 +150,10 @@ class NutShell(implicit val p: NutCoreConfig) extends Module with HasSoCParamete
   mmioXbar.io.in <> nutcore.io.mmio
 
   val extDev = mmioXbar.io.out(0)
-  if (p.FPGAPlatform) { io.mmio <> extDev.toAXI4() }
+  if (FPGAPlatform) { io.mmio <> extDev.toAXI4() }
   else { io.mmio <> extDev }
 
-  val clint = Module(new AXI4CLINT(sim = !p.FPGAPlatform))
+  val clint = Module(new AXI4CLINT(sim = !FPGAPlatform))
   clint.io.in <> mmioXbar.io.out(1).toAXI4Lite()
   val mtipSync = clint.io.extra.get.mtip
   val msipSync = clint.io.extra.get.msip
@@ -128,7 +168,7 @@ class NutShell(implicit val p: NutCoreConfig) extends Module with HasSoCParamete
   
 
   // ILA
-  if (p.FPGAPlatform) {
+  if (FPGAPlatform) {
     def BoringUtilsConnect(sink: UInt, id: String) {
       val temp = WireInit(0.U(64.W))
       BoringUtils.addSink(temp, id)

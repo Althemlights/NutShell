@@ -58,7 +58,7 @@ class Multiplier(len: Int) extends NutCoreModule {
   def DSPOutPipe[T <: Data](a: T) = RegNext(a)
   val mulRes = (DSPInPipe(io.in.bits(0)).asSInt * DSPInPipe(io.in.bits(1)).asSInt)
   io.out.bits := DSPOutPipe(mulRes).asUInt
-  io.out.valid := DSPOutPipe(DSPInPipe(io.in.fire()))
+  io.out.valid := DSPOutPipe(DSPInPipe(io.in.fire))
 
   val busy = RegInit(false.B)
   when (io.in.valid && !busy) { busy := true.B }
@@ -76,12 +76,12 @@ class Divider(len: Int = 64) extends NutCoreModule {
 
   val s_idle :: s_log2 :: s_shift :: s_compute :: s_finish :: Nil = Enum(5)
   val state = RegInit(s_idle)
-  val newReq = (state === s_idle) && io.in.fire()
-  val anotherReq = (state === s_finish) && io.in.fire() && io.out.ready
+  val newReq = (state === s_idle) && io.in.fire
+  val anotherReq = (state === s_finish) && io.in.fire && io.out.ready
 
   //add reg
-  val a_reg = RegEnable(io.in.bits(0),io.in.fire())
-  val b_reg = RegEnable(io.in.bits(1),io.in.fire())
+  val a_reg = RegEnable(io.in.bits(0),io.in.fire)
+  val b_reg = RegEnable(io.in.bits(1),io.in.fire)
   val a_in = Mux(io.in.valid,io.in.bits(0),a_reg)
   val b_in = Mux(io.in.valid,io.in.bits(1),b_reg)
   val (a, b) = (a_in,b_in)
@@ -125,7 +125,7 @@ class Divider(len: Int = 64) extends NutCoreModule {
     shiftReg := Cat(Mux(enough, hi - bReg, hi)(len - 1, 0), lo, enough)
     cnt.inc()
     when (cnt.value === (len-1).U) { state := s_finish }
-  } .elsewhen (state === s_finish && io.out.ready && !io.in.fire()) {
+  } .elsewhen (state === s_finish && io.out.ready && !io.in.fire) {
     state := s_idle
   }.elsewhen (anotherReq ) {
     state := s_log2

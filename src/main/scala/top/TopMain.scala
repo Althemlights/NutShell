@@ -24,15 +24,27 @@ import sim.SimTop
 import chisel3._
 import chisel3.stage._
 
+import freechips.rocketchip.diplomacy.{DisableMonitors, AddressSet, LazyModule, LazyModuleImp}
+import chipsalliance.rocketchip.config._
+
 class Top extends Module {
   val io = IO(new Bundle{})
-  val nutshell = Module(new NutShell()(NutCoreConfig()))
+  lazy val config = new DefaultConfig(FPGAPlatform = false)
+  val l_nutshell = LazyModule(new NutShell()(config))
+  val nutshell = Module(l_nutshell.module)
   val vga = Module(new AXI4VGA)
 
   nutshell.io := DontCare
   vga.io := DontCare
   dontTouch(nutshell.io)
   dontTouch(vga.io)
+}
+
+object Generator {
+  def execute(args: Array[String], mod: => RawModule) {
+    (new ChiselStage).execute(args, Seq(
+      ChiselGeneratorAnnotation(mod _)))
+  }
 }
 
 object TopMain extends App {
@@ -63,13 +75,20 @@ object TopMain extends App {
     case (f, v) =>
       println(f + " = " + v)
   }
+  
+  val config = new DefaultConfig(false)
+
   if (board == "sim") {
-    (new ChiselStage).execute(args, Seq(
-      ChiselGeneratorAnnotation(() => new SimTop))
-    )
+    Generator.execute(args, DisableMonitors(p => new SimTop()(p))(config))
+    /*(new ChiselStage).execute(args, Seq(
+      //ChiselGeneratorAnnotation(DisableMonitors(p => LazyModule(new SimTop()(p)))(config).module _))
+      ChiselGeneratorAnnotation(DisableMonitors(p => new SimTop()(p))(config))
+      )
+    )*/
   } else {
     (new ChiselStage).execute(args, Seq(
       ChiselGeneratorAnnotation(() => new Top))
     )
   }
 }
+

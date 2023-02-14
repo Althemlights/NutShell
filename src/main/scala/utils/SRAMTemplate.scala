@@ -192,7 +192,7 @@ class ysyxSRAMTemplate[T <: Data](gen: T, set: Int, way: Int = 1,
     sramarray(i).io.en    := ((wen || realRen) && (i.U===io.r.req.bits.setIdx(6)))
     sramarray(i).io.wen   := (wen && (i.U===io.r.req.bits.setIdx(6)))
     sramarray(i).io.idx   := Mux(wen, setIdx(5,0), io.r.req.bits.setIdx(5,0))
-    sramarray(i).io.wData := Sram_write.asUInt()
+    sramarray(i).io.wData := Sram_write.asUInt
     sramarray(i).io.wMask := FillInterleaved(128/way, waymask)
     when((wen || realRen) && (i.U===io.r.req.bits.setIdx(6))) {
       Sram_read             := sramarray(i).io.rData
@@ -231,7 +231,7 @@ class SRAMTemplateWithArbiter[T <: Data](nRead: Int, gen: T, set: Int, way: Int 
 
   // latch read results
   io.r.map{ case r => {
-    r.resp.data := HoldUnless(ram.io.r.resp.data, RegNext(r.req.fire()))
+    r.resp.data := HoldUnless(ram.io.r.resp.data, RegNext(r.req.fire))
   }}
 }
 
@@ -251,7 +251,7 @@ class ysyxSRAMTemplateWithArbiter[T <: Data](nRead: Int, gen: T, set: Int, way: 
 
   // latch read results
   io.r.map{ case r => {
-    r.resp.data := HoldUnless(ram.io.r.resp.data, RegNext(r.req.fire()))
+    r.resp.data := HoldUnless(ram.io.r.resp.data, RegNext(r.req.fire))
   }}
 }
 
@@ -444,7 +444,7 @@ class DataSRAMTemplate[T <: Data](gen: T, set: Int, way: Int = 1,
 //
 //  // latch read results
 //  io.r.map{ case r => {
-//    r.resp.data := HoldUnless(ram.io.r.resp.data, RegNext(r.req.fire()))
+//    r.resp.data := HoldUnless(ram.io.r.resp.data, RegNext(r.req.fire))
 //  }}
 //}
 
@@ -471,7 +471,7 @@ class DataSRAMTemplateWithArbiter[T <: Data](nRead: Int, gen: T, set: Int, way: 
 
   // latch read results
   io.r.map{ case r => {
-    r.resp.data := HoldUnless(ram.io.r.resp.data, RegNext(r.req.fire()))
+    r.resp.data := HoldUnless(ram.io.r.resp.data, RegNext(r.req.fire))
   }}
 }
 
@@ -498,6 +498,6 @@ class MetaSRAMTemplateWithArbiter[T <: Data](nRead: Int, gen: T, set: Int, way: 
 
   // latch read results
   io.r.map{ case r => {
-    r.resp.data := HoldUnless(ram.io.r.resp.data, RegNext(r.req.fire()))
+    r.resp.data := HoldUnless(ram.io.r.resp.data, RegNext(r.req.fire))
   }}
 }

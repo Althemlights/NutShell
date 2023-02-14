@@ -21,6 +21,10 @@ import chisel3.util._
 
 import bus.axi4._
 import utils._
+import freechips.rocketchip.amba.axi4.{AXI4MasterNode, AXI4MasterPortParameters, AXI4MasterParameters} 
+import freechips.rocketchip.diplomacy.{AddressSet, IdRange, LazyModule, LazyModuleImp}
+import chipsalliance.rocketchip.config.Parameters
+import freechips.rocketchip.tilelink._
 
 class AXI42SimpleBusConverter() extends Module {
   val idBits = 18
@@ -102,7 +106,7 @@ class AXI42SimpleBusConverter() extends Module {
     }
   }
 
-  when (isState(axi_write) && axi.w.fire()) {
+  when (isState(axi_write) && axi.w.fire) {
     mem.req.valid := true.B
     req.cmd := Mux(aw_reg.len === 0.U, SimpleBusCmd.write,
       Mux(w.last, SimpleBusCmd.writeLast, SimpleBusCmd.writeBurst))
@@ -134,11 +138,11 @@ class AXI42SimpleBusConverter() extends Module {
   axi.b.valid := bresp_en && mem.resp.valid
   axi.b.bits.resp := AXI4Parameters.RESP_OKAY
 
-  when (axi.ar.fire()) { assert(mem.req.fire() && !isInflight()); }
-  when (axi.aw.fire()) { assert(!isInflight()); }
-  when (axi.w.fire()) { assert(mem.req .fire() && isState(axi_write)); }
-  when (axi.b.fire()) { assert(mem.resp.fire() && isState(axi_write)); }
-  when (axi.r.fire()) { assert(mem.resp.fire() && isState(axi_read)); }
+  when (axi.ar.fire) { assert(mem.req.fire && !isInflight()); }
+  when (axi.aw.fire) { assert(!isInflight()); }
+  when (axi.w.fire) { assert(mem.req .fire && isState(axi_write)); }
+  when (axi.b.fire) { assert(mem.resp.fire && isState(axi_write)); }
+  when (axi.r.fire) { assert(mem.resp.fire && isState(axi_read)); }
 }
 
 
@@ -184,10 +188,10 @@ class SimpleBus2AXI4Converter[OT <: AXI4Lite](outType: OT, isFromCache: Boolean)
   mem.resp.bits.cmd  := Mux(rlast, SimpleBusCmd.readLast, 0.U)
 
   val wSend = Wire(Bool())
-  val awAck = BoolStopWatch(axi.aw.fire(), wSend)
-  val wAck = BoolStopWatch(axi.w.fire() && wlast, wSend)
-  wSend := (axi.aw.fire() && axi.w.fire() && wlast) || (awAck && wAck)
-  val wen = RegEnable(mem.req.bits.isWrite(), mem.req.fire())
+  val awAck = BoolStopWatch(axi.aw.fire, wSend)
+  val wAck = BoolStopWatch(axi.w.fire && wlast, wSend)
+  wSend := (axi.aw.fire && axi.w.fire && wlast) || (awAck && wAck)
+  val wen = RegEnable(mem.req.bits.isWrite(), mem.req.fire)
 
   axi.ar.valid := mem.isRead()
   axi.aw.valid := mem.isWrite() && !awAck
@@ -204,5 +208,119 @@ object SimpleBus2AXI4Converter {
     val bridge = Module(new SimpleBus2AXI4Converter(outType, isFromCache))
     bridge.io.in <> in
     bridge.io.out
+  }
+}
+
+//datawidth is 256
+class SB2AXI4MasterNode(isFromCache: Boolean)(implicit p: Parameters) extends LazyModule {
+  val idBits = 2
+  val node = AXI4MasterNode(
+    Seq(
+      AXI4MasterPortParameters(
+        masters = Seq(
+          AXI4MasterParameters(
+            name = "icacheAxiMaster",
+            id = IdRange(0, 1 << idBits)  
+          )
+        )
+      )
+    )
+  )
+  
+  lazy val module = new LazyModuleImp(this) {
+    val io = IO(new Bundle {
+      val in = Flipped(new SimpleBusUC)
+      //val out = Flipped(Flipped(outType))
+    })
+
+    val (bus, edge) = node.out.head
+    //val toAXI4Lite = !(io.in.req.valid && io.in.req.bits.isBurst()) && (outType.getClass == classOf[AXI4Lite]).B
+    //val toAXI4 = (outType.getClass == classOf[AXI4]).B
+    //assert(toAXI4Lite || toAXI4)
+
+    val (mem, axi) = (io.in, bus)
+    val (ar, aw, w, r, b) = (axi.ar.bits, axi.aw.bits, axi.w.bits, axi.r.bits, axi.b.bits)
+
+    ar.addr  := mem.req.bits.addr
+    ar.prot  := AXI4Parameters.PROT_PRIVILEDGED
+    w.data := mem.req.bits.wdata
+    w.strb := mem.req.bits.wmask
+
+    def LineBeats = 2
+    val wlast = WireInit(true.B)
+    val rlast = WireInit(true.B)
+    
+    ar.id    := 0.U
+    ar.len   := Mux(mem.req.bits.isBurst(), (LineBeats - 1).U, 0.U)
+    //ar.size  := mem.req.bits.size
+    /*ar.burst := (if (isFromCache) AXI4Parameters.BURST_WRAP
+                          else AXI4Parameters.BURST_INCR)*/
+    ar.burst := AXI4Parameters.BURST_INCR
+    ar.lock  := false.B
+    ar.cache := 0.U
+    ar.qos   := 0.U
+    //ar.user  := 0.U
+    w.last   := mem.req.bits.isWriteLast() || mem.req.bits.isWriteSingle()
+    wlast := w.last
+    rlast := r.last
+    
+    val Rcnt = Counter(4)
+    val len = RegInit(0.U)
+    aw := ar
+    mem.resp.bits.rdata := r.data
+    mem.resp.bits.cmd  := Mux(mem.resp.fire && len === 1.U && Rcnt.value === 3.U, SimpleBusCmd.readLast, 0.U)
+
+    val wSend = Wire(Bool())
+    val awAck = BoolStopWatch(axi.aw.fire, wSend)
+    val wAck = BoolStopWatch(axi.w.fire && wlast, wSend)
+    wSend := (axi.aw.fire && axi.w.fire && wlast) || (awAck && wAck)
+    val wen = RegEnable(mem.req.bits.isWrite(), mem.req.fire)
+
+    axi.ar.valid := mem.isRead()
+    axi.aw.valid := mem.isWrite() && !awAck
+    axi.w .valid := mem.isWrite() && !wAck
+    mem.req.ready  := Mux(mem.req.bits.isWrite(), !wAck && axi.w.ready, axi.ar.ready)
+
+    val Ren = RegInit(false.B)
+    axi.r.ready  := mem.resp.ready && !Ren
+    axi.b.ready  := mem.resp.ready
+
+    
+    mem.resp.valid  := Mux(wen, axi.b.valid, Mux(axi.r.fire, true.B, Ren))
+
+    val Rdata = Reg(UInt(256.W))
+    val s_idle :: s_r :: Nil = Enum(2)
+    val state = RegInit(0.U)
+    
+    switch (state) {
+      is (s_idle) {
+        when (axi.ar.fire) {
+          state := s_r
+        }
+      }
+      is (s_r) {
+        when (axi.r.fire) {
+          Rdata := r.data
+          Rcnt.value := 1.U
+          Ren := true.B
+          when (r.last) {
+            len := 1.U
+          }
+        }
+        when (len === 1.U && Rcnt.value === 3.U) {
+          state := s_idle
+          len := 0.U
+        }
+        when (Rcnt.value === 3.U) {
+          Ren := false.B
+        }
+        when (Ren) {
+          Rcnt.inc()
+        }
+        when (mem.resp.fire) {
+          mem.resp.bits.rdata := Mux(Rcnt.value === 0.U, r.data(63, 0), (Rdata >> (Rcnt.value << 6.U))(63, 0))
+        }
+      }
+    }
   }
 }

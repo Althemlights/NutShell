@@ -41,7 +41,7 @@ class DecodeIO2BypassPkt extends Module {
     if(begin == end)
       out := hitVec(begin)
     else
-      out := hitVec.asUInt()(end,begin).orR()
+      out := hitVec.asUInt(end,begin).orR()
     out
   }
   //生成 BypassPkt， 以及issue stall 信号
@@ -204,8 +204,8 @@ class DecodeIO2BypassPkt extends Module {
   //Signal to PMU
   //Normal Bound
   dontTouch(io.pmuio)
-  io.pmuio.normali0 := io.in(0).fire()
-  io.pmuio.normali1 := io.in(1).fire()
+  io.pmuio.normali0 := io.in(0).fire
+  io.pmuio.normali1 := io.in(1).fire
   //Wrong Prediction Bound
 
   //Frontend Bound

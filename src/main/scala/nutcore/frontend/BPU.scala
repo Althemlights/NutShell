@@ -128,7 +128,7 @@ class BPU_ooo extends NutCoreModule {
   // we should latch the input pc for one cycle
   val pcLatch = RegEnable(io.in.pc.bits, io.in.pc.valid)
   val btbHit = Wire(Vec(4, Bool()))
-  (0 to 3).map(i => btbHit(i) := btbRead(i).valid && btbRead(i).tag === btbAddr.getTag(pcLatch) && !flush && RegNext(btb(i).io.r.req.fire(), init = false.B))
+  (0 to 3).map(i => btbHit(i) := btbRead(i).valid && btbRead(i).tag === btbAddr.getTag(pcLatch) && !flush && RegNext(btb(i).io.r.req.fire, init = false.B))
   // btbHit will ignore pc(2,0). pc(2,0) is used to build brIdx
   val brIdx = VecInit(Seq.fill(4)(false.B))
   val crosslineJump = btbRead(3).crosslineJump && btbHit(3) && !brIdx(0) && !brIdx(1) && !brIdx(2)
@@ -138,7 +138,7 @@ class BPU_ooo extends NutCoreModule {
   val pcLatchValid = genInstValid(pcLatch)
   val btbIsBranch = Wire(Vec(4, Bool()))
   (0 to 3).map(i => (btbIsBranch(i) := btbRead(i).valid && (btbRead(i)._type === BTBtype.B) && pcLatchValid(i).asBool && btbRead(i).tag === btbAddr.getTag(pcLatch)))
-  io.out.btbIsBranch := outputHold(btbIsBranch.asUInt(),validLatch)
+  io.out.btbIsBranch := outputHold(btbIsBranch.asUInt,validLatch)
   // PHT
   val pht = List.fill(4)(Mem(NRbht >> 2, UInt(2.W)))
   val phtTaken = Wire(Vec(4, Bool()))
@@ -404,7 +404,7 @@ class BPU_inorder extends NutCoreModule {
   // since there is one cycle latency to read SyncReadMem,
   // we should latch the input pc for one cycle
   val pcLatch = RegEnable(io.in.pc.bits, io.in.pc.valid)
-  val btbHit = btbRead.valid && btbRead.tag === btbAddr.getTag(pcLatch) && !flush && RegNext(btb.io.r.req.fire(), init = false.B) && !(pcLatch(1) && btbRead.brIdx(0))
+  val btbHit = btbRead.valid && btbRead.tag === btbAddr.getTag(pcLatch) && !flush && RegNext(btb.io.r.req.fire, init = false.B) && !(pcLatch(1) && btbRead.brIdx(0))
   // btbHit will ignore pc(1,0). pc(1,0) is used to build brIdx
   // !(pcLatch(1) && btbRead.brIdx(0)) is used to deal with the following case:
   // -------------------------------------------------

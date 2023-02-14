@@ -23,7 +23,11 @@ import chisel3.util.experimental.BoringUtils
 import bus.simplebus._
 import bus.axi4._
 import utils._
-import top.Settings
+import top._
+import chipsalliance.rocketchip.config.Parameters
+import system.HasNutCoreParameters
+
+import freechips.rocketchip.diplomacy.{LazyModule, LazyModuleImp}
 
 trait HasNutCoreParameter {
   // General Parameter for NutShell
@@ -89,10 +93,22 @@ object AddressSpace extends HasNutCoreParameter {
   }).reduce(_ || _)
 }
 
-class NutCore(implicit val p: NutCoreConfig) extends NutCoreModule {
+class NutCore()(implicit p: Parameters) extends LazyModule with HasNutCoreParameter with HasNutCoreConst with HasExceptionNO with HasBackendConst with HasNutCoreParameters{
+
+  val dcache = LazyModule(new DCache())
+  val icache = LazyModule(new ICache())
+  //Debug() {printf("%d", FPGAPlatform)}
+  lazy val module = new NutCoreImp(this)
+}
+
+class NutCoreImp(outer: NutCore) extends LazyModuleImp(outer) with HasNutCoreParameter with HasNutCoreConst with HasExceptionNO with HasBackendConst{
+  
+  val dcache = outer.dcache.module
+  val icache = outer.icache.module
+
   class NutCoreIO extends Bundle {
-    val imem = new SimpleBusC
-    val dmem = new SimpleBusC
+    //val imem = new SimpleBusC
+    //val dmem = new SimpleBusC
     val mmio = new SimpleBusUC
     val frontend = Flipped(new SimpleBusUC())
   }
@@ -100,7 +116,7 @@ class NutCore(implicit val p: NutCoreConfig) extends NutCoreModule {
 
   // Frontend
   val frontend = (Settings.get("IsRV32"), Settings.get("EnableOutOfOrderExec")) match {
-    case (true, _)      => Module(new Frontend_embedded)
+    case (true, _)      => Module(new Frontend_embedded())
     case (false, true)  => Module(new Frontend_ooo)
     case (false, false) => Module(new Frontend_inorder)
   }
@@ -118,10 +134,19 @@ class NutCore(implicit val p: NutCoreConfig) extends NutCoreModule {
 //  PipelineVector2Connect(new DecodeIO, frontend.io.out(0), frontend.io.out(1), SSDbackend.io.in(0), SSDbackend.io.in(1), frontend.io.flushVec(1), 16)
 //  PipelineVector2Connect(new DecodeIO, frontend.io.out(2), frontend.io.out(3), SSDbackend.io.in(2), SSDbackend.io.in(3), frontend.io.flushVec(1), 16)
   for(i <- 0 to 3){frontend.io.out(i) <> SSDbackend.io.in(i)}
-  val mmioXbar = Module(new SimpleBusCrossbarNto1(2))
+  val mmioXbar = Module(new SimpleBusCrossbarNto1(1))
+  mmioXbar.io.in(0) := DontCare
   val s2NotReady = WireInit(false.B)
-  io.imem <> SSDCache(in = frontend.io.imem, mmio = mmioXbar.io.in(0), flush = (frontend.io.flushVec(0) | frontend.io.bpFlush))(SSDCacheConfig(ro = true, name = "icache", userBits = ICacheUserBundleWidth))
-  io.dmem <> SSDCache(in = SSDbackend.io.dmem, mmio = mmioXbar.io.in(1), flush = false.B)(SSDCacheConfig(ro = true, name = "dcache"))
+  //io.imem <> SSDCache(in = frontend.io.imem, mmio = mmioXbar.io.in(0), flush = (frontend.io.flushVec(0) | frontend.io.bpFlush))(SSDCacheConfig(ro = true, name = "icache", userBits = ICacheUserBundleWidth))
+  //io.dmem <> SSDCache(in = SSDbackend.io.dmem, mmio = mmioXbar.io.in(1), flush = false.B)(SSDCacheConfig(ro = true, name = "dcache"))
+  
+  icache.io.in <> frontend.io.imem
+  icache.io.flush := frontend.io.flushVec(0) | frontend.io.bpFlush
+
+
+  dcache.io.in <> SSDbackend.io.dmem
+  //dcache.io.mmio <> mmioXbar.io.in(1)
+  dcache.io.flush := false.B
 
   // DMA?
   io.frontend.resp.bits := DontCare

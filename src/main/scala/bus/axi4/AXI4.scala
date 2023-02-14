@@ -7,6 +7,7 @@ import chisel3.util._
 
 import nutcore.HasNutCoreParameter
 import utils._
+import freechips.rocketchip.amba.axi4._ 
 
 object AXI4Parameters extends HasNutCoreParameter {
   // These are all fixed by the AXI4 standard:
@@ -43,17 +44,25 @@ object AXI4Parameters extends HasNutCoreParameter {
   def RESP_DECERR = 3.U(respBits.W)
 }
 
+object XiaoheAXI4Parameters extends HasNutCoreParameter {
+  // These are not fixed:
+  val idBits    = 1
+  val addrBits  = PAddrBits
+  val dataBits  = DataBits
+  val userBits  = 1  
+}
+
 trait AXI4HasUser {
-  val user  = Output(UInt(AXI4Parameters.userBits.W))
+  val user  = Output(UInt(XiaoheAXI4Parameters.userBits.W))
 }
 
 trait AXI4HasData {
-  def dataBits = AXI4Parameters.dataBits
+  def dataBits = XiaoheAXI4Parameters.dataBits
   val data  = Output(UInt(dataBits.W))
 }
 
 trait AXI4HasId {
-  def idBits = AXI4Parameters.idBits
+  def idBits = XiaoheAXI4Parameters.idBits
   val id    = Output(UInt(idBits.W))
 }
 
@@ -64,11 +73,11 @@ trait AXI4HasLast {
 // AXI4-lite
 
 class AXI4LiteBundleA extends Bundle {
-  val addr  = Output(UInt(AXI4Parameters.addrBits.W))
+  val addr  = Output(UInt(XiaoheAXI4Parameters.addrBits.W))
   val prot  = Output(UInt(AXI4Parameters.protBits.W))
 }
 
-class AXI4LiteBundleW(override val dataBits: Int = AXI4Parameters.dataBits) extends Bundle with AXI4HasData {
+class AXI4LiteBundleW(override val dataBits: Int = XiaoheAXI4Parameters.dataBits) extends Bundle with AXI4HasData {
   val strb = Output(UInt((dataBits/8).W))
 }
 
@@ -76,7 +85,7 @@ class AXI4LiteBundleB extends Bundle {
   val resp = Output(UInt(AXI4Parameters.respBits.W))
 }
 
-class AXI4LiteBundleR(override val dataBits: Int = AXI4Parameters.dataBits) extends AXI4LiteBundleB with AXI4HasData
+class AXI4LiteBundleR(override val dataBits: Int = XiaoheAXI4Parameters.dataBits) extends AXI4LiteBundleB with AXI4HasData
 
 
 class AXI4Lite extends Bundle {
@@ -114,7 +123,7 @@ class AXI4BundleR(override val dataBits: Int, override val idBits: Int) extends 
 }
 
 
-class AXI4(val dataBits: Int = AXI4Parameters.dataBits, val idBits: Int = AXI4Parameters.idBits) extends AXI4Lite {
+class AXI4(val dataBits: Int = XiaoheAXI4Parameters.dataBits, val idBits: Int = XiaoheAXI4Parameters.idBits) extends AXI4Lite {
   override val aw = Decoupled(new AXI4BundleA(idBits))
   override val w  = Decoupled(new AXI4BundleW(dataBits))
   override val b  = Flipped(Decoupled(new AXI4BundleB(idBits)))
@@ -122,10 +131,10 @@ class AXI4(val dataBits: Int = AXI4Parameters.dataBits, val idBits: Int = AXI4Pa
   override val r  = Flipped(Decoupled(new AXI4BundleR(dataBits, idBits)))
 
   def dump(name: String) = {
-    when (aw.fire()) { printf(p"${GTimer()},[${name}.aw] ${aw.bits}\n") }
-    when (w.fire()) { printf(p"${GTimer()},[${name}.w] ${w.bits}\n") }
-    when (b.fire()) { printf(p"${GTimer()},[${name}.b] ${b.bits}\n") }
-    when (ar.fire()) { printf(p"${GTimer()},[${name}.ar] ${ar.bits}\n") }
-    when (r.fire()) { printf(p"${GTimer()},[${name}.r] ${r.bits}\n") }
+    when (aw.fire) { printf(p"${GTimer()},[${name}.aw] ${aw.bits}\n") }
+    when (w.fire) { printf(p"${GTimer()},[${name}.w] ${w.bits}\n") }
+    when (b.fire) { printf(p"${GTimer()},[${name}.b] ${b.bits}\n") }
+    when (ar.fire) { printf(p"${GTimer()},[${name}.ar] ${ar.bits}\n") }
+    when (r.fire) { printf(p"${GTimer()},[${name}.r] ${r.bits}\n") }
   }
 }

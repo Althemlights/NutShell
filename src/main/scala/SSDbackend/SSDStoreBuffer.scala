@@ -42,7 +42,7 @@ class StoreBuffer extends NutCoreModule with HasStoreBufferConst{
   val writeFire = Wire(Bool())
   val readFire = Wire(Bool())
   writeFire := io.in.valid && !io.isFull
-  readFire := io.out.fire()
+  readFire := io.out.fire
   //StoreBuffer Memory
   val StoreBuffer = RegInit(VecInit(Seq.fill(StoreBufferSize)(0.U.asTypeOf( new StoreBufferEntry))))
   //merge reference signal

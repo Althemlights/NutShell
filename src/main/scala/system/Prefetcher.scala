@@ -40,9 +40,9 @@ class Prefetcher extends Module with HasPrefetcherParameter {
   prefetchReq.addr := io.in.bits.addr + XLEN.U
 
   //lastReqAddr not be initted, in vivado simulation maybe fail
-  //val lastReqAddr = (RegEnable(io.in.bits.addr, io.in.fire()))
+  //val lastReqAddr = (RegEnable(io.in.bits.addr, io.in.fire))
   val lastReqAddr = RegInit(0.U(AddrBits.W))
-  when (io.in.fire()) {
+  when (io.in.fire) {
      lastReqAddr := io.in.bits.addr
   }
   val thisReqAddr = io.in.bits.addr
@@ -52,13 +52,13 @@ class Prefetcher extends Module with HasPrefetcherParameter {
   when (!getNewReq) {
     io.out.bits <> io.in.bits
     io.out.valid := io.in.valid
-    io.in.ready := !io.in.valid || io.out.fire()
-    getNewReq := io.in.fire() && io.in.bits.isBurst() && neqAddr
+    io.in.ready := !io.in.valid || io.out.fire
+    getNewReq := io.in.fire && io.in.bits.isBurst() && neqAddr
   }.otherwise {
     io.out.bits <> prefetchReq
     io.out.valid := !AddressSpace.isMMIO(prefetchReq.addr)
     io.in.ready := false.B
-    getNewReq := !(io.out.fire() || AddressSpace.isMMIO(prefetchReq.addr))
+    getNewReq := !(io.out.fire || AddressSpace.isMMIO(prefetchReq.addr))
   }
   
   Debug() {

@@ -109,7 +109,7 @@ class NaiveMultiplier(len: Int, val latency: Int)
 
   val mulRes = src1.asSInt() * src2.asSInt()
 
-  var dataVec = Seq(mulRes.asUInt())
+  var dataVec = Seq(mulRes.asUInt)
   var ctrlVec = Seq(ctrl)
 
   for(i <- 1 to latency){
@@ -134,7 +134,7 @@ class ArrayMulDataModule(len: Int) extends Module {
   val b_sext, bx2, neg_b, neg_bx2 = Wire(UInt((len+1).W))
   b_sext := SignExt(b, len+1)
   bx2 := b_sext << 1
-  neg_b := (~b_sext).asUInt()
+  neg_b := (~b_sext).asUInt
   neg_bx2 := neg_b << 1
 
   val columns: Array[Seq[Bool]] = Array.fill(2*len)(Seq())

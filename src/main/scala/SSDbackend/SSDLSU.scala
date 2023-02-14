@@ -121,10 +121,10 @@ class SSDLSU extends  NutCoreModule with HasStoreBufferConst{
   MMIOStorePkt.bits := outBuffer.io.deq.bits
   MMIOStorePkt.valid := outBuffer.io.deq.valid
   MMIOStorePkt.ready := false.B
-  BoringUtils.addSource(MMIOStorePkt.valid,"MMIOStorePktValid")
-  BoringUtils.addSource(MMIOStorePkt.bits,"MMIOStorePktBits")
-  BoringUtils.addSink(MMIOStorePkt.ready,"MMIOStorePktReady")
-  BoringUtils.addSource(MMIOStorePending,"MMIOStorePending")
+  //BoringUtils.addSource(MMIOStorePkt.valid,"MMIOStorePktValid")
+  //BoringUtils.addSource(MMIOStorePkt.bits,"MMIOStorePktBits")
+  //BoringUtils.addSink(MMIOStorePkt.ready,"MMIOStorePktReady")
+  //BoringUtils.addSource(MMIOStorePending,"MMIOStorePending")
 
   //stall signal
   val cacheStall = WireInit(false.B)
@@ -144,7 +144,7 @@ class SSDLSU extends  NutCoreModule with HasStoreBufferConst{
   lsuPipeIn(0).bits.size := size
   lsuPipeIn(0).bits.mask := reqWmask
   lsuPipeIn(0).bits.func := func
-  lsuPipeIn(0).bits.isCacheStore := cacheIn.fire() && cacheIn.bits.cmd === SimpleBusCmd.write
+  lsuPipeIn(0).bits.isCacheStore := cacheIn.fire && cacheIn.bits.cmd === SimpleBusCmd.write
   lsuPipeIn(0).bits.pc := pc
   lsuPipeIn(0).bits.isMMIOStore := isMMIOStore
   lsuPipeIn(0).bits.isMMIOStoreInvalid := isMMIOStore
@@ -175,7 +175,7 @@ class SSDLSU extends  NutCoreModule with HasStoreBufferConst{
   (lsuPipeList0 zip pipeIndexList0).foreach{ case(a,b) =>
     a.io.left <> lsuPipeIn(b)
     a.io.right <> lsuPipeOut(b)
-    a.io.rightOutFire <> lsuPipeOut(b).fire()
+    a.io.rightOutFire <> lsuPipeOut(b).fire
     a.io.isFlush <> flush(b)
     a.io.inValid <> invalid(b)
   }
@@ -293,7 +293,7 @@ class SSDLSU extends  NutCoreModule with HasStoreBufferConst{
   val storeHitCtrl = Module(new stallPointConnect(new StoreHitCtrl))
   storeHitCtrl.left.valid := lsuPipeIn(0).valid && !lsuPipeIn(0).bits.isStore && !lsuPipeIn(0).bits.isCacheStore
   storeHitCtrl.right.ready := lsuPipeOut(0).ready
-  storeHitCtrl.rightOutFire := lsuPipeOut(0).fire()
+  storeHitCtrl.rightOutFire := lsuPipeOut(0).fire
   storeHitCtrl.left.bits.hit := hitE2
   storeHitCtrl.left.bits.hitMask := hitMaskE2
   storeHitCtrl.left.bits.hitData := hitDataE2
@@ -310,7 +310,7 @@ class SSDLSU extends  NutCoreModule with HasStoreBufferConst{
   val hitDataE3 = Mux(addrHitE3,mergedDataE3,io.dmem.resp.bits.rdata)
   dontTouch(addrHitE3)
   dontTouch(hitDataE3)
-  BoringUtils.addSource(addrHitE3,"storeHit")
+  //BoringUtils.addSource(addrHitE3,"storeHit")
 
   val rdataSel = LookupTree(addrE3(2, 0), List(
     "b000".U -> hitDataE3(63, 0),
@@ -332,10 +332,10 @@ class SSDLSU extends  NutCoreModule with HasStoreBufferConst{
   ))
   //LSU out
   val dmemFireLatch = RegInit(false.B)
-  when(io.memStall && io.dmem.resp.fire()){ dmemFireLatch := true.B
+  when(io.memStall && io.dmem.resp.fire){ dmemFireLatch := true.B
   }.elsewhen(!bufferFullStall){ dmemFireLatch := false.B }
   io.in.ready := lsuPipeIn(0).ready || loadCacheIn.ready
-  io.out.valid := (io.dmem.resp.fire() || dmemFireLatch || addrHitE3) && lsuPipeStage3.right.valid && !lsuPipeStage3.right.bits.isStore && !lsuPipeStage3.right.bits.isCacheStore
+  io.out.valid := (io.dmem.resp.fire || dmemFireLatch || addrHitE3) && lsuPipeStage3.right.valid && !lsuPipeStage3.right.bits.isStore && !lsuPipeStage3.right.bits.isCacheStore
   dontTouch(io.out.valid)
   io.isMMIO := lsuPipeStage3.right.bits.isMMIO
   val partialLoad = !lsuPipeOut(0).bits.isStore && (lsuPipeOut(0).bits.func =/= LSUOpType.ld) && lsuPipeOut(0).valid
@@ -349,8 +349,8 @@ class SSDLSU extends  NutCoreModule with HasStoreBufferConst{
   storeBuffer.io.in.bits.mask := lsuPipeStage4.io.right.bits.mask
   storeBuffer.io.in.bits.size := lsuPipeStage4.io.right.bits.size
   //mydebug
-  val loadCond = lsuPipeOut(0).fire() && !lsuPipeOut(0).bits.isStore && !lsuPipeOut(0).bits.isCacheStore && io.out.valid
-  val storeCond = lsuPipeOut(0).fire() && lsuPipeOut(0).bits.isStore
+  val loadCond = lsuPipeOut(0).fire && !lsuPipeOut(0).bits.isStore && !lsuPipeOut(0).bits.isCacheStore && io.out.valid
+  val storeCond = lsuPipeOut(0).fire && lsuPipeOut(0).bits.isStore
   dontTouch(loadCond)
   dontTouch(storeCond)
   val tag = lsuPipeOut(0).bits.paddr === "h80022b70".U

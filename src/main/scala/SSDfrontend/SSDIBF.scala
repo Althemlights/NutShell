@@ -73,7 +73,7 @@
 //  // NOTE: needEnqueue is always of fmt "0?1?0?"
 //  // therefore we first shift input data, then enqueue
 //  // val enqueueSize = List.tabulate(4)(i => needEnqueue(i).asUInt).foldRight(0.U)((sum, i)=>sum+&i) // count(true) in needEnqueue
-//  val enqueueSize = needEnqueue(0).asUInt()+&needEnqueue(1).asUInt()+&needEnqueue(2).asUInt()+&needEnqueue(3).asUInt() // count(true) in needEnqueue
+//  val enqueueSize = needEnqueue(0).asUInt+&needEnqueue(1).asUInt+&needEnqueue(2).asUInt+&needEnqueue(3).asUInt // count(true) in needEnqueue
 //  val shiftSize = Mux(needEnqueue(0), 0.U, Mux(needEnqueue(1), 1.U, Mux(needEnqueue(2), 2.U, 3.U))) // count 0 in low addr in needEnqueue
 //  val enqueueFire = (0 to 3).map(i => enqueueSize >= (i+1).U)
 //

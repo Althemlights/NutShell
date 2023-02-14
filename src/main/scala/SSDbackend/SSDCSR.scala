@@ -641,7 +641,7 @@ class SSDCSR extends NutCoreModule with SSDHasCSRConst{
   csrExceptionVec(loadPageFault) := false.B
   csrExceptionVec(storePageFault) := false.B
   val iduExceptionVec = io.cfIn.exceptionVec
-  val raiseExceptionVec = csrExceptionVec.asUInt() | iduExceptionVec.asUInt()
+  val raiseExceptionVec = csrExceptionVec.asUInt | iduExceptionVec.asUInt
   val raiseException = raiseExceptionVec.orR
   val exceptionNO = ExcPriority.foldRight(0.U)((i: Int, sum: UInt) => Mux(raiseExceptionVec(i), i.U, sum))
   io.wenFix := raiseException
@@ -662,7 +662,7 @@ class SSDCSR extends NutCoreModule with SSDHasCSRConst{
   io.redirect.ghrUpdateValid := false.B
   io.redirect.btbIsBranch := 0.U
   io.redirect.pc := io.cfIn.pc
-  Debug(raiseExceptionIntr, "excin %b excgen %b", csrExceptionVec.asUInt(), iduExceptionVec.asUInt())
+  Debug(raiseExceptionIntr, "excin %b excgen %b", csrExceptionVec.asUInt, iduExceptionVec.asUInt)
   Debug(raiseExceptionIntr, "int/exc: pc %x int (%d):%x exc: (%d):%x\n",io.cfIn.pc, intrNO, io.cfIn.intrVec.asUInt, exceptionNO, raiseExceptionVec.asUInt)
   Debug(raiseExceptionIntr, "[MST] time %d pc %x mstatus %x mideleg %x medeleg %x mode %x\n", GTimer(), io.cfIn.pc, mstatus, mideleg , medeleg, priviledgeMode)
   Debug(io.redirect.valid, "redirect to %x\n", io.redirect.target)

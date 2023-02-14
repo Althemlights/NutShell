@@ -22,8 +22,9 @@ import chisel3.util.experimental.BoringUtils
 import utils._
 import bus.simplebus._
 import chisel3.experimental.IO
+import chipsalliance.rocketchip.config.Parameters
 
-class FrontendIO(implicit val p: NutCoreConfig) extends Bundle with HasNutCoreConst {
+class FrontendIO(implicit p: Parameters) extends Bundle with HasNutCoreConst {
   val imem = new SimpleBusUC(userBits = ICacheUserBundleWidth, addrBits = VAddrBits)
   val out = Vec(4, Decoupled(new DecodeIO))
   val flushVec = Output(UInt(4.W))
@@ -34,11 +35,11 @@ class FrontendIO(implicit val p: NutCoreConfig) extends Bundle with HasNutCoreCo
 
 
 trait HasFrontendIO {
-  implicit val p: NutCoreConfig
+  implicit val p: Parameters
   val io = IO(new FrontendIO)
 }
 
-class Frontend_ooo(implicit val p: NutCoreConfig) extends NutCoreModule with HasFrontendIO {
+class Frontend_ooo(implicit val p: Parameters) extends NutCoreModule with HasFrontendIO {
   def pipelineConnect2[T <: Data](left: DecoupledIO[T], right: DecoupledIO[T],
     isFlush: Bool, entries: Int = 4, pipe: Boolean = false) = {
     // NOTE: depend on https://github.com/chipsalliance/chisel3/pull/2245
@@ -71,11 +72,11 @@ class Frontend_ooo(implicit val p: NutCoreConfig) extends NutCoreModule with Has
 
 }
 
-class Frontend_embedded(implicit val p: NutCoreConfig) extends NutCoreModule with HasFrontendIO {
+class Frontend_embedded(implicit val p: Parameters) extends NutCoreModule with HasFrontendIO {
   val ifu  = Module(new IFU_embedded)
   val idu  = Module(new IDU)
 
-  PipelineConnect(ifu.io.out, idu.io.in(0), idu.io.out(0).fire(), ifu.io.flushVec(0))
+  PipelineConnect(ifu.io.out, idu.io.in(0), idu.io.out(0).fire, ifu.io.flushVec(0))
   idu.io.in(1) := DontCare
 
   io.out <> idu.io.out
@@ -92,7 +93,7 @@ class Frontend_embedded(implicit val p: NutCoreConfig) extends NutCoreModule wit
     Debug(idu.io.in(0).valid, "IDU1: pc = 0x%x, instr = 0x%x, pnpc = 0x%x\n", idu.io.in(0).bits.pc, idu.io.in(0).bits.instr, idu.io.in(0).bits.pnpc)
 }
 
-class Frontend_inorder(implicit val p: NutCoreConfig) extends NutCoreModule with HasFrontendIO {
+class Frontend_inorder(implicit val p: Parameters) extends NutCoreModule with HasFrontendIO {
   val ifu  = Module(new IFU_inorder)
   val ibf = Module(new NaiveRVCAlignBuffer)
   val idu  = Module(new IDU)
@@ -105,7 +106,7 @@ class Frontend_inorder(implicit val p: NutCoreConfig) extends NutCoreModule with
   }
 
   PipelineConnect2(ifu.io.out, ibf.io.in, ifu.io.flushVec(0))
-  PipelineConnect(ibf.io.out, idu.io.in(0), idu.io.out(0).fire(), ifu.io.flushVec(1))
+  PipelineConnect(ibf.io.out, idu.io.in(0), idu.io.out(0).fire, ifu.io.flushVec(1))
   idu.io.in(1) := DontCare
 
   ibf.io.flush := ifu.io.flushVec(1)

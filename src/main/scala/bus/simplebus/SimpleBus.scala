@@ -29,21 +29,21 @@ sealed abstract class SimpleBusBundle extends Bundle with HasNutCoreParameter
 object SimpleBusCmd {
   // req
                                  //   hit    |    miss
-  def read           = "b0000".U //  read    |   refill
-  def write          = "b0001".U //  write   |   refill
-  def readBurst      = "b0010".U //  read    |   refill
-  def writeBurst     = "b0011".U //  write   |   refill
-  def writeLast      = "b0111".U //  write   |   refill
-  def probe          = "b1000".U //  read    | do nothing
-  def prefetch       = "b0100".U //  read    |   refill
+  def read           = "b00000".U //  read    |   refill
+  def write          = "b00001".U //  write   |   refill
+  def readBurst      = "b00010".U //  read    |   refill
+  def writeBurst     = "b00011".U //  write   |   refill
+  def writeLast      = "b00111".U //  write   |   refill
+  def probe          = "b01000".U //  read    | do nothing
+  def prefetch       = "b00100".U //  read    |   refill
 
   // resp
-  def readLast       = "b0110".U
-  def writeResp      = "b0101".U
-  def probeHit       = "b1100".U
-  def probeMiss      = "b1000".U
+  def readLast       = "b00110".U
+  def writeResp      = "b00101".U
+  def probeHit       = "b01100".U
+  def probeMiss      = "b01000".U
 
-  def apply() = UInt(4.W)
+  def apply() = UInt(5.W)
 }
 
 class SimpleBusReqBundle(val userBits: Int = 0, val addrBits: Int = 32, val idBits: Int = 0) extends SimpleBusBundle {
@@ -107,8 +107,8 @@ class SimpleBusUC(val userBits: Int = 0, val addrBits: Int = 32, val idBits: Int
   def toMemPort() = SimpleBus2MemPortConverter(this, new MemPortIo(32))
 
   def dump(name: String) = {
-    when (req.fire()) { printf(p"${GTimer()},[${name}] ${req.bits}\n") }
-    when (resp.fire()) { printf(p"${GTimer()},[${name}] ${resp.bits}\n") }
+    when (req.fire) { printf(p"${GTimer()},[${name}] ${req.bits}\n") }
+    when (resp.fire) { printf(p"${GTimer()},[${name}] ${resp.bits}\n") }
   }
 }
 

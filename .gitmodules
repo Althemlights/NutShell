@@ -5,3 +5,9 @@
 [submodule "rocket-chip"]
 	path = rocket-chip
 	url = https://github.com/OpenXiangShan/rocket-chip.git
+[submodule "fudian"]
+	path = fudian
+	url = https://github.com/OpenXiangShan/fudian.git
+[submodule "HuanCun"]
+	path = HuanCun
+	url = https://github.com/OpenXiangShan/HuanCun.git
