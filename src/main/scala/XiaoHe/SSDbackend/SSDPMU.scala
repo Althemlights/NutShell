@@ -252,10 +252,12 @@ class PMU extends Module{
     "i1i0loadstore"              ->   (0x0b,  "i1i0loadstore"),
     "i1muldiv"              ->   (0x0c,  "i1muldiv"),
     "i1load"                ->   (0x0d,  "i1load"),
-    "i1loadHitlater"              ->   (0x0e,  "i1loadHitlater")
+    "i1loadHitlater"              ->   (0x0e,  "i1loadHitlater"),
+    "i1StallAndInvalid"     ->  (0x0f, "i1StallAndInvalid"),
+    "redirectAtMemstall"    -> (0x10, "redirectAtMemstall")
   )
 
-  val stall1CntNum = 16
+  val stall1CntNum = 32
   val stall1Cnts = List.fill(stall1CntNum)(RegInit(0.U(64.W)))
   val stall1CntCond = List.fill(stall1CntNum)(WireInit(false.B))
   if(SSDCoreConfig().EnablePMU){(stall1Cnts zip stall1CntCond).map{ case(a,b) => { when(b) { a := a + 1.U }}}}

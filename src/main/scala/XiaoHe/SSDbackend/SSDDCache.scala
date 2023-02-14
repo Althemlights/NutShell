@@ -63,8 +63,8 @@ sealed trait HasCacheConst {
 
   def addrBundle = new Bundle {
     val tag = UInt(TagBits.W)
-    val index = UInt(IndexBits.W)
-    val wordIndex = UInt(WordIndexBits.W)
+    val index = UInt(IndexBits.W)     //6
+    val wordIndex = UInt(WordIndexBits.W) //3
     val byteOffset = UInt((if (XLEN == 64) 3 else 2).W)
   }
 

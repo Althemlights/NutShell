@@ -367,7 +367,7 @@ class DecodeIO2BypassPkt extends Module {
         i1rs1hitStage === 0.U && (FuType(1).muldiv || FuType(1).load || FuType(1).csr ) ||
         i1rs1hitStage === 1.U && (FuType(0).muldiv || FuType(0).load || FuType(0).csr ) 
       ),"i1loadHitlater")
-
+  BoringUtils.addSource((!io.in(1).valid ) && io.issueStall(1), "i1StallAndInvalid"  )
   val i1StoreBlock = Wire(Bool())
   i1StoreBlock := i1decodePkt.store && ( i1Hiti0Rs1 || i1Hiti0Rs2 || //the condition when store instruction does not meet the launch request
     i1rs1hitStage === 0.U && (FuType(1).subalu || FuType(1).load || FuType(1).muldiv) ||

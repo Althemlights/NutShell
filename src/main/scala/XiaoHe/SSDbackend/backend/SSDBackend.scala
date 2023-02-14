@@ -169,6 +169,13 @@ class SSDbackend extends NutCoreModule with hasBypassConst {
   ALU_6.io.cfIn := 0.U.asTypeOf(new CtrlFlowIO)
   ALU_7.io.cfIn := 0.U.asTypeOf(new CtrlFlowIO)
 
+  BoringUtils.addSource((
+    ALU_0.io.redirect.valid ||
+    ALU_1.io.redirect.valid ||
+    ALU_6.io.redirect.valid ||
+    ALU_7.io.redirect.valid
+  ) && memStall, "redirectAtMemstall")
+
   (ALUList zip pipeOut2ALUList).foreach{ case(a,b) =>
     a.io.offset := b.bits.offset
     a.io.out.ready := true.B
