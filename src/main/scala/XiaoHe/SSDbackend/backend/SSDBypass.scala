@@ -320,6 +320,11 @@ class DecodeIO2BypassPkt extends Module {
       mduNotReady1 ||
       secStall
 
+  BoringUtils.addSource(i0NotAluHitE1E2Block,"i0NotAluHitE1E2Block")
+  BoringUtils.addSource(i0HitE3SecBlock,"i0HitE3SecBlock")
+  BoringUtils.addSource(i0StoreBlock,"i0StoreBlock")
+  BoringUtils.addSource(mduNotReady1,"mduNotReady1")
+  BoringUtils.addSource(secStall,"secStall")
   //name is wrong!!
   val i1NotAluBlock = Wire(Bool())
   i1NotAluBlock := i1decodePkt.muldiv &&
@@ -345,29 +350,29 @@ class DecodeIO2BypassPkt extends Module {
     ) || (i1decodePkt.load && i1Hiti0Rs1)
 
 
-  BoringUtils.addSource(i1decodePkt.muldiv &&
-    (
-      (i1rs1hitStage === 4.U && FuType(5).subalu || i1rs1hitStage === 5.U && FuType(4).subalu ) ||
-      (i1rs2hitStage === 4.U && FuType(5).subalu || i1rs2hitStage === 5.U && FuType(4).subalu ) ||
-      i1rs1hitStage === 0.U && (FuType(1).muldiv || FuType(1).subalu || FuType(1).load) ||
-      i1rs1hitStage === 1.U && (FuType(0).muldiv || FuType(0).subalu || FuType(0).load) ||
-      i1rs1hitStage === 2.U && (FuType(3).muldiv || FuType(3).subalu || FuType(3).load) ||
-      i1rs1hitStage === 3.U && (FuType(2).muldiv || FuType(2).subalu || FuType(2).load) ||
-      i1rs2hitStage === 0.U && (FuType(1).muldiv || FuType(1).subalu || FuType(1).load) ||
-      i1rs2hitStage === 1.U && (FuType(0).muldiv || FuType(0).subalu || FuType(0).load) ||
-      i1rs2hitStage === 2.U && (FuType(3).muldiv || FuType(3).subalu || FuType(3).load) ||
-      i1rs2hitStage === 3.U && (FuType(2).muldiv || FuType(2).subalu || FuType(2).load)
-    ) || (i1decodePkt.muldiv && (i1Hiti0Rs1 || i1Hiti0Rs2)),"i1muldiv")
-  BoringUtils.addSource(i1decodePkt.load,"i1load")
-  BoringUtils.addSource(i1decodePkt.load && (
-        i1rs1hitStage === 0.U && FuType(1).subalu ||
-        i1rs1hitStage === 1.U && FuType(0).subalu ||
-        i1rs1hitStage === 2.U && FuType(3).subalu ||
-        i1rs1hitStage === 3.U && FuType(2).subalu ||
-        i1rs1hitStage === 0.U && (FuType(1).muldiv || FuType(1).load || FuType(1).csr ) ||
-        i1rs1hitStage === 1.U && (FuType(0).muldiv || FuType(0).load || FuType(0).csr ) 
-      ),"i1loadHitlater")
-  BoringUtils.addSource((!io.in(1).valid ) && io.issueStall(1), "i1StallAndInvalid"  )
+//  BoringUtils.addSource(i1decodePkt.muldiv &&
+//    (
+//      (i1rs1hitStage === 4.U && FuType(5).subalu || i1rs1hitStage === 5.U && FuType(4).subalu ) ||
+//      (i1rs2hitStage === 4.U && FuType(5).subalu || i1rs2hitStage === 5.U && FuType(4).subalu ) ||
+//      i1rs1hitStage === 0.U && (FuType(1).muldiv || FuType(1).subalu || FuType(1).load) ||
+//      i1rs1hitStage === 1.U && (FuType(0).muldiv || FuType(0).subalu || FuType(0).load) ||
+//      i1rs1hitStage === 2.U && (FuType(3).muldiv || FuType(3).subalu || FuType(3).load) ||
+//      i1rs1hitStage === 3.U && (FuType(2).muldiv || FuType(2).subalu || FuType(2).load) ||
+//      i1rs2hitStage === 0.U && (FuType(1).muldiv || FuType(1).subalu || FuType(1).load) ||
+//      i1rs2hitStage === 1.U && (FuType(0).muldiv || FuType(0).subalu || FuType(0).load) ||
+//      i1rs2hitStage === 2.U && (FuType(3).muldiv || FuType(3).subalu || FuType(3).load) ||
+//      i1rs2hitStage === 3.U && (FuType(2).muldiv || FuType(2).subalu || FuType(2).load)
+//    ) || (i1decodePkt.muldiv && (i1Hiti0Rs1 || i1Hiti0Rs2)),"i1muldiv")
+//  BoringUtils.addSource(i1decodePkt.load,"i1load")
+//  BoringUtils.addSource(i1decodePkt.load && (
+//        i1rs1hitStage === 0.U && FuType(1).subalu ||
+//        i1rs1hitStage === 1.U && FuType(0).subalu ||
+//        i1rs1hitStage === 2.U && FuType(3).subalu ||
+//        i1rs1hitStage === 3.U && FuType(2).subalu ||
+//        i1rs1hitStage === 0.U && (FuType(1).muldiv || FuType(1).load || FuType(1).csr ) ||
+//        i1rs1hitStage === 1.U && (FuType(0).muldiv || FuType(0).load || FuType(0).csr )
+//      ),"i1loadHitlater")
+//  BoringUtils.addSource((!io.in(1).valid ) && io.issueStall(1), "i1StallAndInvalid"  )
   val i1StoreBlock = Wire(Bool())
   i1StoreBlock := i1decodePkt.store && ( i1Hiti0Rs1 || i1Hiti0Rs2 || //the condition when store instruction does not meet the launch request
     i1rs1hitStage === 0.U && (FuType(1).subalu || FuType(1).load || FuType(1).muldiv) ||
@@ -396,13 +401,16 @@ class DecodeIO2BypassPkt extends Module {
   BoringUtils.addSource(io.issueStall(0)&(!RegNext(io.issueStall(0))), "issueStalli0Cnt")
   BoringUtils.addSource(io.issueStall(1), "issueStalli1Cycle")
   BoringUtils.addSource(io.issueStall(1)&(!RegNext(io.issueStall(1))), "issueStalli1Cnt")
-  BoringUtils.addSource(i1Hiti0Block,"i1Hiti0Block")
+//  BoringUtils.addSource(i1Hiti0Block,"i1Hiti0Block")
   BoringUtils.addSource(i1StoreBlock,"i1StoreBlock")
   BoringUtils.addSource((io.in(1).bits.ctrl.rfSrc1 === i0decodePkt.rd && i1rs1valid ||
     io.in(1).bits.ctrl.rfSrc2 === i0decodePkt.rd && i1rs2valid) && i0decodePkt.rdvalid && i0decodePkt.alu && io.out0.bits.decodePkt.subalu,"i1dependi0subalu")
   BoringUtils.addSource((i1decodePkt.load || i1decodePkt.store) &&  (i0decodePkt.load || i0decodePkt.store),"i1i0loadstore")
 
-  
+  BoringUtils.addSource(i1NotAluBlock, "i1NotAluBlock")
+  BoringUtils.addSource(i1StoreBlock, "i1StoreBlock")
+  BoringUtils.addSource(mduNotReady0, "mduNotReady0")
+
 
   mou.io.flush := !(io.issueStall(1))
 //  BoringUtils.addSource((!io.issueStall(1)), "issueStall_flush")

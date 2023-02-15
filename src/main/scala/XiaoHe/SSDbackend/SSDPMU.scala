@@ -245,16 +245,17 @@ class PMU extends Module{
     "issueStalli0Cycle"              ->   (0x04,  "issueStalli0Cycle"),
     "issueStalli0Cnt"                ->   (0x05,  "issueStalli0Cnt"),
     "issueStalli1Cycle"              ->   (0x06,  "issueStalli1Cycle"),
-    "issueStalli1Cnt"              ->   (0x07,  "issueStalli1Cnt"),
-    "i1Hiti0Block"                    ->   (0x08,  "i1Hiti0Block"  ),
-    "i1StoreBlock"              ->   (0x09,  "i1StoreBlock"),
-    "i1dependi0subalu"                ->   (0x0a,  "i1dependi0subalu"),
-    "i1i0loadstore"              ->   (0x0b,  "i1i0loadstore"),
-    "i1muldiv"              ->   (0x0c,  "i1muldiv"),
-    "i1load"                ->   (0x0d,  "i1load"),
-    "i1loadHitlater"              ->   (0x0e,  "i1loadHitlater"),
-    "i1StallAndInvalid"     ->  (0x0f, "i1StallAndInvalid"),
-    "redirectAtMemstall"    -> (0x10, "redirectAtMemstall")
+    "issueStalli1Cnt"                ->   (0x07,  "issueStalli1Cnt"),
+    "i0NotAluHitE1E2Block"     -> (0x08, "i0NotAluHitE1E2Block"),
+    "i0HitE3SecBlock"              -> (0x09, "i0HitE3SecBlock"),
+    "i0StoreBlock"              -> (0x0a, "i0StoreBlock"),
+    "mduNotReady1"              -> (0x0b, "mduNotReady1"),
+    "secStall"              -> (0x0c, "secStall"),
+    "i1dependi0subalu"              -> (0x0d, "i1dependi0subalu"),
+    "i1i0loadstore"              -> (0x0e, "i1i0loadstore"),
+    "i1NotAluBlock"              -> (0x0f, "i1NotAluBlock"),
+    "i1StoreBlock"              -> (0x10, "i1StoreBlock"),
+    "mduNotReady0"              -> (0x11, "mduNotReady0")
   )
 
   val stall1CntNum = 32
