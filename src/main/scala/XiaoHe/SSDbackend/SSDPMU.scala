@@ -254,7 +254,8 @@ class PMU extends Module{
     "i1load"                ->   (0x0d,  "i1load"),
     "i1loadHitlater"              ->   (0x0e,  "i1loadHitlater"),
     "i1StallAndInvalid"     ->  (0x0f, "i1StallAndInvalid"),
-    "redirectAtMemstall"    -> (0x10, "redirectAtMemstall")
+    "redirectAtMemstall"    -> (0x10, "redirectAtMemstall"),
+    "LSU_load_store_confilct" -> (0x11, "LSU_load_store_confilct")
   )
 
   val stall1CntNum = 32

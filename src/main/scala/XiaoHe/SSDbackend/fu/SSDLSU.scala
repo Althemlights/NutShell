@@ -248,6 +248,9 @@ class SSDLSU extends  NutCoreModule with HasStoreBufferConst{
   cacheInArbiter0.io.in(1) <> loadCacheIn
   cacheInArbiter1.io.in(0) <> loadCacheIn
   cacheInArbiter1.io.in(1) <> storeCacheIn
+
+  BoringUtils.addSource(loadCacheIn.valid && storeCacheIn.valid,"LSU_load_store_confilct")
+
   storeCacheIn.ready := Mux(storeBuffer.io.isAlmostFull || storeBuffer.io.isFull, cacheInArbiter0.io.in(0).ready, cacheInArbiter1.io.in(1).ready)
 
   cacheIn.bits :=  Mux(storeBuffer.io.isAlmostFull || storeBuffer.io.isFull,cacheInArbiter0.io.out.bits,cacheInArbiter1.io.out.bits)
