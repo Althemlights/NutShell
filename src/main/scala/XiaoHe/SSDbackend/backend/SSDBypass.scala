@@ -416,8 +416,6 @@ class DecodeIO2BypassPkt extends Module {
   BoringUtils.addSource(io.issueStall(1), "issueStalli1Cycle")
   BoringUtils.addSource(io.issueStall(1)&(!RegNext(io.issueStall(1))), "issueStalli1Cnt")
 
-  BoringUtils.addSource(i1NotAluBlock, "i1NotAluBlock")
-  BoringUtils.addSource(i1StoreBlock, "i1StoreBlock")
   BoringUtils.addSource(mduNotReady0, "mduNotReady0")
 
 
