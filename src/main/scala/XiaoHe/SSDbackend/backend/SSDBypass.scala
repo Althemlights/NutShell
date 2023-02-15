@@ -377,6 +377,11 @@ class DecodeIO2BypassPkt extends Module {
   i1MulBlock := (i1NotAlu && i1rs1Class.muldiv && (i1rs1MatchE1 || i1rs1MatchE2)) ||
                 (i1NotAlu && i1rs2Class.muldiv && (i1rs2MatchE1 || i1rs2MatchE2))
 
+  BoringUtils.addSource(i0NotAluHitE1E2Block,"i0NotAluHitE1E2Block")
+  BoringUtils.addSource(i0HitE3SecBlock,"i0HitE3SecBlock")
+  BoringUtils.addSource(i0StoreBlock,"i0StoreBlock")
+  BoringUtils.addSource(mduNotReady1,"mduNotReady1")
+  BoringUtils.addSource(secStall,"secStall")
   i1Dependi0 := i1Hiti0Rs1 || i1Hiti0Rs2
 
   i1Load2Block := (i1decodePkt.load || i1decodePkt.store) && (i0decodePkt.load || i0decodePkt.store)
@@ -411,7 +416,10 @@ class DecodeIO2BypassPkt extends Module {
   BoringUtils.addSource(io.issueStall(1), "issueStalli1Cycle")
   BoringUtils.addSource(io.issueStall(1)&(!RegNext(io.issueStall(1))), "issueStalli1Cnt")
 
-  
+  BoringUtils.addSource(i1NotAluBlock, "i1NotAluBlock")
+  BoringUtils.addSource(i1StoreBlock, "i1StoreBlock")
+  BoringUtils.addSource(mduNotReady0, "mduNotReady0")
+
 
   mou.io.flush := !(io.issueStall(1))
 //  BoringUtils.addSource((!io.issueStall(1)), "issueStall_flush")
