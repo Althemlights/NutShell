@@ -246,6 +246,9 @@ class PMU extends Module{
     "issueStalli0Cnt"                ->   (0x05,  "issueStalli0Cnt"),
     "issueStalli1Cycle"              ->   (0x06,  "issueStalli1Cycle"),
     "issueStalli1Cnt"              ->   (0x07,  "issueStalli1Cnt"),
+    "mduNotReady1"                -> (0x08, "mduNotReady1"),
+    "mduNotReady0"                 -> (0x09, "mduNotReady0"),
+    "LSU_load_store_confilct"      ->(0x0a, "LSU_load_store_confilct")
     
   )
 
