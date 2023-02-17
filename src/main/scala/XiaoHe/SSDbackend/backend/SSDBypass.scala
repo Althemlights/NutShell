@@ -223,7 +223,7 @@ class DecodeIO2BypassPkt extends Module {
     (i1decodePkt.alu && i1rs2hitStage === 1.U && (io.BypassPktTable(0).decodePkt.subalu )) ||
     (i1decodePkt.alu && i1rs2hitStage === 2.U && (io.BypassPktTable(3).decodePkt.subalu )) ||
     (i1decodePkt.alu && i1rs2hitStage === 3.U && (io.BypassPktTable(2).decodePkt.subalu )) 
-  ) || i1Hiti0Rs1 || i1Hiti0Rs2
+  ) || ((i1Hiti0Rs1 || i1Hiti0Rs2) && i1decodePkt.alu)
 
   val i0Subalu = io.out0.bits.decodePkt.subalu
   val i1Subalu = io.out1.bits.decodePkt.subalu
@@ -391,7 +391,7 @@ class DecodeIO2BypassPkt extends Module {
   fasheng :=  (i0decodePkt.alu && !i0Subalu && i1decodePkt.alu && i1Hiti0Rs1 && i1rs2hitStage =/= 10.U && !x )||
                (i0decodePkt.alu && !i0Subalu && i1decodePkt.alu && i1Hiti0Rs2 && i1rs1hitStage =/= 10.U && !y)
   val noneBlockCase = WireInit(false.B)
-  noneBlockCase := (i1decodePkt.alu && i0decodePkt.load) || (i1decodePkt.alu && i0decodePkt.muldiv) 
+  noneBlockCase := (i1decodePkt.alu && i0decodePkt.load) || (i1decodePkt.alu && i0decodePkt.muldiv) || (i0decodePkt.alu && !i0Subalu && i1decodePkt.load)
 
   io.issueStall(1) :=
     (i0decodePkt.csr && i1decodePkt.csr) ||
@@ -593,6 +593,7 @@ class DecodeIO2BypassPkt extends Module {
 
   // store pipeline bypaas ctrl
   lsuCtrli0.lsBypassCtrlE1 := VecInit(
+    false.B,
     i0rs1hitStage === 2.U && (FuType(3).load || FuType(3).muldiv) && (i0decodePkt.store || i0decodePkt.load),
     i0rs1hitStage === 3.U && (FuType(2).load || FuType(2).muldiv) && (i0decodePkt.store || i0decodePkt.load),
     i0rs1hitStage === 4.U && FuType(5).subalu && (i0decodePkt.store || i0decodePkt.load),
@@ -607,6 +608,7 @@ class DecodeIO2BypassPkt extends Module {
     i0rs2hitStage === 5.U && (FuType(4).subalu) && i0decodePkt.store
   )
   lsuCtrli1.lsBypassCtrlE1 := VecInit(
+    i1Hiti0Rs1 && i0decodePkt.alu && !i0Subalu && (i1decodePkt.store || i1decodePkt.load),
     i1rs1hitStage === 2.U && (FuType(3).load || FuType(3).muldiv) && (i1decodePkt.store || i1decodePkt.load),
     i1rs1hitStage === 3.U && (FuType(2).load || FuType(2).muldiv) && (i1decodePkt.store || i1decodePkt.load),
     i1rs1hitStage === 4.U && FuType(5).subalu && (i1decodePkt.store || i1decodePkt.load),

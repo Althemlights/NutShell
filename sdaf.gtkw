@@ -1,0 +1,46 @@
+[*]
+[*] GTKWave Analyzer v3.3.103 (w)1999-2019 BSI
+[*] Fri Feb 17 18:41:40 2023
+[*]
+[dumpfile] "/home/bread/xs-env/NutShell/build/2023-02-18@02:40:19.vcd"
+[dumpfile_mtime] "Fri Feb 17 18:40:21 2023"
+[dumpfile_size] 169604731
+[savefile] "/home/bread/xs-env/NutShell/sdaf.gtkw"
+[timestart] 41917
+[size] 2048 1334
+[pos] -1 -1
+*0.000000 41919 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1
+[treeopen] TOP.
+[treeopen] TOP.SimTop.
+[treeopen] TOP.SimTop.xiaohe.
+[treeopen] TOP.SimTop.xiaohe.nutcore.
+[treeopen] TOP.SimTop.xiaohe.nutcore.SSDbackend.
+[treeopen] TOP.SimTop.xiaohe.nutcore.SSDbackend.Bypass.
+[sst_width] 412
+[signals_width] 420
+[sst_expanded] 1
+[sst_vpaned_height] 400
+@28
+TOP.SimTop.xiaohe.nutcore.SSDbackend.ALU0.io_in_valid
+@22
+TOP.SimTop.xiaohe.nutcore.SSDbackend.ALU0.io_cfIn_pc[38:0]
+@200
+-
+@28
+TOP.SimTop.xiaohe.nutcore.SSDbackend.ALU1.io_in_valid
+@22
+TOP.SimTop.xiaohe.nutcore.SSDbackend.ALU1.io_cfIn_pc[38:0]
+@200
+-
+@28
+TOP.SimTop.xiaohe.nutcore.SSDbackend.ALU6.io_in_valid
+@22
+TOP.SimTop.xiaohe.nutcore.SSDbackend.ALU6.io_cfIn_pc[38:0]
+@200
+-
+@28
+TOP.SimTop.xiaohe.nutcore.SSDbackend.ALU7.io_in_valid
+@22
+TOP.SimTop.xiaohe.nutcore.SSDbackend.ALU7.io_cfIn_pc[38:0]
+[pattern_trace] 1
+[pattern_trace] 0

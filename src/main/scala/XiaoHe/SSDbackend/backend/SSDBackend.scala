@@ -333,7 +333,8 @@ class SSDbackend extends NutCoreModule with hasBypassConst {
   coupledPipeOut(3).bits.rd,
   coupledPipeOut(2).bits.rd)
 
-  lsuBypassPortE1 := Seq(coupledPipeIn(1).bits.rd,
+  lsuBypassPortE1 := Seq(pipeIn(2).bits.rd,
+  coupledPipeIn(1).bits.rd,
   coupledPipeIn(0).bits.rd,
   coupledPipeIn(3).bits.rd,
   coupledPipeIn(2).bits.rd)
