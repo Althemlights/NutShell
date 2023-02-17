@@ -100,12 +100,15 @@ class DecodeIO2BypassPkt extends Module {
   val i0rs2HitSel = VecInit(Seq.fill(11)(false.B))
   val i1rs1HitSel = VecInit(Seq.fill(11)(false.B))
   val i1rs2HitSel = VecInit(Seq.fill(11)(false.B))
+  val i1Hiti0Rs1 = WireInit(false.B)
+  val i1Hiti0Rs2 = WireInit(false.B)
+
   val stageSeq = Seq(0.U,1.U,2.U,3.U,4.U,5.U,6.U,7.U,8.U,9.U,10.U)//10 is set for the default value of PriorityMux
 
   i0rs1hitStage := PriorityMux(i0rs1HitSel,stageSeq)
   i0rs2hitStage := PriorityMux(i0rs2HitSel,stageSeq)
-  i1rs1hitStage := PriorityMux(i1rs1HitSel,stageSeq)
-  i1rs2hitStage := PriorityMux(i1rs2HitSel,stageSeq)
+  i1rs1hitStage := Mux(i1Hiti0Rs1, 10.U, PriorityMux(i1rs1HitSel,stageSeq))
+  i1rs2hitStage := Mux(i1Hiti0Rs2, 10.U, PriorityMux(i1rs2HitSel,stageSeq))
 
   // for (i <- 0 to 10) {
   //   if (i <= 9) {
@@ -170,15 +173,9 @@ class DecodeIO2BypassPkt extends Module {
 
     //merge decodePkt.subalu
 
-  val i1Hiti0Rs1 = WireInit(false.B)
-  val i1Hiti0Rs2 = WireInit(false.B)
 
-    // io.out0.bits.decodePkt.subalu :=
-    //   (i0decodePkt.alu &&  i0rs1hitStage >= 0.U && i0rs1hitStage <= 3.U && (io.BypassPktTable(i0rs1hitStage).decodePkt.muldiv || io.BypassPktTable(i0rs1hitStage).decodePkt.load)
-    //   || i0decodePkt.alu && i0rs2hitStage >= 0.U && i0rs2hitStage <= 3.U && (io.BypassPktTable(i0rs2hitStage).decodePkt.muldiv || io.BypassPktTable(i0rs2hitStage).decodePkt.load)
-    //   || i0decodePkt.alu && i0rs1hitStage >= 0.U && i0rs1hitStage <= 5.U && io.BypassPktTable(i0rs1hitStage).decodePkt.subalu
-    //   || i0decodePkt.alu && i0rs2hitStage >= 0.U && i0rs2hitStage <= 5.U && io.BypassPktTable(i0rs2hitStage).decodePkt.subalu
-    //   )
+
+
   io.out0.bits.decodePkt.subalu := (
     (i0decodePkt.alu && i0rs1hitStage === 0.U && (io.BypassPktTable(1).decodePkt.muldiv || io.BypassPktTable(1).decodePkt.load )) ||
     (i0decodePkt.alu && i0rs1hitStage === 1.U && (io.BypassPktTable(0).decodePkt.muldiv || io.BypassPktTable(0).decodePkt.load )) ||
@@ -220,18 +217,16 @@ class DecodeIO2BypassPkt extends Module {
     (i1decodePkt.alu && i1rs1hitStage === 0.U && (io.BypassPktTable(1).decodePkt.subalu )) ||
     (i1decodePkt.alu && i1rs1hitStage === 1.U && (io.BypassPktTable(0).decodePkt.subalu )) ||
     (i1decodePkt.alu && i1rs1hitStage === 2.U && (io.BypassPktTable(3).decodePkt.subalu )) ||
-    (i1decodePkt.alu && i1rs1hitStage === 3.U && (io.BypassPktTable(2).decodePkt.subalu )) ||
-    (i1decodePkt.alu && i1rs1hitStage === 4.U && (io.BypassPktTable(5).decodePkt.subalu )) ||
-    (i1decodePkt.alu && i1rs1hitStage === 5.U && (io.BypassPktTable(4).decodePkt.subalu ))
+    (i1decodePkt.alu && i1rs1hitStage === 3.U && (io.BypassPktTable(2).decodePkt.subalu )) 
   ) || (
     (i1decodePkt.alu && i1rs2hitStage === 0.U && (io.BypassPktTable(1).decodePkt.subalu )) ||
     (i1decodePkt.alu && i1rs2hitStage === 1.U && (io.BypassPktTable(0).decodePkt.subalu )) ||
     (i1decodePkt.alu && i1rs2hitStage === 2.U && (io.BypassPktTable(3).decodePkt.subalu )) ||
-    (i1decodePkt.alu && i1rs2hitStage === 3.U && (io.BypassPktTable(2).decodePkt.subalu )) ||
-    (i1decodePkt.alu && i1rs2hitStage === 4.U && (io.BypassPktTable(5).decodePkt.subalu )) ||
-    (i1decodePkt.alu && i1rs2hitStage === 5.U && (io.BypassPktTable(4).decodePkt.subalu ))
+    (i1decodePkt.alu && i1rs2hitStage === 3.U && (io.BypassPktTable(2).decodePkt.subalu )) 
   ) || i1Hiti0Rs1 || i1Hiti0Rs2
 
+  val i0Subalu = io.out0.bits.decodePkt.subalu
+  val i1Subalu = io.out1.bits.decodePkt.subalu
 
   val FuType = VecInit(Seq.fill(10)(0.U.asTypeOf(new decodePkt)))
   for (i <- 0 to 9) FuType(i) := io.BypassPktTable(i).decodePkt
@@ -255,7 +250,8 @@ class DecodeIO2BypassPkt extends Module {
   val mduNotReady1 = i1decodePkt.muldiv && ((FuType(0).muldiv && Valid(0)) || (FuType(1).muldiv && Valid(1)) ||
     (FuType(2).muldiv && Valid(2)) || (FuType(3).muldiv && Valid(3)))
 
-
+    val i1rs1BypassE0 = io.out1.bits.BypassCtl.rs1bypasse0
+    val i1rs2BypassE0 = io.out1.bits.BypassCtl.rs2bypasse0
 
   val i0rs1MatchE1 = WireInit(false.B)
   val i0rs1MatchE2 = WireInit(false.B)
@@ -341,8 +337,7 @@ class DecodeIO2BypassPkt extends Module {
     i0LoadBlock ||
     i0MulBlock ||
     i0SecondaryBlock ||
-    i0SecondaryStall
-
+    i0SecondaryStall 
     // i0_dp.csr_read |
     // i0_dp.csr_write |
     // i1_dp.csr_read |
@@ -389,8 +384,16 @@ class DecodeIO2BypassPkt extends Module {
                       (i1NotAlu && i1rs1Class.subalu && (i1rs1MatchE1 || i1rs1MatchE2 ) && (i1decodePkt.load || i1decodePkt.store)) ||
                       (i1NotAlu && i1rs2Class.subalu && (i1rs2MatchE1 ) && i1decodePkt.store ) ||
                       (i1NotAlu && i1rs2Class.subalu && (i1rs2MatchE1 || i1rs2MatchE2 || i1rs2MatchE3) && !i1decodePkt.store)
+  val x = i1rs2BypassE0(0) || i1rs2BypassE0(1) || i1rs2BypassE0(2)|| i1rs2BypassE0(3)|| i1rs2BypassE0(4)||
+   i1rs2BypassE0(5)|| i1rs2BypassE0(6)|| i1rs2BypassE0(7)|| i1rs2BypassE0(8)|| i1rs2BypassE0(9)
+  val y = i1rs1BypassE0(0) || i1rs1BypassE0(1) || i1rs1BypassE0(2)|| i1rs1BypassE0(3)|| i1rs1BypassE0(4)||
+   i1rs1BypassE0(5)|| i1rs1BypassE0(6)|| i1rs1BypassE0(7)|| i1rs1BypassE0(8)|| i1rs1BypassE0(9)
+
+  val fasheng = WireInit(false.B)
+  fasheng :=  (i0decodePkt.alu && !i0Subalu && i1decodePkt.alu && i1Hiti0Rs1 && i1rs2hitStage =/= 10.U && !x )||
+               (i0decodePkt.alu && !i0Subalu && i1decodePkt.alu && i1Hiti0Rs2 && i1rs1hitStage =/= 10.U && !y)
   val noneBlockCase = WireInit(false.B)
-  noneBlockCase := (i1decodePkt.alu && i0decodePkt.load) || (i1decodePkt.alu && i0decodePkt.muldiv)
+  noneBlockCase := (i1decodePkt.alu && i0decodePkt.load) || (i1decodePkt.alu && i0decodePkt.muldiv) 
 
   io.issueStall(1) :=
     (i0decodePkt.csr && i1decodePkt.csr) ||
@@ -403,10 +406,22 @@ class DecodeIO2BypassPkt extends Module {
     i1Dependi0 && !noneBlockCase ||
     i1SecondaryBlock ||
     mduNotReady0  ||
-    io.issueStall(0)
+    io.issueStall(0) ||
+    i1decodePkt.alu && ( i1rs1MatchE3 && i1rs1Class.subalu || i1rs2MatchE3 && i1rs2Class.subalu)
 
+  BoringUtils.addSource(i1LoadBlock, "i1LoadBlock")
+  BoringUtils.addSource(i1MulBlock, "i1MulBlock")
+  BoringUtils.addSource(i1Dependi0 && !noneBlockCase, "i1Dependi0_noneBlockCase")
+  BoringUtils.addSource(i1LoadBlock, "i1SecondaryBlock")
 
-    
+  BoringUtils.addSource(fasheng, "whhh")
+
+  val cond = i1Dependi0 && !noneBlockCase
+  BoringUtils.addSource(cond && i1decodePkt.load && i0decodePkt.alu && !i0Subalu, "i1LoadDependi0ALu")
+  BoringUtils.addSource(cond && i1decodePkt.store && i0decodePkt.alu && !i0Subalu, "i1StoreDependi0ALu")
+  BoringUtils.addSource(cond && i1decodePkt.alu && i0decodePkt.alu && !i0Subalu, "i1AluDependi0ALu")
+  // BoringUtils.addSource(cond && i1decodePkt.load && i0decodePkt.alu, "i1LoadDependi0ALu")
+
 
   BoringUtils.addSource(io.issueStall(0), "issueStalli0Cycle")
   BoringUtils.addSource(io.issueStall(0)&(!RegNext(io.issueStall(0))), "issueStalli0Cnt")
@@ -414,6 +429,10 @@ class DecodeIO2BypassPkt extends Module {
   BoringUtils.addSource(io.issueStall(1)&(!RegNext(io.issueStall(1))), "issueStalli1Cnt")
 
   BoringUtils.addSource(mduNotReady0, "mduNotReady0")
+  BoringUtils.addSource(i1Load2Block, "i0i1LSBlock")
+  BoringUtils.addSource(i0decodePkt.load && i1decodePkt.load, "i0i1LoadBlock")
+  BoringUtils.addSource(i0decodePkt.store && i1decodePkt.store, "i0i1StoreBlock")
+  BoringUtils.addSource((i0decodePkt.load && i1decodePkt.store) || (i0decodePkt.store && i1decodePkt.load), "i0i1AlternaingBlock")
 
 
   mou.io.flush := !(io.issueStall(1))
@@ -556,6 +575,8 @@ class DecodeIO2BypassPkt extends Module {
       i1rs2hitStage === 8.U && !i1Hiti0Rs2,
       i1rs2hitStage === 9.U && !i1Hiti0Rs2
     )
+
+    
     io.out1.bits.BypassCtl.rs1bypasse2 := VecInit(
       i1rs1hitStage === 4.U && FuType(5).subalu && !i1Hiti0Rs1,
       i1rs1hitStage === 5.U && FuType(4).subalu && !i1Hiti0Rs1
@@ -617,14 +638,6 @@ class DecodeIO2BypassPkt extends Module {
   io.out0.bits.lsuCtrl := lsuCtrli0
   io.out1.bits.lsuCtrl := lsuCtrli1
 
-  //debug
-/*  val cond = Wire(Bool())
-  cond := io.in(0).bits.cf.pc === "h8000008c".U
-  myDebug(cond,"rs1e3BypassCtl is %b\n",io.out0.bits.BypassCtl.rs1bypasse3.asUInt)
-  myDebug(cond,"rs1hitstage is %x\n",i0rs1hitStage)
-  myDebug(cond,"rs2hitstage is %x\n",i0rs2hitStage)
-  myDebug(cond,"hitrd is%x, rs1 is %x,rs2 is %x\n",io.BypassPktTable(i0rs1hitStage).decodePkt.rd,io.in(0).bits.ctrl.rfSrc1,io.in(0).bits.ctrl.rfSrc2)*/
-  //myDebug(cond,"hitsel is %b\n",i0rs1HitSel.asUInt)
 }
 
 object DecodeIO2decodePkt {

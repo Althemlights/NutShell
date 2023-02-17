@@ -238,18 +238,35 @@ class PMU extends Module{
   }
 
   val stall1CntList = Map(
-    "memStallCycle"                  ->   (0x00,  "memStallCycle"),
-    "memStallCnt"                    ->   (0x01,  "memStallCnt"  ),
-    "mduStallCycle"                  ->   (0x02,  "mduStallCycle"),
-    "mduStallCnt"                    ->   (0x03,  "mduStallCnt"  ),
-    "issueStalli0Cycle"              ->   (0x04,  "issueStalli0Cycle"),
-    "issueStalli0Cnt"                ->   (0x05,  "issueStalli0Cnt"),
-    "issueStalli1Cycle"              ->   (0x06,  "issueStalli1Cycle"),
+    "memStallCycle"                ->   (0x00,  "memStallCycle"),
+    "memStallCnt"                  ->   (0x01,  "memStallCnt"  ),
+    "mduStallCycle"                ->   (0x02,  "mduStallCycle"),
+    "mduStallCnt"                  ->   (0x03,  "mduStallCnt"  ),
+    "issueStalli0Cycle"            ->   (0x04,  "issueStalli0Cycle"),
+    "issueStalli0Cnt"              ->   (0x05,  "issueStalli0Cnt"),
+    "issueStalli1Cycle"            ->   (0x06,  "issueStalli1Cycle"),
     "issueStalli1Cnt"              ->   (0x07,  "issueStalli1Cnt"),
-    "mduNotReady1"                -> (0x08, "mduNotReady1"),
-    "mduNotReady0"                 -> (0x09, "mduNotReady0"),
-    "LSU_load_store_confilct"      ->(0x0a, "LSU_load_store_confilct")
+    "mduNotReady1"                 ->   (0x08, "mduNotReady1"),
+    "mduNotReady0"                 ->   (0x09, "mduNotReady0"),
+
+    "LSU_load_store_confilct"      ->   (0x0a, "LSU_load_store_confilct"),
+    "i0i1LSBlock"                  ->   (0x0b, "i0i1LSBlock"),
+    "i0i1LoadBlock"                ->   (0x0c, "i0i1LoadBlock"),
+    "i0i1StoreBlock"               ->   (0x0d, "i0i1StoreBlock"),
+    "i0i1AlternaingBlock"          ->   (0x0e, "i0i1AlternaingBlock"),
+
+    "i1LoadBlock"                  ->   (0x0f, "i1LoadBlock"),
+    "i1MulBlock"                   ->   (0x10, "i1MulBlock"),
+    "i1Dependi0_noneBlockCase"     ->   (0x11, "i1Dependi0_noneBlockCase"),
+    "i1SecondaryBlock"             ->   (0x12, "i1SecondaryBlock"),
+
+    "i1LoadDependi0ALu"             ->   (0x13, "i1LoadDependi0ALu"),
+    "i1StoreDependi0ALu"             ->   (0x14, "i1StoreDependi0ALu"),
+    "i1AluDependi0ALu"             ->   (0x15, "i1AluDependi0ALu"),
+
+    "whhh"             ->   (0x16, "whhh")
     
+
   )
 
   val stall1CntNum = 32
