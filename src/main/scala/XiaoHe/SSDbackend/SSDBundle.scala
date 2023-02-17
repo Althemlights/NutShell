@@ -29,7 +29,7 @@ trait hasBypassConst{
   def E2BypassPort = 2   // 0->1: e51,e50
   def E3BypassPort = 5   // 0->8 : e30,e40,e41,e50,e51
   def E1StoreBypassPort = 5
-  def E2StoreBypassPort = 6
+  def E2StoreBypassPort = 7
 }
 class BypassCtl extends Bundle with hasBypassConst {
   val rs1bypasse0 = Output(Vec(E0BypassPort,Bool()))

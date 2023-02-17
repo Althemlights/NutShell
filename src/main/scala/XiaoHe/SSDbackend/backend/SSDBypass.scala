@@ -391,7 +391,7 @@ class DecodeIO2BypassPkt extends Module {
   fasheng :=  (i0decodePkt.alu && !i0Subalu && i1decodePkt.alu && i1Hiti0Rs1 && i1rs2hitStage =/= 10.U && !x )||
                (i0decodePkt.alu && !i0Subalu && i1decodePkt.alu && i1Hiti0Rs2 && i1rs1hitStage =/= 10.U && !y)
   val noneBlockCase = WireInit(false.B)
-  noneBlockCase := (i1decodePkt.alu && i0decodePkt.load) || (i1decodePkt.alu && i0decodePkt.muldiv) || (i0decodePkt.alu && !i0Subalu && i1decodePkt.load)
+  noneBlockCase := (i1decodePkt.alu && i0decodePkt.load) || (i1decodePkt.alu && i0decodePkt.muldiv) || (i0decodePkt.alu && !i0Subalu && (i1decodePkt.load || i1decodePkt.store))
 
   io.issueStall(1) :=
     (i0decodePkt.csr && i1decodePkt.csr) ||
@@ -416,7 +416,7 @@ class DecodeIO2BypassPkt extends Module {
 
   val cond = i1Dependi0 && !noneBlockCase
   BoringUtils.addSource(cond && i1decodePkt.load && i0decodePkt.alu && !i0Subalu, "i1LoadDependi0ALu")
-  BoringUtils.addSource(cond && i1decodePkt.store && i0decodePkt.alu && !i0Subalu, "i1StoreDependi0ALu")
+  BoringUtils.addSource(i1Hiti0Rs2 && i1decodePkt.store && i0decodePkt.alu && !i0Subalu, "i1rs2StoreDependi0ALu")
   BoringUtils.addSource(cond && i1decodePkt.alu && i0decodePkt.alu && !i0Subalu, "i1AluDependi0ALu")
   // BoringUtils.addSource(cond && i1decodePkt.load && i0decodePkt.alu, "i1LoadDependi0ALu")
 
@@ -431,7 +431,7 @@ class DecodeIO2BypassPkt extends Module {
   BoringUtils.addSource(i0decodePkt.load && i1decodePkt.load && i1Hiti0Rs1, "i0i1LoadBlockLoadtouse")
   BoringUtils.addSource(i0decodePkt.store && i1decodePkt.store, "i0i1StoreBlock")
   BoringUtils.addSource((i0decodePkt.load && i1decodePkt.store) || (i0decodePkt.store && i1decodePkt.load), "i0i1AlternaingBlock")
-
+  
 
   mou.io.flush := !(io.issueStall(1))
 //  BoringUtils.addSource((!io.issueStall(1)), "issueStall_flush")
@@ -600,6 +600,7 @@ class DecodeIO2BypassPkt extends Module {
     i0rs1hitStage === 5.U && FuType(4).subalu && (i0decodePkt.store || i0decodePkt.load)
   )
   lsuCtrli0.storeBypassCtrlE2 := VecInit(
+    false.B,
     i0rs2hitStage === 0.U && (FuType(1).load || FuType(1).muldiv) && i0decodePkt.store,
     i0rs2hitStage === 1.U && (FuType(0).load || FuType(0).muldiv) && i0decodePkt.store,
     i0rs2hitStage === 2.U && (FuType(3).subalu || FuType(3).load || FuType(3).muldiv) && i0decodePkt.store,
@@ -615,6 +616,7 @@ class DecodeIO2BypassPkt extends Module {
     i1rs1hitStage === 5.U && FuType(4).subalu && (i1decodePkt.store || i1decodePkt.load)
   )
   lsuCtrli1.storeBypassCtrlE2 := VecInit(
+    i1Hiti0Rs2 && i0decodePkt.alu && !i0Subalu && (i1decodePkt.store),
     i1rs2hitStage === 0.U && (FuType(1).load || FuType(1).muldiv) && i1decodePkt.store,
     i1rs2hitStage === 1.U && (FuType(0).load || FuType(0).muldiv) && i1decodePkt.store,
     i1rs2hitStage === 2.U && (FuType(3).subalu || FuType(3).load || FuType(3).muldiv) && i1decodePkt.store,

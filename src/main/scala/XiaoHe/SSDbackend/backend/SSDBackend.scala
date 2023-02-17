@@ -338,7 +338,8 @@ class SSDbackend extends NutCoreModule with hasBypassConst {
   coupledPipeIn(0).bits.rd,
   coupledPipeIn(3).bits.rd,
   coupledPipeIn(2).bits.rd)
-  StoreBypassPortE2 := Seq(coupledPipeIn(1).bits.rd,
+  StoreBypassPortE2 := Seq(pipeIn(4).bits.rd,
+  coupledPipeIn(1).bits.rd,
   coupledPipeIn(0).bits.rd,
   coupledPipeIn(3).bits.rd,
   coupledPipeIn(2).bits.rd,
@@ -346,7 +347,11 @@ class SSDbackend extends NutCoreModule with hasBypassConst {
   coupledPipeOut(2).bits.rd)
   
   LSU.io.storeBypassPort <> StoreBypassPortE2
-
+  // val sadf = WireInit(false.B)
+  // BoringUtils.addSink(sadf, "i0i1LoadBlockLoadtouse")
+  // when(sadf) {
+  //   printf("pc: ->  %x\n",io.in(1).bits.cf.pc)
+  // }
   //decode & issue
   //rs1 data type: pc, regfile or bypassa
   //rs2 data type: imm, regfilw or bypass

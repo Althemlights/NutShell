@@ -261,7 +261,7 @@ class PMU extends Module{
     "i1SecondaryBlock"             ->   (0x12, "i1SecondaryBlock"),
 
     "i1LoadDependi0ALu"             ->   (0x13, "i1LoadDependi0ALu"),
-    "i1StoreDependi0ALu"             ->   (0x14, "i1StoreDependi0ALu"),
+    "i1rs2StoreDependi0ALu"             ->   (0x14, "i1rs2StoreDependi0ALu"),
     "i1AluDependi0ALu"             ->   (0x15, "i1AluDependi0ALu"),
 
     "whhh"             ->   (0x16, "whhh")
