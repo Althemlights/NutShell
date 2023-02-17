@@ -379,13 +379,30 @@ class SSDLSU extends  NutCoreModule with HasStoreBufferConst{
   when(io.memStall && io.dmem.resp.fire()){ dmemFireLatch := true.B
   }.elsewhen(!bufferFullStall){ dmemFireLatch := false.B }
   io.in.ready := lsuPipeIn(0).ready || loadCacheIn.ready
-  io.out.valid := (io.dmem.resp.fire() || dmemFireLatch || addrHitE3) && lsuPipeStage3.right.valid && !lsuPipeStage3.right.bits.isStore && !lsuPipeStage3.right.bits.isCacheStore
+  val rdataValid = (io.dmem.resp.fire() || dmemFireLatch || addrHitE3) && lsuPipeStage3.right.valid && !lsuPipeStage3.right.bits.isStore && !lsuPipeStage3.right.bits.isCacheStore
 //  dontTouch(io.out.valid)
   io.isMMIO := lsuPipeStage3.right.bits.isMMIO
   val partialLoad = !lsuPipeOut(0).bits.isStore && (lsuPipeOut(0).bits.func =/= LSUOpType.ld) && lsuPipeOut(0).valid
   val out = Mux(partialLoad,rdataFinal,Mux(addrHitE3,mergedDataE3,io.dmem.resp.bits.rdata))
-  val outLatch = RegEnable(out,io.out.valid && !dmemFireLatch)
-  io.out.bits := Mux(io.out.valid,out,outLatch)
+  // val outLatch = RegEnable(out, io.out.valid && !dmemFireLatch )
+  // val outValidLatch = RegEnable(io.out.valid, io.out.valid && !dmemFireLatch )
+
+  val outLatch = RegInit(0.U(64.W))
+  val outValidLatch = RegInit(false.B)
+  when (rdataValid && !io.out.ready && !outValidLatch) {
+    outLatch := out
+    outValidLatch := true.B
+  }
+  when (outValidLatch && io.out.ready) {
+    outLatch := 0.U
+    outValidLatch := false.B
+  }
+
+  io.out.valid := Mux(outValidLatch && io.out.ready, outValidLatch, rdataValid)
+  io.out.bits := Mux(!RegNext(io.out.ready) && io.out.ready, outLatch, out)
+
+
+  // io.out.bits := Mux(io.out.valid,out,outLatch)
   //store buffer snapshit
   storeBuffer.io.in.valid := lsuPipeStage4.io.right.valid && lsuPipeStage4.io.right.bits.isStore && !lsuPipeStage4.io.right.bits.isMMIOStore && !invalid(2)
   storeBuffer.io.in.bits.paddr := lsuPipeStage4.io.right.bits.paddr

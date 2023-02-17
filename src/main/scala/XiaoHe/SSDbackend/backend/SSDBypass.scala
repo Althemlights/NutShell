@@ -384,10 +384,8 @@ class DecodeIO2BypassPkt extends Module {
                       (i1NotAlu && i1rs1Class.subalu && (i1rs1MatchE1 || i1rs1MatchE2 ) && (i1decodePkt.load || i1decodePkt.store)) ||
                       (i1NotAlu && i1rs2Class.subalu && (i1rs2MatchE1 ) && i1decodePkt.store ) ||
                       (i1NotAlu && i1rs2Class.subalu && (i1rs2MatchE1 || i1rs2MatchE2 || i1rs2MatchE3) && !i1decodePkt.store)
-  val x = i1rs2BypassE0(0) || i1rs2BypassE0(1) || i1rs2BypassE0(2)|| i1rs2BypassE0(3)|| i1rs2BypassE0(4)||
-   i1rs2BypassE0(5)|| i1rs2BypassE0(6)|| i1rs2BypassE0(7)|| i1rs2BypassE0(8)|| i1rs2BypassE0(9)
-  val y = i1rs1BypassE0(0) || i1rs1BypassE0(1) || i1rs1BypassE0(2)|| i1rs1BypassE0(3)|| i1rs1BypassE0(4)||
-   i1rs1BypassE0(5)|| i1rs1BypassE0(6)|| i1rs1BypassE0(7)|| i1rs1BypassE0(8)|| i1rs1BypassE0(9)
+  val x = i1rs2MatchE2 && (!i1rs2BypassE0(2) && !i1rs2Class.load || !i1rs2BypassE0(3) && !i1rs2Class.load) || i1rs2MatchE1 && (!i1rs2BypassE0(0) || !i1rs2BypassE0(1))
+  val y = i1rs1MatchE2 && (!i1rs1BypassE0(2) && !i1rs1Class.load || !i1rs1BypassE0(3) && !i1rs1Class.load) || i1rs1MatchE1 && (!i1rs1BypassE0(0) || !i1rs1BypassE0(1))
 
   val fasheng = WireInit(false.B)
   fasheng :=  (i0decodePkt.alu && !i0Subalu && i1decodePkt.alu && i1Hiti0Rs1 && i1rs2hitStage =/= 10.U && !x )||
@@ -430,7 +428,7 @@ class DecodeIO2BypassPkt extends Module {
 
   BoringUtils.addSource(mduNotReady0, "mduNotReady0")
   BoringUtils.addSource(i1Load2Block, "i0i1LSBlock")
-  BoringUtils.addSource(i0decodePkt.load && i1decodePkt.load, "i0i1LoadBlock")
+  BoringUtils.addSource(i0decodePkt.load && i1decodePkt.load && i1Hiti0Rs1, "i0i1LoadBlockLoadtouse")
   BoringUtils.addSource(i0decodePkt.store && i1decodePkt.store, "i0i1StoreBlock")
   BoringUtils.addSource((i0decodePkt.load && i1decodePkt.store) || (i0decodePkt.store && i1decodePkt.load), "i0i1AlternaingBlock")
 
@@ -503,18 +501,7 @@ class DecodeIO2BypassPkt extends Module {
       i0rs1hitStage === 8.U,
       i0rs1hitStage === 9.U
     )
-  io.out0.bits.BypassCtl.rs1bypasse0 := VecInit(
-      i0rs1hitStage === 0.U && (FuType(1).alu && !FuType(1).subalu || FuType(1).csr),
-      i0rs1hitStage === 1.U && (FuType(0).alu && !FuType(0).subalu || FuType(0).csr),
-      i0rs1hitStage === 2.U && (FuType(3).alu && !FuType(3).subalu || FuType(3).csr),
-      i0rs1hitStage === 3.U && (FuType(2).alu && !FuType(2).subalu || FuType(2).csr),
-      i0rs1hitStage === 4.U && (FuType(5).alu && !FuType(5).subalu || FuType(5).csr || FuType(5).load || FuType(5).muldiv),
-      i0rs1hitStage === 5.U && (FuType(4).alu && !FuType(4).subalu || FuType(4).csr || FuType(4).load || FuType(4).muldiv),
-      i0rs1hitStage === 6.U,
-      i0rs1hitStage === 7.U,
-      i0rs1hitStage === 8.U,
-      i0rs1hitStage === 9.U
-    )
+
   io.out0.bits.BypassCtl.rs2bypasse0 := VecInit(
       i0rs2hitStage === 0.U && (FuType(1).alu && !FuType(1).subalu || FuType(1).csr),
       i0rs2hitStage === 1.U && (FuType(0).alu && !FuType(0).subalu || FuType(0).csr),

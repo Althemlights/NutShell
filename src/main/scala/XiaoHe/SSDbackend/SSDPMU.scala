@@ -251,7 +251,7 @@ class PMU extends Module{
 
     "LSU_load_store_confilct"      ->   (0x0a, "LSU_load_store_confilct"),
     "i0i1LSBlock"                  ->   (0x0b, "i0i1LSBlock"),
-    "i0i1LoadBlock"                ->   (0x0c, "i0i1LoadBlock"),
+    "i0i1LoadBlockLoadtouse"                ->   (0x0c, "i0i1LoadBlockLoadtouse"),
     "i0i1StoreBlock"               ->   (0x0d, "i0i1StoreBlock"),
     "i0i1AlternaingBlock"          ->   (0x0e, "i0i1AlternaingBlock"),
 
