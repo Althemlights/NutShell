@@ -102,7 +102,7 @@ class NutShell()(implicit p: Parameters) extends LazyModule {
   val tlBus = TLXbar()
   tlBus := nutcore.dcache.clientNode
   tlBus := nutcore.icache.clientNode
-  memAXI4SlaveNode := AXI4UserYanker() := AXI4Deinterleaver(64) := TLToAXI4() :*= TLIdentityNode() := l2cache.node :=* tlBus
+  memAXI4SlaveNode := AXI4UserYanker() := AXI4Deinterleaver(64) := TLToAXI4() := TLCacheCork() := l2cache.node :=* tlBus
   /*val memory = InModuleBody {
     memAXI4SlaveNode.makeIOs()
   }*/
