@@ -183,6 +183,49 @@ class IDU(implicit val p: Parameters) extends NutCoreModule with HasInstrType wi
   }
   val checkpoint_id = RegInit(0.U(64.W))
 
+  val backendEmpty = WireInit(false.B)
+  BoringUtils.addSink(backendEmpty,"backendEmpty")
+
+  //s_idle(no fence) :: s_fence_stall(stall, wait for backend empty) :: s_issue_fence(issue the fence instr)
+  val s_idle :: s_fence_stall :: s_issue_fence :: Nil = Enum(3)
+  val state = RegInit(s_idle)
+  val decode1_has_fence = decoder1.io.out.bits.ctrl.fuOpType === MOUOpType.fence && decoder1.io.out.valid
+  val decode2_has_fence = decoder2.io.out.bits.ctrl.fuOpType === MOUOpType.fence && decoder2.io.out.valid 
+  val has_fence = decode1_has_fence || decode2_has_fence
+
+  switch (state) {
+    is (s_idle) {
+      when (has_fence) {
+        state := s_fence_stall
+      }
+    }
+    is (s_fence_stall) {
+      when (backendEmpty) {
+        state := s_issue_fence
+      }
+    }
+    is (s_issue_fence) {
+      state := s_idle
+      when (decode2_has_fence) {
+        io.out(0).valid := false.B 
+        io.in(0).ready := false.B
+      }
+    }
+  }
+
+  //decode1 fence : stall decode1 and decode2
+  //decode2 fence : stall decode2, release decode1
+  when ((state === s_idle && has_fence) || state === s_fence_stall) {
+    io.out(0).valid := false.B 
+    io.out(1).valid := false.B 
+    io.in(0).ready := false.B
+    io.in(1).ready := false.B
+  } 
+  
+  when (state === s_idle && decode2_has_fence) {
+    io.out(0).valid := true.B 
+    io.in(0).ready := true.B 
+  } 
   // debug runahead
   /*val runahead = Module(new DifftestRunaheadEvent)
   runahead.io.clock         := clock

@@ -38,6 +38,10 @@ class SSDbackend extends NutCoreModule with hasBypassConst {
   val coupledPipeIn = Wire(Vec(4,Decoupled(new FuPkt)))
   val coupledPipeOut = Wire(Vec(4,Decoupled(new FuPkt)))
 
+  //pipeline empty
+  val pipelineEmpty = WireInit(false.B)
+  pipelineEmpty := !(VecInit(pipeIn.map(_.valid)).asUInt.orR)
+  BoringUtils.addSource(pipelineEmpty,"backendEmpty")
 
   //e1 -e5 register
   val pipeRegStage0 = Module(new stallPointConnect(new FuPkt)).suggestName("pipeStage0")
