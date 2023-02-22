@@ -57,6 +57,8 @@ class SimTop(implicit p: Parameters) extends Module {
   //val mmio = Module(new SimMMIO)
   val l_mmio = LazyModule(new SimMMIO(l_soc.peripheralNode.in.head._2))
   val mmio = Module(l_mmio.module)
+  l_mmio.io_axi4 <> soc.peripheral
+  //l_mmio.node := l_soc.
   //val soc = l_soc.module
 
   soc.io.frontend <> mmio.io.dma

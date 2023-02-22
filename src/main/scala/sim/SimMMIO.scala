@@ -24,7 +24,7 @@ import bus.axi4._
 import device._
 import difftest._
 
-import freechips.rocketchip.diplomacy.{IdRange, LazyModule, LazyModuleImp, TransferSizes, AddressSet}
+import freechips.rocketchip.diplomacy.{IdRange, LazyModule, LazyModuleImp, TransferSizes, AddressSet, InModuleBody}
 import chipsalliance.rocketchip.config.{Field, Parameters}
 import freechips.rocketchip.amba.axi4._
 
@@ -36,6 +36,10 @@ class SimMMIO(edge: AXI4EdgeParameters)(implicit p:Parameters) extends LazyModul
   axiBus := node
   uart.node := axiBus
   
+  val io_axi4 = InModuleBody {
+    node.makeIOs()
+  }
+
   lazy val module = new LazyModuleImp(this) {
     val io = IO(new Bundle {
       val rw = Flipped(new SimpleBusUC)

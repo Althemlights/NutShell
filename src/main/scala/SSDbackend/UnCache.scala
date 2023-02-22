@@ -52,15 +52,15 @@ class UncacheImp(outer: UnCache)extends LazyModuleImp(outer) with HasDCacheIO wi
   BoringUtils.addSource(MMIOStorePkt.ready,"MMIOStorePktReady")
   BoringUtils.addSink(mmioStorePending,"MMIOStorePending")
   MMIOStorePkt.valid := outBufferValid && (state === s_invalid) && !io.in.req.valid
-  val mmioStoreReq = Wire(Flipped(Decoupled(new SimpleBusReqBundle(userBits = userBits, idBits = idBits))))
+  val mmioStoreReq = Wire(new SimpleBusReqBundle(userBits = userBits, idBits = idBits))
   //val mmioStoreReqLatch = RegEnable(mmioStoreReq.bits,mmioStoreReq.fire)
-  mmioStoreReq.ready := false.B
-  mmioStoreReq.valid := MMIOStorePkt.valid
-  mmioStoreReq.bits.cmd := SimpleBusCmd.write
-  mmioStoreReq.bits.addr := MMIOStorePkt.bits.paddr
-  mmioStoreReq.bits.wdata := MMIOStorePkt.bits.data
-  mmioStoreReq.bits.size := MMIOStorePkt.bits.size
-  mmioStoreReq.bits.wmask := MMIOStorePkt.bits.mask
+  //mmioStoreReq.ready := false.B
+  //mmioStoreReq.valid := MMIOStorePkt.valid
+  mmioStoreReq.cmd := SimpleBusCmd.write
+  mmioStoreReq.addr := MMIOStorePkt.bits.paddr
+  mmioStoreReq.wdata := MMIOStorePkt.bits.data
+  mmioStoreReq.size := MMIOStorePkt.bits.size
+  mmioStoreReq.wmask := MMIOStorePkt.bits.mask
 
   MMIOStorePkt.ready := Mux(MMIOStorePkt.valid, true.B, false.B)
 
@@ -77,8 +77,8 @@ class UncacheImp(outer: UnCache)extends LazyModuleImp(outer) with HasDCacheIO wi
   req.ready := false.B
   resp.valid := false.B
   resp.bits := DontCare
-  when (mmioStoreReq.valid) {
-    req.bits := mmioStoreReq.bits
+  when (MMIOStorePkt.valid) {
+    req.bits := mmioStoreReq
     req.valid := true.B
   }
 
@@ -99,13 +99,13 @@ class UncacheImp(outer: UnCache)extends LazyModuleImp(outer) with HasDCacheIO wi
   def storeReq = req_reg.cmd === SimpleBusCmd.write
   
   val load = edge.Get(
-    fromSource      = 0.U,
+    fromSource      = 3.U,
     toAddress       = req_reg.addr,
     lgSize          = req_reg.size
   )._2
 
   val store = edge.Put(
-    fromSource      = 0.U,
+    fromSource      = 3.U,
     toAddress       = req_reg.addr,
     lgSize          = req_reg.size,
     data            = req_reg.wdata,

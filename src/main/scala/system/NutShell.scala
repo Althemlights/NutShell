@@ -152,12 +152,12 @@ class NutShell()(implicit p: Parameters) extends LazyModule{
   }*/
   
   //memory map IO
-  val peripheral_ports = nutcore.uncache.clientNode
+  //val peripheral_ports = nutcore.uncache.clientNode
   val peripheralXbar = TLXbar()
-  peripheralXbar := TLBuffer.chainNode(2, Some("L2_to_L3_peripheral_buffer")) := peripheral_ports
+  peripheralXbar := nutcore.uncache.clientNode
 
   val onChipPeripheralRange = AddressSet(0x38000000L, 0x07ffffffL)
-  val uartRange = AddressSet(0x40600000, 0xf)
+  val uartRange = AddressSet(0x40600000L, 0xf)
   val uartDevice = new SimpleDevice("serial", Seq("xilinx,uartlite"))
   val uartParams = AXI4SlaveParameters(
     address = Seq(uartRange),
@@ -170,26 +170,20 @@ class NutShell()(implicit p: Parameters) extends LazyModule{
     0x0, 0x7fffffff
   ).subtract(onChipPeripheralRange).flatMap(x => x.subtract(uartRange))
   val peripheralNode = AXI4SlaveNode(Seq(AXI4SlavePortParameters(
-    Seq(AXI4SlaveParameters(
-      address = peripheralRange,
-      regionType = RegionType.UNCACHED,
-      supportsRead = TransferSizes(1, 8),
-      supportsWrite = TransferSizes(1, 8),
-      interleavedId = Some(0)
-    ), uartParams),
+    Seq(uartParams),
     beatBytes = 8
   )))
 
   peripheralNode :=
     AXI4IdIndexer(idBits = 4) :=
-    AXI4Buffer() :=
-    AXI4Buffer() :=
-    AXI4Buffer() :=
-    AXI4Buffer() :=
+    //AXI4Buffer() :=
+    //AXI4Buffer() :=
+    //AXI4Buffer() :=
+    //AXI4Buffer() :=
     AXI4UserYanker() :=
     AXI4Deinterleaver(8) :=
     TLToAXI4() :=
-    TLBuffer.chainNode(3) :=
+    //TLBuffer.chainNode(3) :=
     peripheralXbar
 
   lazy val module = new NutShellImp(this)
@@ -206,6 +200,7 @@ class NutShellImp(outer: NutShell) extends LazyModuleImp(outer) with HasNutCoreP
 
   //val memory = IO(outer.memory.cloneType)
   val memory = outer.memAXI4SlaveNode.makeIOs()
+  val peripheral = outer.peripheralNode.makeIOs()
   val nutcore = outer.nutcore.module
   //val imem = outer.imem.module
 
