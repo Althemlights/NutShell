@@ -27,7 +27,7 @@ import huancun.{HCCacheParamsKey, HuanCun}
 import freechips.rocketchip.amba.axi4._ 
 import freechips.rocketchip.tilelink._ 
 import chipsalliance.rocketchip.config.Parameters
-import freechips.rocketchip.diplomacy.{LazyModule, LazyModuleImp, MemoryDevice, AddressSet, InModuleBody, TransferSizes, RegionType}
+import freechips.rocketchip.diplomacy.{LazyModule, LazyModuleImp, MemoryDevice, AddressSet, InModuleBody, TransferSizes, RegionType, SimpleDevice}
 import utils._
 import huancun._
 import chipsalliance.rocketchip.config._
@@ -52,7 +52,51 @@ class ILABundle extends NutCoreBundle {
   val InstrCnt = UInt(64.W)
 }
 
-class NutShell()(implicit p: Parameters) extends LazyModule {
+/*trait HaveAXI4PeripheralPort { this: BaseSoC =>
+  // on-chip devices: 0x3800_0000 - 0x3fff_ffff 0x0000_0000 - 0x0000_0fff
+  val onChipPeripheralRange = AddressSet(0x38000000L, 0x07ffffffL)
+  val uartRange = AddressSet(0x40600000, 0xf)
+  val uartDevice = new SimpleDevice("serial", Seq("xilinx,uartlite"))
+  val uartParams = AXI4SlaveParameters(
+    address = Seq(uartRange),
+    regionType = RegionType.UNCACHED,
+    supportsRead = TransferSizes(1, 8),
+    supportsWrite = TransferSizes(1, 8),
+    resources = uartDevice.reg
+  )
+  val peripheralRange = AddressSet(
+    0x0, 0x7fffffff
+  ).subtract(onChipPeripheralRange).flatMap(x => x.subtract(uartRange))
+  val peripheralNode = AXI4SlaveNode(Seq(AXI4SlavePortParameters(
+    Seq(AXI4SlaveParameters(
+      address = peripheralRange,
+      regionType = RegionType.UNCACHED,
+      supportsRead = TransferSizes(1, 8),
+      supportsWrite = TransferSizes(1, 8),
+      interleavedId = Some(0)
+    ), uartParams),
+    beatBytes = 8
+  )))
+
+  peripheralNode :=
+    AXI4IdIndexer(idBits = 4) :=
+    AXI4Buffer() :=
+    AXI4Buffer() :=
+    AXI4Buffer() :=
+    AXI4Buffer() :=
+    AXI4UserYanker() :=
+    AXI4Deinterleaver(8) :=
+    TLToAXI4() :=
+    TLBuffer.chainNode(3) :=
+    peripheralXbar
+
+  val peripheral = InModuleBody {
+    peripheralNode.makeIOs()
+  }
+
+}*/
+
+class NutShell()(implicit p: Parameters) extends LazyModule{
   val nutcore = LazyModule(new NutCore())
   //val l2cache = LazyModule(new HuanCun())
   /*private val l2cache = coreParams.L2CacheParamsOpt.map(l2param =>
@@ -106,6 +150,47 @@ class NutShell()(implicit p: Parameters) extends LazyModule {
   /*val memory = InModuleBody {
     memAXI4SlaveNode.makeIOs()
   }*/
+  
+  //memory map IO
+  val peripheral_ports = nutcore.uncache.clientNode
+  val peripheralXbar = TLXbar()
+  peripheralXbar := TLBuffer.chainNode(2, Some("L2_to_L3_peripheral_buffer")) := peripheral_ports
+
+  val onChipPeripheralRange = AddressSet(0x38000000L, 0x07ffffffL)
+  val uartRange = AddressSet(0x40600000, 0xf)
+  val uartDevice = new SimpleDevice("serial", Seq("xilinx,uartlite"))
+  val uartParams = AXI4SlaveParameters(
+    address = Seq(uartRange),
+    regionType = RegionType.UNCACHED,
+    supportsRead = TransferSizes(1, 8),
+    supportsWrite = TransferSizes(1, 8),
+    resources = uartDevice.reg
+  )
+  val peripheralRange = AddressSet(
+    0x0, 0x7fffffff
+  ).subtract(onChipPeripheralRange).flatMap(x => x.subtract(uartRange))
+  val peripheralNode = AXI4SlaveNode(Seq(AXI4SlavePortParameters(
+    Seq(AXI4SlaveParameters(
+      address = peripheralRange,
+      regionType = RegionType.UNCACHED,
+      supportsRead = TransferSizes(1, 8),
+      supportsWrite = TransferSizes(1, 8),
+      interleavedId = Some(0)
+    ), uartParams),
+    beatBytes = 8
+  )))
+
+  peripheralNode :=
+    AXI4IdIndexer(idBits = 4) :=
+    AXI4Buffer() :=
+    AXI4Buffer() :=
+    AXI4Buffer() :=
+    AXI4Buffer() :=
+    AXI4UserYanker() :=
+    AXI4Deinterleaver(8) :=
+    TLToAXI4() :=
+    TLBuffer.chainNode(3) :=
+    peripheralXbar
 
   lazy val module = new NutShellImp(this)
 }
@@ -113,7 +198,7 @@ class NutShell()(implicit p: Parameters) extends LazyModule {
 class NutShellImp(outer: NutShell) extends LazyModuleImp(outer) with HasNutCoreParameters with HasSoCParameter{
   val io = IO(new Bundle{
     //val mem = new AXI4
-    val mmio = (if (FPGAPlatform) { new AXI4 } else { new SimpleBusUC })
+    //val mmio = (if (FPGAPlatform) { new AXI4 } else { new SimpleBusUC })
     val frontend = Flipped(new AXI4)
     val meip = Input(UInt(Settings.getInt("NrExtIntr").W))
     val ila = if (FPGAPlatform && EnableILA) Some(Output(new ILABundle)) else None
@@ -141,17 +226,17 @@ class NutShellImp(outer: NutShell) extends LazyModuleImp(outer) with HasNutCoreP
   nutcore.io.imem.coh.req.valid := false.B
   nutcore.io.imem.coh.req.bits := DontCare*/
 
-  val addrSpace = List(
+  /*val addrSpace = List(
     (Settings.getLong("MMIOBase"), Settings.getLong("MMIOSize")), // external devices
     (0x38000000L, 0x00010000L), // CLINT
     (0x3c000000L, 0x04000000L)  // PLIC
   )
   val mmioXbar = Module(new SimpleBusCrossbar1toN(addrSpace))
-  mmioXbar.io.in <> nutcore.io.mmio
+  mmioXbar.io.in <> DontCare
 
-  val extDev = mmioXbar.io.out(0)
-  if (FPGAPlatform) { io.mmio <> extDev.toAXI4() }
-  else { io.mmio <> extDev }
+  //val extDev = mmioXbar.io.out(0)
+  //if (FPGAPlatform) { io.mmio <> extDev.toAXI4() }
+  //else { io.mmio <> extDev }
 
   val clint = Module(new AXI4CLINT(sim = !FPGAPlatform))
   clint.io.in <> mmioXbar.io.out(1).toAXI4Lite()
@@ -164,7 +249,7 @@ class NutShellImp(outer: NutShell) extends LazyModuleImp(outer) with HasNutCoreP
   plic.io.in <> mmioXbar.io.out(2).toAXI4Lite()
   plic.io.extra.get.intrVec := RegNext(RegNext(io.meip))
   val meipSync = plic.io.extra.get.meip(0)
-  //BoringUtils.addSource(meipSync, "meip")
+  //BoringUtils.addSource(meipSync, "meip")*/
   
 
   // ILA

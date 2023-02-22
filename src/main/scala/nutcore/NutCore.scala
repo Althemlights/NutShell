@@ -97,6 +97,7 @@ class NutCore()(implicit p: Parameters) extends LazyModule with HasNutCoreParame
 
   val dcache = LazyModule(new DCache())
   val icache = LazyModule(new ICache())
+  val uncache = LazyModule(new UnCache())
   //Debug() {printf("%d", FPGAPlatform)}
   lazy val module = new NutCoreImp(this)
 }
@@ -105,11 +106,12 @@ class NutCoreImp(outer: NutCore) extends LazyModuleImp(outer) with HasNutCorePar
   
   val dcache = outer.dcache.module
   val icache = outer.icache.module
+  val uncache = outer.uncache.module
 
   class NutCoreIO extends Bundle {
     //val imem = new SimpleBusC
     //val dmem = new SimpleBusC
-    val mmio = new SimpleBusUC
+    //val mmio = new SimpleBusUC
     val frontend = Flipped(new SimpleBusUC())
   }
   val io = IO(new NutCoreIO)
@@ -134,8 +136,8 @@ class NutCoreImp(outer: NutCore) extends LazyModuleImp(outer) with HasNutCorePar
 //  PipelineVector2Connect(new DecodeIO, frontend.io.out(0), frontend.io.out(1), SSDbackend.io.in(0), SSDbackend.io.in(1), frontend.io.flushVec(1), 16)
 //  PipelineVector2Connect(new DecodeIO, frontend.io.out(2), frontend.io.out(3), SSDbackend.io.in(2), SSDbackend.io.in(3), frontend.io.flushVec(1), 16)
   for(i <- 0 to 3){frontend.io.out(i) <> SSDbackend.io.in(i)}
-  val mmioXbar = Module(new SimpleBusCrossbarNto1(1))
-  mmioXbar.io.in(0) := DontCare
+  //val mmioXbar = Module(new SimpleBusCrossbarNto1(1))
+  //mmioXbar.io.in(0) := DontCare
   val s2NotReady = WireInit(false.B)
   //io.imem <> SSDCache(in = frontend.io.imem, mmio = mmioXbar.io.in(0), flush = (frontend.io.flushVec(0) | frontend.io.bpFlush))(SSDCacheConfig(ro = true, name = "icache", userBits = ICacheUserBundleWidth))
   //io.dmem <> SSDCache(in = SSDbackend.io.dmem, mmio = mmioXbar.io.in(1), flush = false.B)(SSDCacheConfig(ro = true, name = "dcache"))
@@ -143,17 +145,24 @@ class NutCoreImp(outer: NutCore) extends LazyModuleImp(outer) with HasNutCorePar
   icache.io.in <> frontend.io.imem
   icache.io.flush := frontend.io.flushVec(0) | frontend.io.bpFlush
 
+  val addrSpace = List(
+    (Settings.getLong("ResetVector"), 0x80000000L),          //dcache
+    (Settings.getLong("MMIOBase"), Settings.getLong("MMIOSize"))    //uncache
+  )
+  val dmemxbar = Module(new SimpleBusCrossbar1toN(addrSpace))
+  dmemxbar.io.in <> SSDbackend.io.dmem
 
-  dcache.io.in <> SSDbackend.io.dmem
+  dcache.io.in <> dmemxbar.io.out(0)
   //dcache.io.mmio <> mmioXbar.io.in(1)
   dcache.io.flush := false.B
+  uncache.io.in <> dmemxbar.io.out(1)
 
   // DMA?
   io.frontend.resp.bits := DontCare
   io.frontend.req.ready := false.B
   io.frontend.resp.valid := false.B
 
-  io.mmio <> mmioXbar.io.out
+  //io.mmio <> mmioXbar.io.out
 
 //  val mmioXbar = Module(new SimpleBusCrossbarNto1(2))
 //  val s2NotReady = WireInit(false.B)

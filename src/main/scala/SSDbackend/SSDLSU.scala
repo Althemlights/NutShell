@@ -121,10 +121,10 @@ class SSDLSU extends  NutCoreModule with HasStoreBufferConst{
   MMIOStorePkt.bits := outBuffer.io.deq.bits
   MMIOStorePkt.valid := outBuffer.io.deq.valid
   MMIOStorePkt.ready := false.B
-  //BoringUtils.addSource(MMIOStorePkt.valid,"MMIOStorePktValid")
-  //BoringUtils.addSource(MMIOStorePkt.bits,"MMIOStorePktBits")
-  //BoringUtils.addSink(MMIOStorePkt.ready,"MMIOStorePktReady")
-  //BoringUtils.addSource(MMIOStorePending,"MMIOStorePending")
+  BoringUtils.addSource(MMIOStorePkt.valid,"MMIOStorePktValid")
+  BoringUtils.addSource(MMIOStorePkt.bits,"MMIOStorePktBits")
+  BoringUtils.addSink(MMIOStorePkt.ready,"MMIOStorePktReady")
+  BoringUtils.addSource(MMIOStorePending,"MMIOStorePending")
 
   //stall signal
   val cacheStall = WireInit(false.B)
