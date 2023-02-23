@@ -189,8 +189,8 @@ class IDU(implicit val p: Parameters) extends NutCoreModule with HasInstrType wi
   //s_idle(no fence) :: s_fence_stall(stall, wait for backend empty) :: s_issue_fence(issue the fence instr)
   val s_idle :: s_fence_stall :: s_issue_fence :: Nil = Enum(3)
   val state = RegInit(s_idle)
-  val decode1_has_fence = decoder1.io.out.bits.ctrl.fuOpType === MOUOpType.fence && decoder1.io.out.valid && io.out(0).ready
-  val decode2_has_fence = decoder2.io.out.bits.ctrl.fuOpType === MOUOpType.fence && decoder2.io.out.valid && io.out(1).ready
+  val decode1_has_fence = decoder1.io.out.bits.ctrl.fuType === FuType.mou && decoder1.io.out.bits.ctrl.fuOpType === MOUOpType.fence && decoder1.io.out.valid && io.out(0).ready
+  val decode2_has_fence = decoder2.io.out.bits.ctrl.fuType === FuType.mou && decoder2.io.out.bits.ctrl.fuOpType === MOUOpType.fence && decoder2.io.out.valid && io.out(1).ready
   val has_fence = decode1_has_fence || decode2_has_fence
 
   switch (state) {
@@ -202,6 +202,8 @@ class IDU(implicit val p: Parameters) extends NutCoreModule with HasInstrType wi
     is (s_fence_stall) {
       decoder1.io.in.valid := false.B
       decoder2.io.in.valid := false.B
+      decoder3.io.in.valid := false.B
+      decoder4.io.in.valid := false.B
       when (backendEmpty) {
         state := s_issue_fence
       }
@@ -218,14 +220,20 @@ class IDU(implicit val p: Parameters) extends NutCoreModule with HasInstrType wi
   when ((state === s_idle && has_fence) || state === s_fence_stall) {
     io.out(0).valid := false.B 
     io.out(1).valid := false.B 
+    io.out(2).valid := false.B 
+    io.out(3).valid := false.B 
     io.in(0).ready := false.B
     io.in(1).ready := false.B
+    io.in(2).ready := false.B
+    io.in(3).ready := false.B
   } 
   
   when (state === s_idle && decode2_has_fence) {
     io.out(0).valid := true.B 
+    io.out(2).valid := true.B 
     //io.in(0).ready := true.B
     io.in(0).ready := decoder1.io.in.ready 
+    io.in(2).ready := decoder3.io.in.ready
   } 
   // debug runahead
   /*val runahead = Module(new DifftestRunaheadEvent)
