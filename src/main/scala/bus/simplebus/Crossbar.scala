@@ -70,22 +70,22 @@ class SimpleBusCrossbar1toN(addressSpace: List[(Long, Long)]) extends Module {
   outSelResp.resp.ready := io.in.resp.ready
   io.in.req.ready := outSel.req.ready || reqInvalidAddr
 
-  Debug() {
-    when (state === s_idle && io.in.req.valid) {
+  /*Debug() {
+    /*when (state === s_idle && io.in.req.valid) {
       printf(p"${GTimer()}: xbar: in.req: ${io.in.req.bits}\n")
-    }
+    }*/
 
-    when (outSel.req.fire) {
+    /*when (outSel.req.fire) {
       printf(p"${GTimer()}: xbar: outSelIdx = ${outSelIdx}, outSel.req: ${outSel.req.bits}\n")
-    }
-    when (outSel.resp.fire) {
+    }*/
+    /*when (outSel.resp.fire) {
       printf(p"${GTimer()}: xbar: outSelIdx= ${outSelIdx}, outSel.resp: ${outSel.resp.bits}\n")
-    }
+    }*/
 
     when (io.in.resp.fire) {
       printf(p"${GTimer()}: xbar: in.resp: ${io.in.resp.bits}\n")
     }
-  }
+  }*/
 }
 
 class SimpleBusCrossbarNto1(n: Int, userBits:Int = 0) extends Module {

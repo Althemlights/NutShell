@@ -37,8 +37,8 @@ object LogLevel extends Enumeration {
 object LogUtil {
 
   def displayLog: Bool = {
-    val enableDisplay = WireInit(false.B)
-    BoringUtils.addSink(enableDisplay, "DISPLAY_ENABLE")
+    val enableDisplay = WireInit(true.B)
+    //BoringUtils.addSink(enableDisplay, "DISPLAY_ENABLE")
     enableDisplay
   }
 
@@ -50,8 +50,8 @@ object LogUtil {
 
   def apply(debugLevel: LogLevel)
            (prefix: Boolean, cond: Bool, pable: Printable)
-           (implicit name: String): Any = {
-    val commonInfo = p"[${GTimer()}] $name: "
+           : Any = {
+    val commonInfo = p"[${GTimer()}] : "
     when (cond && displayLog && NutCoreConfig().EnableDebug.B) {
       if(prefix) printf(commonInfo)
       printf(pable)
@@ -61,17 +61,17 @@ object LogUtil {
 
 sealed abstract class LogHelper(val logLevel: LogLevel) {
 
-  def apply(cond: Bool, fmt: String, data: Bits*)(implicit name: String): Any =
+  def apply(cond: Bool, fmt: String, data: Bits*): Any =
     apply(cond, Printable.pack(fmt, data:_*))
-  def apply(cond: Bool, pable: Printable)(implicit name: String): Any = apply(true, cond, pable)
-  def apply(fmt: String, data: Bits*)(implicit name: String): Any =
+  def apply(cond: Bool, pable: Printable): Any = apply(true, cond, pable)
+  def apply(fmt: String, data: Bits*): Any =
     apply(true.B, Printable.pack(fmt, data:_*))
-  def apply(pable: Printable)(implicit name: String): Any = apply(true.B, pable)
-  def apply(prefix: Boolean, fmt: String, data: Bits*)(implicit name: String): Any = apply(prefix, true.B, Printable.pack(fmt, data:_*))
-  def apply(prefix: Boolean, pable: Printable)(implicit name: String): Any = apply(prefix, true.B, pable)
-  def apply(prefix: Boolean, cond: Bool, fmt: String, data: Bits*)(implicit name: String): Any =
+  def apply(pable: Printable): Any = apply(true.B, pable)
+  def apply(prefix: Boolean, fmt: String, data: Bits*): Any = apply(prefix, true.B, Printable.pack(fmt, data:_*))
+  def apply(prefix: Boolean, pable: Printable): Any = apply(prefix, true.B, pable)
+  def apply(prefix: Boolean, cond: Bool, fmt: String, data: Bits*): Any =
     apply(prefix, cond, Printable.pack(fmt, data:_*))
-  def apply(prefix: Boolean, cond: Bool, pable: Printable)(implicit name: String): Any =
+  def apply(prefix: Boolean, cond: Bool, pable: Printable): Any =
     LogUtil(logLevel)(prefix, cond, pable)
 
   // NOOP/NutShell style debug

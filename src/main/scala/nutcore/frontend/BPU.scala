@@ -264,10 +264,10 @@ class BPU_ooo extends NutCoreModule {
 
   //BPU brancn inst update req debug
   val cond = req.btbType === BTBtype.B && req.valid
-  if(SSDCoreConfig().EnableBPUupdateDebug) {
+  /*if(SSDCoreConfig().EnableBPUupdateDebug) {
     myDebug(cond, "BPUUpdate at pc:%x, btbBtypeMiss:%b, isMissPredict:%b, taken:%b, ghr:%b, target:%x, phtIndex:%x, cnt:%b\n",
       req.pc, req.btbBtypeMiss, req.isMissPredict, req.actualTaken, req.ghrNotUpdated, req.actualTarget, phtReadIndex,getpht)
-  }
+  }*/
   // io.out.valid := btbHit && Mux(btbRead._type === BTBtype.B, phtTaken, true.B) && !crosslineJump || crosslineJumpLatch && !flush && !crosslineJump
   // Note:
   // btbHit && Mux(btbRead._type === BTBtype.B, phtTaken, true.B) && !crosslineJump : normal branch predict
