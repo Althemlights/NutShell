@@ -175,13 +175,11 @@ sealed class DCacheStage1(implicit val p: Parameters) extends DCacheModule {
 
   //metaArray need to reset before Load
   //s1 is not ready when metaArray is resetting or meta/dataArray is being written
-
-  /*if(cacheName == "dcache") {
-    val s1NotReady = (!io.metaReadBus.req.ready || !io.dataReadBus.req.ready || !io.metaReadBus.req.ready || !io.tagReadBus.req.ready)&& io.in.valid
-    BoringUtils.addSource(s1NotReady,"s1NotReady")
-  }*/
-
   val dataReadBusReady = VecInit(io.dataReadBus.map(_.req.ready)).asUInt.andR
+
+  val s1NotReady = (!io.metaReadBus.req.ready || !dataReadBusReady || !io.metaReadBus.req.ready || !io.tagReadBus.req.ready) && io.in.valid
+  BoringUtils.addSource(s1NotReady,"s1NotReady")
+
   io.out.bits.req := io.in.bits
   io.out.bits.req.cmd := new_cmd
   io.out.valid := io.in.valid && io.metaReadBus.req.ready && dataReadBusReady && io.tagReadBus.req.ready
@@ -361,7 +359,9 @@ sealed class DCacheStage2(edge: TLEdgeOut)(implicit val p: Parameters) extends D
   io.in.ready := io.out.ready && acquireReady && releaseReady && !miss
 
   val cacheStall = WireInit(false.B)
-  cacheStall := miss
+  val s1NotReady = WireInit(false.B)
+  BoringUtils.addSink(s1NotReady,"s1NotReady")
+  cacheStall := miss || s1NotReady || !acquireReady || !releaseReady
   BoringUtils.addSource(cacheStall,"cacheStall")
 }
 
