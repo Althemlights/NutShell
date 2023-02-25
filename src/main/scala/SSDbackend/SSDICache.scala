@@ -40,7 +40,7 @@ case object ICacheParamsKey extends Field[ICacheParameters]
 
 case class ICacheParameters (
                          ro: Boolean = false,
-                         name: String = "dcache",
+                         name: String = "icache",
                          userBits: Int = 39 * 2 + 9 + 5 + 4,
                          idBits: Int = 0,
 

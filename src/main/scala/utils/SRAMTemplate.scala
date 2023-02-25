@@ -21,12 +21,12 @@ import chisel3.experimental.ExtModule
 import chisel3.util._
 class S011HD1P_X32Y2D128 extends ExtModule with HasExtModuleResource {
   //  val io = IO(new Bundle {
-  val Q =   IO(Output(UInt(128.W)))
+  val Q =   IO(Output(UInt(64.W)))
   val CLK = IO(Input(Clock()))
   val CEN = IO(Input(Bool()))
   val WEN = IO(Input(Bool()))
-  val A =   IO(Input(UInt(6.W)))
-  val D =   IO(Input(UInt(128.W)))
+  val A =   IO(Input(UInt(7.W)))
+  val D =   IO(Input(UInt(64.W)))
   //  })
   addResource("/vsrc/S011HD1P_X32Y2D128.v")
 }
@@ -411,7 +411,7 @@ class DataSRAMTemplate[T <: Data](gen: T, set: Int, way: Int = 1,
   io.r.req.ready := !resetState && (if (singlePort) !wen else true.B)
   io.w.req.ready := true.B
 
-  Debug(true) {
+  Debug(false) {
     when (wen) {
       printf("%d: SRAMTemplate: write %x to idx = %d\n", GTimer(), wdata.asUInt, setIdx)
     }
