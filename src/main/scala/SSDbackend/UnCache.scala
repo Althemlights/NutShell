@@ -75,6 +75,7 @@ class UncacheImp(outer: UnCache)extends LazyModuleImp(outer) with HasDCacheIO wi
 
   //  Assign default values to output signals.
   req.ready := false.B
+  io.in.req.ready := false.B
   resp.valid := false.B
   resp.bits := DontCare
   when (MMIOStorePkt.valid) {
@@ -116,6 +117,8 @@ class UncacheImp(outer: UnCache)extends LazyModuleImp(outer) with HasDCacheIO wi
 
   switch (state) {
     is (s_invalid) {
+      //req.ready := true.B
+      io.in.req.ready := true.B
       req.ready := true.B
       
       when (req.fire) {

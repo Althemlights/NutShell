@@ -129,10 +129,13 @@ class SSDLSU extends  NutCoreModule with HasStoreBufferConst{
   //stall signal
   val cacheStall = WireInit(false.B)
   BoringUtils.addSink(cacheStall,"cacheStall")
+  val memXbarStall = WireInit(false.B)
+  BoringUtils.addSink(memXbarStall,"memXbarStall")
   val  bufferFullStall = (storeBuffer.io.isAlmostFull && lsuPipeOut(1).bits.isStore) || storeBuffer.io.isFull  //when almost full, still can store one
   val pc = WireInit(0.U(VAddrBits.W))  //for LSU debug
   BoringUtils.addSink(pc,"lsuPC")  
-  io.memStall := cacheStall && (isLoad || lsuPipeStage3.right.valid && !lsuPipeStage3.right.bits.isStore) || bufferFullStall
+  //io.memStall := cacheStall && (isLoad || lsuPipeStage3.right.valid && !lsuPipeStage3.right.bits.isStore) || bufferFullStall
+  io.memStall := (cacheStall || memXbarStall) && (isLoad || lsuPipeStage3.right.valid && !lsuPipeStage3.right.bits.isStore) || bufferFullStall
 
   lsuPipeIn(0).valid := isStore  || loadCacheIn.valid
   lsuPipeIn(0).bits.isStore := isStore

@@ -149,7 +149,7 @@ class NutCoreImp(outer: NutCore) extends LazyModuleImp(outer) with HasNutCorePar
     (Settings.getLong("ResetVector"), 0x80000000L),          //dcache
     (Settings.getLong("UnCacheBase"), Settings.getLong("UnCacheSize"))    //uncache
   )
-  val dmemxbar = Module(new SimpleBusCrossbar1toN(addrSpace))
+  val dmemxbar = Module(new DmemSimpleBusCrossbar1toN(addrSpace))
   dmemxbar.io.in <> SSDbackend.io.dmem
 
   dcache.io.in <> dmemxbar.io.out(0)

@@ -18,10 +18,11 @@ package bus.simplebus
 
 import chisel3._
 import chisel3.util._
+import chisel3.util.experimental.BoringUtils
 
-import utils._
+import utils.{Debug, GTimer}
 
-class SimpleBusCrossbar1toN(addressSpace: List[(Long, Long)]) extends Module {
+class DmemSimpleBusCrossbar1toN(addressSpace: List[(Long, Long)]) extends Module{
   val io = IO(new Bundle {
     val in = Flipped(new SimpleBusUC)
     val out = Vec(addressSpace.length, new SimpleBusUC)
@@ -39,6 +40,7 @@ class SimpleBusCrossbar1toN(addressSpace: List[(Long, Long)]) extends Module {
   //选择的通道的内容
   val outSel = io.out(outSelIdx)
   val outSelIdxResp = RegEnable(outSelIdx, outSel.req.fire && (state === s_idle))
+  val outSelVecResp = RegEnable(outSelVec, outSel.req.fire && (state === s_idle))
   val outSelResp = io.out(outSelIdxResp)
   //进入的req addr是无效地址（不在范围内）
   val reqInvalidAddr = io.in.req.valid && !outSelVec.asUInt.orR
@@ -52,10 +54,100 @@ class SimpleBusCrossbar1toN(addressSpace: List[(Long, Long)]) extends Module {
   assert(!(io.in.req.valid && outSelVec.asUInt.andR), "address decode error, bad addr = 0x%x\n", addr)
 
   // bind out.req channel
-  (io.out zip outSelVec).map { case (o, v) => {
+  (io.out zip (outSelVec zip outSelVecResp)).map { case (o, (v, r)) => {
     o.req.bits := io.in.req.bits
     //o.req.valid := v && (io.in.req.valid && (state === s_idle))
-    o.req.valid := v && io.in.req.valid
+    o.req.valid := v && io.in.req.valid && ((state === s_idle) || (r === v && state === s_resp))
+    o.resp.ready := v
+  }}
+
+  switch (state) {
+    is (s_idle) {
+      when (outSel.req.fire) { state := s_resp }
+      when (reqInvalidAddr) { state := s_error }
+    }
+    //is (s_resp) { when (outSelResp.resp.fire) { state := s_idle } }
+    is (s_resp) {
+      when (outSelResp.resp.fire) {
+        //如果这次选择的通道和上一个通道一样，并且也成功握手了，直接保持在s_resp
+        when (outSelIdx === outSelIdxResp && outSel.req.fire) {
+          state := s_resp
+        }.otherwise{
+          state := s_idle
+        }
+      }
+    }
+    is (s_error) { when(io.in.resp.fire){ state := s_idle } }
+  }
+
+  io.in.resp.valid := outSelResp.resp.fire || state === s_error
+  io.in.resp.bits <> outSelResp.resp.bits
+  // io.in.resp.bits.exc.get := state === s_error
+  outSelResp.resp.ready := io.in.resp.ready
+  io.in.req.ready := (outSel.req.ready && (state === s_idle || (state === s_resp && outSelIdx === outSelIdxResp && outSel.req.fire))) || reqInvalidAddr
+
+  //mem mmio comfilct stall: 
+  //mem in resp but mmio valid, stall mmio
+  //mmio in resp but mem valid, stall mem
+
+  val memXbarStall = WireInit(false.B)
+  BoringUtils.addSource(memXbarStall,"memXbarStall")
+  //memXbarStall := state === s_resp && outSelIdxResp =/= outSelIdx && io.in.req.valid
+  memXbarStall := state === s_resp && outSelIdxResp =/= outSelIdx && io.in.req.valid
+  /*Debug() {
+    /*when (state === s_idle && io.in.req.valid) {
+      printf(p"${GTimer()}: xbar: in.req: ${io.in.req.bits}\n")
+    }*/
+
+    /*when (outSel.req.fire) {
+      printf(p"${GTimer()}: xbar: outSelIdx = ${outSelIdx}, outSel.req: ${outSel.req.bits}\n")
+    }*/
+    /*when (outSel.resp.fire) {
+      printf(p"${GTimer()}: xbar: outSelIdx= ${outSelIdx}, outSel.resp: ${outSel.resp.bits}\n")
+    }*/
+
+    when (io.in.resp.fire) {
+      printf(p"${GTimer()}: xbar: in.resp: ${io.in.resp.bits}\n")
+    }
+  }*/
+}
+
+class SimpleBusCrossbar1toN(addressSpace: List[(Long, Long)]) extends Module{
+  val io = IO(new Bundle {
+    val in = Flipped(new SimpleBusUC)
+    val out = Vec(addressSpace.length, new SimpleBusUC)
+  })
+
+  val s_idle :: s_resp :: s_error :: Nil = Enum(3)
+  val state = RegInit(s_idle)
+
+  // select the output channel according to the address
+  val addr = io.in.req.bits.addr
+  val outSelVec = VecInit(addressSpace.map(
+    range => (addr >= range._1.U && addr < (range._1 + range._2).U)))
+  //选择的通道的idx
+  val outSelIdx = PriorityEncoder(outSelVec)
+  //选择的通道的内容
+  val outSel = io.out(outSelIdx)
+  val outSelIdxResp = RegEnable(outSelIdx, outSel.req.fire && (state === s_idle))
+  val outSelVecResp = RegEnable(outSelVec, outSel.req.fire && (state === s_idle))
+  val outSelResp = io.out(outSelIdxResp)
+  //进入的req addr是无效地址（不在范围内）
+  val reqInvalidAddr = io.in.req.valid && !outSelVec.asUInt.orR
+
+  when((io.in.req.valid && !outSelVec.asUInt.orR) || (io.in.req.valid && outSelVec.asUInt.andR)){
+    Debug(){
+      printf("crossbar access bad addr %x, time %d\n", addr, GTimer())
+    }
+  }
+  // assert(!io.in.req.valid || outSelVec.asUInt.orR, "address decode error, bad addr = 0x%x\n", addr)
+  assert(!(io.in.req.valid && outSelVec.asUInt.andR), "address decode error, bad addr = 0x%x\n", addr)
+
+  // bind out.req channel
+  (io.out zip (outSelVec zip outSelVecResp)).map { case (o, (v, r)) => {
+    o.req.bits := io.in.req.bits
+    //o.req.valid := v && (io.in.req.valid && (state === s_idle))
+    o.req.valid := v && io.in.req.valid && ((state === s_idle) || (r === v && state === s_resp))
     o.resp.ready := v
   }}
 
@@ -84,6 +176,14 @@ class SimpleBusCrossbar1toN(addressSpace: List[(Long, Long)]) extends Module {
   outSelResp.resp.ready := io.in.resp.ready
   io.in.req.ready := outSel.req.ready || reqInvalidAddr
 
+  //mem mmio comfilct stall: 
+  //mem in resp but mmio valid, stall mmio
+  //mmio in resp but mem valid, stall mem
+  /*if (xbarName == "dmem_xbar") {
+    val memXbarStall = WireInit(false.B)
+    BoringUtils.addSource(memXbarStall,"memXbarStall")
+    memXbarStall := state === s_resp && outSelIdxResp =/= outSelIdx && io.in.req.valid
+  }*/
   /*Debug() {
     /*when (state === s_idle && io.in.req.valid) {
       printf(p"${GTimer()}: xbar: in.req: ${io.in.req.bits}\n")
