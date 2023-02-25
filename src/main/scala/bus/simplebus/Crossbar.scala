@@ -34,10 +34,13 @@ class SimpleBusCrossbar1toN(addressSpace: List[(Long, Long)]) extends Module {
   val addr = io.in.req.bits.addr
   val outSelVec = VecInit(addressSpace.map(
     range => (addr >= range._1.U && addr < (range._1 + range._2).U)))
+  //选择的通道的idx
   val outSelIdx = PriorityEncoder(outSelVec)
+  //选择的通道的内容
   val outSel = io.out(outSelIdx)
   val outSelIdxResp = RegEnable(outSelIdx, outSel.req.fire && (state === s_idle))
   val outSelResp = io.out(outSelIdxResp)
+  //进入的req addr是无效地址（不在范围内）
   val reqInvalidAddr = io.in.req.valid && !outSelVec.asUInt.orR
 
   when((io.in.req.valid && !outSelVec.asUInt.orR) || (io.in.req.valid && outSelVec.asUInt.andR)){
@@ -51,7 +54,8 @@ class SimpleBusCrossbar1toN(addressSpace: List[(Long, Long)]) extends Module {
   // bind out.req channel
   (io.out zip outSelVec).map { case (o, v) => {
     o.req.bits := io.in.req.bits
-    o.req.valid := v && (io.in.req.valid && (state === s_idle))
+    //o.req.valid := v && (io.in.req.valid && (state === s_idle))
+    o.req.valid := v && io.in.req.valid
     o.resp.ready := v
   }}
 
@@ -60,7 +64,17 @@ class SimpleBusCrossbar1toN(addressSpace: List[(Long, Long)]) extends Module {
       when (outSel.req.fire) { state := s_resp }
       when (reqInvalidAddr) { state := s_error }
     }
-    is (s_resp) { when (outSelResp.resp.fire) { state := s_idle } }
+    //is (s_resp) { when (outSelResp.resp.fire) { state := s_idle } }
+    is (s_resp) {
+      when (outSelResp.resp.fire) {
+        //如果这次选择的通道和上一个通道一样，并且也成功握手了，直接保持在s_resp
+        when (outSelIdx === outSelIdxResp && outSel.req.fire) {
+          state := s_resp
+        }.otherwise{
+          state := s_idle
+        }
+      }
+    }
     is (s_error) { when(io.in.resp.fire){ state := s_idle } }
   }
 

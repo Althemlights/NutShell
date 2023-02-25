@@ -22,6 +22,8 @@ object DefaultSettings {
     "MemMapRegionBits" -> 0,
     "MMIOBase" -> 0x0000000040000000L,
     "MMIOSize" -> 0x0000000040000000L,
+    "UnCacheBase" -> 0x0L,
+    "UnCacheSize" -> 0x0000000080000000L,
     "ResetVector" -> 0x80000000L,
     "NrExtIntr" -> 1,
 

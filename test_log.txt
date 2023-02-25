@@ -1,3 +1,4 @@
+
 add-riscv-tests.bin
 Core 0: [32mHIT GOOD TRAP at pc = 0x80000548
 addi-riscv-tests.bin
@@ -49,6 +50,7 @@ Core 0: [32mHIT GOOD TRAP at pc = 0x80000608
 ori-riscv-tests.bin
 Core 0: [32mHIT GOOD TRAP at pc = 0x80000208
 sb-riscv-tests.bin
+Core 0: [32mHIT GOOD TRAP at pc = 0x80000448
 sd-riscv-tests.bin
 Core 0: [32mHIT GOOD TRAP at pc = 0x80000688
 sh-riscv-tests.bin
