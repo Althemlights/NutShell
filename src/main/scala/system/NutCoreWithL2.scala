@@ -68,21 +68,26 @@ class NutcoreWithL2()(implicit p: Parameters) extends LazyModule{
   mmio_port := nutcore.uncache.clientNode
 
   //val core_reset_sink = BundleBridgeSink(() => Reset())
+  val core_reset_sink = BundleBridgeSink(Some(() => Reset()))
 
   lazy val module = new NutcoreWithL2Imp(this)
 }
 
-class NutcoreWithL2Imp(outer: NutcoreWithL2) extends LazyModuleImp(outer) with HasNutCoreParameters with HasSoCParameter{
+class NutcoreWithL2Imp(outer: NutcoreWithL2) extends LazyModuleImp(outer) with HasNutCoreParameters with HasSoCParameter with HasNutCoreParameter{
   val io = IO(new Bundle{
     //val frontend = Flipped(new SimpleBusUC())
+    val hartId = Input(UInt(XLEN.W))
     val meip = Input(UInt(Settings.getInt("NrExtIntr").W))
     val ila = if (FPGAPlatform && EnableILA) Some(Output(new ILABundle)) else None
   })
 
   val nutcore = outer.nutcore.module
-  //val core_reset_sink = outer.core_reset_sink
-  //val core_soft_rst = outer.core_reset_sink.in.head._1
+  val core_reset_sink = outer.core_reset_sink
+  val core_soft_rst = outer.core_reset_sink.in.head._1
 
+  val mhartId = WireInit(0.U(XLEN.W))
+  mhartId := io.hartId
+  BoringUtils.addSource(mhartId,"mhartId")
   /*val axi2sb = Module(new AXI42SimpleBusConverter())
   axi2sb.io.in <> io.frontend
   nutcore.io.frontend <> axi2sb.io.out*/

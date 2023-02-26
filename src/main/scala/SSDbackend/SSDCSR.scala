@@ -288,7 +288,12 @@ class SSDCSR extends NutCoreModule with SSDHasCSRConst{
   val mvendorid = RegInit(UInt(XLEN.W), 0.U) // this is a non-commercial implementation
   val marchid = RegInit(UInt(XLEN.W), 0.U) // return 0 to indicate the field is not implemented
   val mimpid = RegInit(UInt(XLEN.W), 0.U) // provides a unique encoding of the version of the processor implementation
-  val mhartid = RegInit(UInt(XLEN.W), 0.U) // the hardware thread running the code
+  val mhartid = Reg(UInt(XLEN.W)) // the hardware thread running the code
+  val mhartId = WireInit(0.U(XLEN.W))
+  BoringUtils.addSink(mhartId,"mhartId")
+  when (RegNext(RegNext(reset.asBool) && !reset.asBool)) {
+    mhartid := mhartId
+  }
   val mstatus = RegInit(UInt(XLEN.W), 0.U)
   // val mstatus = RegInit(UInt(XLEN.W), "h8000c0100".U)
   // mstatus Value Table
@@ -448,7 +453,7 @@ class SSDCSR extends NutCoreModule with SSDHasCSRConst{
     MaskedRegMap(Mvendorid, mvendorid, 0.U, MaskedRegMap.Unwritable),
     MaskedRegMap(Marchid, marchid, 0.U, MaskedRegMap.Unwritable),
     MaskedRegMap(Mimpid, mimpid, 0.U, MaskedRegMap.Unwritable),
-    MaskedRegMap(Mhartid, mhartid, 0.U, MaskedRegMap.Unwritable),
+    MaskedRegMap(Mhartid, mhartid, 0.U(XLEN.W), MaskedRegMap.Unwritable),
 
     // Machine Trap Setup
     // MaskedRegMap(Mstatus, mstatus, "hffffffffffffffee".U, (x=>{printf("mstatus write: %x time: %d\n", x, GTimer()); x})),
