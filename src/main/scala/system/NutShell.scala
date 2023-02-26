@@ -52,69 +52,10 @@ class ILABundle extends NutCoreBundle {
   val InstrCnt = UInt(64.W)
 }
 
-/*trait HaveAXI4PeripheralPort { this: BaseSoC =>
-  // on-chip devices: 0x3800_0000 - 0x3fff_ffff 0x0000_0000 - 0x0000_0fff
-  val onChipPeripheralRange = AddressSet(0x38000000L, 0x07ffffffL)
-  val uartRange = AddressSet(0x40600000, 0xf)
-  val uartDevice = new SimpleDevice("serial", Seq("xilinx,uartlite"))
-  val uartParams = AXI4SlaveParameters(
-    address = Seq(uartRange),
-    regionType = RegionType.UNCACHED,
-    supportsRead = TransferSizes(1, 8),
-    supportsWrite = TransferSizes(1, 8),
-    resources = uartDevice.reg
-  )
-  val peripheralRange = AddressSet(
-    0x0, 0x7fffffff
-  ).subtract(onChipPeripheralRange).flatMap(x => x.subtract(uartRange))
-  val peripheralNode = AXI4SlaveNode(Seq(AXI4SlavePortParameters(
-    Seq(AXI4SlaveParameters(
-      address = peripheralRange,
-      regionType = RegionType.UNCACHED,
-      supportsRead = TransferSizes(1, 8),
-      supportsWrite = TransferSizes(1, 8),
-      interleavedId = Some(0)
-    ), uartParams),
-    beatBytes = 8
-  )))
-
-  peripheralNode :=
-    AXI4IdIndexer(idBits = 4) :=
-    AXI4Buffer() :=
-    AXI4Buffer() :=
-    AXI4Buffer() :=
-    AXI4Buffer() :=
-    AXI4UserYanker() :=
-    AXI4Deinterleaver(8) :=
-    TLToAXI4() :=
-    TLBuffer.chainNode(3) :=
-    peripheralXbar
-
-  val peripheral = InModuleBody {
-    peripheralNode.makeIOs()
-  }
-
-}*/
-
 class NutShell()(implicit p: Parameters) extends LazyModule{
-  val nutcore = LazyModule(new NutCore())
-  //val l2cache = LazyModule(new HuanCun())
-  /*private val l2cache = coreParams.L2CacheParamsOpt.map(l2param =>
-    LazyModule(new HuanCun()(new Config((_, _, _) => {
-      case HCCacheParamsKey => l2param.copy(enableTopDown = env.EnableTopDown)
-    })))
-  )*/
-  val l2cache = LazyModule(new HuanCun()(new Config((_, _, _) => {
-    case HCCacheParamsKey => HCCacheParameters(
-      name = s"L2",
-      level = 2,
-      inclusive = false,
-      clientCaches = Seq(CacheParameters(sets = 32, ways = 8, blockGranularity = 5, name = "L2")),
-      prefetch = Some(huancun.prefetch.BOPParameters()),
-      reqField = Seq(),
-      echoField = Seq()
-    )
-  })))
+  //val nutcore = LazyModule(new NutCore())
+  val corenum = Settings.getInt("CoreNums")
+  val core_with_l2 = Array.fill(corenum){LazyModule(new NutcoreWithL2())}
   //val imem = LazyModule(new SB2AXI4MasterNode(true))
   //val dmemory_port = TLIdentityNode()
   //dmemory_port := l2cache.node := nutcore.dcache.clientNode
@@ -139,22 +80,31 @@ class NutShell()(implicit p: Parameters) extends LazyModule{
     )
   ))
 
-  /*val xbar = AXI4Xbar()
-  xbar := AXI4UserYanker() := AXI4Deinterleaver(64) := TLToAXI4() :*= TLIdentityNode() := l2cache.node := nutcore.dcache.clientNode
-  xbar := imem.node
-  memAXI4SlaveNode :=* xbar*/
-  val tlBus = TLXbar()
-  tlBus := nutcore.dcache.clientNode
-  tlBus := nutcore.icache.clientNode
-  memAXI4SlaveNode := AXI4UserYanker() := AXI4Deinterleaver(64) := TLToAXI4() := TLCacheCork() := l2cache.node :=* tlBus
-  /*val memory = InModuleBody {
-    memAXI4SlaveNode.makeIOs()
-  }*/
-  
-  //memory map IO
-  //val peripheral_ports = nutcore.uncache.clientNode
+  val l2_mem_tlxbar = TLXbar()
   val peripheralXbar = TLXbar()
-  peripheralXbar := nutcore.uncache.clientNode
+  for (i <- 0 until corenum) {
+    l2_mem_tlxbar := core_with_l2(i).memory_port
+    peripheralXbar := core_with_l2(i).mmio_port
+  }
+
+  //l3 cache
+  val l3cacheOpt = LazyModule(new HuanCun()(new Config((_, _, _) => {
+    case HCCacheParamsKey => HCCacheParameters(
+      name = s"L3",
+      level = 3,
+      inclusive = false,
+      clientCaches = Seq(CacheParameters(sets = 128, ways = 4, blockGranularity = 7, name = "L2")),
+      /*ctrl = Some(CacheCtrl(
+        address = 0x39000000,
+        numCores = tiles.size
+      )),*/
+      prefetch = Some(huancun.prefetch.BOPParameters()),
+      reqField = Seq(),
+      echoField = Seq()
+    )
+  })))
+
+  memAXI4SlaveNode := AXI4UserYanker() := AXI4Deinterleaver(64) := TLToAXI4() := TLCacheCork() := l3cacheOpt.node :=* l2_mem_tlxbar
 
   val onChipPeripheralRange = AddressSet(0x38000000L, 0x07ffffffL)
   val uartRange = AddressSet(0x40600000L, 0xf)
@@ -201,13 +151,18 @@ class NutShellImp(outer: NutShell) extends LazyModuleImp(outer) with HasNutCoreP
   //val memory = IO(outer.memory.cloneType)
   val memory = outer.memAXI4SlaveNode.makeIOs()
   val peripheral = outer.peripheralNode.makeIOs()
-  val nutcore = outer.nutcore.module
+  //val nutcore = outer.nutcore.module
+  val nutcore_withl2 = outer.core_with_l2.map(_.module)
   //val imem = outer.imem.module
 
   val axi2sb = Module(new AXI42SimpleBusConverter())
   axi2sb.io.in <> io.frontend
-  nutcore.io.frontend <> axi2sb.io.out
+  //nutcore.io.frontend <> axi2sb.io.out
   
+  val corenum = Settings.getInt("CoreNums")
+  for (i <- 0 until corenum) {
+    nutcore_withl2(i).io.frontend <> axi2sb.io.out
+  }
   /*val memMapRegionBits = Settings.getInt("MemMapRegionBits")
   val memMapBase = Settings.getLong("MemMapBase")
   val memAddrMap = Module(new SimpleBusAddressMapper((memMapRegionBits, memMapBase)))*/

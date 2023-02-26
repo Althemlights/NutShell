@@ -34,6 +34,7 @@ import freechips.rocketchip.diplomacy.{AddressSet, LazyModule, LazyModuleImp}
 import top.DefaultConfig
 import chipsalliance.rocketchip.config.Parameters
 import device.AXI4MemorySlave
+import top.Settings
 
 class SimTop(implicit p: Parameters) extends Module {
   val io = IO(new Bundle{
@@ -43,6 +44,9 @@ class SimTop(implicit p: Parameters) extends Module {
   })
   val l_soc = LazyModule(new NutShell())
   val soc = Module(l_soc.module)
+  //val core_with_l2 = Array.fill(Settings.getLong("CoreNums")){LazyModule(new NutShell())}
+  
+  //AXI4RAM
   val l_simAXIMem = AXI4MemorySlave(
     l_soc.memAXI4SlaveNode,
     128 * 1024 * 1024,
