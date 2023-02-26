@@ -24,10 +24,12 @@ import top._
 
 import huancun.debug.TLLogger
 import huancun.{HCCacheParamsKey, HuanCun}
+import huancun.utils.{ResetGen}
 import freechips.rocketchip.amba.axi4._ 
 import freechips.rocketchip.tilelink._ 
 import chipsalliance.rocketchip.config.Parameters
 import freechips.rocketchip.diplomacy.{LazyModule, LazyModuleImp, MemoryDevice, AddressSet, InModuleBody, TransferSizes, RegionType, SimpleDevice}
+import freechips.rocketchip.diplomacy._
 import utils._
 import huancun._
 import chipsalliance.rocketchip.config._
@@ -96,13 +98,20 @@ class NutShell()(implicit p: Parameters) extends LazyModule{
       clientCaches = Seq(CacheParameters(sets = 128, ways = 4, blockGranularity = 7, name = "L2")),
       /*ctrl = Some(CacheCtrl(
         address = 0x39000000,
-        numCores = tiles.size
+        numCores = corenum
       )),*/
       prefetch = Some(huancun.prefetch.BOPParameters()),
       reqField = Seq(),
       echoField = Seq()
     )
   })))
+
+  //l3cacheOpt.ctlnode.map(_ := peripheralXbar)
+
+  val core_rst_nodes = l3cacheOpt.rst_nodes
+  /*(core_rst_nodes zip core_with_l2) foreach{
+    case (source, sink) => sink.core_reset_sink := source
+  }*/
 
   memAXI4SlaveNode := AXI4UserYanker() := AXI4Deinterleaver(64) := TLToAXI4() := TLCacheCork() := l3cacheOpt.node :=* l2_mem_tlxbar
 
@@ -139,11 +148,11 @@ class NutShell()(implicit p: Parameters) extends LazyModule{
   lazy val module = new NutShellImp(this)
 }
 
-class NutShellImp(outer: NutShell) extends LazyModuleImp(outer) with HasNutCoreParameters with HasSoCParameter{
+class NutShellImp(outer: NutShell) extends LazyRawModuleImp(outer) with HasNutCoreParameters with HasSoCParameter{
   val io = IO(new Bundle{
-    //val mem = new AXI4
-    //val mmio = (if (FPGAPlatform) { new AXI4 } else { new SimpleBusUC })
-    val frontend = Flipped(new AXI4)
+    val clock = Input(Bool())
+    val reset = Input(AsyncReset())
+    //val frontend = Flipped(new AXI4)
     val meip = Input(UInt(Settings.getInt("NrExtIntr").W))
     val ila = if (FPGAPlatform && EnableILA) Some(Output(new ILABundle)) else None
   })
@@ -154,53 +163,39 @@ class NutShellImp(outer: NutShell) extends LazyModuleImp(outer) with HasNutCoreP
   //val nutcore = outer.nutcore.module
   val nutcore_withl2 = outer.core_with_l2.map(_.module)
   //val imem = outer.imem.module
+  //val core_rst_nodes = outer.core_rst_nodes
 
-  val axi2sb = Module(new AXI42SimpleBusConverter())
-  axi2sb.io.in <> io.frontend
+  //val axi2sb = Module(new AXI42SimpleBusConverter())
+  //axi2sb.io.in <> io.frontend
+  //io.frontend <> DontCare
   //nutcore.io.frontend <> axi2sb.io.out
   
   val corenum = Settings.getInt("CoreNums")
-  for (i <- 0 until corenum) {
-    nutcore_withl2(i).io.frontend <> axi2sb.io.out
+  /*for (i <- 0 until corenum) {
+    //nutcore_withl2(i).io.frontend <> axi2sb.io.out
+    nutcore_withl2(i).io.frontend <> DontCare
+  }*/
+
+  val l3cacheOpt = outer.l3cacheOpt.module
+  /*if(l3cacheOpt.rst_nodes.isEmpty){
+    // tie off core soft reset
+    for(node <- core_rst_nodes){
+      node.out.head._1 := false.B.asAsyncReset()
+    }
+  }*/
+
+  val reset_sync = withClockAndReset(io.clock.asClock, io.reset) { ResetGen() }
+
+  // override LazyRawModuleImp's clock and reset
+  childClock := io.clock.asClock
+  childReset := reset_sync
+
+  withClockAndReset(io.clock.asClock, reset_sync) {
+    // Modules are reset one by one
+    // reset ----> SYNC --> {L3 Cache, Cores}
+    val resetChain = Seq(Seq(l3cacheOpt) ++ nutcore_withl2)
+    ResetGen(resetChain, reset_sync, !FPGAPlatform)
   }
-  /*val memMapRegionBits = Settings.getInt("MemMapRegionBits")
-  val memMapBase = Settings.getLong("MemMapBase")
-  val memAddrMap = Module(new SimpleBusAddressMapper((memMapRegionBits, memMapBase)))*/
-  //memAddrMap.io.in <> mem
-  //memAddrMap.io.in <> nutcore.io.imem.mem
-  
-  //io.mem <> memAddrMap.io.out.toAXI4(true)
-  //imem.io.in <> memAddrMap.io.out
-
-  /*nutcore.io.imem.coh.resp.ready := true.B
-  nutcore.io.imem.coh.req.valid := false.B
-  nutcore.io.imem.coh.req.bits := DontCare*/
-
-  /*val addrSpace = List(
-    (Settings.getLong("MMIOBase"), Settings.getLong("MMIOSize")), // external devices
-    (0x38000000L, 0x00010000L), // CLINT
-    (0x3c000000L, 0x04000000L)  // PLIC
-  )
-  val mmioXbar = Module(new SimpleBusCrossbar1toN(addrSpace))
-  mmioXbar.io.in <> DontCare
-
-  //val extDev = mmioXbar.io.out(0)
-  //if (FPGAPlatform) { io.mmio <> extDev.toAXI4() }
-  //else { io.mmio <> extDev }
-
-  val clint = Module(new AXI4CLINT(sim = !FPGAPlatform))
-  clint.io.in <> mmioXbar.io.out(1).toAXI4Lite()
-  val mtipSync = clint.io.extra.get.mtip
-  val msipSync = clint.io.extra.get.msip
-  //BoringUtils.addSource(mtipSync, "mtip")
-  //BoringUtils.addSource(msipSync, "msip")
-
-  val plic = Module(new AXI4PLIC(nrIntr = Settings.getInt("NrExtIntr"), nrHart = 1))
-  plic.io.in <> mmioXbar.io.out(2).toAXI4Lite()
-  plic.io.extra.get.intrVec := RegNext(RegNext(io.meip))
-  val meipSync = plic.io.extra.get.meip(0)
-  //BoringUtils.addSource(meipSync, "meip")*/
-  
 
   // ILA
   if (FPGAPlatform) {

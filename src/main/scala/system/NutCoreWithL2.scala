@@ -28,6 +28,7 @@ import freechips.rocketchip.amba.axi4._
 import freechips.rocketchip.tilelink._ 
 import chipsalliance.rocketchip.config.Parameters
 import freechips.rocketchip.diplomacy.{LazyModule, LazyModuleImp, MemoryDevice, AddressSet, InModuleBody, TransferSizes, RegionType, SimpleDevice}
+import freechips.rocketchip.diplomacy._
 import utils._
 import huancun._
 import chipsalliance.rocketchip.config._
@@ -66,22 +67,26 @@ class NutcoreWithL2()(implicit p: Parameters) extends LazyModule{
   val mmio_port = TLTempNode()
   mmio_port := nutcore.uncache.clientNode
 
+  //val core_reset_sink = BundleBridgeSink(() => Reset())
+
   lazy val module = new NutcoreWithL2Imp(this)
 }
 
 class NutcoreWithL2Imp(outer: NutcoreWithL2) extends LazyModuleImp(outer) with HasNutCoreParameters with HasSoCParameter{
   val io = IO(new Bundle{
-    val frontend = Flipped(new SimpleBusUC())
+    //val frontend = Flipped(new SimpleBusUC())
     val meip = Input(UInt(Settings.getInt("NrExtIntr").W))
     val ila = if (FPGAPlatform && EnableILA) Some(Output(new ILABundle)) else None
   })
 
   val nutcore = outer.nutcore.module
+  //val core_reset_sink = outer.core_reset_sink
+  //val core_soft_rst = outer.core_reset_sink.in.head._1
 
   /*val axi2sb = Module(new AXI42SimpleBusConverter())
   axi2sb.io.in <> io.frontend
   nutcore.io.frontend <> axi2sb.io.out*/
-  nutcore.io.frontend <> io.frontend
+  //nutcore.io.frontend <> io.frontend
   
   // ILA
   if (FPGAPlatform) {

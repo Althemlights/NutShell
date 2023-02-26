@@ -5,6 +5,8 @@ import chisel3._
 import chisel3.util._
 import top.Settings
 import SSDbackend._
+import huancun.{HCCacheParamsKey, HuanCun, HCCacheParameters}
+import top._
 
 case object NutCoreParamsKey extends Field[NutCoreParameters]
 
@@ -22,7 +24,6 @@ trait HasNutCoreParameters {
 
   val FPGAPlatform = p_nutcore.FPGAPlatform
 }
-
 
 
 

@@ -56,7 +56,9 @@ class SimTop(implicit p: Parameters) extends Module {
   //val simAXIMem = Module(l_simAXIMem.module)
   //l_simAXIMem.io_axi4 <> soc.memory
     
-
+  soc.io.clock := clock.asBool
+  soc.io.reset := reset.asAsyncReset
+  //soc.io.reset := reset.asBool
 
   //val mmio = Module(new SimMMIO)
   val l_mmio = LazyModule(new SimMMIO(l_soc.peripheralNode.in.head._2))
@@ -65,7 +67,7 @@ class SimTop(implicit p: Parameters) extends Module {
   //l_mmio.node := l_soc.
   //val soc = l_soc.module
 
-  soc.io.frontend <> mmio.io.dma
+  //soc.io.frontend <> mmio.io.dma
   val simAXIMem = Module(l_simAXIMem.module)
   l_simAXIMem.io_axi4 <> soc.memory
 

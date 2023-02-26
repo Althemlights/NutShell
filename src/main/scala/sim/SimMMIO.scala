@@ -44,7 +44,7 @@ class SimMMIO(edge: AXI4EdgeParameters)(implicit p:Parameters) extends LazyModul
     val io = IO(new Bundle {
       val rw = Flipped(new SimpleBusUC)
       val meip = Output(Bool())
-      val dma = new AXI4
+      //val dma = new AXI4
       val uart = new UARTIO
     })
 
@@ -67,7 +67,7 @@ class SimMMIO(edge: AXI4EdgeParameters)(implicit p:Parameters) extends LazyModul
     val flash = Module(new AXI4Flash)
     val sd = Module(new AXI4DummySD)
     val meipGen = Module(new AXI4MeipGen)
-    val dma = Module(new AXI4DMA)
+    //val dma = Module(new AXI4DMA)
     //uart.io.in <> xbar.io.out(0).toAXI4Lite()
     /*vga.io.in.fb <> xbar.io.out(1).toAXI4Lite()
     vga.io.in.ctrl <> xbar.io.out(2).toAXI4Lite()
@@ -80,8 +80,8 @@ class SimMMIO(edge: AXI4EdgeParameters)(implicit p:Parameters) extends LazyModul
     flash.io.in <> DontCare
     sd.io.in <> DontCare
     meipGen.io.in <> DontCare
-    dma.io.in <> DontCare
-    io.dma <> dma.io.extra.get.dma
+    //dma.io.in <> DontCare
+    //io.dma <> dma.io.extra.get.dma
     io.meip := meipGen.io.extra.get.meip
     //uart.io.extra.get <> io.uart
     io.uart <> uart.module.io.extra.get

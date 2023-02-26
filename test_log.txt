@@ -1,4 +1,3 @@
-
 add-riscv-tests.bin
 Core 0: [32mHIT GOOD TRAP at pc = 0x80000548
 addi-riscv-tests.bin

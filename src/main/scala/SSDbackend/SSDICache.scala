@@ -385,8 +385,8 @@ class ICacheImp(outer: ICache) extends LazyModuleImp(outer) with HasICacheIO wit
   val metaArray = Module(new MetaSRAMTemplateWithArbiter(nRead = 2, new DMetaBundle, set = Sets, way = Ways, shouldReset = true))
   //val dataArray = Module(new DataSRAMTemplateWithArbiter(nRead = 3, new DDataBundle, set = Sets * LineBeats, way = Ways))
 
-  metaArray.reset := reset.asBool
-  tagArray.reset := reset.asBool
+  metaArray.reset := reset.asAsyncReset
+  tagArray.reset := reset.asAsyncReset
 
   val dataArray = Array.fill(sramNum) {
     Module(new DataSRAMTemplateWithArbiter(
