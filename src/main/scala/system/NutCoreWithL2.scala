@@ -24,6 +24,7 @@ import top._
 
 import huancun.debug.TLLogger
 import huancun.{HCCacheParamsKey, HuanCun}
+import huancun.utils.{ResetGen}
 import freechips.rocketchip.amba.axi4._ 
 import freechips.rocketchip.tilelink._ 
 import chipsalliance.rocketchip.config.Parameters
@@ -91,6 +92,13 @@ class NutcoreWithL2Imp(outer: NutcoreWithL2) extends LazyModuleImp(outer) with H
   nutcore.io.frontend <> axi2sb.io.out*/
   //nutcore.io.frontend <> io.frontend
   
+  val resetChain = Seq(Seq(nutcore, outer.l2cache.module))
+
+  //ResetGen(resetChain, reset, !FPGAPlatform)
+  withClockAndReset(clock, core_soft_rst) {
+    ResetGen(resetChain, reset, !FPGAPlatform)
+  }
+
   // ILA
   if (FPGAPlatform) {
     def BoringUtilsConnect(sink: UInt, id: String) {

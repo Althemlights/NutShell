@@ -158,38 +158,15 @@ sealed class AcquireAccess(edge: TLEdgeOut)(implicit val p: Parameters) extends 
 
   io.mem_getPutAcquire.valid := Mux(state === s_put || state === s_get || state === s_acqB || state === s_acqP, true.B, false.B)
   io.mem_getPutAcquire.bits := Mux(state === s_put, Mux(isFullPut, putFullData, putPartialData), pkg.asTypeOf(new TLBundleA(edge.bundle)))
-  io.mem_grantAck.ready := Mux(state === s_accessA || state === s_grant || state === s_grantD, true.B, false.B)
+  io.mem_grantAck.ready := Mux((state === s_grant || state === s_grantD) && io.tagWriteBus.req.ready && io.metaWriteBus.req.ready, true.B, false.B)
   io.mem_finish.bits := grantAck
   io.mem_finish.valid := state === s_grantA
 
   switch (state) {
     is (s_idle) {
-      when (mmio) {
-        state := Mux(req.isRead(), s_get, s_put)
-      }
       when (acquire) {
         state := Mux(hitTag, s_acqP, s_acqB)
       }
-    }
-    is (s_put) {
-      when (io.mem_getPutAcquire.fire) {
-        state := s_accessA
-      }
-    }
-    is (s_accessA) {
-      when (io.mem_grantAck.fire) {
-        state := s_waitResp
-      }
-    }
-    is (s_get) {
-      when (io.mem_getPutAcquire.fire) {
-        state := s_accessAD
-      }
-    }
-    is (s_accessAD) {
-      when (io.mem_grantAck.fire) {
-        state := s_waitResp
-      }      
     }
     is (s_acqP) {
       when (io.mem_getPutAcquire.fire) {
