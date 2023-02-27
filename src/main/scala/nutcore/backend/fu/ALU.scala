@@ -178,9 +178,6 @@ class ALU(hasBru: Boolean = false) extends NutCoreModule {
   bpuUpdateReq.btbBtypeMiss := branchPredictMiss
   io.bpuUpdateReq := bpuUpdateReq
 
-
-
-  //BoringUtils.addSource(RegNext(bpuUpdateReq), "bpuUpdateReq")
   //
   val right = valid && isBru && !predictWrong
   val wrong = valid && isBru && predictWrong

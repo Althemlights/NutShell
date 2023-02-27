@@ -71,6 +71,7 @@ class BPU_ooo extends NutCoreModule {
     val flush = Input(Bool())
     val brIdx = Output(Vec(4, Bool()))
     val crosslineJump = Output(Bool())
+    val bpuUpdateReq = Flipped(new BPUUpdateReq)
   })
 
   val flush = BoolStopWatch(io.flush, io.in.pc.valid, startHighPriority = true)
@@ -156,7 +157,8 @@ class BPU_ooo extends NutCoreModule {
   // update
   val req = WireInit(0.U.asTypeOf(new BPUUpdateReq))
   val btbWrite = WireInit(0.U.asTypeOf(btbEntry()))
-  BoringUtils.addSink(req, "bpuUpdateReq")
+  //BoringUtils.addSink(req, "bpuUpdateReq")
+  req := io.bpuUpdateReq
   dontTouch(btbWrite)
 
   btbWrite.tag := btbAddr.getTag(req.pc)

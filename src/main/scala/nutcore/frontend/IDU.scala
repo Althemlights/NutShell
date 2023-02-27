@@ -162,6 +162,7 @@ class IDU(implicit val p: Parameters) extends NutCoreModule with HasInstrType wi
   val io = IO(new Bundle {
     val in = Vec(4, Flipped(Decoupled(new CtrlFlowIO)))
     val out = Vec(4, Decoupled(new DecodeIO))
+    val pipelineEmpty = Input(Bool())
   })
   val decoder1  = Module(new Decoder)
   val decoder2  = Module(new Decoder)
@@ -183,8 +184,8 @@ class IDU(implicit val p: Parameters) extends NutCoreModule with HasInstrType wi
   }
   val checkpoint_id = RegInit(0.U(64.W))
 
-  val backendEmpty = WireInit(false.B)
-  BoringUtils.addSink(backendEmpty,"backendEmpty")
+  //val backendEmpty = WireInit(false.B)
+  //BoringUtils.addSink(backendEmpty,"backendEmpty")
 
   //s_idle(no fence) :: s_fence_stall(stall, wait for backend empty) :: s_issue_fence(issue the fence instr)
   val s_idle :: s_fence_stall :: s_issue_fence :: Nil = Enum(3)
@@ -204,7 +205,7 @@ class IDU(implicit val p: Parameters) extends NutCoreModule with HasInstrType wi
       decoder2.io.in.valid := false.B
       decoder3.io.in.valid := false.B
       decoder4.io.in.valid := false.B
-      when (backendEmpty) {
+      when (io.pipelineEmpty) {
         state := s_issue_fence
       }
     }

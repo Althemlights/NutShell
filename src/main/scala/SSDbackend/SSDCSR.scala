@@ -191,6 +191,7 @@ class SSDCSRIO extends FunctionUnitIO {
   val wenFix = Output(Bool())
   val CSRregfile = new CSRregfile
   val ArchEvent = new ArchEvent
+  val hartid = Input(UInt(XLEN.W))
 }
 
 class SSDCSR extends NutCoreModule with SSDHasCSRConst{
@@ -289,10 +290,8 @@ class SSDCSR extends NutCoreModule with SSDHasCSRConst{
   val marchid = RegInit(UInt(XLEN.W), 0.U) // return 0 to indicate the field is not implemented
   val mimpid = RegInit(UInt(XLEN.W), 0.U) // provides a unique encoding of the version of the processor implementation
   val mhartid = Reg(UInt(XLEN.W)) // the hardware thread running the code
-  val mhartId = WireInit(0.U(XLEN.W))
-  BoringUtils.addSink(mhartId,"mhartId")
   when (RegNext(RegNext(reset.asBool) && !reset.asBool)) {
-    mhartid := mhartId
+    mhartid := io.hartid
   }
   val mstatus = RegInit(UInt(XLEN.W), 0.U)
   // val mstatus = RegInit(UInt(XLEN.W), "h8000c0100".U)

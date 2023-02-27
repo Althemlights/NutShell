@@ -113,6 +113,7 @@ class NutCoreImp(outer: NutCore) extends LazyModuleImp(outer) with HasNutCorePar
     //val dmem = new SimpleBusC
     //val mmio = new SimpleBusUC
     val frontend = Flipped(new SimpleBusUC())
+    val hartid = Input(UInt(XLEN.W))
   }
   val io = IO(new NutCoreIO)
 
@@ -130,6 +131,9 @@ class NutCoreImp(outer: NutCore) extends LazyModuleImp(outer) with HasNutCorePar
 
   val SSDbackend = Module(new SSDbackend)
   SSDbackend.io.in <> frontend.io.out
+  SSDbackend.io.hartid <> io.hartid
+  frontend.io.pipelineEmpty := SSDbackend.io.pipelineEmpty
+  frontend.io.bpuUpdateReq := SSDbackend.io.bpuUpdateReq
   frontend.io.redirect <> SSDbackend.io.redirectOut
   frontend.io.ipf := false.B
   // add pipestage

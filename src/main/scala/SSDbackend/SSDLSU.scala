@@ -17,6 +17,7 @@ class SSDLSUIO extends FunctionUnitIO{
   //??? for what
   val LoadReady = Output(Bool())
   val StoreReady = Output(Bool())
+  val lsuPC = Input(UInt(VAddrBits.W))
   
   val dmem = new SimpleBusUC(addrBits = VAddrBits)
   val storeBypassCtrl = Flipped((new LSUPipeBypassCtrl).storeBypassCtrlE2)
@@ -133,7 +134,8 @@ class SSDLSU extends  NutCoreModule with HasStoreBufferConst{
   BoringUtils.addSink(memXbarStall,"memXbarStall")
   val  bufferFullStall = (storeBuffer.io.isAlmostFull && lsuPipeOut(1).bits.isStore) || storeBuffer.io.isFull  //when almost full, still can store one
   val pc = WireInit(0.U(VAddrBits.W))  //for LSU debug
-  BoringUtils.addSink(pc,"lsuPC")  
+  pc := io.lsuPC
+  //BoringUtils.addSink(pc,"lsuPC")  
   //io.memStall := cacheStall && (isLoad || lsuPipeStage3.right.valid && !lsuPipeStage3.right.bits.isStore) || bufferFullStall
   io.memStall := (cacheStall || memXbarStall) && (isLoad || lsuPipeStage3.right.valid && !lsuPipeStage3.right.bits.isStore) || bufferFullStall
 

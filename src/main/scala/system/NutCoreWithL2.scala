@@ -85,9 +85,7 @@ class NutcoreWithL2Imp(outer: NutcoreWithL2) extends LazyModuleImp(outer) with H
   val core_reset_sink = outer.core_reset_sink
   val core_soft_rst = outer.core_reset_sink.in.head._1
 
-  val mhartId = WireInit(0.U(XLEN.W))
-  mhartId := io.hartId
-  BoringUtils.addSource(mhartId,"mhartId")
+  nutcore.io.hartid := io.hartId
   /*val axi2sb = Module(new AXI42SimpleBusConverter())
   axi2sb.io.in <> io.frontend
   nutcore.io.frontend <> axi2sb.io.out*/

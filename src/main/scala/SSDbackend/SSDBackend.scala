@@ -16,6 +16,9 @@ class SSDbackend extends NutCoreModule with hasBypassConst {
     val in = Vec(4, Flipped(Decoupled(new DecodeIO)))
     val redirectOut = new RedirectIO
     val dmem = new SimpleBusUC(addrBits = VAddrBits) // without dtlb
+    val hartid = Input(UInt(XLEN.W))
+    val pipelineEmpty = Output(Bool())
+    val bpuUpdateReq = new BPUUpdateReq
     //val mmio = new SimpleBusUC
   })
   def BypassMux(sel:Bool,BypassCtl:Vec[Bool],BypassDataPort:Vec[UInt],rdata:UInt):UInt ={
@@ -41,7 +44,8 @@ class SSDbackend extends NutCoreModule with hasBypassConst {
   //pipeline empty
   val pipelineEmpty = WireInit(false.B)
   pipelineEmpty := !(VecInit(pipeIn.map(_.valid)).asUInt.orR)
-  BoringUtils.addSource(pipelineEmpty,"backendEmpty")
+  io.pipelineEmpty := pipelineEmpty
+  //BoringUtils.addSource(pipelineEmpty,"backendEmpty")
 
   //e1 -e5 register
   val pipeRegStage0 = Module(new stallPointConnect(new FuPkt)).suggestName("pipeStage0")
@@ -100,6 +104,7 @@ class SSDbackend extends NutCoreModule with hasBypassConst {
 //  Redirect3_csr := 0.U.asTypeOf(new RedirectIO)
   val SSDCSR = Module(new SSDCSR)
   SSDCSR.io.out.ready := true.B
+  SSDCSR.io.hartid := io.hartid
   val i0CSRValid = BypassPktValid(0) && (BypassPkt(0).decodePkt.csr) && (BypassPkt(0).decodePkt.skip)
   val i1CSRValid = BypassPktValid(1) && (BypassPkt(1).decodePkt.csr) && (BypassPkt(1).decodePkt.skip)
   val CSRValid = i0CSRValid || i1CSRValid
@@ -202,9 +207,10 @@ class SSDbackend extends NutCoreModule with hasBypassConst {
           Mux(Redirect2.valid && pipeOut(2).valid,Redirect2,0.U.asTypeOf(new RedirectIO))))))
   finalBpuUpdateReq := Mux(pipeOut(9).bits.bpuUpdateReq.valid && pipeOut(9).fire && !pipeInvalid(11),pipeOut(9).bits.bpuUpdateReq,
     Mux(pipeOut(8).bits.bpuUpdateReq.valid && pipeOut(8).fire && !pipeInvalid(10),pipeOut(8).bits.bpuUpdateReq,0.U.asTypeOf(new BPUUpdateReq)))
-  BoringUtils.addSource(finalBpuUpdateReq, "bpuUpdateReq")
+  io.bpuUpdateReq := finalBpuUpdateReq
+  //BoringUtils.addSource(finalBpuUpdateReq, "bpuUpdateReq")
   //  BoringUtils.addSource(finalBpuUpdateReq, "ghrUpdateReq")
-  BoringUtils.addSource(finalBpuUpdateReq.valid,"pmuUpdateCnt")
+  //BoringUtils.addSource(finalBpuUpdateReq.valid,"pmuUpdateCnt")
   dontTouch(finalBpuUpdateReq)
 
   val aluValid = VecInit(false.B,false.B,false.B,false.B)
@@ -231,6 +237,7 @@ class SSDbackend extends NutCoreModule with hasBypassConst {
   //LSU
   val LSU = Module(new SSDLSU)
   io.dmem <> LSU.io.dmem
+  //LSU.io.lsuPC := lsuPC
   dontTouch(io.dmem.resp.ready)
   LSU.io.out.ready := true.B//!(Redirect6.valid || Redirect7.valid)
   memStall := LSU.io.memStall
@@ -511,7 +518,8 @@ class SSDbackend extends NutCoreModule with hasBypassConst {
   // for debug
   val lsuPC =WireInit(0.U(VAddrBits.W))
   lsuPC := Mux(BypassPkt(3).decodePkt.load || BypassPkt(3).decodePkt.store, pipeOut(3).bits.pc, pipeOut(2).bits.pc)
-  BoringUtils.addSource(lsuPC,"lsuPC")
+  LSU.io.lsuPC := lsuPC
+  //BoringUtils.addSource(lsuPC,"lsuPC")
 
   //moduleTest
   //  val moduleTest = Module(new ModuleTest)
@@ -736,9 +744,11 @@ class SSDbackend extends NutCoreModule with hasBypassConst {
     BypassPkt(9).BypassCtl.rs1bypasse3.asUInt.orR.asUInt + BypassPkt(9).BypassCtl.rs2bypasse3.asUInt.orR.asUInt
   }
 
-  BoringUtils.addSource((pipeOut(8).bits.instr === "h0000006b".U || pipeOut(8).bits.instr === "h0005006b".U) &&  pipeOut(8).fire && !pipeInvalid(10) ||
-    (pipeOut(9).bits.instr === "h0000006b".U || pipeOut(9).bits.instr === "h0005006b".U) &&  pipeOut(9).fire && !pipeInvalid(11),"SSDcoretrap")
-  BoringUtils.addSink(SSDcoretrap,"SSDcoretrap")
+  /*BoringUtils.addSource((pipeOut(8).bits.instr === "h0000006b".U || pipeOut(8).bits.instr === "h0005006b".U) &&  pipeOut(8).fire && !pipeInvalid(10) ||
+    (pipeOut(9).bits.instr === "h0000006b".U || pipeOut(9).bits.instr === "h0005006b".U) &&  pipeOut(9).fire && !pipeInvalid(11),"SSDcoretrap")*/
+  SSDcoretrap := (pipeOut(8).bits.instr === "h0000006b".U || pipeOut(8).bits.instr === "h0005006b".U) &&  pipeOut(8).fire && !pipeInvalid(10) ||
+    (pipeOut(9).bits.instr === "h0000006b".U || pipeOut(9).bits.instr === "h0005006b".U) &&  pipeOut(9).fire && !pipeInvalid(11)
+  //BoringUtils.addSink(SSDcoretrap,"SSDcoretrap")
   //inst flag for mtvec
   val mtvecFlag = Reg(Bool())
   dontTouch(mtvecFlag)

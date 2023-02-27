@@ -31,6 +31,8 @@ class FrontendIO(implicit p: Parameters) extends Bundle with HasNutCoreConst {
   val redirect = Flipped(new RedirectIO)
   val bpFlush = Output(Bool())
   val ipf = Input(Bool())
+  val pipelineEmpty = Input(Bool())
+  val bpuUpdateReq = Flipped(new BPUUpdateReq)
 }
 
 
@@ -51,7 +53,7 @@ class Frontend_ooo(implicit val p: Parameters) extends NutCoreModule with HasFro
   val ibf1 = Module(new IBF)  //copy register for high fanout signal
   val ibf2 = Module(new IBF)
   val idu  = Module(new IDU)
-
+  idu.io.pipelineEmpty := io.pipelineEmpty
 //  pipelineConnect2(ifu.io.out, ibf1.io.in, ifu.io.flushVec(0))
 //  pipelineConnect2(ifu.io.out, ibf2.io.in, ifu.io.flushVec(0))
 
@@ -69,6 +71,8 @@ class Frontend_ooo(implicit val p: Parameters) extends NutCoreModule with HasFro
   io.bpFlush <> ifu.io.bpFlush
   io.ipf <> ifu.io.ipf
   io.imem <> ifu.io.imem
+
+  ifu.io.bpuUpdateReq := io.bpuUpdateReq
 
 }
 
