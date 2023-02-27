@@ -51,7 +51,7 @@ class NutcoreWithL2()(implicit p: Parameters) extends LazyModule{
         CacheParameters(sets = 64, ways = 4, blockGranularity = 6, name = "icache"),
         CacheParameters(sets = 64, ways = 4, blockGranularity = 6, name = "dcache")
       ),
-      prefetch = Some(huancun.prefetch.BOPParameters()),
+      //prefetch = Some(huancun.prefetch.BOPParameters()),
       reqField = Seq(),
       echoField = Seq()
     )

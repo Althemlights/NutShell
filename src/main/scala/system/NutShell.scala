@@ -35,6 +35,7 @@ import freechips.rocketchip.diplomacy._
 import utils._
 import huancun._
 import chipsalliance.rocketchip.config._
+import freechips.rocketchip.interrupts._
 //import freechips.rocketchip.diplomacy.{AddressSet, LazyModule, LazyModuleImp}
 
 import chisel3._
@@ -103,7 +104,7 @@ class NutShell()(implicit p: Parameters) extends LazyModule{
         address = 0x39000000,
         numCores = corenum
       )),
-      prefetch = Some(huancun.prefetch.BOPParameters()),
+      //prefetch = Some(huancun.prefetch.BOPParameters()),
       reqField = Seq(),
       echoField = Seq()
     )
@@ -111,8 +112,9 @@ class NutShell()(implicit p: Parameters) extends LazyModule{
 
   l3cacheOpt.ctlnode.map(_ := peripheralXbar)
 
-  /*val plic_xbar = TLXbar()
-  l3cacheOpt.intnode.map(int => {plic_xbar := int})*/
+  //val fake_plic = LazyModule(new FakeTLPLIC())
+  //l3cacheOpt.intnode.map(int => {fake_plic.intnode := int})
+  l3cacheOpt.intnode.map(int => {IntSinkNode(IntSinkPortSimple()) := int})
 
   val core_rst_nodes = l3cacheOpt.rst_nodes.get
   /*(core_rst_nodes zip core_with_l2) foreach{
