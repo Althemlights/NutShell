@@ -317,7 +317,7 @@ class MetaSRAMTemplate[T <: Data](gen: T, set: Int, way: Int = 1,
   })
   require(!holdRead)
   val wordType = UInt(gen.getWidth.W)
-  // val array = SyncReadMem(set, Vec(way, wordType))
+  //val array = SyncReadMem(set, Vec(way, wordType))
   val sram = Module(new S011HD1P_X32Y2D128_BW())
   val (resetState, resetSet) = (WireInit(false.B), WireInit(0.U))
 
@@ -485,7 +485,7 @@ class MetaSRAMTemplateWithArbiter[T <: Data](nRead: Int, gen: T, set: Int, way: 
   //  val ram = if (isData) Module(new DataSRAMTemplate(gen, set, way, shouldReset, holdRead = false, singlePort = true))
   //  else Module(new MetaSRAMTemplate(gen, set, way, shouldReset, holdRead = false, singlePort = true))
   //  when(isData.asBool()) {
-  val ram = Module(new MetaSRAMTemplate(gen, set, way, shouldReset, holdRead = false, singlePort = false))
+  val ram = Module(new SRAMTemplate(gen, set, way, shouldReset, holdRead = false, singlePort = false))
   //  }.otherwise {
   //    val ram = Module(new MetaSRAMTemplate(gen, set, way, shouldReset, holdRead = false, singlePort = true))
   //  }
