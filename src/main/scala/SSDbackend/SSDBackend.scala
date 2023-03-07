@@ -800,9 +800,11 @@ class SSDbackend extends NutCoreModule with hasBypassConst {
   BoringUtils.addSink(rf_a0, "rf_a0")
 
   if(SSDCoreConfig().EnableDifftest) {
+    val hartid = io.hartid
+
     val dt_ic1 = Module(new DifftestInstrCommit)
     dt_ic1.io.clock := clock
-    dt_ic1.io.coreid := 0.U
+    dt_ic1.io.coreid := hartid
     dt_ic1.io.index := 0.U
     dt_ic1.io.valid := RegNext(pipeOut(9).fire && !pipeInvalid(11) && pipeOut(9).bits.pc =/= 0.U) && !RegNext(SSDcoretrap)
     dt_ic1.io.pc := RegNext(Cat(0.U((64 - VAddrBits).W), pipeOut(9).bits.pc))
@@ -819,7 +821,7 @@ class SSDbackend extends NutCoreModule with hasBypassConst {
 
     val dt_ic0 = Module(new DifftestInstrCommit)
     dt_ic0.io.clock := clock
-    dt_ic0.io.coreid := 0.U
+    dt_ic0.io.coreid := hartid
     dt_ic0.io.index := 1.U
 
     dt_ic0.io.valid := RegNext(pipeOut(8).fire && !pipeInvalid(10) && pipeOut(8).bits.pc =/= 0.U)
@@ -838,7 +840,7 @@ class SSDbackend extends NutCoreModule with hasBypassConst {
 
     val dt_iw0 = Module(new DifftestIntWriteback)
     dt_iw0.io.clock := clock
-    dt_iw0.io.coreid := 0.U
+    dt_iw0.io.coreid := hartid
     dt_iw0.io.valid := RegNext(regfile.io.writePorts(1).wen)
     dt_iw0.io.dest := RegNext(regfile.io.writePorts(1).addr)
     dt_iw0.io.data := RegNext(regfile.io.writePorts(1).data)
@@ -846,7 +848,7 @@ class SSDbackend extends NutCoreModule with hasBypassConst {
 
     val dt_iw1 = Module(new DifftestIntWriteback)
     dt_iw1.io.clock := clock
-    dt_iw1.io.coreid := 0.U
+    dt_iw1.io.coreid := hartid
     dt_iw1.io.valid := RegNext(regfile.io.writePorts(0).wen)
     dt_iw1.io.dest := RegNext(regfile.io.writePorts(0).addr)
     dt_iw1.io.data := RegNext(regfile.io.writePorts(0).data)
@@ -854,14 +856,14 @@ class SSDbackend extends NutCoreModule with hasBypassConst {
 
     val dt_ae = Module(new DifftestArchEvent)
     dt_ae.io.clock := clock
-    dt_ae.io.coreid :=      0.U
+    dt_ae.io.coreid :=      hartid
     dt_ae.io.intrNO :=      RegNext(Mux(pipeOut(8).bits.csrInst,pipeOut(8).bits.ArchEvent.intrNO,pipeOut(9).bits.ArchEvent.intrNO))
     dt_ae.io.cause :=       RegNext(Mux(pipeOut(8).bits.csrInst,pipeOut(8).bits.ArchEvent.cause,pipeOut(9).bits.ArchEvent.cause))
     dt_ae.io.exceptionPC := RegNext(Mux(pipeOut(8).bits.csrInst,pipeOut(8).bits.ArchEvent.exceptionPC,pipeOut(9).bits.ArchEvent.exceptionPC))
 
     val dt_te = Module(new DifftestTrapEvent)
     dt_te.io.clock := clock
-    dt_te.io.coreid := 0.U
+    dt_te.io.coreid := hartid
     dt_te.io.valid := RegNext(SSDcoretrap)
     dt_te.io.code := rf_a0(2, 0)
     dt_te.io.pc := Mux(RegNext(pipeOut(8).bits.instr === "h0000006b".U), RegNext(Cat(0.U((64 - VAddrBits).W), pipeOut(8).bits.pc)), RegNext(Cat(0.U((64 - VAddrBits).W), pipeOut(9).bits.pc)))
@@ -870,7 +872,7 @@ class SSDbackend extends NutCoreModule with hasBypassConst {
 
     val dt_cs = Module(new DifftestCSRState)
     dt_cs.io.clock := clock
-    dt_cs.io.coreid := 0.U
+    dt_cs.io.coreid := hartid
     dt_cs.io.priviledgeMode := 3.U // Machine mode
     dt_cs.io.mstatus :=  RegNext(Mux(pipeOut(8).bits.csrInst,pipeOut(8).bits.CSRregfile.mstatus ,pipeOut(9).bits.CSRregfile.mstatus ))
     dt_cs.io.sstatus :=  RegNext(Mux(pipeOut(8).bits.csrInst,pipeOut(8).bits.CSRregfile.sstatus ,pipeOut(9).bits.CSRregfile.sstatus ))
@@ -892,7 +894,7 @@ class SSDbackend extends NutCoreModule with hasBypassConst {
 
     val dt_irs = Module(new DifftestArchIntRegState)
     dt_irs.io.clock := clock
-    dt_irs.io.coreid := 0.U
+    dt_irs.io.coreid := hartid
     dt_irs.io.gpr := regfile.io.debugPorts
   }
 

@@ -297,7 +297,7 @@ sealed class DCacheStage2(edge: TLEdgeOut)(implicit val p: Parameters) extends D
     data = Wire(new DWayIdBundle).apply(way_id = hit_write_way_id_vec.asUInt)
   )
 
-  //Debug(hit, "[Dcache Hit] index: %x  precious way_vec: %x  new way_vec %x\n", getMetaIdx(req.addr), way_id_vec.asUInt, hit_write_way_id_vec.asUInt)
+  Debug(hit, "[Dcache Hit] index: %x  precious way_vec: %x  new way_vec %x\n", getMetaIdx(req.addr), way_id_vec.asUInt, hit_write_way_id_vec.asUInt)
 
    
     //cmd write: write data to cache
@@ -354,7 +354,7 @@ sealed class DCacheStage2(edge: TLEdgeOut)(implicit val p: Parameters) extends D
   wayIdWriteArb.io.in(1) <> HitWayIdWriteBus.req
   io.wayIdWriteBus.req <> wayIdWriteArb.io.out
 
-  //Debug(acquireAccess.io.metaWriteBus.req.fire, "[Dcache miss] index: %x  precious way_vec: %x  new way_vec: %x  victim_way: %d\n", getMetaIdx(req.addr), way_id_vec.asUInt, miss_write_way_id_vec.asUInt, victimWay)
+  Debug(acquireAccess.io.metaWriteBus.req.fire, "[Dcache miss] index: %x  precious way_vec: %x  new way_vec: %x  victim_way: %d\n", getMetaIdx(req.addr), way_id_vec.asUInt, miss_write_way_id_vec.asUInt, victimWay)
 
   val metaWriteArb = Module(new Arbiter(CacheMetaArrayWriteBus().req.bits, 2))
   val dataWriteArb = Seq.fill(sramNum)(Module(new Arbiter(CacheDataArrayWriteBus().req.bits, 2)))
