@@ -68,8 +68,8 @@ class NutcoreWithL2()(implicit p: Parameters) extends LazyModule{
   val mmio_port = TLTempNode()
   mmio_port := nutcore.uncache.clientNode
 
-  //val core_reset_sink = BundleBridgeSink(() => Reset())
-  val core_reset_sink = BundleBridgeSink(Some(() => Reset()))
+  //val core_reset_sink = BundleBridgeSink(Some(() => Reset()))
+  val core_reset_sink = BundleBridgeSink(Some(() => Bool()))
 
   lazy val module = new NutcoreWithL2Imp(this)
 }
@@ -92,11 +92,18 @@ class NutcoreWithL2Imp(outer: NutcoreWithL2) extends LazyModuleImp(outer) with H
   nutcore.io.frontend <> axi2sb.io.out*/
   //nutcore.io.frontend <> io.frontend
   
-  val resetChain = Seq(Seq(nutcore, outer.l2cache.module))
+  //val resetChain = Seq(Seq(nutcore, outer.l2cache.module))
+  val resetChain = Seq(Seq(nutcore))
 
   //ResetGen(resetChain, reset, !FPGAPlatform)
-  withClockAndReset(clock, core_soft_rst) {
+  /*withClockAndReset(clock, core_soft_rst) {
     ResetGen(resetChain, reset, !FPGAPlatform)
+  }*/
+
+  //val reset_sync = withClockAndReset(clock, reset) { ResetGen() }
+
+  withClockAndReset(clock, reset) {
+    ResetGen(resetChain, core_soft_rst.asAsyncReset, !FPGAPlatform)
   }
 
   // ILA
