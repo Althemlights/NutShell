@@ -87,10 +87,6 @@ class NutcoreWithL2Imp(outer: NutcoreWithL2) extends LazyModuleImp(outer) with H
   val core_soft_rst = outer.core_reset_sink.in.head._1
 
   nutcore.io.hartid := io.hartId
-  /*val axi2sb = Module(new AXI42SimpleBusConverter())
-  axi2sb.io.in <> io.frontend
-  nutcore.io.frontend <> axi2sb.io.out*/
-  //nutcore.io.frontend <> io.frontend
   
   //val resetChain = Seq(Seq(nutcore, outer.l2cache.module))
   val resetChain = Seq(Seq(nutcore))
@@ -101,10 +97,15 @@ class NutcoreWithL2Imp(outer: NutcoreWithL2) extends LazyModuleImp(outer) with H
   }*/
 
   //val reset_sync = withClockAndReset(clock, reset) { ResetGen() }
+  //val core_reset_sync = RegNext(RegNext(core_soft_rst.asAsyncReset))
 
-  withClockAndReset(clock, reset) {
-    ResetGen(resetChain, core_soft_rst.asAsyncReset, !FPGAPlatform)
+  when (io.hartId > 0.U) {
+    withClockAndReset(clock, reset) {
+      nutcore.reset := core_soft_rst.asAsyncReset
+      //ResetGen(resetChain, core_soft_rst.asAsyncReset, !FPGAPlatform)
+    }
   }
+
 
   // ILA
   if (FPGAPlatform) {
