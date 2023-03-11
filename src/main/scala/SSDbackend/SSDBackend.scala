@@ -802,6 +802,28 @@ class SSDbackend extends NutCoreModule with hasBypassConst {
   if(SSDCoreConfig().EnableDifftest) {
     val hartid = io.hartid
 
+    //Commit for difftest to Handle load instruction carefully for SMP
+    val dt_ld0 = Module(new DifftestLoadEvent)
+    dt_ld0.io.clock := clock
+    dt_ld0.io.coreid := hartid
+    dt_ld0.io.index := 1.U    
+    dt_ld0.io.valid := RegNext(pipeOut(8).fire && !pipeInvalid(10) && pipeOut(8).bits.pc =/= 0.U && BypassPkt(8).decodePkt.load) && !RegNext(SSDcoretrap)
+    dt_ld0.io.paddr := RegNext(pipeOut(8).bits.rs1 + pipeOut(8).bits.offset)
+    //0xc means simple load, 0xf means atomic
+    dt_ld0.io.fuType := 0xC.U
+    //size
+    dt_ld0.io.opType := RegNext(pipeOut(8).bits.fuOpType)
+
+    val dt_ld1 = Module(new DifftestLoadEvent)
+    dt_ld1.io.clock := clock
+    dt_ld1.io.coreid := hartid
+    dt_ld1.io.index := 0.U    
+    dt_ld1.io.valid := RegNext(pipeOut(9).fire && !pipeInvalid(11) && pipeOut(9).bits.pc =/= 0.U && BypassPkt(9).decodePkt.load) && !RegNext(SSDcoretrap)
+    dt_ld1.io.paddr := RegNext(pipeOut(9).bits.rs1 + pipeOut(9).bits.offset)
+    dt_ld1.io.fuType := 0xC.U
+    dt_ld1.io.opType := RegNext(pipeOut(9).bits.fuOpType)
+    
+
     val dt_ic1 = Module(new DifftestInstrCommit)
     dt_ic1.io.clock := clock
     dt_ic1.io.coreid := hartid
