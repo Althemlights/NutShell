@@ -43,7 +43,7 @@ object DefaultSettings {
     "EnableDebug" -> true,
     "EnableRVC" -> true,
 
-    "CoreNums" -> 0x2
+    "CoreNums" -> 0x1
   )
 }
 

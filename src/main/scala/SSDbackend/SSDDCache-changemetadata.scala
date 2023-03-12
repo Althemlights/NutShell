@@ -237,6 +237,7 @@ sealed class DCacheStage2(edge: TLEdgeOut)(implicit val p: Parameters) extends D
   val addr = req.addr.asTypeOf(addrBundle)
   val hitVec = VecInit((tagWay zip metaWay).map{case (t, m) => (m.coh.asTypeOf(new ClientMetadata).isValid() && (t.tag === addr.tag))}).asUInt
   val hitTag = hitVec.orR && io.in.valid      //hit tag and meta not nothing
+  val notHitTag = !hitVec.orR && io.in.valid
     //has hit tag: find its coh
   val coh = Mux(hitTag, Mux1H(hitVec, metaWay).coh.asTypeOf(new ClientMetadata), ClientMetadata.onReset)
   val hitMeta = coh.onAccess(req.cmd)._1
@@ -292,12 +293,13 @@ sealed class DCacheStage2(edge: TLEdgeOut)(implicit val p: Parameters) extends D
   }
   hit_write_way_id_vec(hit_write_pos) := hitWay
 
+/*
   val HitWayIdWriteBus = Wire(CacheWayIdArrayWriteBus()).apply(
     valid = hit, setIdx = getMetaIdx(req.addr), waymask = 0.U,
     data = Wire(new DWayIdBundle).apply(way_id = hit_write_way_id_vec.asUInt)
   )
 
-  //Debug(hit, "[Dcache Hit] index: %x  precious way_vec: %x  new way_vec %x\n", getMetaIdx(req.addr), way_id_vec.asUInt, hit_write_way_id_vec.asUInt)
+  //Debug(hit, "[Dcache Hit] index: %x  precious way_vec: %x  new way_vec %x\n", getMetaIdx(req.addr), way_id_vec.asUInt, hit_write_way_id_vec.asUInt) */
 
    
     //cmd write: write data to cache
@@ -346,16 +348,24 @@ sealed class DCacheStage2(edge: TLEdgeOut)(implicit val p: Parameters) extends D
   val miss_write_way_id_vec = Mux(hasInvalidWay, miss_not_full_write_way_id_vec, miss_full_write_way_id_vec) 
   victimWay := Mux(hasInvalidWay, assignWayid, LRUposWayId)
   val MissWayIdWriteBus = Wire(CacheWayIdArrayWriteBus()).apply(
-    valid = acquireAccess.io.metaWriteBus.req.fire, setIdx = getMetaIdx(req.addr), waymask = 0.U,
+    valid = acquireAccess.io.metaWriteBus.req.fire && notHitTag, setIdx = getMetaIdx(req.addr), waymask = 0.U,
     data = Wire(new DWayIdBundle).apply(way_id = miss_write_way_id_vec.asUInt)
   )
+
+  //Debug(acquireAccess.io.metaWriteBus.req.fire && notHitTag, "[Dcache miss] index: %x  precious way_vec: %x  new way_vec: %x  victim_way: %d\n", getMetaIdx(req.addr), way_id_vec.asUInt, miss_write_way_id_vec.asUInt, victimWay)
+
+  val HitWayIdWriteBus = Wire(CacheWayIdArrayWriteBus()).apply(
+    valid = hit || (acquireAccess.io.metaWriteBus.req.fire && hitTag), setIdx = getMetaIdx(req.addr), waymask = 0.U,
+    data = Wire(new DWayIdBundle).apply(way_id = hit_write_way_id_vec.asUInt)
+  )
+
+  //Debug(hit || (acquireAccess.io.metaWriteBus.req.fire && hitTag), "[Dcache HitTag] index: %x  precious way_vec: %x  new way_vec %x\n", getMetaIdx(req.addr), way_id_vec.asUInt, hit_write_way_id_vec.asUInt)
+
   val wayIdWriteArb = Module(new Arbiter(CacheWayIdArrayWriteBus().req.bits, 2))
   wayIdWriteArb.io.in(0) <> MissWayIdWriteBus.req
   wayIdWriteArb.io.in(1) <> HitWayIdWriteBus.req
   io.wayIdWriteBus.req <> wayIdWriteArb.io.out
-
-  //Debug(acquireAccess.io.metaWriteBus.req.fire, "[Dcache miss] index: %x  precious way_vec: %x  new way_vec: %x  victim_way: %d\n", getMetaIdx(req.addr), way_id_vec.asUInt, miss_write_way_id_vec.asUInt, victimWay)
-
+  
   val metaWriteArb = Module(new Arbiter(CacheMetaArrayWriteBus().req.bits, 2))
   val dataWriteArb = Seq.fill(sramNum)(Module(new Arbiter(CacheDataArrayWriteBus().req.bits, 2)))
 
