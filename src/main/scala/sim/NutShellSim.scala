@@ -69,6 +69,7 @@ class SimTop extends Module {
   val dt_ic1_valid  = WireInit(false.B)
   val dt_ic1_pc     = WireInit(0.U(64.W))
   val dt_ic1_instr  = WireInit(0.U(32.W))
+  val dt_ic1_isRVC  = WireInit(false.B)
   val dt_ic1_skip   = WireInit(false.B)
   val dt_ic1_wen    = WireInit(false.B)
   val dt_ic1_wpdest = WireInit(0.U(8.W))
@@ -77,6 +78,7 @@ class SimTop extends Module {
   val dt_ic0_valid  = WireInit(false.B)
   val dt_ic0_pc     = WireInit(0.U(64.W))
   val dt_ic0_instr  = WireInit(0.U(32.W))
+  val dt_ic0_isRVC  = WireInit(false.B)
   val dt_ic0_skip   = WireInit(false.B)
   val dt_ic0_wen    = WireInit(false.B)
   val dt_ic0_wpdest = WireInit(0.U(8.W))
@@ -85,6 +87,7 @@ class SimTop extends Module {
   BoringUtils.addSink(dt_ic1_valid, "dt_ic1_valid")
   BoringUtils.addSink(dt_ic1_pc   , "dt_ic1_pc")
   BoringUtils.addSink(dt_ic1_instr, "dt_ic1_instr")
+  BoringUtils.addSink(dt_ic1_isRVC, "dt_ic1_isRVC")
   BoringUtils.addSink(dt_ic1_skip  , "dt_ic1_skip")
   BoringUtils.addSink(dt_ic1_wen   , "dt_ic1_wen")
   BoringUtils.addSink(dt_ic1_wpdest, "dt_ic1_wpdest")
@@ -92,6 +95,7 @@ class SimTop extends Module {
   BoringUtils.addSink(dt_ic0_valid, "dt_ic0_valid")
   BoringUtils.addSink(dt_ic0_pc   , "dt_ic0_pc")
   BoringUtils.addSink(dt_ic0_instr, "dt_ic0_instr")
+  BoringUtils.addSink(dt_ic0_isRVC, "dt_ic0_isRVC")
   BoringUtils.addSink(dt_ic0_skip, "dt_ic0_skip")
   BoringUtils.addSink(dt_ic0_wen, "dt_ic0_wen")
   BoringUtils.addSink(dt_ic0_wpdest, "dt_ic0_wpdest")
@@ -105,7 +109,7 @@ class SimTop extends Module {
   dt_ic1.io.instr   := dt_ic1_instr
   dt_ic1.io.special := 0.U
   dt_ic1.io.skip    := dt_ic1_skip
-  dt_ic1.io.isRVC   := false.B
+  dt_ic1.io.isRVC   := dt_ic1_isRVC
   dt_ic1.io.scFailed:= false.B
   dt_ic1.io.wen     := dt_ic1_wen
   dt_ic1.io.wpdest  := dt_ic1_wpdest
@@ -119,14 +123,14 @@ class SimTop extends Module {
   dt_ic0.io.instr   := dt_ic0_instr
   dt_ic0.io.special := 0.U
   dt_ic0.io.skip    := dt_ic0_skip
-  dt_ic0.io.isRVC := false.B
+  dt_ic0.io.isRVC   := dt_ic0_isRVC
   dt_ic0.io.scFailed := false.B
   dt_ic0.io.wen     := dt_ic0_wen
   dt_ic0.io.wpdest  := dt_ic0_wpdest
   dt_ic0.io.wdest   := dt_ic0_wdest
 
-  val dt_iw0 = Module(new DifftestIntWriteback)
   val dt_iw1 = Module(new DifftestIntWriteback)
+  val dt_iw0 = Module(new DifftestIntWriteback)
 
   val dt_iw0_valid   = WireInit(false.B)
   val dt_iw0_dest    = WireInit(0.U(5.W))
@@ -145,12 +149,14 @@ class SimTop extends Module {
 
   dt_iw0.io.clock    := clock
   dt_iw0.io.coreid   := 0.U
+  // dt_iw0.io.index    := 1.U
   dt_iw0.io.valid    := dt_iw0_valid
   dt_iw0.io.dest     := dt_iw0_dest
   dt_iw0.io.data     := dt_iw0_data
 
   dt_iw1.io.clock  := clock
   dt_iw1.io.coreid := 0.U
+  // dt_iw1.io.index  := 0.U
   dt_iw1.io.valid  := dt_iw1_valid
   dt_iw1.io.dest   := dt_iw1_dest
   dt_iw1.io.data   := dt_iw1_data
