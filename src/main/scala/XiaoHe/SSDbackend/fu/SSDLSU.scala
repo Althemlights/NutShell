@@ -51,7 +51,6 @@ object LSUOpType { //TODO: refactor LSU fuop
 class SSDLSUIO extends FunctionUnitIO{
   val offset = Input(UInt(XLEN.W))
   val memStall = Output(Bool())
-  val flush = Input(Vec(3,Bool()))
   val invalid = Input(Vec(3,Bool()))
   //??? for what
   val LoadReady = Output(Bool())
@@ -83,7 +82,7 @@ class storePipeEntry extends StoreBufferEntry{
 
 class SSDLSU extends  NutCoreModule with HasStoreBufferConst{
   val io = IO(new SSDLSUIO)
-  val (valid, src1, src2, func, flush, invalid, offset) = (io.in.valid, io.in.bits.src1, io.in.bits.src2, io.in.bits.func, io.flush, io.invalid, io.offset)
+  val (valid, src1, src2, func, invalid, offset) = (io.in.valid, io.in.bits.src1, io.in.bits.src2, io.in.bits.func, io.invalid, io.offset)
   def access(valid: Bool, src1: UInt, src2: UInt, func: UInt, offset: UInt): UInt = {
     this.valid := valid
     this.src1 := src1
@@ -122,11 +121,11 @@ class SSDLSU extends  NutCoreModule with HasStoreBufferConst{
   //store pipeline
   /*
   ||----------EX2------------||
-  ||--------memStage3--------|| register <- flush(0), invalid(0)
+  ||--------memStage3--------|| register <-  invalid(0)
   ||----------EX3------------||
-  ||--------memStage4--------|| register <- flush(1), invalid(1)
+  ||--------memStage4--------|| register <-  invalid(1)
   ||----------EX4------------||
-  ||-------storeBuffer-------|| register <- flush(2), invalid(2)
+  ||-------storeBuffer-------|| register <-  invalid(2)
    */
   val lsuPipeIn = Wire(Vec(2,Flipped(Decoupled(new storePipeEntry))))
   val lsuPipeOut = Wire(Vec(2,Decoupled(new storePipeEntry)))
@@ -217,7 +216,6 @@ class SSDLSU extends  NutCoreModule with HasStoreBufferConst{
     a.io.left <> lsuPipeIn(b)
     a.io.right <> lsuPipeOut(b)
     a.io.rightOutFire <> lsuPipeOut(b).fire()
-    a.io.isFlush <> flush(b)
     a.io.inValid <> invalid(b)
   }
   //store buffer
@@ -342,7 +340,6 @@ class SSDLSU extends  NutCoreModule with HasStoreBufferConst{
   storeHitCtrl.left.bits.hitMask := hitMaskE2
   storeHitCtrl.left.bits.hitData := hitDataE2
   storeHitCtrl.isStall := lsuPipeStage3.isStall
-  storeHitCtrl.isFlush := flush(1)
   storeHitCtrl.io.inValid := invalid(1)
 
   val hitCtrlSignal = storeHitCtrl.right.bits
@@ -424,28 +421,4 @@ class SSDLSU extends  NutCoreModule with HasStoreBufferConst{
   myDebug(loadCond, "Load  addr:%x, mask:%b, data:%x, at PC: %x\n",lsuPipeOut(0).bits.paddr,lsuPipeOut(0).bits.mask,io.out.bits,lsuPipeOut(0).bits.pc)
   myDebug(storeCond,"Store addr:%x, mask:%b, data:%x, at PC: %x\n",lsuPipeOut(0).bits.paddr,lsuPipeOut(0).bits.mask,lsuPipeOut(0).bits.data,lsuPipeOut(0).bits.pc)
 }
-}
-
-class SSDLSU_fake extends  NutCoreModule with HasStoreBufferConst {
-  val io = IO(new SSDLSUIO)
-  val (valid, src1, src2, func, flush) = (io.in.valid, io.in.bits.src1, io.in.bits.src2, io.in.bits.func, io.flush)
-
-  def access(valid: Bool, src1: UInt, src2: UInt, func: UInt): UInt = {
-    this.valid := valid
-    this.src1 := src1
-    this.src2 := src2
-    this.func := func
-    io.out.bits
-  }
-  io.memStall := false.B
-  io.LoadReady := false.B
-  io.StoreReady := false.B
-  io.dmem.req.valid := false.B
-  io.dmem.req.bits := DontCare
-  io.dmem.resp.ready := false.B
-  io.in.ready := false.B
-  io.out.bits := 0.U
-  io.out.valid := false.B
-
-
 }

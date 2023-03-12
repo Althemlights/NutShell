@@ -8,7 +8,7 @@ import XiaoHe.SSDfrontend._
 class StallFlushIO extends Bundle{
   //stall point : (0,2) -> i0pipestall, i1pipestall, memsstall
   val stall = Output(Vec(3,Bool()))
-  val flush = Output(Vec(10,Bool())) //10 + 2 (2 is for regfile invalid write)
+  // val flush = Output(Vec(10,Bool())) //10 + 2 (2 is for regfile invalid write)
   val invalid = Output(Vec(12,Bool()))
 }
 class decodePkt extends  NutCoreBundle{
@@ -90,10 +90,9 @@ class FuPkt extends NutCoreBundle {
   val isSubALU = Output(Bool())
   //for MMIO
   val isMMIO = Output(Bool())
-  //for ghr update
-  val ghr = Output(UInt(GhrLength.W))
-  val btbIsBranch = Output(Bool())  //for update ghr
-  //for ghr commit
+
+  val btbIsBranch = Output(Bool())  //for update 
+
   val branchTaken = Output(Bool())
   //for difftest
   val CSRregfile = new CSRregfile

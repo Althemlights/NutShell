@@ -659,8 +659,6 @@ class SSDCSR extends NutCoreModule with SSDHasCSRConst with SSDHasExceptionNO {
   io.redirect.valid := (valid && func === SSDCSROpType.jmp) || raiseExceptionIntr || resetSatp
   io.redirect.rtype := 0.U
   io.redirect.target := Mux(resetSatp, io.cfIn.pc + 4.U, Mux(raiseExceptionIntr, trapTarget, retTarget))
-  io.redirect.ghr := 0.U
-  io.redirect.ghrUpdateValid := false.B
   io.redirect.btbIsBranch := 0.U
   io.redirect.pc := io.cfIn.pc
 //  Debug(raiseExceptionIntr, "excin %b excgen %b", csrExceptionVec.asUInt(), iduExceptionVec.asUInt())

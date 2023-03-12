@@ -56,13 +56,16 @@ class Frontend_ooo(implicit val p: NutCoreConfig) extends NutCoreModule with Has
 //  pipelineConnect2(ifu.io.out, ibf1.io.in, ifu.io.flushVec(0))
 //  pipelineConnect2(ifu.io.out, ibf2.io.in, ifu.io.flushVec(0))
 
-  ifu.io.out <> ibf1.io.in
+  ifu.io.outInstr <> ibf1.io.inInstr
+  ifu.io.outPredictPkt <> ibf1.io.inPredictPkt
   PipelineVector2Connect(new CtrlFlowIO, ibf1.io.out(0), ibf1.io.out(1), idu.io.in(0), idu.io.in(1), ifu.io.flushVec(1), 64)
   ibf1.io.flush := ifu.io.flushVec(1)
 
-  ifu.io.out <> ibf2.io.in
-  PipelineVector2Connect(new CtrlFlowIO, ibf2.io.out(0), ibf2.io.out(1), idu.io.in(2), idu.io.in(3), ifu.io.flushVec(1), 64)
+  ifu.io.outInstr <> ibf2.io.inInstr
+  ifu.io.outPredictPkt <> ibf2.io.inPredictPkt
   ibf2.io.flush := ifu.io.flushVec(1)
+
+  PipelineVector2Connect(new CtrlFlowIO, ibf2.io.out(0), ibf2.io.out(1), idu.io.in(2), idu.io.in(3), ifu.io.flushVec(1), 64)
 
   io.out <> idu.io.out
   io.redirect <> ifu.io.redirect

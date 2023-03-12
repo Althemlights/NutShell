@@ -58,7 +58,6 @@ class BPUUpdateReq extends NutCoreBundle {
   val fuOpType = Output(FuOpType())
   val btbType = Output(BTBtype())
   val isRVC = Output(Bool()) // for ras, save PC+2 to stack if is RVC
-  val ghrNotUpdated = Output(UInt(GhrLength.W))
   val btbBtypeMiss = Output(Bool())
 }
 
@@ -67,7 +66,6 @@ class BPU_ooo extends NutCoreModule {
   val io = IO(new Bundle {
     val in = new Bundle {
       val pc = Flipped(Valid((UInt(VAddrBits.W))))
-      val ghr = Input(UInt(GhrLength.W))
     }
     val out = new RedirectIO
     val flush = Input(Bool())
@@ -78,8 +76,7 @@ class BPU_ooo extends NutCoreModule {
   val flush = BoolStopWatch(io.flush, io.in.pc.valid, startHighPriority = true)
 
   //get pht index
-  def getPhtIndex(pc:UInt, ghr:UInt) = {
-    //val phtIndex = Cat(ghr(4,0) ^ Cat(ghr(8,7),0.U(3.W)).asUInt, pc(6,5) ^ ghr(6,5), pc(4,3))//88.198%
+  def getPhtIndex(pc:UInt) = {
     val phtIndex = pc(9,3)
     phtIndex
   }
@@ -143,7 +140,7 @@ class BPU_ooo extends NutCoreModule {
 //  val pht = List.fill(4)(Mem(NRbht >> 2, UInt(2.W)))
   val pht = List.fill(4)(RegInit(VecInit(Seq.fill(NRbht >> 2)((2.U(2.W))))))
   val phtTaken = Wire(Vec(4, Bool()))
-  val phtindex = getPhtIndex(io.in.pc.bits,io.in.ghr)
+  val phtindex = getPhtIndex(io.in.pc.bits)
   (0 to 3).map(i => (phtTaken(i) := RegEnable(pht(i)(phtindex)(1), io.in.pc.valid)))
 //  dontTouch(phtTaken)
 
@@ -175,8 +172,8 @@ class BPU_ooo extends NutCoreModule {
   (0 to 3).map(i => btb(i).io.w.req.bits.data := btbWrite)
 
   val reqLatch = RegEnable(req,req.valid)
-  val phtReadIndex = getPhtIndex(req.pc,req.ghrNotUpdated)
-  val phtWriteIndex = getPhtIndex(reqLatch.pc,reqLatch.ghrNotUpdated)
+  val phtReadIndex = getPhtIndex(req.pc)
+  val phtWriteIndex = getPhtIndex(reqLatch.pc)
 
   val getpht = LookupTree(req.pc(2,1), List.tabulate(4)(i => (i.U -> pht(i)(phtReadIndex))))
   val cnt = RegEnable(getpht,req.valid)
@@ -196,15 +193,24 @@ class BPU_ooo extends NutCoreModule {
   val rasWen = retIdx.asUInt.orR()
   val rasEmpty = RegEnable(sp.value === 0.U, io.in.pc.valid)
 
+  val backendRetretire = WireInit(false.B)
+  BoringUtils.addSink(backendRetretire , "backendRetretire")
+
   when (rasWen)  {
     ras.write(sp.value + 1.U, retPC)  //TODO: modify for RVC
     sp.value := sp.value + 1.U
+  }.elsewhen(backendRetretire) {
+    when(sp.value === 0.U) {
+        // RAS empty, do nothing
+    }
+    sp.value := Mux(sp.value===0.U, 0.U, sp.value - 1.U)
+
   }.elsewhen (req.valid && req.fuOpType === ALUOpType.ret) {
       when(sp.value === 0.U) {
         // RAS empty, do nothing
       }
-          sp.value := Mux(sp.value===0.U, 0.U, sp.value - 1.U)
-    }
+      sp.value := Mux(sp.value===0.U, 0.U, sp.value - 1.U)
+  }
 
 
 
@@ -217,8 +223,7 @@ class BPU_ooo extends NutCoreModule {
   io.out.valid := outputHold(io.brIdx.asUInt.orR,validLatch)
   io.out.rtype := 0.U
 
-  //GHR
-  val ghrLatch = RegEnable(io.in.ghr,io.in.pc.valid)
+
   //note the speculatibe ghr when more than one branch inst in a instline
   //divide the instline into two parts according to the position of the taken branch inst
   
@@ -241,37 +246,10 @@ class BPU_ooo extends NutCoreModule {
   frontBranchNumTmp1 := frontBranchVec(2) + frontBranchVec(3)
   frontBranchNum := frontBranchNumTmp0 + frontBranchNumTmp1
   val branchTakenJump = Mux(jump,PriorityMux(io.brIdx,Seq(btbIsBranch(0),btbIsBranch(1),btbIsBranch(2),btbIsBranch(3))),false.B)
-  val ghrPadding = (0.U(1.W) << (frontBranchNum - 1.U)).asUInt | branchTakenJump
-  val ghrUpdated = (ghrLatch << frontBranchNum).asUInt | ghrPadding
-  val ghrUpdateValid = frontBranchVec.asUInt.orR
-  io.out.ghr := outputHold(ghrUpdated,validLatch)
-  io.out.ghrUpdateValid := outputHold(ghrUpdateValid,validLatch)
+
   io.out.pc := io.in.pc.bits //not used
 
 
-  //BPU brancn inst update req debug
-  val cond = req.btbType === BTBtype.B && req.valid
-  if(SSDCoreConfig().EnableBPUupdateDebug) {
-    myDebug(cond, "BPUUpdate at pc:%x, btbBtypeMiss:%b, isMissPredict:%b, taken:%b, ghr:%b, target:%x, phtIndex:%x, cnt:%b\n",
-      req.pc, req.btbBtypeMiss, req.isMissPredict, req.actualTaken, req.ghrNotUpdated, req.actualTarget, phtReadIndex,getpht)
-  }
-}
-
-class DummyPredicter extends NutCoreModule {
-  val io = IO(new Bundle {
-    val in = new Bundle { val pc = Flipped(Valid((UInt(VAddrBits.W)))) }
-    val out = new RedirectIO_nooo
-    val valid = Output(Bool())
-    val flush = Input(Bool())
-    val ignore = Input(Bool())
-    val brIdx = Output(Vec(4, Bool()))
-  })
-  // Note: when io.ignore, io.out.valid must be false.B for this pc
-  // This limitation is for cross instline inst fetch logic
-  io.valid := io.in.pc.valid // Predicter is returning a result
-  io.out.valid := false.B // Need redirect
-  io.out.target := DontCare // Redirect target
-  io.out.rtype := DontCare // Predicter does not need to care about it
-  io.brIdx := VecInit(Seq.fill(4)(false.B)) // Which inst triggers jump
+  
 }
 

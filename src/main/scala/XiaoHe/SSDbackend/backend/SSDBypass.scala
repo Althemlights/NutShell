@@ -665,7 +665,7 @@ class PipeCtl extends Module{
   io.pipeCtl.stall(2) := io.memStall
 
   //flush/invalid vec
-  val allStageFlushVec = VecInit(Seq.fill(10)(false.B))
+  // val allStageFlushVec = VecInit(Seq.fill(10)(false.B))
   val allStageInvalidVec = VecInit(Seq.fill(12)(false.B))
   //pipeline0 
   //pipeline1 
@@ -679,10 +679,18 @@ class PipeCtl extends Module{
   val subalu0InvalidList = List(0,1,2,3,4,5,6,7,8,9,11)
   val subalu1InvalidList = List(0,1,2,3,4,5,6,7,8,9)
 
-  val alu0FlushList = List(0,1,3)
-  val alu1FlushList = List(0,1)
-  val subalu0FlushList = List(0,1,2,3,4,5,6,7,9)
-  val subalu1FlushList = List(0,1,2,3,4,5,6,7)
+  // val alu0FlushList = List(0,1,2,3,5)
+  // val alu1FlushList = List(0,1,2,3)
+  // val subalu0FlushList = List(0,1,2,3,4,5,6,7,8,9)
+  // val subalu1FlushList = List(0,1,2,3,4,5,6,7,8,9)
+
+
+  // val alu0FlushList = List(0,1,3)
+  // val alu1FlushList = List(0,1)
+  // val subalu0FlushList = List(0,1,2,3,4,5,6,7,9)
+  // val subalu1FlushList = List(0,1,2,3,4,5,6,7)
+  // val subalu0FlushList = List(0)
+  // val subalu1FlushList = List(0)
 
 
   alu0InvalidList.foreach{ case i => when(io.flush(0) === true.B){allStageInvalidVec(i) := io.flush(0)}}
@@ -690,13 +698,10 @@ class PipeCtl extends Module{
   subalu0InvalidList.foreach{ case i => when(io.flush(2) === true.B){allStageInvalidVec(i) := io.flush(2)}}
   subalu1InvalidList.foreach{ case i => when(io.flush(3) === true.B){allStageInvalidVec(i) := io.flush(3)}}
 
-  alu0FlushList.foreach{ case i => when(io.flush(0) === true.B){allStageFlushVec(i) := io.flush(0)}}
-  alu1FlushList.foreach{ case i => when(io.flush(1) === true.B){allStageFlushVec(i) := io.flush(1)}}
-  subalu0FlushList.foreach{ case i => when(io.flush(2) === true.B){allStageFlushVec(i) := io.flush(2)}}
-  subalu1FlushList.foreach{ case i => when(io.flush(3) === true.B){allStageFlushVec(i) := io.flush(3)}}
+
 
   io.pipeCtl.invalid := allStageInvalidVec
-  io.pipeCtl.flush := allStageFlushVec
+  // io.pipeCtl.flush := allStageFlushVec
 
 
 }
@@ -707,7 +712,7 @@ class Bypass extends Module{
     val mduStall = Input(Bool())
     val flush = Input(Vec(4,Bool()))
     val issueStall = Output(Vec(2,Bool()))
-    val pipeFlush = Output(Vec(10,Bool()))
+    // val pipeFlush = Output(Vec(10,Bool()))
     val pipeInvalid = Output(Vec(12,Bool()))
     val decodeBypassPkt = Vec(2, Decoupled(new BypassPkt))
     val BypassPkt = Vec(10, new BypassPkt)
@@ -764,7 +769,7 @@ class Bypass extends Module{
 
   io.issueStall := DecodeIO2BypassPkt.io.issueStall
   io.decodeBypassPkt <> Seq(DecodeIO2BypassPkt.io.out0,DecodeIO2BypassPkt.io.out1)
-  io.pipeFlush := PipelineCtl.io.pipeCtl.flush
+  // io.pipeFlush := PipelineCtl.io.pipeCtl.flush
   io.pipeInvalid := PipelineCtl.io.pipeCtl.invalid
 
   //LSU pipeline bypass ctrl
@@ -789,7 +794,7 @@ class Bypass extends Module{
     a.io.left <> pipeIn(b)
     a.io.right <> pipeOut(b)
     a.io.rightOutFire <> pipeFire(b)
-    a.io.isFlush <> PipelineCtl.io.pipeCtl.flush(b)
+    // a.io.isFlush <> PipelineCtl.io.pipeCtl.flush(b)
     a.io.inValid <> PipelineCtl.io.pipeCtl.invalid(b)
   }
   pipeStage0.io.isStall := DecodeIO2BypassPkt.io.issueStall(0)
@@ -818,11 +823,24 @@ class Bypass extends Module{
     a.io.left <> pipeIn(b)
     a.io.right <> pipeOut(b)
     a.io.rightOutFire <> pipeFire(b)
-    a.io.isFlush <> PipelineCtl.io.pipeCtl.flush(b)
+    // a.io.isFlush <> PipelineCtl.io.pipeCtl.flush(b)
     a.io.inValid <> PipelineCtl.io.pipeCtl.invalid(b)
   }
 
+  // val asfd = List(pipeStage0,pipeStage1,pipeStage2,pipeStage3,pipeStage4,pipeStage5,pipeStage6,pipeStage7)
+  // val nsafd = List(0,1,2,3,4,5,6,7)
 
+  // (asfd zip nsafd).foreach{case (a,b) =>
+  //   a.io.inValid <> PipelineCtl.io.pipeCtl.invalid(b) && !(io.mduStall || io.memStall)
+  // }
+    pipeStage0.io.inValid := PipelineCtl.io.pipeCtl.invalid(0) && !(io.mduStall || io.memStall)
+    pipeStage1.io.inValid := PipelineCtl.io.pipeCtl.invalid(1) && !(io.mduStall || io.memStall)
+    pipeStage2.io.inValid := PipelineCtl.io.pipeCtl.invalid(2) && !(io.mduStall || io.memStall)
+    pipeStage3.io.inValid := PipelineCtl.io.pipeCtl.invalid(3) && !(io.mduStall || io.memStall)
+    pipeStage4.io.inValid := PipelineCtl.io.pipeCtl.invalid(4) && !(io.mduStall || io.memStall)
+    pipeStage5.io.inValid := PipelineCtl.io.pipeCtl.invalid(5) && !(io.mduStall || io.memStall)
+    pipeStage6.io.inValid := PipelineCtl.io.pipeCtl.invalid(6) && !(io.mduStall || io.memStall)
+    pipeStage7.io.inValid := PipelineCtl.io.pipeCtl.invalid(7) && !(io.mduStall || io.memStall)
 }
 
 

@@ -50,8 +50,6 @@ class RedirectIO extends NutCoreBundle {
   val target = Output(UInt(VAddrBits.W))
   val rtype = Output(UInt(1.W)) // 1: branch mispredict: only need to flush frontend  0: others: flush the whole pipeline
   val valid = Output(Bool())
-  val ghr = Output(UInt(GhrLength.W))
-  val ghrUpdateValid = Output(Bool())
   val btbIsBranch = Output(UInt(4.W))
   //for debug
   val pc = Output(UInt(VAddrBits.W))
@@ -73,7 +71,6 @@ class BypassIO extends  Bundle{
   val isStore = Output(Bool())
 }
 class CtrlFlowIO extends NutCoreBundle {
-  //  val ghr = Output(UInt(GhrLength.W))
   val instr = Output(UInt(64.W))
   val pc = Output(UInt(VAddrBits.W))
   val pnpc = Output(UInt(VAddrBits.W))
@@ -162,16 +159,13 @@ class TLBExuIO extends NutCoreBundle {
   }
 }
 
-class InstFetchIO extends NutCoreBundle {
+class PredictPkt extends NutCoreBundle {
   val pc = Output(UInt(VAddrBits.W)) // real PC will be regenerated in IBF
   val pnpc = Output(UInt(VAddrBits.W))
   val brIdx = Output(UInt(4.W))
   val instValid = Output(UInt(4.W))
   //above will be used as user bits in icache
   val icachePF = Output(Bool())
-  val instr = Output(UInt(64.W))
-  val checkPointGHR = Output(UInt(GhrLength.W))
-  val ghr = Output(UInt(GhrLength.W))
   val btbIsBranch = Output(UInt(4.W))
 }
 
