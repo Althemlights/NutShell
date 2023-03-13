@@ -73,7 +73,7 @@ sealed class AcquireAccess(edge: TLEdgeOut)(implicit val p: Parameters) extends 
   for (w <- 0 until sramNum) {
     io.dataWriteBus(w).apply(
       data = Wire(new DDataBundle).apply(wdata(w)),
-      valid = isFullData || (isOneData && addr.wordIndex === grant_count && addr.bankIndex === w.U), setIdx = Cat(addr.index, wordIndex), waymask = io.waymask)
+      valid = isFullData || (isOneData && addr.bankIndex === w.U), setIdx = Cat(addr.index, wordIndex), waymask = io.waymask)
   }
   /*val dataWriteBus = Wire(CacheDataArrayWriteBus()).apply(
     data = Wire(new DDataBundle).apply(wdata),
@@ -277,7 +277,7 @@ sealed class IAcquireAccess(edge: TLEdgeOut)(implicit val p: Parameters) extends
   for (w <- 0 until sramNum) {
     io.dataWriteBus(w).apply(
       data = Wire(new DDataBundle).apply(wdata(w)),
-      valid = isFullData || (isOneData && addr.wordIndex === grant_count && addr.bankIndex === w.U), setIdx = Cat(addr.index, wordIndex), waymask = io.waymask)
+      valid = isFullData || (isOneData && addr.bankIndex === w.U), setIdx = Cat(addr.index, wordIndex), waymask = io.waymask)
   }
   /*val dataWriteBus = Wire(CacheDataArrayWriteBus()).apply(
     data = Wire(new DDataBundle).apply(wdata),
