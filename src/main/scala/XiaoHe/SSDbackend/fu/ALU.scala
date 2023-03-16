@@ -75,6 +75,10 @@ class ALUIO extends FunctionUnitIO {
   val bpuUpdateReq = new BPUUpdateReq
   val branchTaken = Output(Bool())
   val instCheckValid = Input(Bool()) // for all inst to check whether it is mispredicted as a branch instruction
+
+  //for sfb
+
+  val sfbPredictwrong = Output(Bool())
 }
 
 
@@ -195,4 +199,5 @@ class ALU(hasBru: Boolean = false) extends NutCoreModule {
   io.alu2pmu.branchTargetWrong := wrong && isBranch && targetWrong
   io.alu2pmu.branchDirectionWrong := wrong && isBranch && directionWrong
 
+  io.sfbPredictwrong := io.cfIn.sfb && valid && isBru && predictWrong
 }

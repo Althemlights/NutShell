@@ -183,6 +183,7 @@ class IFU_ooo extends NutCoreModule with HasResetVector {
   io.outPredictPkt.bits.instValid := io.imem.resp.bits.user.get.asTypeOf(new ICacheUserBundle).instValid
   io.outPredictPkt.bits.btbIsBranch := io.imem.resp.bits.user.get.asTypeOf(new ICacheUserBundle).btbIsBranch
   io.outPredictPkt.bits.icachePF := io.ipf
+  io.outPredictPkt.bits.sfb := 0.U
 
 
 

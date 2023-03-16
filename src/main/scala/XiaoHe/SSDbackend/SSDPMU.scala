@@ -263,8 +263,12 @@ class PMU extends Module{
     "i1LoadDependi0ALu"             ->   (0x13, "i1LoadDependi0ALu"),
     "i1rs2StoreDependi0ALu"             ->   (0x14, "i1rs2StoreDependi0ALu"),
     "i1AluDependi0ALu"             ->   (0x15, "i1AluDependi0ALu"),
+    "sfbHigh"             ->   (0x16, "sfbHigh"),
 
-    "whhh"             ->   (0x16, "whhh")
+    "alu0sfbw"             ->   (0x17, "alu0sfbw"),
+    "alu1sfbw"             ->   (0x18, "alu1sfbw"),
+    "alu2sfbw"             ->   (0x19, "alu2sfbw"),
+    "alu3sfbw"             ->   (0x1a, "alu3sfbw")
     
 
   )

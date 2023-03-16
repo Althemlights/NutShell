@@ -56,13 +56,23 @@ class Frontend_ooo(implicit val p: NutCoreConfig) extends NutCoreModule with Has
 //  pipelineConnect2(ifu.io.out, ibf1.io.in, ifu.io.flushVec(0))
 //  pipelineConnect2(ifu.io.out, ibf2.io.in, ifu.io.flushVec(0))
 
-  ifu.io.outInstr <> ibf1.io.inInstr
-  ifu.io.outPredictPkt <> ibf1.io.inPredictPkt
-  PipelineVector2Connect(new CtrlFlowIO, ibf1.io.out(0), ibf1.io.out(1), idu.io.in(0), idu.io.in(1), ifu.io.flushVec(1), 64)
-  ibf1.io.flush := ifu.io.flushVec(1)
+  // ifu.io.outInstr <> ibf1.io.inInstr
+  // ifu.io.outPredictPkt <> ibf1.io.inPredictPkt
 
-  ifu.io.outInstr <> ibf2.io.inInstr
-  ifu.io.outPredictPkt <> ibf2.io.inPredictPkt
+  val predecode = Module(new PredecodeAtF2)
+
+  ifu.io.outInstr <> predecode.io.inInstr
+  ifu.io.outPredictPkt <> predecode.io.inPredictPkt
+  predecode.io.flush := ifu.io.flushVec(1)
+
+
+  PipelineVector2Connect(new CtrlFlowIO, ibf1.io.out(0), ibf1.io.out(1), idu.io.in(0), idu.io.in(1), ifu.io.flushVec(1), 64)
+  
+  predecode.io.outInstr <> ibf1.io.inInstr
+  predecode.io.outPredictPkt <> ibf1.io.inPredictPkt
+  predecode.io.outInstr <> ibf2.io.inInstr
+  predecode.io.outPredictPkt <> ibf2.io.inPredictPkt
+  ibf1.io.flush := ifu.io.flushVec(1)
   ibf2.io.flush := ifu.io.flushVec(1)
 
   PipelineVector2Connect(new CtrlFlowIO, ibf2.io.out(0), ibf2.io.out(1), idu.io.in(2), idu.io.in(3), ifu.io.flushVec(1), 64)

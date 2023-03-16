@@ -38,11 +38,14 @@ trait HasChiselTests extends CrossSbtModule  {
 object difftest extends SbtModule with CommonModule with HasChisel3 {
   override def millSourcePath = os.pwd / "difftest"
 }
-
+// object rocketchip extends SbtModule with CommonModule with HasChisel3 {
+//   override def millSourcePath = os.pwd / "rocket-chip"
+// }
 object chiselModule extends CrossSbtModule with HasChisel3 with HasChiselTests with HasXsource211 {
   def crossScalaVersion = "2.12.13"
   override def moduleDeps = super.moduleDeps ++ Seq(
     difftest
+    // rocketchip
   )
 }
 

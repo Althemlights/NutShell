@@ -44,6 +44,7 @@ class IBF extends NutCoreModule with HasInstrType with HasIBUFConst{
   val npcRingMeta = RegInit(VecInit(Seq.fill(ibufSize)(0.U(VAddrBits.W))))
   val validRingMeta = RegInit(VecInit(Seq.fill(ibufSize)(false.B)))
   val btbIsBranchRingMeta = RegInit(VecInit(Seq.fill(ibufSize)(false.B)))
+  val sfbRingMeta = RegInit(VecInit(Seq.fill(ibufSize)(false.B)))
   val branchRingMeta = RegInit(VecInit(Seq.fill(ibufSize)(false.B)))
   val ipfRingMeta = RegInit(VecInit(Seq.fill(ibufSize)(false.B)))
   val ringBufferHead = RegInit(0.U(log2Up(ibufSize).W))
@@ -96,6 +97,7 @@ class IBF extends NutCoreModule with HasInstrType with HasIBUFConst{
     branchRingMeta(targetSlot.U + ringBufferHead) := io.inPredictPkt.bits.brIdx(shiftSize + targetSlot.U)
     ipfRingMeta(targetSlot.U + ringBufferHead) := io.inPredictPkt.bits.icachePF
     btbIsBranchRingMeta(targetSlot.U + ringBufferHead) := io.inPredictPkt.bits.btbIsBranch(shiftSize + targetSlot.U)
+    sfbRingMeta(targetSlot.U + ringBufferHead) := io.inPredictPkt.bits.sfb(shiftSize + targetSlot.U)
   }
   when(ibufWen){
     when(enqueueFire(0)){ibufWrite(0, shiftSize)}
@@ -140,6 +142,9 @@ class IBF extends NutCoreModule with HasInstrType with HasIBUFConst{
   io.out(0).bits.isRVC := first2B
   io.out(0).bits.crossPageIPFFix := !ipfRingMeta(ringBufferTail) && first4B && ipfRingMeta(ringBufferTail + 1.U)
 
+  io.out(0).bits.sfb := sfbRingMeta(ringBufferTail)
+
+
   io.out(0).valid := dequeueIsValid(0) && (first2B || dequeueIsValid(1)) && !io.flush
   io.out(0).bits.exceptionVec.map(_ => false.B)
   io.out(0).bits.exceptionVec(instrPageFault) := ipfRingMeta(ringBufferTail) || !first2B && ipfRingMeta(ringBufferTail + 1.U)
@@ -158,6 +163,8 @@ class IBF extends NutCoreModule with HasInstrType with HasIBUFConst{
   io.out(1).bits.brIdx := branchRingMeta(inst2_StartIndex)
   io.out(1).bits.isRVC := second2B
   io.out(1).bits.crossPageIPFFix := !ipfRingMeta(inst2_StartIndex) && !second2B && ipfRingMeta(inst2_StartIndex + 1.U)
+
+  io.out(1).bits.sfb := sfbRingMeta(inst2_StartIndex)
 
   if(EnableMultiIssue){
     io.out(1).valid := io.out(0).valid && dequeueIsValid(dequeueSize1) && (second2B || dequeueIsValid(dequeueSize1 + 1.U)) && !io.flush

@@ -202,7 +202,15 @@ class SSDbackend extends NutCoreModule with hasBypassConst {
     a.io.cfIn.isRVC := b.bits.isRVC
     a.io.cfIn.isBranch := b.bits.isBranch
     a.io.cfIn.redirect.btbIsBranch := b.bits.btbIsBranch
+    //for sfb
+    a.io.cfIn.sfb := b.bits.sfb
   }
+  val fourAluSfbWrong = VecInit((0 until 4) map {i => ALUList(i).io.sfbPredictwrong})
+
+  BoringUtils.addSource(fourAluSfbWrong(0),"alu0sfbw")
+  BoringUtils.addSource(fourAluSfbWrong(1),"alu1sfbw")
+  BoringUtils.addSource(fourAluSfbWrong(2),"alu2sfbw")
+  BoringUtils.addSource(fourAluSfbWrong(3),"alu3sfbw")
   (ALURedirectList zip pipeOut2Redirect).foreach{ case(a,b) => a := b.bits.redirect}
   (bpuUpdateReqList zip ALUList).foreach{ case(a,b) => a := b.io.bpuUpdateReq}
   (alu2pmuList zip ALUList).foreach{ case(a,b) => a := b.io.alu2pmu}
@@ -406,6 +414,8 @@ class SSDbackend extends NutCoreModule with hasBypassConst {
     //for difftest
     pipeIn(i).bits.CSRregfile := DontCare
     pipeIn(i).bits.ArchEvent := DontCare
+    //for sfb
+    pipeIn(i).bits.sfb := io.in(i).bits.cf.sfb
   }
 
   for(i <- 2 to 9 ){

@@ -97,6 +97,8 @@ class FuPkt extends NutCoreBundle {
   //for difftest
   val CSRregfile = new CSRregfile
   val ArchEvent = new ArchEvent
+  //for sfb
+  val sfb = Output(Bool())
 }
 class CSRregfile extends NutCoreBundle {
   val priviledgeMode      =  Output(UInt(XLEN.W))

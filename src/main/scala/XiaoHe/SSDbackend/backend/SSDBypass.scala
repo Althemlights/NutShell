@@ -412,7 +412,7 @@ class DecodeIO2BypassPkt extends Module {
   BoringUtils.addSource(i1Dependi0 && !noneBlockCase, "i1Dependi0_noneBlockCase")
   BoringUtils.addSource(i1LoadBlock, "i1SecondaryBlock")
 
-  BoringUtils.addSource(fasheng, "whhh")
+  // BoringUtils.addSource(fasheng, "whhh")
 
   val cond = i1Dependi0 && !noneBlockCase
   BoringUtils.addSource(cond && i1decodePkt.load && i0decodePkt.alu && !i0Subalu, "i1LoadDependi0ALu")
