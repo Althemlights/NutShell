@@ -70,7 +70,8 @@ class Probe(edge: TLEdgeOut)(implicit val p: Parameters) extends DCacheModule {
 
   //refill_count代表c线上refill到第几个了，读应该比它早一拍，比如它在refill第n个时应该读第n+1个
   val (_, _, release_done, refill_count) = edge.count(io.mem_probeAck)
-  val count = Mux(state === s_probePB, 0.U, refill_count + 1.U)
+  val count = WireInit(0.U((WordIndexBits - BankBits).W))
+  count := Mux(state === s_probePB, 0.U, refill_count + 1.U)
   val probe_block = state === s_probePB && probe_has_dirty_data
   for (w <- 0 until sramNum) {
     io.dataReadBus(w).apply(valid = probe_block || state === s_probeAD, setIdx = Cat(addr.index, count))

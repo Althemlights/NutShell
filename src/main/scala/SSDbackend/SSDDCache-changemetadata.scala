@@ -199,6 +199,8 @@ sealed class DCacheStage1(implicit val p: Parameters) extends DCacheModule {
   io.out.valid := io.in.valid && io.metaReadBus.req.ready && dataReadBusReady && io.tagReadBus.req.ready && io.wayIdReadBus.req.ready
   io.in.ready := io.out.ready && io.metaReadBus.req.ready && dataReadBusReady && io.tagReadBus.req.ready && io.wayIdReadBus.req.ready
   io.out.bits.mmio := AddressSpace.isMMIO(io.in.bits.addr)
+
+  Debug(io.in.fire, "[Dcache req] Addr: %x  Cmd: %x  Wdata: %x\n", io.in.bits.addr, io.in.bits.cmd, io.in.bits.wdata)
 }
 
 
@@ -347,19 +349,21 @@ sealed class DCacheStage2(edge: TLEdgeOut)(implicit val p: Parameters) extends D
 
   val miss_write_way_id_vec = Mux(hasInvalidWay, miss_not_full_write_way_id_vec, miss_full_write_way_id_vec) 
   victimWay := Mux(hasInvalidWay, assignWayid, LRUposWayId)
+  val missNewOldWayIdNotEqual = way_id_vec.asUInt =/= miss_write_way_id_vec.asUInt
   val MissWayIdWriteBus = Wire(CacheWayIdArrayWriteBus()).apply(
-    valid = acquireAccess.io.metaWriteBus.req.fire && notHitTag, setIdx = getMetaIdx(req.addr), waymask = 0.U,
+    valid = acquireAccess.io.metaWriteBus.req.fire && notHitTag && missNewOldWayIdNotEqual, setIdx = getMetaIdx(req.addr), waymask = 0.U,
     data = Wire(new DWayIdBundle).apply(way_id = miss_write_way_id_vec.asUInt)
   )
 
-  //Debug(acquireAccess.io.metaWriteBus.req.fire && notHitTag, "[Dcache miss] index: %x  precious way_vec: %x  new way_vec: %x  victim_way: %d\n", getMetaIdx(req.addr), way_id_vec.asUInt, miss_write_way_id_vec.asUInt, victimWay)
+  Debug(acquireAccess.io.metaWriteBus.req.fire && notHitTag, "[Dcache miss] index: %x  precious way_vec: %x  new way_vec: %x  victim_way: %d\n", getMetaIdx(req.addr), way_id_vec.asUInt, miss_write_way_id_vec.asUInt, victimWay)
 
+  val hitNewOldWayIdNotEqual = way_id_vec.asUInt =/= hit_write_way_id_vec.asUInt
   val HitWayIdWriteBus = Wire(CacheWayIdArrayWriteBus()).apply(
-    valid = hit || (acquireAccess.io.metaWriteBus.req.fire && hitTag), setIdx = getMetaIdx(req.addr), waymask = 0.U,
+    valid = (hit || (acquireAccess.io.metaWriteBus.req.fire && hitTag)) && hitNewOldWayIdNotEqual, setIdx = getMetaIdx(req.addr), waymask = 0.U,
     data = Wire(new DWayIdBundle).apply(way_id = hit_write_way_id_vec.asUInt)
   )
 
-  //Debug(hit || (acquireAccess.io.metaWriteBus.req.fire && hitTag), "[Dcache HitTag] index: %x  precious way_vec: %x  new way_vec %x\n", getMetaIdx(req.addr), way_id_vec.asUInt, hit_write_way_id_vec.asUInt)
+  Debug(hit || (acquireAccess.io.metaWriteBus.req.fire && hitTag), "[Dcache HitTag] index: %x  precious way_vec: %x  new way_vec %x\n", getMetaIdx(req.addr), way_id_vec.asUInt, hit_write_way_id_vec.asUInt)
 
   val wayIdWriteArb = Module(new Arbiter(CacheWayIdArrayWriteBus().req.bits, 2))
   wayIdWriteArb.io.in(0) <> MissWayIdWriteBus.req
@@ -393,8 +397,14 @@ sealed class DCacheStage2(edge: TLEdgeOut)(implicit val p: Parameters) extends D
   val victimCoh = Mux1H(waymask, metaWay).coh.asTypeOf(new ClientMetadata)
   val vicAddr = Cat(Mux1H(waymask, tagWay).tag, addr.index, 0.U(6.W))
   
+    //release操作完成
+  val isrelDone = RegInit(false.B)
+  when (release.io.release_ok) {isrelDone := true.B}
+  when (io.out.fire) {isrelDone := false.B}
+  val relOK = !needRel || (needRel && isrelDone)
+
   release.io.req.bits := req
-  release.io.req.valid := needRel     //choose victim
+  release.io.req.valid := needRel && !isrelDone     //choose victim(cannot twice)
   release.io.req.bits.addr := vicAddr
   release.io.mem_release <> io.mem_release
   release.io.mem_releaseAck <> io.mem_grantReleaseAck
@@ -402,12 +412,6 @@ sealed class DCacheStage2(edge: TLEdgeOut)(implicit val p: Parameters) extends D
   release.io.waymask := waymask
   //io.dataReadBus <> release.io.dataReadBus
   (io.dataReadBus zip release.io.dataReadBus).map{case (s, r) => (s <> r)}
-
-    //release操作完成
-  val isrelDone = RegInit(false.B)
-  when (release.io.release_ok) {isrelDone := true.B}
-  when (io.out.fire) {isrelDone := false.B}
-  val relOK = !needRel || (needRel && isrelDone)
 
   val isGrant = io.mem_grantReleaseAck.bits.opcode === TLMessages.Grant || io.mem_grantReleaseAck.bits.opcode === TLMessages.GrantData
   val isRelAck = io.mem_grantReleaseAck.bits.opcode === TLMessages.ReleaseAck
@@ -486,13 +490,14 @@ class DCacheImp(outer: DCache) extends LazyModuleImp(outer) with HasDCacheIO wit
   s1.io.in <> io.in.req
 
   s2.io.mem_getPutAcquire <> bus.a 
-  s2.io.mem_release <> bus.c
+  //s2.io.mem_release <> bus.c
   s2.io.mem_grantReleaseAck <> bus.d 
   s2.io.mem_finish <> bus.e 
 
   //DontCare <> bus.b  
   probe.io.mem_probe <> bus.b
-  probe.io.mem_probeAck <> bus.c
+  TLArbiter.lowest(edge, bus.c, probe.io.mem_probeAck, s2.io.mem_release)
+  //probe.io.mem_probeAck <> bus.c
   
   //val channelCArb = Module(new channelCArb(edge))
   //channelCArb.io.in(0) <> probe.mem_probeAck

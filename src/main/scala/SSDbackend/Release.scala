@@ -34,7 +34,8 @@ class Release(edge: TLEdgeOut)(implicit val p: Parameters) extends DCacheModule 
   io.req.ready := state === s_idle
 
   val (rel_first, _, rel_done, rel_count) = edge.count(io.mem_release)
-  val rCnt = Mux(state === s_idle || (state === s_releaseD && rel_first && !io.mem_release.fire), 0.U(WordIndexBits.W), rel_count + 1.U)
+  val rCnt = WireInit(0.U((WordIndexBits - BankBits).W))
+  rCnt := Mux(state === s_idle || (state === s_releaseD && rel_first && !io.mem_release.fire), 0.U((WordIndexBits - BankBits).W), rel_count + 1.U)
   
   val isRelAck = io.mem_releaseAck.bits.opcode === TLMessages.ReleaseAck
 
@@ -120,7 +121,8 @@ class IRelease(edge: TLEdgeOut)(implicit val p: Parameters) extends ICacheModule
   io.req.ready := state === s_idle
 
   val (rel_first, _, rel_done, rel_count) = edge.count(io.mem_release)
-  val rCnt = Mux(state === s_idle || (state === s_releaseD && rel_first && !io.mem_release.fire), 0.U(WordIndexBits.W), rel_count + 1.U)
+  val rCnt = WireInit(0.U((WordIndexBits - BankBits).W))
+  rCnt := Mux(state === s_idle || (state === s_releaseD && rel_first && !io.mem_release.fire), 0.U((WordIndexBits - BankBits).W), rel_count + 1.U)
   
   val isRelAck = io.mem_releaseAck.bits.opcode === TLMessages.ReleaseAck
 
