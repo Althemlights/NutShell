@@ -1,0 +1,300 @@
+add-riscv-tests.bin
+Core 0: [32mHIT GOOD TRAP at pc = 0x80000548
+[0m[35minstrCnt = 432, cycleCnt = 1,152, IPC = 0.375000
+addi-riscv-tests.bin
+Core 0: [32mHIT GOOD TRAP at pc = 0x800002c8
+[0m[35minstrCnt = 207, cycleCnt = 631, IPC = 0.328051
+addiw-riscv-tests.bin
+Core 0: [32mHIT GOOD TRAP at pc = 0x800002c8
+[0m[35minstrCnt = 204, cycleCnt = 614, IPC = 0.332248
+addw-riscv-tests.bin
+Core 0: [32mHIT GOOD TRAP at pc = 0x80000508
+[0m[35minstrCnt = 427, cycleCnt = 1,126, IPC = 0.379218
+and-riscv-tests.bin
+Core 0: [32mHIT GOOD TRAP at pc = 0x80000588
+[0m[35minstrCnt = 507, cycleCnt = 1,215, IPC = 0.417284
+andi-riscv-tests.bin
+Core 0: [32mHIT GOOD TRAP at pc = 0x80000248
+[0m[35minstrCnt = 178, cycleCnt = 549, IPC = 0.324226
+auipc-riscv-tests.bin
+Core 0: [32mHIT GOOD TRAP at pc = 0x80000080
+[0m[35minstrCnt = 20, cycleCnt = 253, IPC = 0.079051
+beq-riscv-tests.bin
+Core 0: [32mHIT GOOD TRAP at pc = 0x80000308
+[0m[35minstrCnt = 253, cycleCnt = 831, IPC = 0.304452
+bge-riscv-tests.bin
+Core 0: [32mHIT GOOD TRAP at pc = 0x80000348
+[0m[35minstrCnt = 271, cycleCnt = 952, IPC = 0.284664
+bgeu-riscv-tests.bin
+Core 0: [32mHIT GOOD TRAP at pc = 0x80000448
+[0m[35minstrCnt = 361, cycleCnt = 1,119, IPC = 0.322609
+blt-riscv-tests.bin
+Core 0: [32mHIT GOOD TRAP at pc = 0x80000308
+[0m[35minstrCnt = 253, cycleCnt = 834, IPC = 0.303357
+bltu-riscv-tests.bin
+Core 0: [32mHIT GOOD TRAP at pc = 0x800003c8
+[0m[35minstrCnt = 339, cycleCnt = 974, IPC = 0.348049
+bne-riscv-tests.bin
+Core 0: [32mHIT GOOD TRAP at pc = 0x80000308
+[0m[35minstrCnt = 253, cycleCnt = 840, IPC = 0.301190
+jal-riscv-tests.bin
+Core 0: [32mHIT GOOD TRAP at pc = 0x80000088
+[0m[35minstrCnt = 17, cycleCnt = 256, IPC = 0.066406
+jalr-riscv-tests.bin
+Core 0: [32mHIT GOOD TRAP at pc = 0x80000148
+[0m[35minstrCnt = 77, cycleCnt = 449, IPC = 0.171492
+lb-riscv-tests.bin
+Core 0: [32mHIT GOOD TRAP at pc = 0x80000288
+[0m[35minstrCnt = 207, cycleCnt = 610, IPC = 0.339344
+lbu-riscv-tests.bin
+Core 0: [32mHIT GOOD TRAP at pc = 0x80000288
+[0m[35minstrCnt = 207, cycleCnt = 610, IPC = 0.339344
+ld-riscv-tests.bin
+Core 0: [32mHIT GOOD TRAP at pc = 0x80000408
+[0m[35minstrCnt = 341, cycleCnt = 881, IPC = 0.387060
+lh-riscv-tests.bin
+Core 0: [32mHIT GOOD TRAP at pc = 0x80000288
+[0m[35minstrCnt = 219, cycleCnt = 602, IPC = 0.363787
+lhu-riscv-tests.bin
+Core 0: [32mHIT GOOD TRAP at pc = 0x800002c8
+[0m[35minstrCnt = 226, cycleCnt = 632, IPC = 0.357595
+lui-riscv-tests.bin
+Core 0: [32mHIT GOOD TRAP at pc = 0x80000088
+[0m[35minstrCnt = 27, cycleCnt = 249, IPC = 0.108434
+lw-riscv-tests.bin
+Core 0: [32mHIT GOOD TRAP at pc = 0x800002c8
+[0m[35minstrCnt = 229, cycleCnt = 663, IPC = 0.345400
+lwu-riscv-tests.bin
+Core 0: [32mHIT GOOD TRAP at pc = 0x80000308
+[0m[35minstrCnt = 255, cycleCnt = 694, IPC = 0.367435
+or-riscv-tests.bin
+Core 0: [32mHIT GOOD TRAP at pc = 0x80000608
+[0m[35minstrCnt = 540, cycleCnt = 1,293, IPC = 0.417633
+ori-riscv-tests.bin
+Core 0: [32mHIT GOOD TRAP at pc = 0x80000208
+[0m[35minstrCnt = 171, cycleCnt = 525, IPC = 0.325714
+sb-riscv-tests.bin
+Core 0: [32mHIT GOOD TRAP at pc = 0x80000448
+[0m[35minstrCnt = 392, cycleCnt = 1,009, IPC = 0.388503
+sd-riscv-tests.bin
+Core 0: [32mHIT GOOD TRAP at pc = 0x80000688
+[0m[35minstrCnt = 564, cycleCnt = 1,336, IPC = 0.422156
+sh-riscv-tests.bin
+Core 0: [32mHIT GOOD TRAP at pc = 0x800004c8
+[0m[35minstrCnt = 445, cycleCnt = 1,057, IPC = 0.421003
+simple-riscv-tests.bin
+Core 0: [32mHIT GOOD TRAP at pc = 0x80000048
+[0m[35minstrCnt = 3, cycleCnt = 203, IPC = 0.014778
+sll-riscv-tests.bin
+Core 0: [32mHIT GOOD TRAP at pc = 0x80000648
+[0m[35minstrCnt = 502, cycleCnt = 1,292, IPC = 0.388545
+slli-riscv-tests.bin
+Core 0: [32mHIT GOOD TRAP at pc = 0x80000348
+[0m[35minstrCnt = 232, cycleCnt = 700, IPC = 0.331429
+slliw-riscv-tests.bin
+Core 0: [32mHIT GOOD TRAP at pc = 0x80000348
+[0m[35minstrCnt = 239, cycleCnt = 709, IPC = 0.337094
+sllw-riscv-tests.bin
+Core 0: [32mHIT GOOD TRAP at pc = 0x80000648
+[0m[35minstrCnt = 502, cycleCnt = 1,318, IPC = 0.380880
+slt-riscv-tests.bin
+Core 0: [32mHIT GOOD TRAP at pc = 0x80000508
+[0m[35minstrCnt = 421, cycleCnt = 1,115, IPC = 0.377578
+slti-riscv-tests.bin
+Core 0: [32mHIT GOOD TRAP at pc = 0x800002c8
+[0m[35minstrCnt = 199, cycleCnt = 621, IPC = 0.320451
+sltiu-riscv-tests.bin
+Core 0: [32mHIT GOOD TRAP at pc = 0x800002c8
+[0m[35minstrCnt = 199, cycleCnt = 621, IPC = 0.320451
+sltu-riscv-tests.bin
+Core 0: [32mHIT GOOD TRAP at pc = 0x80000548
+[0m[35minstrCnt = 438, cycleCnt = 1,138, IPC = 0.384886
+sra-riscv-tests.bin
+Core 0: [32mHIT GOOD TRAP at pc = 0x800005c8
+[0m[35minstrCnt = 474, cycleCnt = 1,252, IPC = 0.378594
+srai-riscv-tests.bin
+Core 0: [32mHIT GOOD TRAP at pc = 0x80000308
+[0m[35minstrCnt = 220, cycleCnt = 664, IPC = 0.331325
+sraiw-riscv-tests.bin
+Core 0: [32mHIT GOOD TRAP at pc = 0x800003c8
+[0m[35minstrCnt = 266, cycleCnt = 784, IPC = 0.339286
+sraw-riscv-tests.bin
+Core 0: [32mHIT GOOD TRAP at pc = 0x80000688
+[0m[35minstrCnt = 514, cycleCnt = 1,333, IPC = 0.385596
+srl-riscv-tests.bin
+Core 0: [32mHIT GOOD TRAP at pc = 0x80000648
+[0m[35minstrCnt = 516, cycleCnt = 1,316, IPC = 0.392097
+srli-riscv-tests.bin
+Core 0: [32mHIT GOOD TRAP at pc = 0x80000348
+[0m[35minstrCnt = 241, cycleCnt = 714, IPC = 0.337535
+srliw-riscv-tests.bin
+Core 0: [32mHIT GOOD TRAP at pc = 0x80000348
+[0m[35minstrCnt = 248, cycleCnt = 716, IPC = 0.346369
+srlw-riscv-tests.bin
+Core 0: [32mHIT GOOD TRAP at pc = 0x80000648
+[0m[35minstrCnt = 508, cycleCnt = 1,329, IPC = 0.382242
+sub-riscv-tests.bin
+Core 0: [32mHIT GOOD TRAP at pc = 0x80000508
+[0m[35minstrCnt = 423, cycleCnt = 1,128, IPC = 0.375000
+subw-riscv-tests.bin
+Core 0: [32mHIT GOOD TRAP at pc = 0x80000508
+[0m[35minstrCnt = 419, cycleCnt = 1,108, IPC = 0.378159
+sw-riscv-tests.bin
+Core 0: [32mHIT GOOD TRAP at pc = 0x800004c8
+[0m[35minstrCnt = 452, cycleCnt = 1,068, IPC = 0.423221
+xor-riscv-tests.bin
+Core 0: [32mHIT GOOD TRAP at pc = 0x80000608
+[0m[35minstrCnt = 535, cycleCnt = 1,289, IPC = 0.415050
+xori-riscv-tests.bin
+Core 0: [32mHIT GOOD TRAP at pc = 0x80000208
+[0m[35minstrCnt = 169, cycleCnt = 523, IPC = 0.323136
+add-riscv-tests.bin
+Core 0: [32mHIT GOOD TRAP at pc = 0x80000548
+[0m[35minstrCnt = 432, cycleCnt = 1,104, IPC = 0.391304
+addi-riscv-tests.bin
+Core 0: [32mHIT GOOD TRAP at pc = 0x800002c8
+[0m[35minstrCnt = 207, cycleCnt = 631, IPC = 0.328051
+addiw-riscv-tests.bin
+Core 0: [32mHIT GOOD TRAP at pc = 0x800002c8
+[0m[35minstrCnt = 204, cycleCnt = 614, IPC = 0.332248
+addw-riscv-tests.bin
+Core 0: [32mHIT GOOD TRAP at pc = 0x80000508
+[0m[35minstrCnt = 427, cycleCnt = 1,108, IPC = 0.385379
+and-riscv-tests.bin
+Core 0: [32mHIT GOOD TRAP at pc = 0x80000588
+[0m[35minstrCnt = 507, cycleCnt = 1,173, IPC = 0.432225
+andi-riscv-tests.bin
+Core 0: [32mHIT GOOD TRAP at pc = 0x80000248
+[0m[35minstrCnt = 178, cycleCnt = 549, IPC = 0.324226
+auipc-riscv-tests.bin
+Core 0: [32mHIT GOOD TRAP at pc = 0x80000080
+[0m[35minstrCnt = 20, cycleCnt = 253, IPC = 0.079051
+beq-riscv-tests.bin
+Core 0: [32mHIT GOOD TRAP at pc = 0x80000308
+[0m[35minstrCnt = 253, cycleCnt = 825, IPC = 0.306667
+bge-riscv-tests.bin
+Core 0: [32mHIT GOOD TRAP at pc = 0x80000348
+[0m[35minstrCnt = 271, cycleCnt = 940, IPC = 0.288298
+bgeu-riscv-tests.bin
+Core 0: [32mHIT GOOD TRAP at pc = 0x80000448
+[0m[35minstrCnt = 361, cycleCnt = 1,083, IPC = 0.333333
+blt-riscv-tests.bin
+Core 0: [32mHIT GOOD TRAP at pc = 0x80000308
+[0m[35minstrCnt = 253, cycleCnt = 828, IPC = 0.305556
+bltu-riscv-tests.bin
+Core 0: [32mHIT GOOD TRAP at pc = 0x800003c8
+[0m[35minstrCnt = 339, cycleCnt = 956, IPC = 0.354603
+bne-riscv-tests.bin
+Core 0: [32mHIT GOOD TRAP at pc = 0x80000308
+[0m[35minstrCnt = 253, cycleCnt = 816, IPC = 0.310049
+jal-riscv-tests.bin
+Core 0: [32mHIT GOOD TRAP at pc = 0x80000088
+[0m[35minstrCnt = 17, cycleCnt = 256, IPC = 0.066406
+jalr-riscv-tests.bin
+Core 0: [32mHIT GOOD TRAP at pc = 0x80000148
+[0m[35minstrCnt = 77, cycleCnt = 449, IPC = 0.171492
+lb-riscv-tests.bin
+Core 0: [32mHIT GOOD TRAP at pc = 0x80000288
+[0m[35minstrCnt = 207, cycleCnt = 604, IPC = 0.342715
+lbu-riscv-tests.bin
+Core 0: [32mHIT GOOD TRAP at pc = 0x80000288
+[0m[35minstrCnt = 207, cycleCnt = 604, IPC = 0.342715
+ld-riscv-tests.bin
+Core 0: [32mHIT GOOD TRAP at pc = 0x80000408
+[0m[35minstrCnt = 341, cycleCnt = 846, IPC = 0.403073
+lh-riscv-tests.bin
+Core 0: [32mHIT GOOD TRAP at pc = 0x80000288
+[0m[35minstrCnt = 219, cycleCnt = 596, IPC = 0.367450
+lhu-riscv-tests.bin
+Core 0: [32mHIT GOOD TRAP at pc = 0x800002c8
+[0m[35minstrCnt = 226, cycleCnt = 632, IPC = 0.357595
+lui-riscv-tests.bin
+Core 0: [32mHIT GOOD TRAP at pc = 0x80000088
+[0m[35minstrCnt = 27, cycleCnt = 249, IPC = 0.108434
+lw-riscv-tests.bin
+Core 0: [32mHIT GOOD TRAP at pc = 0x800002c8
+[0m[35minstrCnt = 229, cycleCnt = 656, IPC = 0.349085
+lwu-riscv-tests.bin
+Core 0: [32mHIT GOOD TRAP at pc = 0x80000308
+[0m[35minstrCnt = 255, cycleCnt = 687, IPC = 0.371179
+or-riscv-tests.bin
+Core 0: [32mHIT GOOD TRAP at pc = 0x80000608
+[0m[35minstrCnt = 540, cycleCnt = 1,245, IPC = 0.433735
+ori-riscv-tests.bin
+Core 0: [32mHIT GOOD TRAP at pc = 0x80000208
+[0m[35minstrCnt = 171, cycleCnt = 525, IPC = 0.325714
+sb-riscv-tests.bin
+Core 0: [32mHIT GOOD TRAP at pc = 0x80000448
+[0m[35minstrCnt = 392, cycleCnt = 991, IPC = 0.395560
+sd-riscv-tests.bin
+Core 0: [32mHIT GOOD TRAP at pc = 0x80000688
+[0m[35minstrCnt = 564, cycleCnt = 1,311, IPC = 0.430206
+sh-riscv-tests.bin
+Core 0: [32mHIT GOOD TRAP at pc = 0x800004c8
+[0m[35minstrCnt = 445, cycleCnt = 1,038, IPC = 0.428709
+simple-riscv-tests.bin
+Core 0: [32mHIT GOOD TRAP at pc = 0x80000048
+[0m[35minstrCnt = 3, cycleCnt = 203, IPC = 0.014778
+sll-riscv-tests.bin
+Core 0: [32mHIT GOOD TRAP at pc = 0x80000648
+[0m[35minstrCnt = 502, cycleCnt = 1,244, IPC = 0.403537
+slli-riscv-tests.bin
+Core 0: [32mHIT GOOD TRAP at pc = 0x80000348
+[0m[35minstrCnt = 232, cycleCnt = 694, IPC = 0.334294
+slliw-riscv-tests.bin
+Core 0: [32mHIT GOOD TRAP at pc = 0x80000348
+[0m[35minstrCnt = 239, cycleCnt = 703, IPC = 0.339972
+sllw-riscv-tests.bin
+Core 0: [32mHIT GOOD TRAP at pc = 0x80000648
+[0m[35minstrCnt = 502, cycleCnt = 1,288, IPC = 0.389752
+slt-riscv-tests.bin
+Core 0: [32mHIT GOOD TRAP at pc = 0x80000508
+[0m[35minstrCnt = 421, cycleCnt = 1,097, IPC = 0.383774
+slti-riscv-tests.bin
+Core 0: [32mHIT GOOD TRAP at pc = 0x800002c8
+[0m[35minstrCnt = 199, cycleCnt = 621, IPC = 0.320451
+sltiu-riscv-tests.bin
+Core 0: [32mHIT GOOD TRAP at pc = 0x800002c8
+[0m[35minstrCnt = 199, cycleCnt = 621, IPC = 0.320451
+sltu-riscv-tests.bin
+Core 0: [32mHIT GOOD TRAP at pc = 0x80000548
+[0m[35minstrCnt = 438, cycleCnt = 1,102, IPC = 0.397459
+sra-riscv-tests.bin
+Core 0: [32mHIT GOOD TRAP at pc = 0x800005c8
+[0m[35minstrCnt = 474, cycleCnt = 1,222, IPC = 0.387889
+srai-riscv-tests.bin
+Core 0: [32mHIT GOOD TRAP at pc = 0x80000308
+[0m[35minstrCnt = 220, cycleCnt = 658, IPC = 0.334347
+sraiw-riscv-tests.bin
+Core 0: [32mHIT GOOD TRAP at pc = 0x800003c8
+[0m[35minstrCnt = 266, cycleCnt = 772, IPC = 0.344560
+sraw-riscv-tests.bin
+Core 0: [32mHIT GOOD TRAP at pc = 0x80000688
+[0m[35minstrCnt = 514, cycleCnt = 1,315, IPC = 0.390875
+srl-riscv-tests.bin
+Core 0: [32mHIT GOOD TRAP at pc = 0x80000648
+[0m[35minstrCnt = 516, cycleCnt = 1,268, IPC = 0.406940
+srli-riscv-tests.bin
+Core 0: [32mHIT GOOD TRAP at pc = 0x80000348
+[0m[35minstrCnt = 241, cycleCnt = 714, IPC = 0.337535
+srliw-riscv-tests.bin
+Core 0: [32mHIT GOOD TRAP at pc = 0x80000348
+[0m[35minstrCnt = 248, cycleCnt = 704, IPC = 0.352273
+srlw-riscv-tests.bin
+Core 0: [32mHIT GOOD TRAP at pc = 0x80000648
+[0m[35minstrCnt = 508, cycleCnt = 1,299, IPC = 0.391070
+sub-riscv-tests.bin
+Core 0: [32mHIT GOOD TRAP at pc = 0x80000508
+[0m[35minstrCnt = 423, cycleCnt = 1,104, IPC = 0.383152
+subw-riscv-tests.bin
+Core 0: [32mHIT GOOD TRAP at pc = 0x80000508
+[0m[35minstrCnt = 419, cycleCnt = 1,090, IPC = 0.384404
+sw-riscv-tests.bin
+Core 0: [32mHIT GOOD TRAP at pc = 0x800004c8
+[0m[35minstrCnt = 452, cycleCnt = 1,049, IPC = 0.430887
+xor-riscv-tests.bin
+Core 0: [32mHIT GOOD TRAP at pc = 0x80000608
+[0m[35minstrCnt = 535, cycleCnt = 1,247, IPC = 0.429030
+xori-riscv-tests.bin
+Core 0: [32mHIT GOOD TRAP at pc = 0x80000208
+[0m[35minstrCnt = 169, cycleCnt = 523, IPC = 0.323136

@@ -400,13 +400,14 @@ class ICacheImp(outer: ICache) extends LazyModuleImp(outer) with HasICacheIO wit
   s1.io.in <> io.in.req
 
   s2.io.mem_getPutAcquire <> bus.a 
-  s2.io.mem_release <> bus.c
+  //s2.io.mem_release <> bus.c
   s2.io.mem_grantReleaseAck <> bus.d 
   s2.io.mem_finish <> bus.e 
 
   //DontCare <> bus.b  
   probe.io.mem_probe <> bus.b
-  probe.io.mem_probeAck <> bus.c
+  TLArbiter.lowest(edge, bus.c, probe.io.mem_probeAck, s2.io.mem_release)
+  //probe.io.mem_probeAck <> bus.c
   
   //val channelCArb = Module(new channelCArb(edge))
   //channelCArb.io.in(0) <> probe.mem_probeAck
@@ -419,26 +420,26 @@ class ICacheImp(outer: ICache) extends LazyModuleImp(outer) with HasICacheIO wit
   s2.io.flush := io.flush
   //io.mmio <> s2.io.mmio
 
-  metaArray.io.r(0) <> s1.io.metaReadBus
-  metaArray.io.r(1) <> probe.io.metaReadBus
+  metaArray.io.r(1) <> s1.io.metaReadBus
+  metaArray.io.r(0) <> probe.io.metaReadBus
   
   for (w <- 0 until sramNum) {
-    dataArray(w).io.r(0) <> s1.io.dataReadBus(w)
+    dataArray(w).io.r(2) <> s1.io.dataReadBus(w)
   }
   for (w <- 0 until sramNum) {
     dataArray(w).io.r(1) <> s2.io.dataReadBus(w)
   }
   for (w <- 0 until sramNum) {
-    dataArray(w).io.r(2) <> probe.io.dataReadBus(w)
+    dataArray(w).io.r(0) <> probe.io.dataReadBus(w)
   }
 
-  tagArray.io.r(0) <> s1.io.tagReadBus
-  tagArray.io.r(1) <> probe.io.tagReadBus
+  tagArray.io.r(1) <> s1.io.tagReadBus
+  tagArray.io.r(0) <> probe.io.tagReadBus
 
   val metaWriteArb = Module(new Arbiter(CacheMetaArrayWriteBus().req.bits, 2))
   //val dataWriteArb = Module(new Arbiter(CacheDataArrayWriteBus().req.bits, 2))
-  metaWriteArb.io.in(0) <> s2.io.metaWriteBus.req
-  metaWriteArb.io.in(1) <> probe.io.metaWriteBus.req
+  metaWriteArb.io.in(1) <> s2.io.metaWriteBus.req
+  metaWriteArb.io.in(0) <> probe.io.metaWriteBus.req
   metaArray.io.w.req <> metaWriteArb.io.out
   metaArray.io.w <> s2.io.metaWriteBus
   //dataWriteArb.io.in(0) <> probe.io.dataWriteBus

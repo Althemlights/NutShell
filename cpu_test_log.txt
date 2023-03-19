@@ -1,98 +1,99 @@
 add-cpu-tests.bin
 Core 0: [32mHIT GOOD TRAP at pc = 0x8000013c
-[0m[35minstrCnt = 1,246, cycleCnt = 2,317, IPC = 0.537764
+[0m[35minstrCnt = 1,246, cycleCnt = 2,252, IPC = 0.553286
 add-longlong-cpu-tests.bin
 Core 0: [32mHIT GOOD TRAP at pc = 0x8000012c
-[0m[35minstrCnt = 1,210, cycleCnt = 2,372, IPC = 0.510118
+[0m[35minstrCnt = 1,210, cycleCnt = 2,310, IPC = 0.523810
 bit-cpu-tests.bin
 Core 0: [32mHIT GOOD TRAP at pc = 0x80000238
-[0m[35minstrCnt = 719, cycleCnt = 1,813, IPC = 0.396580
+[0m[35minstrCnt = 719, cycleCnt = 1,827, IPC = 0.393541
 bubble-sort-cpu-tests.bin
 Core 0: [32mHIT GOOD TRAP at pc = 0x800001a8
-[0m[35minstrCnt = 3,211, cycleCnt = 4,512, IPC = 0.711658
+[0m[35minstrCnt = 3,211, cycleCnt = 4,501, IPC = 0.713397
 div-cpu-tests.bin
 Core 0: [32mHIT GOOD TRAP at pc = 0x80000160
-[0m[35minstrCnt = 16,960, cycleCnt = 19,448, IPC = 0.872069
+[0m[35minstrCnt = 16,960, cycleCnt = 19,399, IPC = 0.874272
 dummy-cpu-tests.bin
 Core 0: [32mHIT GOOD TRAP at pc = 0x8000004c
-[0m[35minstrCnt = 419, cycleCnt = 1,141, IPC = 0.367222
+[0m[35minstrCnt = 419, cycleCnt = 1,094, IPC = 0.382998
 fact-cpu-tests.bin
 Core 0: [32mHIT GOOD TRAP at pc = 0x80000138
-[0m[35minstrCnt = 4,717, cycleCnt = 7,077, IPC = 0.666525
+[0m[35minstrCnt = 4,717, cycleCnt = 7,062, IPC = 0.667941
 fib-cpu-tests.bin
 Core 0: [32mHIT GOOD TRAP at pc = 0x800000e4
-[0m[35minstrCnt = 933, cycleCnt = 1,907, IPC = 0.489250
+[0m[35minstrCnt = 933, cycleCnt = 1,855, IPC = 0.502965
 goldbach-cpu-tests.bin
 Core 0: [32mHIT GOOD TRAP at pc = 0x800001a4
-[0m[35minstrCnt = 8,214, cycleCnt = 12,708, IPC = 0.646364
+[0m[35minstrCnt = 8,214, cycleCnt = 12,579, IPC = 0.652993
 hello-str-cpu-tests.bin
 Core 0: [32mHIT GOOD TRAP at pc = 0x80000130
-[0m[35minstrCnt = 3,220, cycleCnt = 5,688, IPC = 0.566104
+[0m[35minstrCnt = 3,220, cycleCnt = 5,770, IPC = 0.558059
 if-else-cpu-tests.bin
 Core 0: [32mHIT GOOD TRAP at pc = 0x8000012c
-[0m[35minstrCnt = 698, cycleCnt = 1,564, IPC = 0.446292
+[0m[35minstrCnt = 698, cycleCnt = 1,512, IPC = 0.461640
 leap-year-cpu-tests.bin
 Core 0: [32mHIT GOOD TRAP at pc = 0x80000108
-[0m[35minstrCnt = 9,010, cycleCnt = 10,179, IPC = 0.885156
+[0m[35minstrCnt = 9,010, cycleCnt = 10,162, IPC = 0.886636
 load-store-cpu-tests.bin
 Core 0: [32mHIT GOOD TRAP at pc = 0x80000220
-[0m[35minstrCnt = 784, cycleCnt = 1,750, IPC = 0.448000
+[0m[35minstrCnt = 784, cycleCnt = 1,775, IPC = 0.441690
 matrix-mul-cpu-tests.bin
 Core 0: [32mHIT GOOD TRAP at pc = 0x80000190
-[0m[35minstrCnt = 229,533, cycleCnt = 155,790, IPC = 1.473349
+[0m[35minstrCnt = 229,533, cycleCnt = 155,741, IPC = 1.473812
 max-cpu-tests.bin
 Core 0: [32mHIT GOOD TRAP at pc = 0x8000014c
-[0m[35minstrCnt = 1,284, cycleCnt = 2,461, IPC = 0.521739
+[0m[35minstrCnt = 1,284, cycleCnt = 2,413, IPC = 0.532118
 min3-cpu-tests.bin
 Core 0: [32mHIT GOOD TRAP at pc = 0x8000017c
-[0m[35minstrCnt = 1,438, cycleCnt = 2,872, IPC = 0.500696
+[0m[35minstrCnt = 1,438, cycleCnt = 2,813, IPC = 0.511198
 mov-c-cpu-tests.bin
 Core 0: [32mHIT GOOD TRAP at pc = 0x80000154
-[0m[35minstrCnt = 490, cycleCnt = 1,349, IPC = 0.363232
+[0m[35minstrCnt = 490, cycleCnt = 1,302, IPC = 0.376344
 movsx-cpu-tests.bin
 Core 0: [32mHIT GOOD TRAP at pc = 0x800001fc
-[0m[35minstrCnt = 540, cycleCnt = 1,509, IPC = 0.357853
+[0m[35minstrCnt = 540, cycleCnt = 1,466, IPC = 0.368349
 mul-longlong-cpu-tests.bin
 Core 0: [32mHIT GOOD TRAP at pc = 0x80000174
-[0m[35minstrCnt = 3,554, cycleCnt = 4,641, IPC = 0.765783
+[0m[35minstrCnt = 3,554, cycleCnt = 4,652, IPC = 0.763972
 pascal-cpu-tests.bin
 Core 0: [32mHIT GOOD TRAP at pc = 0x80000144
-[0m[35minstrCnt = 3,627, cycleCnt = 3,803, IPC = 0.953721
+[0m[35minstrCnt = 3,627, cycleCnt = 3,751, IPC = 0.966942
 prime-cpu-tests.bin
 Core 0: [32mHIT GOOD TRAP at pc = 0x8000010c
-[0m[35minstrCnt = 56,699, cycleCnt = 75,403, IPC = 0.751946
+[0m[35minstrCnt = 56,699, cycleCnt = 75,355, IPC = 0.752425
 quick-sort-cpu-tests.bin
-[0m[35minstrCnt = 625, cycleCnt = 1,527, IPC = 0.409299
+Core 0: [32mHIT GOOD TRAP at pc = 0x8000024c
+[0m[35minstrCnt = 3,713, cycleCnt = 4,380, IPC = 0.847717
 recursion-cpu-tests.bin
 Core 0: [32mHIT GOOD TRAP at pc = 0x800002ac
-[0m[35minstrCnt = 6,958, cycleCnt = 8,112, IPC = 0.857742
+[0m[35minstrCnt = 6,958, cycleCnt = 8,057, IPC = 0.863597
 select-sort-cpu-tests.bin
 Core 0: [32mHIT GOOD TRAP at pc = 0x800001dc
-[0m[35minstrCnt = 3,260, cycleCnt = 4,151, IPC = 0.785353
+[0m[35minstrCnt = 3,260, cycleCnt = 4,133, IPC = 0.788773
 shift-cpu-tests.bin
 Core 0: [32mHIT GOOD TRAP at pc = 0x80000160
-[0m[35minstrCnt = 730, cycleCnt = 1,617, IPC = 0.451453
+[0m[35minstrCnt = 730, cycleCnt = 1,647, IPC = 0.443230
 shuixianhua-cpu-tests.bin
 Core 0: [32mHIT GOOD TRAP at pc = 0x800001b0
-[0m[35minstrCnt = 145,858, cycleCnt = 194,031, IPC = 0.751725
+[0m[35minstrCnt = 145,858, cycleCnt = 193,957, IPC = 0.752012
 string-cpu-tests.bin
 Core 0: [32mHIT GOOD TRAP at pc = 0x80000160
-[0m[35minstrCnt = 1,876, cycleCnt = 4,056, IPC = 0.462525
+[0m[35minstrCnt = 1,876, cycleCnt = 4,040, IPC = 0.464356
 sub-longlong-cpu-tests.bin
 Core 0: [32mHIT GOOD TRAP at pc = 0x8000012c
-[0m[35minstrCnt = 1,210, cycleCnt = 2,372, IPC = 0.510118
+[0m[35minstrCnt = 1,210, cycleCnt = 2,310, IPC = 0.523810
 sum-cpu-tests.bin
 Core 0: [32mHIT GOOD TRAP at pc = 0x800000bc
-[0m[35minstrCnt = 935, cycleCnt = 1,629, IPC = 0.573972
+[0m[35minstrCnt = 935, cycleCnt = 1,574, IPC = 0.594028
 switch-cpu-tests.bin
 Core 0: [32mHIT GOOD TRAP at pc = 0x80000104
-[0m[35minstrCnt = 664, cycleCnt = 1,515, IPC = 0.438284
+[0m[35minstrCnt = 664, cycleCnt = 1,468, IPC = 0.452316
 to-lower-case-cpu-tests.bin
 Core 0: [32mHIT GOOD TRAP at pc = 0x800000f4
-[0m[35minstrCnt = 2,408, cycleCnt = 3,272, IPC = 0.735941
+[0m[35minstrCnt = 2,408, cycleCnt = 3,230, IPC = 0.745511
 unalign-cpu-tests.bin
 Core 0: [32mHIT GOOD TRAP at pc = 0x80000178
-[0m[35minstrCnt = 598, cycleCnt = 1,424, IPC = 0.419944
+[0m[35minstrCnt = 598, cycleCnt = 1,435, IPC = 0.416725
 wanshu-cpu-tests.bin
 Core 0: [32mHIT GOOD TRAP at pc = 0x80000144
-[0m[35minstrCnt = 18,311, cycleCnt = 25,138, IPC = 0.728419
+[0m[35minstrCnt = 18,311, cycleCnt = 25,073, IPC = 0.730308

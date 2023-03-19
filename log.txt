@@ -1,30 +1,340 @@
-priviledgeMode: 3
-     a3 different at pc = 0x00800000a8, right= 0x0000000000000800, wrong = 0x0000000000000000
-Core 0: ABORT at pc = 0x800000a8
-total guest instructions = 61
-instrCnt = 61, cycleCnt = 475, IPC = 0.128421
-Seed=0 Guest cycle spent: 478 (this will be different from cycleCnt if emu loads a snapshot)
-Host time spent: 38ms
-[                 199] : [Dcache req] Addr: 80011ff8  Cmd: 01  Wdata: 0000000080000010
-[                 226] : [Dcache miss] index: 3f  precious way_vec: 00  new way_vec: 03  victim_way: 3
-[                 250] : [Dcache req] Addr: 80001d40  Cmd: 01  Wdata: 0000000000000000
-[                 277] : [Dcache miss] index: 35  precious way_vec: 00  new way_vec: 03  victim_way: 3
-[                 281] : [Dcache req] Addr: 80011fe8  Cmd: 01  Wdata: 0000000080000138
+Emu compiled at Mar 19 2023, 14:04:35
+The image is ./ready-to-run/cpu-tests/add-longlong-cpu-tests.bin
+Using simulated 8192MB RAM
+dump wave to /nfs/home/fuwenyi/main-xiaohe/NutShell/build/2023-03-19@14:19:27.vcd...
+--diff is not given, try to use $(NEMU_HOME)/build/riscv64-nemu-interpreter-so by default
+NemuProxy using /nfs/home/fuwenyi/main-xiaohe/NutShell/../../xiaohe/BNEMU/build/riscv64-nemu-interpreter-so
+The first instruction of core 0 has commited. Difftest enabled. 
+[                 199] : [Dcache req] Addr: 80008ff8  Cmd: 01  Wdata: 0000000080000010
+[                 224] : [Dcache miss] index: 3f  precious way_vec: 00  new way_vec: 03  victim_way: 3
+[                 228] : [Dcache req] Addr: 80000590  Cmd: 00  Wdata: 0000000000000000
+[                 255] : [Dcache miss] index: 16  precious way_vec: 00  new way_vec: 03  victim_way: 3
+[                 261] : [Dcache req] Addr: 80000598  Cmd: 00  Wdata: 0000000000000000
+[                 262] : [Dcache HitTag] index: 16  precious way_vec: 03  new way_vec 03
+[                 266] : [Dcache req] Addr: 80008fe8  Cmd: 01  Wdata: 000000008000011c
+[                 267] : [Dcache HitTag] index: 3f  precious way_vec: 03  new way_vec 03
+[                 281] : [Dcache req] Addr: 80008fd0  Cmd: 01  Wdata: 0000000000000000
 [                 282] : [Dcache HitTag] index: 3f  precious way_vec: 03  new way_vec 03
-[                 283] : [Dcache req] Addr: 80002d40  Cmd: 01  Wdata: 0000040000000400
-[                 310] : [Dcache miss] index: 35  precious way_vec: 03  new way_vec: 0b  victim_way: 2
-[                 314] : [Dcache req] Addr: 80003d40  Cmd: 01  Wdata: 0000080000000800
-[                 341] : [Dcache miss] index: 35  precious way_vec: 0b  new way_vec: 1b  victim_way: 1
-[                 345] : [Dcache req] Addr: 80002d40  Cmd: 00  Wdata: 0000000000000000
-[                 346] : [Dcache req] Addr: 80004d40  Cmd: 01  Wdata: 00000c0000000c00
-[                 346] : [Dcache HitTag] index: 35  precious way_vec: 1b  new way_vec 27
-[                 375] : [Dcache miss] index: 35  precious way_vec: 27  new way_vec: 27  victim_way: 0
-[                 379] : [Dcache req] Addr: 80006d40  Cmd: 00  Wdata: 0000000000000000
-[                 412] : [Dcache miss] index: 35  precious way_vec: 27  new way_vec: c9  victim_way: 3
-[                 416] : [Dcache req] Addr: 80005d40  Cmd: 01  Wdata: 0000100000001000
-[                 449] : [Dcache miss] index: 35  precious way_vec: c9  new way_vec: 72  victim_way: 1
-[                 453] : [Dcache req] Addr: 80003d40  Cmd: 00  Wdata: 0000000000000000
-[                 468] : [Dcache miss] index: 35  precious way_vec: 72  new way_vec: 9c  victim_way: 2
-[                 472] : [Dcache req] Addr: 80006d40  Cmd: 01  Wdata: 0000140000001400
-[                 473] : [Dcache HitTag] index: 35  precious way_vec: 9c  new way_vec e4
-[                 474] : [Dcache req] Addr: 80007d40  Cmd: 00  Wdata: 0000000000000000
+[                 283] : [Dcache req] Addr: 80008fc8  Cmd: 01  Wdata: 5ee7901bbf99c1cd
+[                 284] : [Dcache HitTag] index: 3f  precious way_vec: 03  new way_vec 03
+[                 285] : [Dcache req] Addr: 80008fd8  Cmd: 01  Wdata: 000000008000015c
+[                 286] : [Dcache HitTag] index: 3f  precious way_vec: 03  new way_vec 03
+[                 287] : [Dcache req] Addr: 80008fc0  Cmd: 01  Wdata: 558f400968e7f955
+[                 288] : [Dcache HitTag] index: 3f  precious way_vec: 03  new way_vec 03
+[                 289] : [Dcache req] Addr: 80008fb8  Cmd: 01  Wdata: 220744bd6a46b02b
+[                 316] : [Dcache miss] index: 3e  precious way_vec: 00  new way_vec: 03  victim_way: 3
+[                 320] : [Dcache req] Addr: 80008fb0  Cmd: 01  Wdata: 4ba915f3b938dea4
+[                 321] : [Dcache HitTag] index: 3e  precious way_vec: 03  new way_vec 03
+[                 366] : [Dcache req] Addr: 80009200  Cmd: 01  Wdata: 0000000000000000
+[                 420] : [Dcache miss] index: 08  precious way_vec: 00  new way_vec: 03  victim_way: 3
+[                 424] : [Dcache req] Addr: 80009208  Cmd: 01  Wdata: 0000000000000000
+[                 425] : [Dcache HitTag] index: 08  precious way_vec: 03  new way_vec 03
+[                 426] : [Dcache req] Addr: 80009210  Cmd: 01  Wdata: 0000000000000000
+[                 427] : [Dcache HitTag] index: 08  precious way_vec: 03  new way_vec 03
+[                 428] : [Dcache req] Addr: 80009000  Cmd: 01  Wdata: 0000000000000000
+[                 453] : [Dcache miss] index: 00  precious way_vec: 00  new way_vec: 03  victim_way: 3
+[                 457] : [Dcache req] Addr: 80009008  Cmd: 01  Wdata: 0000000000000000
+[                 458] : [Dcache HitTag] index: 00  precious way_vec: 03  new way_vec 03
+[                 459] : [Dcache req] Addr: 80009010  Cmd: 01  Wdata: 0000000000000000
+[                 460] : [Dcache HitTag] index: 00  precious way_vec: 03  new way_vec 03
+[                 461] : [Dcache req] Addr: 80009018  Cmd: 01  Wdata: 0000000000000000
+[                 462] : [Dcache HitTag] index: 00  precious way_vec: 03  new way_vec 03
+[                 463] : [Dcache req] Addr: 80009020  Cmd: 01  Wdata: 0000000000000000
+[                 464] : [Dcache HitTag] index: 00  precious way_vec: 03  new way_vec 03
+[                 465] : [Dcache req] Addr: 80009028  Cmd: 01  Wdata: 0000000000000000
+[                 466] : [Dcache HitTag] index: 00  precious way_vec: 03  new way_vec 03
+[                 467] : [Dcache req] Addr: 80009030  Cmd: 01  Wdata: 0000000000000000
+[                 468] : [Dcache HitTag] index: 00  precious way_vec: 03  new way_vec 03
+[                 469] : [Dcache req] Addr: 80009038  Cmd: 01  Wdata: 0000000000000000
+[                 470] : [Dcache HitTag] index: 00  precious way_vec: 03  new way_vec 03
+[                 471] : [Dcache req] Addr: 80009040  Cmd: 01  Wdata: 0000000000000000
+[                 496] : [Dcache miss] index: 01  precious way_vec: 00  new way_vec: 03  victim_way: 3
+[                 500] : [Dcache req] Addr: 80009048  Cmd: 01  Wdata: 0000000000000000
+[                 501] : [Dcache HitTag] index: 01  precious way_vec: 03  new way_vec 03
+[                 502] : [Dcache req] Addr: 80009050  Cmd: 01  Wdata: 0000000000000000
+[                 503] : [Dcache HitTag] index: 01  precious way_vec: 03  new way_vec 03
+[                 504] : [Dcache req] Addr: 80009058  Cmd: 01  Wdata: 0000000000000000
+[                 505] : [Dcache HitTag] index: 01  precious way_vec: 03  new way_vec 03
+[                 506] : [Dcache req] Addr: 80009060  Cmd: 01  Wdata: 0000000000000000
+[                 507] : [Dcache HitTag] index: 01  precious way_vec: 03  new way_vec 03
+[                 508] : [Dcache req] Addr: 80009068  Cmd: 01  Wdata: 0000000000000000
+[                 509] : [Dcache HitTag] index: 01  precious way_vec: 03  new way_vec 03
+[                 510] : [Dcache req] Addr: 80009070  Cmd: 01  Wdata: 0000000000000000
+[                 511] : [Dcache HitTag] index: 01  precious way_vec: 03  new way_vec 03
+[                 512] : [Dcache req] Addr: 80009078  Cmd: 01  Wdata: 0000000000000000
+[                 513] : [Dcache HitTag] index: 01  precious way_vec: 03  new way_vec 03
+[                 514] : [Dcache req] Addr: 80009080  Cmd: 01  Wdata: 0000000000000000
+[                 539] : [Dcache miss] index: 02  precious way_vec: 00  new way_vec: 03  victim_way: 3
+[                 543] : [Dcache req] Addr: 80009088  Cmd: 01  Wdata: 0000000000000000
+[                 544] : [Dcache HitTag] index: 02  precious way_vec: 03  new way_vec 03
+[                 545] : [Dcache req] Addr: 80009090  Cmd: 01  Wdata: 0000000000000000
+[                 546] : [Dcache HitTag] index: 02  precious way_vec: 03  new way_vec 03
+[                 547] : [Dcache req] Addr: 80009098  Cmd: 01  Wdata: 0000000000000000
+[                 548] : [Dcache HitTag] index: 02  precious way_vec: 03  new way_vec 03
+[                 549] : [Dcache req] Addr: 800090a0  Cmd: 01  Wdata: 0000000000000000
+[                 550] : [Dcache HitTag] index: 02  precious way_vec: 03  new way_vec 03
+[                 551] : [Dcache req] Addr: 800090a8  Cmd: 01  Wdata: 0000000000000000
+[                 552] : [Dcache HitTag] index: 02  precious way_vec: 03  new way_vec 03
+[                 553] : [Dcache req] Addr: 800090b0  Cmd: 01  Wdata: 0000000000000000
+[                 554] : [Dcache HitTag] index: 02  precious way_vec: 03  new way_vec 03
+[                 555] : [Dcache req] Addr: 800090b8  Cmd: 01  Wdata: 0000000000000000
+[                 556] : [Dcache HitTag] index: 02  precious way_vec: 03  new way_vec 03
+[                 557] : [Dcache req] Addr: 800090c0  Cmd: 01  Wdata: 0000000000000000
+[                 582] : [Dcache miss] index: 03  precious way_vec: 00  new way_vec: 03  victim_way: 3
+[                 586] : [Dcache req] Addr: 800090c8  Cmd: 01  Wdata: 0000000000000000
+[                 587] : [Dcache HitTag] index: 03  precious way_vec: 03  new way_vec 03
+[                 588] : [Dcache req] Addr: 800090d0  Cmd: 01  Wdata: 0000000000000000
+[                 589] : [Dcache HitTag] index: 03  precious way_vec: 03  new way_vec 03
+[                 590] : [Dcache req] Addr: 800090d8  Cmd: 01  Wdata: 0000000000000000
+[                 591] : [Dcache HitTag] index: 03  precious way_vec: 03  new way_vec 03
+[                 592] : [Dcache req] Addr: 800090e0  Cmd: 01  Wdata: 0000000000000000
+[                 593] : [Dcache HitTag] index: 03  precious way_vec: 03  new way_vec 03
+[                 594] : [Dcache req] Addr: 800090e8  Cmd: 01  Wdata: 0000000000000000
+[                 595] : [Dcache HitTag] index: 03  precious way_vec: 03  new way_vec 03
+[                 596] : [Dcache req] Addr: 800090f0  Cmd: 01  Wdata: 0000000000000000
+[                 597] : [Dcache HitTag] index: 03  precious way_vec: 03  new way_vec 03
+[                 598] : [Dcache req] Addr: 800090f8  Cmd: 01  Wdata: 0000000000000000
+[                 599] : [Dcache HitTag] index: 03  precious way_vec: 03  new way_vec 03
+[                 600] : [Dcache req] Addr: 80009100  Cmd: 01  Wdata: 0000000000000000
+[                 625] : [Dcache miss] index: 04  precious way_vec: 00  new way_vec: 03  victim_way: 3
+[                 629] : [Dcache req] Addr: 80009108  Cmd: 01  Wdata: 0000000000000000
+[                 630] : [Dcache HitTag] index: 04  precious way_vec: 03  new way_vec 03
+[                 631] : [Dcache req] Addr: 80009110  Cmd: 01  Wdata: 0000000000000000
+[                 632] : [Dcache HitTag] index: 04  precious way_vec: 03  new way_vec 03
+[                 633] : [Dcache req] Addr: 80009118  Cmd: 01  Wdata: 0000000000000000
+[                 634] : [Dcache HitTag] index: 04  precious way_vec: 03  new way_vec 03
+[                 635] : [Dcache req] Addr: 80009120  Cmd: 01  Wdata: 0000000000000000
+[                 636] : [Dcache HitTag] index: 04  precious way_vec: 03  new way_vec 03
+[                 637] : [Dcache req] Addr: 80009128  Cmd: 01  Wdata: 0000000000000000
+[                 638] : [Dcache HitTag] index: 04  precious way_vec: 03  new way_vec 03
+[                 639] : [Dcache req] Addr: 80009130  Cmd: 01  Wdata: 0000000000000000
+[                 640] : [Dcache HitTag] index: 04  precious way_vec: 03  new way_vec 03
+[                 641] : [Dcache req] Addr: 80009138  Cmd: 01  Wdata: 0000000000000000
+[                 642] : [Dcache HitTag] index: 04  precious way_vec: 03  new way_vec 03
+[                 643] : [Dcache req] Addr: 80009140  Cmd: 01  Wdata: 0000000000000000
+[                 668] : [Dcache miss] index: 05  precious way_vec: 00  new way_vec: 03  victim_way: 3
+[                 672] : [Dcache req] Addr: 80009148  Cmd: 01  Wdata: 0000000000000000
+[                 673] : [Dcache HitTag] index: 05  precious way_vec: 03  new way_vec 03
+[                 674] : [Dcache req] Addr: 80009150  Cmd: 01  Wdata: 0000000000000000
+[                 675] : [Dcache HitTag] index: 05  precious way_vec: 03  new way_vec 03
+[                 676] : [Dcache req] Addr: 80009158  Cmd: 01  Wdata: 0000000000000000
+[                 677] : [Dcache HitTag] index: 05  precious way_vec: 03  new way_vec 03
+[                 678] : [Dcache req] Addr: 80009160  Cmd: 01  Wdata: 0000000000000000
+[                 679] : [Dcache HitTag] index: 05  precious way_vec: 03  new way_vec 03
+[                 680] : [Dcache req] Addr: 80009168  Cmd: 01  Wdata: 0000000000000000
+[                 681] : [Dcache HitTag] index: 05  precious way_vec: 03  new way_vec 03
+[                 682] : [Dcache req] Addr: 80009170  Cmd: 01  Wdata: 0000000000000000
+[                 683] : [Dcache HitTag] index: 05  precious way_vec: 03  new way_vec 03
+[                 684] : [Dcache req] Addr: 80009178  Cmd: 01  Wdata: 0000000000000000
+[                 685] : [Dcache HitTag] index: 05  precious way_vec: 03  new way_vec 03
+[                 686] : [Dcache req] Addr: 80009180  Cmd: 01  Wdata: 0000000000000000
+[                 711] : [Dcache miss] index: 06  precious way_vec: 00  new way_vec: 03  victim_way: 3
+[                 715] : [Dcache req] Addr: 80009188  Cmd: 01  Wdata: 0000000000000000
+[                 716] : [Dcache HitTag] index: 06  precious way_vec: 03  new way_vec 03
+[                 717] : [Dcache req] Addr: 80009190  Cmd: 01  Wdata: 0000000000000000
+[                 718] : [Dcache HitTag] index: 06  precious way_vec: 03  new way_vec 03
+[                 719] : [Dcache req] Addr: 80009198  Cmd: 01  Wdata: 0000000000000000
+[                 720] : [Dcache HitTag] index: 06  precious way_vec: 03  new way_vec 03
+[                 721] : [Dcache req] Addr: 800091a0  Cmd: 01  Wdata: 0000000000000000
+[                 722] : [Dcache HitTag] index: 06  precious way_vec: 03  new way_vec 03
+[                 723] : [Dcache req] Addr: 800091a8  Cmd: 01  Wdata: 0000000000000000
+[                 724] : [Dcache HitTag] index: 06  precious way_vec: 03  new way_vec 03
+[                 725] : [Dcache req] Addr: 800091b0  Cmd: 01  Wdata: 0000000000000000
+[                 726] : [Dcache HitTag] index: 06  precious way_vec: 03  new way_vec 03
+[                 727] : [Dcache req] Addr: 800091b8  Cmd: 01  Wdata: 0000000000000000
+[                 728] : [Dcache HitTag] index: 06  precious way_vec: 03  new way_vec 03
+[                 729] : [Dcache req] Addr: 800091c0  Cmd: 01  Wdata: 0000000000000000
+[                 754] : [Dcache miss] index: 07  precious way_vec: 00  new way_vec: 03  victim_way: 3
+[                 758] : [Dcache req] Addr: 800091c8  Cmd: 01  Wdata: 0000000000000000
+[                 759] : [Dcache HitTag] index: 07  precious way_vec: 03  new way_vec 03
+[                 760] : [Dcache req] Addr: 800091d0  Cmd: 01  Wdata: 0000000000000000
+[                 761] : [Dcache HitTag] index: 07  precious way_vec: 03  new way_vec 03
+[                 762] : [Dcache req] Addr: 800091d8  Cmd: 01  Wdata: 0000000000000000
+[                 763] : [Dcache HitTag] index: 07  precious way_vec: 03  new way_vec 03
+[                 764] : [Dcache req] Addr: 800091e0  Cmd: 01  Wdata: 0000000000000000
+[                 765] : [Dcache HitTag] index: 07  precious way_vec: 03  new way_vec 03
+[                 766] : [Dcache req] Addr: 800091e8  Cmd: 01  Wdata: 0000000000000000
+[                 767] : [Dcache HitTag] index: 07  precious way_vec: 03  new way_vec 03
+[                 768] : [Dcache req] Addr: 800091f0  Cmd: 01  Wdata: 0000000000000000
+[                 769] : [Dcache HitTag] index: 07  precious way_vec: 03  new way_vec 03
+[                 770] : [Dcache req] Addr: 800091f8  Cmd: 01  Wdata: 0000000000000000
+[                 771] : [Dcache HitTag] index: 07  precious way_vec: 03  new way_vec 03
+[                 855] : [Dcache req] Addr: 80009240  Cmd: 01  Wdata: 0000000000000000
+[                 906] : [Dcache miss] index: 09  precious way_vec: 00  new way_vec: 03  victim_way: 3
+[                 910] : [Dcache req] Addr: 80009250  Cmd: 00  Wdata: 0000000000000000
+[                 911] : [Dcache req] Addr: 80009248  Cmd: 01  Wdata: 0000000000000000
+[                 911] : [Dcache HitTag] index: 09  precious way_vec: 03  new way_vec 03
+[                 912] : [Dcache HitTag] index: 09  precious way_vec: 03  new way_vec 03
+[                 913] : [Dcache req] Addr: 80009250  Cmd: 01  Wdata: 0000000007ff6dc0
+[                 914] : [Dcache HitTag] index: 09  precious way_vec: 03  new way_vec 03
+[                 915] : [Dcache req] Addr: 80009258  Cmd: 01  Wdata: 0000000000000000
+[                 916] : [Dcache HitTag] index: 09  precious way_vec: 03  new way_vec 03
+[                 917] : [Dcache req] Addr: 80009260  Cmd: 01  Wdata: 0000000000000000
+[                 918] : [Dcache HitTag] index: 09  precious way_vec: 03  new way_vec 03
+[                 919] : [Dcache req] Addr: 80009268  Cmd: 01  Wdata: 0000000000000000
+[                 920] : [Dcache HitTag] index: 09  precious way_vec: 03  new way_vec 03
+[                 952] : [Dcache req] Addr: 80009250  Cmd: 00  Wdata: 0000000000000000
+[                 953] : [Dcache HitTag] index: 09  precious way_vec: 03  new way_vec 03
+[                 966] : [Dcache req] Addr: 80009250  Cmd: 00  Wdata: 0000000000000000
+[                 967] : [Dcache HitTag] index: 09  precious way_vec: 03  new way_vec 03
+[                1066] : [Dcache req] Addr: 800090a0  Cmd: 00  Wdata: 0000000000000000
+[                1067] : [Dcache HitTag] index: 02  precious way_vec: 03  new way_vec 03
+[                1070] : [Dcache req] Addr: 80009268  Cmd: 01  Wdata: 0000000000000000
+[                1071] : [Dcache HitTag] index: 09  precious way_vec: 03  new way_vec 03
+[                1072] : [Dcache req] Addr: 80009260  Cmd: 01  Wdata: 0000000000000000
+[                1073] : [Dcache HitTag] index: 09  precious way_vec: 03  new way_vec 03
+[                1078] : [Dcache req] Addr: 80009200  Cmd: 00  Wdata: 0000000000000000
+[                1079] : [Dcache HitTag] index: 08  precious way_vec: 03  new way_vec 03
+[                1080] : [Dcache req] Addr: 800090a0  Cmd: 01  Wdata: 0000000080009240
+[                1081] : [Dcache HitTag] index: 02  precious way_vec: 03  new way_vec 03
+[                1083] : [Dcache req] Addr: 80009200  Cmd: 01  Wdata: 0000000000100000
+[                1084] : [Dcache HitTag] index: 08  precious way_vec: 03  new way_vec 03
+[         sh: 1: spike-dasm: not found
+
+============== Commit Group Trace (Core 0) ==============
+commit group [00]: pc 0080000080 cmtcnt 1
+commit group [01]: pc 0080000084 cmtcnt 1
+commit group [02]: pc 0080000088 cmtcnt 2
+commit group [03]: pc 0080000090 cmtcnt 1
+commit group [04]: pc 0080000094 cmtcnt 1
+commit group [05]: pc 0080000098 cmtcnt 2
+commit group [06]: pc 0080000010 cmtcnt 2
+commit group [07]: pc 00800000a0 cmtcnt 2
+commit group [08]: pc 0080000084 cmtcnt 1
+commit group [09]: pc 0080000088 cmtcnt 2 <--
+commit group [10]: pc 0080000054 cmtcnt 1
+commit group [11]: pc 0080000058 cmtcnt 2
+commit group [12]: pc 0080000060 cmtcnt 2
+commit group [13]: pc 0080000068 cmtcnt 2
+commit group [14]: pc 0080000070 cmtcnt 2
+commit group [15]: pc 0080000078 cmtcnt 2
+
+============== Commit Instr Trace ==============
+commit inst [00]: pc 00800000a0 inst 00848493 wen 1 dst 00000009 data 0000000080000358
+commit inst [01]: pc 00800000a4 inst fe8990e3 wen 0 dst 00000000 data 0000000080000018
+commit inst [02]: pc 0080000084 inst 00043503 wen 1 dst 0000000a data 0000000000000001
+commit inst [03]: pc 0080000088 inst 0004b783 wen 1 dst 0000000f data 0000000000000000
+commit inst [04]: pc 008000008c inst 00840413 wen 1 dst 00000008 data 0000000080000560 <--
+commit inst [05]: pc 008000003c inst 03413023 wen 0 dst 00000000 data 0000000080000170
+commit inst [06]: pc 0080000040 inst 01513c23 wen 0 dst 00000000 data 0000000080000170
+commit inst [07]: pc 0080000044 inst 01613823 wen 0 dst 00000000 data 0000000080000170
+commit inst [08]: pc 0080000048 inst 01813023 wen 0 dst 00000000 data 0000000080000170
+commit inst [09]: pc 008000004c inst 04113423 wen 0 dst 00000000 data 0000000080000170
+commit inst [10]: pc 0080000050 inst 04813023 wen 0 dst 00000000 data 0000000080000170
+commit inst [11]: pc 0080000054 inst 02913c23 wen 0 dst 00000000 data 0000000080000170
+commit inst [12]: pc 0080000058 inst 03213823 wen 0 dst 00000000 data 0000000080000170
+commit inst [13]: pc 008000005c inst 00000b17 wen 1 dst 00000016 data 000000008000005c
+commit inst [14]: pc 0080000060 inst 2f4b0b13 wen 1 dst 00000016 data 0000000080000350
+commit inst [15]: pc 0080000064 inst 000b8a93 wen 1 dst 00000015 data 0000000080000550
+commit inst [16]: pc 0080000068 inst 00000a13 wen 1 dst 00000014 data 0000000000000000
+commit inst [17]: pc 008000006c inst 00000997 wen 1 dst 00000013 data 000000008000006c
+commit inst [18]: pc 0080000070 inst 52498993 wen 1 dst 00000013 data 0000000080000590
+commit inst [19]: pc 0080000074 inst 04000c13 wen 1 dst 00000018 data 0000000000000040
+commit inst [20]: pc 0080000078 inst 000ab903 wen 1 dst 00000012 data 0000000000000000
+commit inst [21]: pc 008000007c inst 000b0493 wen 1 dst 00000009 data 0000000080000350
+commit inst [22]: pc 0080000080 inst 000b8413 wen 1 dst 00000008 data 0000000080000550
+commit inst [23]: pc 0080000084 inst 00043503 wen 1 dst 0000000a data 0000000000000000
+commit inst [24]: pc 0080000088 inst 0004b783 wen 1 dst 0000000f data 0000000000000000
+commit inst [25]: pc 008000008c inst 00840413 wen 1 dst 00000008 data 0000000080000558
+commit inst [26]: pc 0080000090 inst 00a90533 wen 1 dst 0000000a data 0000000000000000
+commit inst [27]: pc 0080000094 inst 40f50533 wen 1 dst 0000000a data 0000000000000000
+commit inst [28]: pc 0080000098 inst 00153513 wen 1 dst 0000000a data 0000000000000001
+commit inst [29]: pc 008000009c inst f75ff0ef wen 1 dst 00000001 data 00000000800000a0
+commit inst [30]: pc 0080000010 inst 00050463 wen 0 dst 00000000 data 0000000080000018
+commit inst [31]: pc 0080000014 inst 00008067 wen 1 dst 00000000 data 0000000080000018
+
+==============  REF Regs  ==============
+  $0: 0x0000000000000000   ra: 0x00000000800000a0   sp: 0x0000000080008fa0   gp: 0xb21f71fa8136386c 
+  tp: 0x551f3d40ba2c4780   t0: 0xa6ee0a65d3b7fe33   t1: 0xea60f5dc886a3f4a   t2: 0xad5627683b5cb9c5 
+  s0: 0x0000000080000560   s1: 0x0000000080000358   a0: 0x0000000000000001   a1: 0x0000000007ff7000 
+  a2: 0x0000000000000000   a3: 0x0000000000000001   a4: 0x0000000000000000   a5: 0x0000000000000001 
+  a6: 0x92a6a4f41ecfc995   a7: 0x300d360b126c8ad7   s2: 0x0000000000000000   s3: 0x0000000080000590 
+  s4: 0x0000000000000000   s5: 0x0000000080000550   s6: 0x0000000080000350   s7: 0x0000000080000550 
+  s8: 0x0000000000000040   s9: 0x4017ce0e03c9040a  s10: 0xad171256cddbf78f  s11: 0xbd1e9aabf9c7f4e1 
+  t3: 0x71563686541019f6   t4: 0x181c01b6d77b5af9   t5: 0x16852a514c2ee998   t6: 0x305264bb478bbd9c 
+ ft0: 0x000000000000002e  ft1: 0x000000000000002e  ft2: 0x0000000000000000  ft3: 0x0000000000000000 
+ ft4: 0x0000000000000081  ft5: 0x0000000004d0b890  ft6: 0x0000000004d15bf0  ft7: 0x75615f6d61720979 
+ fs0: 0x5f725f6e695f6f74  fs1: 0x73616c5f73746962  fa0: 0x0000000000000074  fa1: 0x0000000000000040 
+ fa2: 0x0000000000000040  fa3: 0x0000000004d17010  fa4: 0x2463752031202065  fa5: 0x7475615f6d617220 
+ fa6: 0x625f725f6e695f6f  fa7: 0x7473616c5f737469  fs2: 0x00000a646e652420  fs3: 0x00000000000002d0 
+ fs4: 0x0000000000000070  fs5: 0x0000000004d1c0e0  fs6: 0x0000000004d1ba80  fs7: 0x0000000004d1c480 
+ fs8: 0x0000000004d1c0f0  fs9: 0x0000000004d17200 fs10: 0x000000000000001b fs11: 0x000000000000001b 
+ ft8: 0x0000000000000000  ft9: 0x0000000004d17230 ft10: 0x000000000000001c ft11: 0x000000000000001c 
+pc: 0x0000000080000090 mstatus: 0x0000000000000000 mcause: 0x0000000000000000 mepc: 0x0000000000000000
+                       sstatus: 0x0000000000000000 scause: 0x0000000000000000 sepc: 0x0000000000000000
+satp: 0x0000000000000000
+mip: 0x0000000000000000 mie: 0x0000000000000000 mscratch: 0x0000000000000000 sscratch: 0x0000000000000000
+mideleg: 0x0000000000000000 medeleg: 0x0000000000000000
+mtval: 0x0000000000000000 stval: 0x0000000000000000 mtvec: 0x0000000000000000 stvec: 0x0000000000000000
+privilege mode:3  pmp: below
+ 0: cfg:0x00 addr:0x0000000000000000| 1: cfg:0x00 addr:0x0000000000000000
+ 2: cfg:0x00 addr:0x0000000000000000| 3: cfg:0x00 addr:0x0000000000000000
+ 4: cfg:0x00 addr:0x0000000000000000| 5: cfg:0x00 addr:0x0000000000000000
+ 6: cfg:0x00 addr:0x0000000000000000| 7: cfg:0x00 addr:0x0000000000000000
+ 8: cfg:0x00 addr:0x0000000000000000| 9: cfg:0x00 addr:0x0000000000000000
+10: cfg:0x00 addr:0x0000000000000000|11: cfg:0x00 addr:0x0000000000000000
+12: cfg:0x00 addr:0x0000000000000000|13: cfg:0x00 addr:0x0000000000000000
+14: cfg:0x00 addr:0x0000000000000000|15: cfg:0x00 addr:0x0000000000000000
+priviledgeMode: 3
+     a5 different at pc = 0x0080000088, right= 0x0000000000000001, wrong = 0x0000000000000000
+Core 0: ABORT at pc = 0x80000088
+total guest instructions = 451
+instrCnt = 451, cycleCnt = 1,250, IPC = 0.360800
+Seed=0 Guest cycle spent: 1,253 (this will be different from cycleCnt if emu loads a snapshot)
+Host time spent: 501ms
+       1098] : [Dcache req] Addr: 80009218  Cmd: 01  Wdata: 0000000007ff6dc0
+[                1099] : [Dcache HitTag] index: 08  precious way_vec: 03  new way_vec 03
+[                1100] : [Dcache req] Addr: 80008fd8  Cmd: 00  Wdata: 0000000000000000
+[                1101] : [Dcache req] Addr: 80008fd0  Cmd: 00  Wdata: 0000000000000000
+[                1101] : [Dcache HitTag] index: 3f  precious way_vec: 03  new way_vec 03
+[                1102] : [Dcache req] Addr: 80008fc8  Cmd: 00  Wdata: 0000000000000000
+[                1102] : [Dcache HitTag] index: 3f  precious way_vec: 03  new way_vec 03
+[                1103] : [Dcache req] Addr: 80008fc0  Cmd: 00  Wdata: 0000000000000000
+[                1103] : [Dcache HitTag] index: 3f  precious way_vec: 03  new way_vec 03
+[                1104] : [Dcache req] Addr: 80008fb8  Cmd: 00  Wdata: 0000000000000000
+[                1104] : [Dcache HitTag] index: 3f  precious way_vec: 03  new way_vec 03
+[                1105] : [Dcache req] Addr: 80008fb0  Cmd: 00  Wdata: 0000000000000000
+[                1105] : [Dcache HitTag] index: 3e  precious way_vec: 03  new way_vec 03
+[                1106] : [Dcache req] Addr: 80009220  Cmd: 01  Wdata: 0000000000000000
+[                1106] : [Dcache HitTag] index: 3e  precious way_vec: 03  new way_vec 03
+[                1107] : [Dcache HitTag] index: 08  precious way_vec: 03  new way_vec 03
+[                1108] : [Dcache req] Addr: 80009228  Cmd: 01  Wdata: 0000000000000000
+[                1109] : [Dcache HitTag] index: 08  precious way_vec: 03  new way_vec 03
+[                1110] : [Dcache req] Addr: 80009230  Cmd: 01  Wdata: 0000000000000000
+[                1111] : [Dcache HitTag] index: 08  precious way_vec: 03  new way_vec 03
+[                1112] : [Dcache req] Addr: 80008fe8  Cmd: 00  Wdata: 0000000000000000
+[                1113] : [Dcache req] Addr: 80009238  Cmd: 01  Wdata: 0000000000000000
+[                1113] : [Dcache HitTag] index: 3f  precious way_vec: 03  new way_vec 03
+[                1114] : [Dcache HitTag] index: 08  precious way_vec: 03  new way_vec 03
+[                1117] : [Dcache req] Addr: 800005a0  Cmd: 01  Wdata: 0000000080009000
+[                1118] : [Dcache HitTag] index: 16  precious way_vec: 03  new way_vec 03
+[                1132] : [Dcache req] Addr: 80008fa8  Cmd: 01  Wdata: b325c9e57cc24528
+[                1133] : [Dcache HitTag] index: 3e  precious way_vec: 03  new way_vec 03
+[                1134] : [Dcache req] Addr: 80008fc8  Cmd: 01  Wdata: 220744bd6a46b02b
+[                1135] : [Dcache HitTag] index: 3f  precious way_vec: 03  new way_vec 03
+[                1136] : [Dcache req] Addr: 80008fc0  Cmd: 01  Wdata: 4ba915f3b938dea4
+[                1137] : [Dcache HitTag] index: 3f  precious way_vec: 03  new way_vec 03
+[                1161] : [Dcache req] Addr: 80008fb8  Cmd: 01  Wdata: 0bee31fe48c56e06
+[                1162] : [Dcache HitTag] index: 3e  precious way_vec: 03  new way_vec 03
+[                1163] : [Dcache req] Addr: 80008fb0  Cmd: 01  Wdata: 8675cfd5b9af8902
+[                1164] : [Dcache HitTag] index: 3e  precious way_vec: 03  new way_vec 03
+[                1165] : [Dcache req] Addr: 80008fa0  Cmd: 01  Wdata: 5c0f0a860966b4a8
+[                1166] : [Dcache HitTag] index: 3e  precious way_vec: 03  new way_vec 03
+[                1167] : [Dcache req] Addr: 80008fe8  Cmd: 01  Wdata: 0000000080000128
+[                1168] : [Dcache HitTag] index: 3f  precious way_vec: 03  new way_vec 03
+[                1169] : [Dcache req] Addr: 80000550  Cmd: 00  Wdata: 0000000000000000
+[                1196] : [Dcache miss] index: 15  precious way_vec: 00  new way_vec: 03  victim_way: 3
+[                1200] : [Dcache req] Addr: 80008fe0  Cmd: 01  Wdata: 0000000000000000
+[                1201] : [Dcache HitTag] index: 3f  precious way_vec: 03  new way_vec 03
+[                1202] : [Dcache req] Addr: 80008fd8  Cmd: 01  Wdata: 5ee7901bbf99c1cd
+[                1203] : [Dcache HitTag] index: 3f  precious way_vec: 03  new way_vec 03
+[                1204] : [Dcache req] Addr: 80000550  Cmd: 00  Wdata: 0000000000000000
+[                1205] : [Dcache req] Addr: 80000350  Cmd: 00  Wdata: 0000000000000000
+[                1205] : [Dcache HitTag] index: 15  precious way_vec: 03  new way_vec 03
+[                1221] : [Dcache miss] index: 0d  precious way_vec: 00  new way_vec: 03  victim_way: 3
+[                1225] : [Dcache req] Addr: 80008fd0  Cmd: 01  Wdata: 558f400968e7f955
+[                1226] : [Dcache HitTag] index: 3f  precious way_vec: 03  new way_vec 03
+[                1245] : [Dcache req] Addr: 80000558  Cmd: 00  Wdata: 0000000000000000
+[                1246] : [Dcache req] Addr: 80000358  Cmd: 00  Wdata: 0000000000000000
+[                1246] : [Dcache HitTag] index: 15  precious way_vec: 03  new way_vec 03
+[                1247] : [Dcache HitTag] index: 0d  precious way_vec: 03  new way_vec 03

@@ -65,8 +65,9 @@ class Probe(edge: TLEdgeOut)(implicit val p: Parameters) extends DCacheModule {
   val waymask = VecInit(tagWay.map(t => (t.tag === addr.tag))).asUInt
   //val coh = Mux1H(waymask, metaWay).asTypeOf(new ClientMetadata)
   val coh = Mux1H(waymask, metaWay).coh.asTypeOf(new ClientMetadata)
-  val (probe_has_dirty_data, probe_shrink_param, probe_new_coh) = coh.onProbe(reqReg.param)
-  //val dataRead = Mux1H(waymask, io.dataReadBus(1).resp.data).data
+  //val (probe_has_dirty_data, probe_shrink_param, probe_new_coh) = coh.onProbe(reqReg.param)
+  val (_, probe_shrink_param, probe_new_coh) = coh.onProbe(reqReg.param)
+  val probe_has_dirty_data = true.B
 
   //refill_count代表c线上refill到第几个了，读应该比它早一拍，比如它在refill第n个时应该读第n+1个
   val (_, _, release_done, refill_count) = edge.count(io.mem_probeAck)
