@@ -362,7 +362,7 @@ sealed class IAcquireAccess(edge: TLEdgeOut)(implicit val p: Parameters) extends
 
   io.mem_getPutAcquire.valid := Mux(state === s_put || state === s_get || state === s_acqB || state === s_acqP, true.B, false.B)
   io.mem_getPutAcquire.bits := Mux(state === s_put, Mux(isFullPut, putFullData, putPartialData), pkg.asTypeOf(new TLBundleA(edge.bundle)))
-  io.mem_grantAck.ready := Mux(state === s_accessA || state === s_grant || state === s_grantD, true.B, false.B)
+  io.mem_grantAck.ready := Mux((state === s_grant || state === s_grantD) && io.tagWriteBus.req.ready && io.metaWriteBus.req.ready, true.B, false.B)
   io.mem_finish.bits := grantAck
   io.mem_finish.valid := state === s_grantA
 
@@ -439,4 +439,6 @@ sealed class IAcquireAccess(edge: TLEdgeOut)(implicit val p: Parameters) extends
   io.resp.bits.rdata := rData
   io.resp.bits.cmd := SimpleBusCmd.readBurst
   io.resp.bits.user.zip(io.req.bits.user).map { case (o, i) => o := i }
+  
+  //Debug(io.mem_grantAck.fire && addr.index === 0xC.U, "[ICache Miss] Addr:%x Tag:%x AcquireBlock:%x Data:%x\n", addr.asUInt, addr.tag, state === s_grantD, io.mem_grantAck.bits.data.asUInt)
 }

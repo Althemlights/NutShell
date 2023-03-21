@@ -98,7 +98,7 @@ class BPU_ooo extends NutCoreModule {
   ))
 
   // BTB
-  val NRbtb = 2048
+  val NRbtb = 256
   val NRbht = 2048
   val btbAddr = new TableAddr(log2Up(NRbtb >> 2))
   def btbEntry() = new Bundle {

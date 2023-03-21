@@ -11,19 +11,6 @@ import freechips.rocketchip.tilelink._
 import freechips.rocketchip.tilelink.ClientMetadata
 import chipsalliance.rocketchip.config.Parameters
 
-/*class ProbeReq(edge: TLEdgeOut)(implicit val p: Parameters) extends DCacheBundle{
-  val opcode = Wire(UInt(3.W))
-  val param  = Wire(UInt(TLPermissions.bdWidth.W))
-  val source = Wire(UInt(4.W))
-  val addr   = Wire(UInt(36.W))
-  val needData = Wire(Bool())
-
-  /*def dump() = {
-    Debug("ProbeReq source: %d opcode: %d addr: %x param: %d\n",
-      source, opcode, addr, param)
-  }*/
-}*/
-
 class Probe(edge: TLEdgeOut)(implicit val p: Parameters) extends DCacheModule {
   val io = IO(new Bundle {
     val mem_probe = Flipped(DecoupledIO(new TLBundleB(edge.bundle)))
@@ -32,6 +19,7 @@ class Probe(edge: TLEdgeOut)(implicit val p: Parameters) extends DCacheModule {
     val metaWriteBus = CacheMetaArrayWriteBus()
     val tagReadBus = CacheTagArrayReadBus()
     val dataReadBus = Vec(sramNum, CacheDataArrayReadBus())
+    val probeVictim = new ProbeVictimIO
   })
 
   def ProbeReq = new Bundle {
@@ -63,11 +51,14 @@ class Probe(edge: TLEdgeOut)(implicit val p: Parameters) extends DCacheModule {
 
   //hit and select coh
   val waymask = VecInit(tagWay.map(t => (t.tag === addr.tag))).asUInt
-  //val coh = Mux1H(waymask, metaWay).asTypeOf(new ClientMetadata)
   val coh = Mux1H(waymask, metaWay).coh.asTypeOf(new ClientMetadata)
   //val (probe_has_dirty_data, probe_shrink_param, probe_new_coh) = coh.onProbe(reqReg.param)
   val (_, probe_shrink_param, probe_new_coh) = coh.onProbe(reqReg.param)
   val probe_has_dirty_data = true.B
+
+  io.probeVictim.index := addr.index
+  io.probeVictim.victimWay := waymask
+  io.probeVictim.valid := state === s_probePB
 
   //refill_count代表c线上refill到第几个了，读应该比它早一拍，比如它在refill第n个时应该读第n+1个
   val (_, _, release_done, refill_count) = edge.count(io.mem_probeAck)
@@ -130,4 +121,6 @@ class Probe(edge: TLEdgeOut)(implicit val p: Parameters) extends DCacheModule {
       }
     }
   }
+
+  //Debug(io.mem_probeAck.fire && addr.index === 0xC.U, "[Probe] Addr: %x  Tag:%x  Data:%x\n", addr.asUInt, addr.tag, dataRead.asUInt)
 }

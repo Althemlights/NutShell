@@ -458,7 +458,8 @@ class DataSRAMTemplateWithArbiter[T <: Data](nRead: Int, gen: T, set: Int, way: 
   //  val ram = if (isData) Module(new DataSRAMTemplate(gen, set, way, shouldReset, holdRead = false, singlePort = true))
   //  else Module(new MetaSRAMTemplate(gen, set, way, shouldReset, holdRead = false, singlePort = true))
   //  when(isData.asBool()) {
-  val ram = Module(new DataSRAMTemplate(gen, set, way, shouldReset, holdRead = false, singlePort = true))
+  //val ram = Module(new DataSRAMTemplate(gen, set, way, shouldReset, holdRead = false, singlePort = false))
+  val ram = Module(new SRAMTemplate(gen, set, way, shouldReset, holdRead = false, singlePort = false))
   //  }.otherwise {
   //    val ram = Module(new MetaSRAMTemplate(gen, set, way, shouldReset, holdRead = false, singlePort = true))
   //  }
