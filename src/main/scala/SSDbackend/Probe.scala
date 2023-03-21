@@ -50,7 +50,8 @@ class Probe(edge: TLEdgeOut)(implicit val p: Parameters) extends DCacheModule {
   val tagWay = io.tagReadBus.resp.data
 
   //hit and select coh
-  val waymask = VecInit(tagWay.map(t => (t.tag === addr.tag))).asUInt
+  //val waymask = VecInit(tagWay.map(t => (t.tag === addr.tag))).asUInt
+  val waymask = VecInit((tagWay zip metaWay).map{case (t, m) => (m.coh.asTypeOf(new ClientMetadata).isValid() && (t.tag === addr.tag))}).asUInt
   val coh = Mux1H(waymask, metaWay).coh.asTypeOf(new ClientMetadata)
   //val (probe_has_dirty_data, probe_shrink_param, probe_new_coh) = coh.onProbe(reqReg.param)
   val (_, probe_shrink_param, probe_new_coh) = coh.onProbe(reqReg.param)
