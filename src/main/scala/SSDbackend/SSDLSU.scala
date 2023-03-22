@@ -266,7 +266,8 @@ class SSDLSU extends  NutCoreModule with HasStoreBufferConst{
   val SBHitVecExpand = hitCheck(headAddr,tailAddr,SBaddrHitVec)
   SBaddrHit := SBHitVecExpand.asUInt.orR
   SBhitData := Mux1H(SBHitVecExpand,SBDataVec)
-  SBhitMask := Mux1H(SBHitVecExpand,SBMaskVec)
+  //SBhitMask := Mux1H(SBHitVecExpand,SBMaskVec)
+  SBhitMask := Mux1H(SBHitVecExpand,SBMaskVec) & MaskExpand(SBaddrHit).asUInt
   dontTouch(SBaddrHit)
   dontTouch(SBaddrHitVec)
   dontTouch(SBHitVecExpand)
@@ -279,16 +280,20 @@ class SSDLSU extends  NutCoreModule with HasStoreBufferConst{
   val stage4hitMask = Wire(UInt((XLEN/8).W))
   stage3hit := beCheckedPaddr(PAddrBits-1,3) === lsuPipeStage3.right.bits.paddr(PAddrBits-1,3) && lsuPipeStage3.right.valid && lsuPipeStage3.right.bits.isStore
   stage4hit := beCheckedPaddr(PAddrBits-1,3) === lsuPipeStage4.right.bits.paddr(PAddrBits-1,3) && lsuPipeStage4.right.valid && lsuPipeStage4.right.bits.isStore
-  stage4hitMask := (lsuPipeStage4.right.bits.mask & MaskExpand((lsuPipeStage4.right.valid && lsuPipeStage4.right.bits.isStore).asUInt))
-  stage4hitData := MergeData(lsuPipeStage4.right.bits.data,SBhitData,stage4hitMask,SBhitMask)
-  stage3hitMask := (lsuPipeStage3.right.bits.mask & MaskExpand((lsuPipeStage3.right.valid && lsuPipeStage3.right.bits.isStore).asUInt))
-  stage3hitData := MergeData(lsuPipeStage3.right.bits.data,stage4hitData,stage3hitMask,stage4hitMask | SBhitMask)
+  //stage4hitMask := (lsuPipeStage4.right.bits.mask & MaskExpand((lsuPipeStage4.right.valid && lsuPipeStage4.right.bits.isStore).asUInt))
+  stage4hitMask := (lsuPipeStage4.right.bits.mask & MaskExpand((lsuPipeStage4.right.valid && lsuPipeStage4.right.bits.isStore && stage4hit).asUInt))
+  //stage4hitData := MergeData(lsuPipeStage4.right.bits.data,SBhitData,stage4hitMask,SBhitMask)
+  stage4hitData := MaskData(MaskData(0.U, SBhitData, MaskExpand(SBhitMask)), lsuPipeStage4.right.bits.data, MaskExpand(stage4hitMask))
+  //stage3hitMask := (lsuPipeStage3.right.bits.mask & MaskExpand((lsuPipeStage3.right.valid && lsuPipeStage3.right.bits.isStore).asUInt))
+  stage3hitMask := (lsuPipeStage3.right.bits.mask & MaskExpand((lsuPipeStage3.right.valid && lsuPipeStage3.right.bits.isStore && stage3hit).asUInt))
+  //stage3hitData := MergeData(lsuPipeStage3.right.bits.data,stage4hitData,stage3hitMask,stage4hitMask | SBhitMask)
+  stage3hitData := MaskData(stage4hitData, lsuPipeStage3.right.bits.data, MaskExpand(stage3hitMask))
 
   //fianl hit data & mask
   val addrHitVecE2 = Cat(stage3hit,stage4hit,SBaddrHit)
   val addrHitE2 = addrHitVecE2.orR
   val hitDataE2 = PriorityMux(Seq(stage3hit,stage4hit,SBaddrHit),Seq(stage3hitData,stage4hitData,SBhitData))
-  val hitMaskE2 = PriorityMux(Seq(stage3hit,stage4hit,SBaddrHit),Seq(stage3hitMask|stage4hitMask|SBhitMask,stage4hitMask|SBhitMask,SBhitMask))
+  val hitMaskE2 = stage3hitMask | stage4hitMask | SBhitMask
   val fullHitE2 = !(beCheckedMask & ~hitMaskE2).orR
   val partialHitE2 = (beCheckedMask & hitMaskE2).orR && (beCheckedMask & ~hitMaskE2).orR
   val missE2 = !addrHitE2 || (!fullHitE2 && !partialHitE2)
