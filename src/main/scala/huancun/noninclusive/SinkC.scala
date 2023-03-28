@@ -10,6 +10,7 @@ class SinkC(implicit p: Parameters) extends BaseSinkC {
 
   val beats = blockBytes / beatBytes
   val buffer = Reg(Vec(bufBlocks, Vec(beats, UInt((beatBytes * 8).W))))
+  val bufferTag = Reg(Vec(bufBlocks, UInt(tagBits.W)))
   val bufferSet = Reg(Vec(bufBlocks, UInt(setBits.W)))
   val bufferSetVals = RegInit(VecInit(Seq.fill(bufBlocks)(false.B)))
   val beatValsSave = RegInit(VecInit(Seq.fill(bufBlocks) {
@@ -84,6 +85,9 @@ class SinkC(implicit p: Parameters) extends BaseSinkC {
   io.resp.bits.set := set
   io.resp.bits.bufIdx := Mux(first, insertIdx, insertIdxReg)
 
+  val task = io.task.bits
+  val task_r = RegEnable(io.task.bits, io.task.fire())
+  val busy = RegInit(false.B) // busy also serve as task_r.valid
   val setMatchVec = RegInit(0.U(bufBlocks.W))
 
   // buffer write
@@ -96,6 +100,7 @@ class SinkC(implicit p: Parameters) extends BaseSinkC {
       when(isProbeAckData) {
         bufferSetVals(insertIdx) := true.B
         bufferSet(insertIdx) := set
+        bufferTag(insertIdx) := tag
       }
     }.otherwise({
       buffer(insertIdxReg)(count) := c.bits.data
@@ -104,9 +109,10 @@ class SinkC(implicit p: Parameters) extends BaseSinkC {
     })
   }
 
-  when(c.fire() && first && isResp) {
-    setMatchVec := Cat(bufferSet.zip(bufferSetVals).map{
-      case (s, v) => (s === set) && v
+  when(c.fire() && first && isProbeAckData) {
+    setMatchVec := Cat((bufferSetVals.zipWithIndex).zip(bufferSet.zip(bufferTag)).map{
+      case ((v, i), (s, t)) => 
+        Mux(busy && i.U === task_r.bufIdx, false.B, (t === tag) && (s === set) && v) // do not clean buffer of ongoing task
     }.reverse)
   }
   when(setMatchVec.orR()) {
@@ -119,9 +125,6 @@ class SinkC(implicit p: Parameters) extends BaseSinkC {
     setMatchVec := 0.U
   }
 
-  val task = io.task.bits
-  val task_r = RegEnable(io.task.bits, io.task.fire())
-  val busy = RegInit(false.B)
   val w_counter_save = RegInit(0.U(beatBits.W))
   val w_counter_through = RegInit(0.U(beatBits.W))
   val task_w_safe = !(io.sourceD_r_hazard.valid &&
