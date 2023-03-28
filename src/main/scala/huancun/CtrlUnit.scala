@@ -22,7 +22,8 @@ class CtrlUnit(val node: TLAdapterNode)(implicit p: Parameters)
   val device = new SimpleDevice("L3CacheCtrl", Seq("xiangshan,cache_ctrl"))
   val intnode = IntSourceNode(IntSourcePortSimple(resources = device.int))
   val num_cores = cacheParams.ctrl.get.numCores
-  val core_reset_nodes = (0 until num_cores) map(_ => BundleBridgeSource(() => Reset()))
+  //val core_reset_nodes = (0 until num_cores) map(_ => BundleBridgeSource(() => Reset()))
+  val core_reset_nodes = (0 until num_cores) map(_ => BundleBridgeSource(() => Bool()))
 
   lazy val module = new CtrlUnitImp(this)
 }
@@ -84,7 +85,8 @@ class CtrlUnitImp(wrapper: CtrlUnit) extends LazyModuleImp(wrapper) {
   // for tag error: ecc_addr = physical address
   val ecc_addr = RegInit(0.U(64.W))
 
-  val core_reset = Seq.fill(wrapper.num_cores){ RegInit(0.U(64.W)) }
+  //val core_reset = Seq.fill(wrapper.num_cores){ RegInit(0.U(64.W)) }
+  val core_reset = RegInit(0.U(64.W)) +:Seq.fill(wrapper.num_cores-1){ RegInit(1.U(64.W)) }
 
   val reset_regs = core_reset.zipWithIndex.map{ case (r, i) =>
     RegField(64, r, RegWriteFn((valid, data) => {
