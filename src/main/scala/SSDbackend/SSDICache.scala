@@ -44,7 +44,7 @@ case class ICacheParameters (
                          userBits: Int = 39 * 2 + 9 + 5 + 4,
                          idBits: Int = 0,
 
-                         totalSize: Int = 16, // Kbytes
+                         totalSize: Int = 32, // Kbytes
                          ways: Int = 4,
                          sramNum: Int = 4,
                          srcBits: Int = 1  
@@ -138,11 +138,6 @@ sealed class ICacheStage1(implicit val p: Parameters) extends ICacheModule {
   //metaArray need to reset before Load
   //s1 is not ready when metaArray is resetting or meta/dataArray is being written
 
-  /*if(cacheName == "dcache") {
-    val s1NotReady = (!io.metaReadBus.req.ready || !io.dataReadBus.req.ready || !io.metaReadBus.req.ready || !io.tagReadBus.req.ready)&& io.in.valid
-    BoringUtils.addSource(s1NotReady,"s1NotReady")
-  }*/
-
   val dataReadBusReady = VecInit(io.dataReadBus.map(_.req.ready)).asUInt.andR
   io.out.bits.req := io.in.bits
   io.out.bits.req.cmd := new_cmd
@@ -163,6 +158,7 @@ sealed class ICacheStage2(edge: TLEdgeOut)(implicit val p: Parameters) extends I
     val tagReadResp = Flipped(Vec(Ways, new DTagBundle))
     val dataReadResp = Flipped(Vec(sramNum, Vec(Ways, new DDataBundle)))
 
+    val dataReadBus = Vec(sramNum, CacheDataArrayReadBus())
     val metaWriteBus = CacheMetaArrayWriteBus()
     val dataWriteBus = Vec(sramNum, CacheDataArrayWriteBus())
     val tagWriteBus = CacheTagArrayWriteBus()
@@ -170,8 +166,9 @@ sealed class ICacheStage2(edge: TLEdgeOut)(implicit val p: Parameters) extends I
     val mem_getPutAcquire = DecoupledIO(new TLBundleA(edge.bundle))
     val mem_grantReleaseAck = Flipped(DecoupledIO(new TLBundleD(edge.bundle)))
     val mem_finish = DecoupledIO(new TLBundleE(edge.bundle))
+    val mem_release = DecoupledIO(new TLBundleC(edge.bundle))
 
-    val probeVictim = Flipped(new ProbeVictimIO)  
+    val relConcurrency = new ReleaseConcurrencyIO 
   })
   
   //hit miss check
@@ -187,7 +184,8 @@ sealed class ICacheStage2(edge: TLEdgeOut)(implicit val p: Parameters) extends I
   val hit = hitTag && hitMeta && io.in.valid
     //miss need acquire and release(if not hitTag)
   val miss = !hit && io.in.valid
-  
+  val victimWaymask = 3.U
+
     //find invalid
   val invalidVec = VecInit(metaWay.map(m => m.coh === ClientStates.Nothing)).asUInt
   val hasInvalidWay = invalidVec.orR
@@ -195,15 +193,7 @@ sealed class ICacheStage2(edge: TLEdgeOut)(implicit val p: Parameters) extends I
     Mux(invalidVec >= 4.U, "b0100".U,
     Mux(invalidVec >= 2.U, "b0010".U, "b0001".U)))
 
-  val victimIndex = io.probeVictim.index
-  val victimWay = io.probeVictim.victimWay
-  val victimWayValid = io.probeVictim.valid
-  val victimWayReg = RegInit(0.U(Ways.W))
-  when (victimWayValid && (victimIndex === addr.index)) {
-    victimWayReg := victimWay
-  }
-
-  val waymask = Mux(hit || (miss && hitTag), hitVec, Mux(hasInvalidWay, refillInvalidWaymask, victimWayReg))
+  val waymask = Mux(hit || (miss && hitTag), hitVec, Mux(hasInvalidWay, refillInvalidWaymask, victimWaymask.asUInt))
   val wordMask = Mux(req.isWrite(), MaskExpand(req.wmask), 0.U(DataBits.W))
   
   //if hit: 看看是否需要更新元数据，更新元数据或者与DataArray交互数据
@@ -273,19 +263,46 @@ sealed class ICacheStage2(edge: TLEdgeOut)(implicit val p: Parameters) extends I
 
   io.tagWriteBus.req <> acquireAccess.io.tagWriteBus.req
 
+  //core modules: release
+    //only miss but not hittag
+  val release = Module(new IRelease(edge))
+
+    //something for victim
+  val needRel = miss && !hitTag && !hasInvalidWay
+  val victimCoh = Mux1H(waymask, metaWay).coh.asTypeOf(new ClientMetadata)
+  val vicAddr = Cat(Mux1H(waymask, tagWay).tag, addr.index, 0.U(6.W))
+
+  release.io.req.bits := req
+  release.io.req.valid := needRel     //choose victim
+  release.io.req.bits.addr := vicAddr
+  release.io.mem_release <> io.mem_release
+  release.io.mem_releaseAck <> io.mem_grantReleaseAck
+  release.io.victimCoh := victimCoh
+  release.io.waymask := waymask
+  //io.dataReadBus <> release.io.dataReadBus
+  (io.dataReadBus zip release.io.dataReadBus).map{case (s, r) => (s <> r)}
+
+    //release操作完成
+  val isrelDone = RegInit(false.B)
+  when (release.io.release_ok) {isrelDone := true.B}
+  when (io.out.fire) {isrelDone := false.B}
+  val relOK = !needRel || (needRel && isrelDone)
+
   val isGrant = io.mem_grantReleaseAck.bits.opcode === TLMessages.Grant || io.mem_grantReleaseAck.bits.opcode === TLMessages.GrantData
-  io.mem_grantReleaseAck.ready := Mux(isGrant, acquireAccess.io.mem_grantAck.ready, false.B)
+  val isRelAck = io.mem_grantReleaseAck.bits.opcode === TLMessages.ReleaseAck
+  io.mem_grantReleaseAck.ready := Mux(isGrant, acquireAccess.io.mem_grantAck.ready, Mux(isRelAck, release.io.mem_releaseAck.ready, false.B))
   
   io.out <> acquireAccess.io.resp
-  io.out.valid := io.in.valid && (hit || (miss && acquireAccess.io.resp.valid)) && !needFlush
+  io.out.valid := io.in.valid && (hit || (miss && acquireAccess.io.resp.valid && relOK)) && !needFlush
   io.out.bits.rdata := Mux(hit, dataRead, acquireAccess.io.resp.bits.rdata)
 
   val acquireReady = Mux(miss || needFlush, acquireAccess.io.req.ready, true.B)
+  val releaseReady = Mux(needRel || needFlush, release.io.req.ready, true.B)
 
   when (io.flush && miss) {
     needFlush := true.B
   }
-  when (needFlush && acquireReady) {
+  when (needFlush && acquireReady && releaseReady) {
     needFlush := false.B
   }
   val isMiss = RegInit(false.B)
@@ -295,7 +312,12 @@ sealed class ICacheStage2(edge: TLEdgeOut)(implicit val p: Parameters) extends I
   when (isMiss) {
     isMiss := false.B
   }
-  io.in.ready := io.out.ready && acquireReady && !miss && !needFlush
+  io.in.ready := io.out.ready && acquireReady && releaseReady && !miss && !needFlush
+  
+    //for Release concurrency limit
+  io.relConcurrency.addr := vicAddr
+  io.relConcurrency.relValid := needRel && !isrelDone
+  
   //Debug((io.in.fire || (io.in.valid && isMiss)) && io.in.bits.req.addr(7, 0) === "hc0".U, "[Icache] addr = 0x%x hit %x needrelease %x\n", io.in.bits.req.addr, hit, waymask)
 }
 
@@ -352,7 +374,7 @@ class ICacheImp(outer: ICache) extends LazyModuleImp(outer) with HasICacheIO wit
 
   val dataArray = Array.fill(sramNum) {
     Module(new DataSRAMTemplateWithArbiter(
-      nRead = 2,
+      nRead = 3,
       new DDataBundle,
       set = Sets * LineBeats / sramNum,
       way = Ways
@@ -366,10 +388,10 @@ class ICacheImp(outer: ICache) extends LazyModuleImp(outer) with HasICacheIO wit
   s2.io.mem_grantReleaseAck <> bus.d 
   s2.io.mem_finish <> bus.e 
 
-  s2.io.probeVictim <> probe.io.probeVictim
+  //s2.io.probeVictim <> probe.io.probeVictim
   probe.io.mem_probe <> bus.b
-  //TLArbiter.lowest(edge, bus.c, probe.io.mem_probeAck, s2.io.mem_release)
-  probe.io.mem_probeAck <> bus.c
+  TLArbiter.lowest(edge, bus.c, probe.io.mem_probeAck, s2.io.mem_release)
+  probe.io.relConcurrency <> s2.io.relConcurrency
   
   //val channelCArb = Module(new channelCArb(edge))
   //channelCArb.io.in(0) <> probe.mem_probeAck
@@ -386,7 +408,10 @@ class ICacheImp(outer: ICache) extends LazyModuleImp(outer) with HasICacheIO wit
   metaArray.io.r(0) <> probe.io.metaReadBus
   
   for (w <- 0 until sramNum) {
-    dataArray(w).io.r(1) <> s1.io.dataReadBus(w)
+    dataArray(w).io.r(2) <> s1.io.dataReadBus(w)
+  }
+  for (w <- 0 until sramNum) {
+    dataArray(w).io.r(1) <> s2.io.dataReadBus(w)
   }
   for (w <- 0 until sramNum) {
     dataArray(w).io.r(0) <> probe.io.dataReadBus(w)

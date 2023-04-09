@@ -106,7 +106,8 @@ class NutShell()(implicit p: Parameters) extends LazyModule{
       )),
       //prefetch = Some(huancun.prefetch.BOPParameters()),
       reqField = Seq(),
-      echoField = Seq()
+      echoField = Seq(),
+      enableDebug = true
     )
   })))
 

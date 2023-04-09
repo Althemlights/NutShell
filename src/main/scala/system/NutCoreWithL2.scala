@@ -48,13 +48,15 @@ class NutcoreWithL2()(implicit p: Parameters) extends LazyModule{
       name = s"L2",
       level = 2,
       inclusive = false,
+      alwaysReleaseData = true,
       clientCaches = Seq(
-        CacheParameters(sets = 64, ways = 4, blockGranularity = 6, name = "icache"),
-        CacheParameters(sets = 64, ways = 4, blockGranularity = 6, name = "dcache")
+        CacheParameters(sets = 128, ways = 4, blockGranularity = 6, name = "icache"),
+        CacheParameters(sets = 128, ways = 4, blockGranularity = 6, name = "dcache")
       ),
       //prefetch = Some(huancun.prefetch.BOPParameters()),
       reqField = Seq(),
-      echoField = Seq()
+      echoField = Seq(),
+      enableDebug = true
     )
   })))
 

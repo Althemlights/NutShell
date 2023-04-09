@@ -345,7 +345,8 @@ class SSDLSU extends  NutCoreModule with HasStoreBufferConst{
   when(io.memStall && io.dmem.resp.fire){ dmemFireLatch := true.B
   }.elsewhen(!bufferFullStall){ dmemFireLatch := false.B }
   io.in.ready := lsuPipeIn(0).ready || loadCacheIn.ready
-  io.out.valid := (io.dmem.resp.fire || dmemFireLatch || addrHitE3) && lsuPipeStage3.right.valid && !lsuPipeStage3.right.bits.isStore && !lsuPipeStage3.right.bits.isCacheStore
+  //io.out.valid := (io.dmem.resp.fire || dmemFireLatch || addrHitE3) && lsuPipeStage3.right.valid && !lsuPipeStage3.right.bits.isStore && !lsuPipeStage3.right.bits.isCacheStore
+  io.out.valid := (io.dmem.resp.fire || addrHitE3) && lsuPipeStage3.right.valid && !lsuPipeStage3.right.bits.isStore && !lsuPipeStage3.right.bits.isCacheStore
   dontTouch(io.out.valid)
   io.isMMIO := lsuPipeStage3.right.bits.isMMIO
   val partialLoad = !lsuPipeOut(0).bits.isStore && (lsuPipeOut(0).bits.func =/= LSUOpType.ld) && lsuPipeOut(0).valid

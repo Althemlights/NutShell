@@ -859,21 +859,24 @@ class SSDbackend extends NutCoreModule with hasBypassConst {
     dt_ic0.io.wpdest := RegNext(Cat(0.U(3.W), regfile.io.writePorts(0).addr))
     dt_ic0.io.wdest := RegNext(Cat(0.U(3.W), regfile.io.writePorts(0).addr))
 
-
+    val regP0 = regfile.io.writePorts(0).addr
+    val regP1 = regfile.io.writePorts(1).addr
     val dt_iw0 = Module(new DifftestIntWriteback)
     dt_iw0.io.clock := clock
     dt_iw0.io.coreid := hartid
-    dt_iw0.io.valid := RegNext(regfile.io.writePorts(1).wen)
-    dt_iw0.io.dest := RegNext(regfile.io.writePorts(1).addr)
-    dt_iw0.io.data := RegNext(regfile.io.writePorts(1).data)
+    dt_iw0.io.valid := RegNext(regfile.io.writePorts(0).wen)
+    //dt_iw0.io.valid := RegNext(Mux(regP0 === regP1 && regfile.io.writePorts(0).wen && regfile.io.writePorts(1).wen, false.B, regfile.io.writePorts(1).wen))
+    dt_iw0.io.dest := RegNext(regfile.io.writePorts(0).addr)
+    dt_iw0.io.data := RegNext(regfile.io.writePorts(0).data)
 
 
     val dt_iw1 = Module(new DifftestIntWriteback)
     dt_iw1.io.clock := clock
     dt_iw1.io.coreid := hartid
-    dt_iw1.io.valid := RegNext(regfile.io.writePorts(0).wen)
-    dt_iw1.io.dest := RegNext(regfile.io.writePorts(0).addr)
-    dt_iw1.io.data := RegNext(regfile.io.writePorts(0).data)
+    //dt_iw1.io.valid := RegNext(regfile.io.writePorts(1).wen)
+    dt_iw1.io.valid := RegNext(Mux(regP0 === regP1 && regfile.io.writePorts(0).wen && regfile.io.writePorts(1).wen, false.B, regfile.io.writePorts(1).wen))
+    dt_iw1.io.dest := RegNext(regfile.io.writePorts(1).addr)
+    dt_iw1.io.data := RegNext(regfile.io.writePorts(1).data)
 
 
     val dt_ae = Module(new DifftestArchEvent)

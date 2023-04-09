@@ -96,6 +96,8 @@ class Release(edge: TLEdgeOut)(implicit val p: Parameters) extends DCacheModule 
   io.mem_release.bits := Mux(state === s_release, release, releaseData)
   io.mem_release.valid := state === s_release || state === s_releaseD
   io.mem_releaseAck.ready := state === s_releaseA
+
+  Debug(io.mem_release.fire && addr.index === 0x3e.U, "[Release] Addr:%x Tag:%x Data:%x\n", req.addr, addr.tag, io.mem_release.bits.data.asUInt)
 }
 
 
@@ -139,7 +141,7 @@ class IRelease(edge: TLEdgeOut)(implicit val p: Parameters) extends ICacheModule
   val victimCoh = io.victimCoh
   val (release_has_dirty_data, release_shrink_param, release_new_coh) = victimCoh.onCacheControl(M_FLUSH)
 
-  val idRel = 0.U(srcBits.W)
+  val idRel = 1.U(srcBits.W)
 
   val release = edge.Release(
     fromSource = idRel, 

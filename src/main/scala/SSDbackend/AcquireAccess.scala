@@ -98,8 +98,9 @@ sealed class AcquireAccess(edge: TLEdgeOut)(implicit val p: Parameters) extends 
 
   val acParam = Mux(hitTag, acPParam, acBParam)
   
-  val idPutGet = 0.U(srcBits.W)
-  val idAcquire = 1.U(srcBits.W)
+  //val idPutGet = 0.U(srcBits.W)
+  //val idAcquire = 1.U(srcBits.W) 
+  val id = 0.U(srcBits.W)
 
   /*val putFullData = edge.Put(
     fromSource = idPutGet,
@@ -122,13 +123,13 @@ sealed class AcquireAccess(edge: TLEdgeOut)(implicit val p: Parameters) extends 
   val a_address = req.addr & ("hfffffffffffffffff".U << log2Ceil(LineSize).U)
 
   val acquireBlock = edge.AcquireBlock(
-    fromSource = idAcquire, 
+    fromSource = id, 
     toAddress = a_address, 
     lgSize = log2Ceil(LineSize).U, 
     growPermissions = acParam)._2
 
   val acquirePerm = edge.AcquirePerm(
-    fromSource = idAcquire, 
+    fromSource = id, 
     toAddress = a_address, 
     lgSize = log2Ceil(LineSize).U, 
     growPermissions = acParam)._2
@@ -213,7 +214,7 @@ sealed class AcquireAccess(edge: TLEdgeOut)(implicit val p: Parameters) extends 
   io.resp.bits.cmd := SimpleBusCmd.readBurst
   io.resp.bits.user.zip(io.req.bits.user).map { case (o, i) => o := i }
 
-  //Debug(io.mem_grantAck.fire && addr.index === 0xC.U, "[DCache Miss] Addr:%x Tag:%x AcquireBlock:%x Data:%x\n", addr.asUInt, addr.tag, state === s_grantD, io.mem_grantAck.bits.data.asUInt)
+  Debug(io.mem_grantAck.fire && addr.index === 0x3e.U, "[DCache Miss] Addr:%x Tag:%x AcquireBlock:%x Data:%x\n", addr.asUInt, addr.tag, state === s_grantD, io.mem_grantAck.bits.data.asUInt)
 }
 
 sealed class IAcquireAccess(edge: TLEdgeOut)(implicit val p: Parameters) extends ICacheModule{
@@ -304,7 +305,6 @@ sealed class IAcquireAccess(edge: TLEdgeOut)(implicit val p: Parameters) extends
 
   val acParam = Mux(hitTag, acPParam, acBParam)
   
-  val idPutGet = 0.U(srcBits.W)
   val idAcquire = 1.U(srcBits.W)
 
   /*val putFullData = edge.Put(

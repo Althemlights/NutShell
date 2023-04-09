@@ -1,310 +1,242 @@
-Emu compiled at Mar 21 2023, 14:32:07
-The image is ./ready-to-run/microbench-riscv64-nutshell-test.bin
+Emu compiled at Mar 28 2023, 22:50:37
+The image is ./ready-to-run/access-riscv64-nutshell.bin
 Using simulated 8192MB RAM
 --diff is not given, try to use $(NEMU_HOME)/build/riscv64-nemu-interpreter-so by default
 NemuProxy using /nfs/home/fuwenyi/main-xiaohe/NutShell/../../xiaohe/BNEMU/build/riscv64-nemu-interpreter-so
 The first instruction of core 0 has commited. Difftest enabled. 
-======= Running MicroBench [input *test*] =======[WARNING] difftest store queue overflow
-
-[qsort] Quick sort: * Passed.
-[queen] Queen placement: * Passed.
-[bf] Brainf**k interpreter: [                1041] : [Dcache req] Addr: 8000c308  Cmd: 01  Wdata: 0000000000000000
-[                1066] : [DCache Miss] Addr:8000c308 Tag:8000c AcquireBlock:1 Data:0000000000000000000000000000000000000000000000000000000000000000
-[                1067] : [DCache Miss] Addr:8000c308 Tag:8000c AcquireBlock:1 Data:0000000000000000000000000000000000000000000000000000000000000000
-[                8498] : [Dcache req] Addr: 8000c308  Cmd: 00  Wdata: 0000000000000000
-[                8846] : [Dcache req] Addr: 8000c300  Cmd: 01  Wdata: 000000008000bbe0
-[                8923] : [Dcache req] Addr: 8000c300  Cmd: 00  Wdata: 0000000000000000
-[               12214] : [Dcache req] Addr: 8000c300  Cmd: 00  Wdata: 0000000000000000
-[               13145] : [Dcache req] Addr: 8000c300  Cmd: 00  Wdata: 0000000000000000
-[               20974] : [Dcache req] Addr: 8000c308  Cmd: 00  Wdata: 0000000000000000
-[               50474] : [Dcache req] Addr: 8000c308  Cmd: 00  Wdata: 0000000000000000
-[               50637] : [Probe] Addr: 80008300  Tag:80008  Data:fec42783fef4262300050793f25f70ef5c55051300003517084000ef02010413
-[               50638] : [Probe] Addr: 80008300  Tag:80008  Data:0007c783fe843783fea434230201041300813c23fe010113f95ff0ef00078513
-[               59183] : [Dcache req] Addr: 8000c300  Cmd: 00  Wdata: 0000000000000000
-[               59407] : [Probe] Addr: 8000c300  Tag:8000c  Data:000000000000000000000000000000000000000000000000000000008000bbe0
-[               59408] : [Probe] Addr: 8000c300  Tag:8000c  Data:0000000000000000000000000000000000000000000000000000000000000000
-[               59430] : [Probe] Addr: 80000300  Tag:80000  Data:00070793fd8427031d40006ffc042c23faf42e230005079345d0a0effcf42e23
-[               59431] : [Probe] Addr: 80000300  Tag:80000  Data:0000c797faf4382300e787b388c707130000c7170037979300e787b300479793
-[               61105] : [Probe] Addr: 8000a300  Tag:8000a  Data:0207d7930206979310e7ec63012007930006871bf987869b0007879b0007c783
-[               61106] : [Probe] Addr: 8000a300  Tag:8000a  Data:69478793000017970007871b0007a78300f707b36a8787930000179700279713
-[               61155] : [Dcache req] Addr: 8000c300  Cmd: 01  Wdata: 000000008000bc68
-[               61164] : [DCache Miss] Addr:8000c300 Tag:8000c AcquireBlock:1 Data:000000000000000000000000000000000000000000000000000000008000bbe0
-[               61165] : [DCache Miss] Addr:8000c300 Tag:8000c AcquireBlock:1 Data:0000000000000000000000000000000000000000000000000000000000000000
-[               61176] : [Dcache req] Addr: 8000c300  Cmd: 00  Wdata: 0000000000000000
-[               61500] : [Probe] Addr: 80000300  Tag:80000  Data:00070793fd8427031d40006ffc042c23faf42e230005079345d0a0effcf42e23
-[               61501] : [Probe] Addr: 80000300  Tag:80000  Data:0000c797faf4382300e787b388c707130000c7170037979300e787b300479793
-[               61523] : [Probe] Addr: 80004300  Tag:80004  Data:0007879b0ff7f7930017b79340f707b30187a7830007b7830007879300008797
-[               61524] : [Probe] Addr: 80004300  Tag:80004  Data:0201041300813c23fe0101130000806701010113000134030081308300078513
-[               64888] : [Dcache req] Addr: 8000c300  Cmd: 00  Wdata: 0000000000000000
-[               65098] : [Dcache req] Addr: 8000c308  Cmd: 00  Wdata: 0000000000000000
-[              199856] : [Dcache req] Addr: 8000c308  Cmd: 00  Wdata: 0000000000000000
-[              199993] : [Dcache req] Addr: 8000c300  Cmd: 00  Wdata: 0000000000000000
-[              201742] : [Dcache req] Addr: 8000c300  Cmd: 01  Wdata: 000000008000bcf0
-[              201781] : [Dcache req] Addr: 8000c300  Cmd: 00  Wdata: 0000000000000000
-[              205840] : [Dcache req] Addr: 8000c300  Cmd: 00  Wdata: 0000000000000000
-[              207130] : [Dcache req] Addr: 80015300  Cmd: 01  Wdata: 0000000000000000
-[              207141] : [Probe] Addr: 8000a300  Tag:8000a  Data:0207d7930206979310e7ec63012007930006871bf987869b0007879b0007c783
-[              207142] : [Probe] Addr: 8000a300  Tag:8000a  Data:69478793000017970007871b0007a78300f707b36a8787930000179700279713
-[              207166] : [DCache Miss] Addr:80015300 Tag:80015 AcquireBlock:1 Data:0000000000000000000000000000000000000000000000000000000000000000
-[              207167] : [DCache Miss] Addr:80015300 Tag:80015 AcquireBlock:1 Data:0000000000000000000000000000000000000000000000000000000000000000
-[              207177] : [Dcache req] Addr: 80015308  Cmd: 01  Wdata: 0000000000000000
-[              207186] : [Dcache req] Addr: 80015310  Cmd: 01  Wdata: 0000000000000000
-[              207195] : [Dcache req] Addr: 80015318  Cmd: 01  Wdata: 0000000000000000
-[              207204] : [Dcache req] Addr: 80015320  Cmd: 01  Wdata: 0000000000000000
-[              207213] : [Dcache req] Addr: 80015328  Cmd: 01  Wdata: 0000000000000000
-[              207222] : [Dcache req] Addr: 80015330  Cmd: 01  Wdata: 0000000000000000
-[              207231] : [Dcache req] Addr: 80015338  Cmd: 01  Wdata: 0000000000000000
-[              213794] : [Dcache req] Addr: 80016300  Cmd: 01  Wdata: 0000000000000000
-[              213805] : [Probe] Addr: 80008300  Tag:80008  Data:fec42783fef4262300050793f25f70ef5c55051300003517084000ef02010413
-[              213806] : [Probe] Addr: 80008300  Tag:80008  Data:0007c783fe843783fea434230201041300813c23fe010113f95ff0ef00078513
-[              213843] : [DCache Miss] Addr:80016300 Tag:80016 AcquireBlock:1 Data:0000000000000000000000000000000000000000000000000000000000000000
-[              213844] : [DCache Miss] Addr:80016300 Tag:80016 AcquireBlock:1 Data:0000000000000000000000000000000000000000000000000000000000000000
-[              213854] : [Dcache req] Addr: 80016308  Cmd: 01  Wdata: 0000000000000000
-[              213863] : [Dcache req] Addr: 80016310  Cmd: 01  Wdata: 0000000000000000
-[              213872] : [Dcache req] Addr: 80016318  Cmd: 01  Wdata: 0000000000000000
-[              213881] : [Dcache req] Addr: 80016320  Cmd: 01  Wdata: 0000000000000000
-[              213890] : [Dcache req] Addr: 80016328  Cmd: 01  Wdata: 0000000000000000
-[              213899] : [Dcache req] Addr: 80016330  Cmd: 01  Wdata: 0000000000000000
-[              213908] : [Dcache req] Addr: 80016338  Cmd: 01  Wdata: 0000000000000000
-[              220553] : [Dcache req] Addr: 80017300  Cmd: 01  Wdata: 0000000000000000
-[              220564] : [Probe] Addr: 8000c300  Tag:8000c  Data:000000000000000000000000000000000000000000000000000000008000bcf0
-[              220565] : [Probe] Addr: 8000c300  Tag:8000c  Data:0000000000000000000000000000000000000000000000000000000000000000
-[              220589] : [DCache Miss] Addr:80017300 Tag:80017 AcquireBlock:1 Data:0000000000000000000000000000000000000000000000000000000000000000
-[              220590] : [DCache Miss] Addr:80017300 Tag:80017 AcquireBlock:1 Data:0000000000000000000000000000000000000000000000000000000000000000
-[              220600] : [Dcache req] Addr: 80017308  Cmd: 01  Wdata: 0000000000000000
-[              220609] : [Dcache req] Addr: 80017310  Cmd: 01  Wdata: 0000000000000000
-[              220618] : [Dcache req] Addr: 80017318  Cmd: 01  Wdata: 0000000000000000
-[              220627] : [Dcache req] Addr: 80017320  Cmd: 01  Wdata: 0000000000000000
-[              220636] : [Dcache req] Addr: 80017328  Cmd: 01  Wdata: 0000000000000000
-[              220645] : [Dcache req] Addr: 80017330  Cmd: 01  Wdata: 0000000000000000
-[              220654] : [Dcache req] Addr: 80017338  Cmd: 01  Wdata: 0000000000000000
-[              227646] : [Dcache req] Addr: 80018300  Cmd: 01  Wdata: 0000000000000000
-[              227657] : [Probe] Addr: 80016300  Tag:80016  Data:0000000000000000000000000000000000000000000000000000000000000000
-[              227658] : [Probe] Addr: 80016300  Tag:80016  Data:0000000000000000000000000000000000000000000000000000000000000000
-[              227695] : [DCache Miss] Addr:80018300 Tag:80018 AcquireBlock:1 Data:0000000000000000000000000000000000000000000000000000000000000000
-[              227696] : [DCache Miss] Addr:80018300 Tag:80018 AcquireBlock:1 Data:0000000000000000000000000000000000000000000000000000000000000000
-[              227706] : [Dcache req] Addr: 80018308  Cmd: 01  Wdata: 0000000000000000
-[              227715] : [Dcache req] Addr: 80018310  Cmd: 01  Wdata: 0000000000000000
-[              227724] : [Dcache req] Addr: 80018318  Cmd: 01  Wdata: 0000000000000000
-[              227733] : [Dcache req] Addr: 80018320  Cmd: 01  Wdata: 0000000000000000
-[              227742] : [Dcache req] Addr: 80018328  Cmd: 01  Wdata: 0000000000000000
-[              227751] : [Dcache req] Addr: 80018330  Cmd: 01  Wdata: 0000000000000000
-[              227760] : [Dcache req] Addr: 80018338  Cmd: 01  Wdata: 0000000000000000
-[              233636] : [Dcache req] Addr: 8000c300  Cmd: 00  Wdata: 0000000000000000
-[              233647] : [Probe] Addr: 80017300  Tag:80017  Data:0000000000000000000000000000000000000000000000000000000000000000
-[              233648] : [Probe] Addr: 80017300  Tag:80017  Data:0000000000000000000000000000000000000000000000000000000000000000
-[              233656] : [DCache Miss] Addr:8000c300 Tag:8000c AcquireBlock:1 Data:000000000000000000000000000000000000000000000000000000008000bcf0
-[              233657] : [DCache Miss] Addr:8000c300 Tag:8000c AcquireBlock:1 Data:0000000000000000000000000000000000000000000000000000000000000000
-[              235320] : [Dcache req] Addr: 80019300  Cmd: 01  Wdata: 0000000000000000
-[              235331] : [Probe] Addr: 80018300  Tag:80018  Data:0000000000000000000000000000000000000000000000000000000000000000
-[              235332] : [Probe] Addr: 80018300  Tag:80018  Data:0000000000000000000000000000000000000000000000000000000000000000
-[              235356] : [DCache Miss] Addr:80019300 Tag:80019 AcquireBlock:1 Data:0000000000000000000000000000000000000000000000000000000000000000
-[              235357] : [DCache Miss] Addr:80019300 Tag:80019 AcquireBlock:1 Data:0000000000000000000000000000000000000000000000000000000000000000
-[              235367] : [Dcache req] Addr: 80019308  Cmd: 01  Wdata: 0000000000000000
-[              235376] : [Dcache req] Addr: 80019310  Cmd: 01  Wdata: 0000000000000000
-[              235385] : [Dcache req] Addr: 80019318  Cmd: 01  Wdata: 0000000000000000
-[              235394] : [Dcache req] Addr: 80019320  Cmd: 01  Wdata: 0000000000000000
-[              235403] : [Dcache req] Addr: 80019328  Cmd: 01  Wdata: 0000000000000000
-[              235412] : [Dcache req] Addr: 80019330  Cmd: 01  Wdata: 0000000000000000
-[              235421] : [Dcache req] Addr: 80019338  Cmd: 01  Wdata: 0000000000000000
-[              235773] : [Dcache req] Addr: 8000c300  Cmd: 00  Wdata: 0000000000000000
-[              242723] : [Dcache req] Addr: 8001a300  Cmd: 01  Wdata: 0000000000000000
-[              242734] : [Probe] Addr: 80015300  Tag:80015  Data:0000000000000000000000000000000000000000000000000000000000000000
-[              242735] : [Probe] Addr: 80015300  Tag:80015  Data:0000000000000000000000000000000000000000000000000000000000000000
-[              242779] : [DCache Miss] Addr:8001a300 Tag:8001a AcquireBlock:1 Data:0000000000000000000000000000000000000000000000000000000000000000
-[              242780] : [DCache Miss] Addr:8001a300 Tag:8001a AcquireBlock:1 Data:0000000000000000000000000000000000000000000000000000000000000000
-[              242790] : [Dcache req] Addr: 8001a308  Cmd: 01  Wdata: 0000000000000000
-[              242799] : [Dcache req] Addr: 8001a310  Cmd: 01  Wdata: 0000000000000000
-[              242808] : [Dcache req] Addr: 8001a318  Cmd: 01  Wdata: 0000000000000000
-[              242817] : [Dcache req] Addr: 8001a320  Cmd: 01  Wdata: 0000000000000000
-[              242826] : [Dcache req] Addr: 8001a328  Cmd: 01  Wdata: 0000000000000000
-[              242835] : [Dcache req] Addr: 8001a330  Cmd: 01  Wdata: 0000000000000000
-[              242844] : [Dcache req] Addr: 8001a338  Cmd: 01  Wdata: 0000000000000000
-[              250720] : [Dcache req] Addr: 8001b300  Cmd: 01  Wdata: 0000000000000000
-[              250731] : [Probe] Addr: 8000c300  Tag:8000c  Data:000000000000000000000000000000000000000000000000000000008000bcf0
-[              250732] : [Probe] Addr: 8000c300  Tag:8000c  Data:0000000000000000000000000000000000000000000000000000000000000000
-[              250769] : [DCache Miss] Addr:8001b300 Tag:8001b AcquireBlock:1 Data:0000000000000000000000000000000000000000000000000000000000000000
-[              250770] : [DCache Miss] Addr:8001b300 Tag:8001b AcquireBlock:1 Data:0000000000000000000000000000000000000000000000000000000000000000
-[              250780] : [Dcache req] Addr: 8001b308  Cmd: 01  Wdata: 0000000000000000
-[              250789] : [Dcache req] Addr: 8001b310  Cmd: 01  Wdata: 0000000000000000
-[              250798] : [Dcache req] Addr: 8001b318  Cmd: 01  Wdata: 0000000000000000
-[              250807] : [Dcache req] Addr: 8001b320  Cmd: 01  Wdata: 0000000000000000
-[              250816] : [Dcache req] Addr: 8001b328  Cmd: 01  Wdata: 0000000000000000
-[              250825] : [Dcache req] Addr: 8001b330  Cmd: 01  Wdata: 0000000000000000
-[              250834] : [Dcache req] Addr: 8001b338  Cmd: 01  Wdata: 0000000000000000
-[              251205] : [Dcache req] Addr: 8000c300  Cmd: 00  Wdata: 0000000000000000
-[              251216] : [Probe] Addr: 8001a300  Tag:8001a  Data:0000000000000000000000000000000000000000000000000000000000000000
-[              251217] : [Probe] Addr: 8001a300  Tag:8001a  Data:0000000000000000000000000000000000000000000000000000000000000000
-[              251237] : [DCache Miss] Addr:8000c300 Tag:8000c AcquireBlock:1 Data:000000000000000000000000000000000000000000000000000000008000bcf0
-[              251238] : [DCache Miss] Addr:8000c300 Tag:8000c AcquireBlock:1 Data:0000000000000000000000000000000000000000000000000000000000000000
-[              251483] : [Dcache req] Addr: 8000c300  Cmd: 00  Wdata: 0000000000000000
-[              258554] : [Dcache req] Addr: 8001c300  Cmd: 01  Wdata: 0000000000000000
-[              258565] : [Probe] Addr: 8001b300  Tag:8001b  Data:0000000000000000000000000000000000000000000000000000000000000000
-[              258566] : [Probe] Addr: 8001b300  Tag:8001b  Data:0000000000000000000000000000000000000000000000000000000000000000
-[              258619] : [DCache Miss] Addr:8001c300 Tag:8001c AcquireBlock:1 Data:0000000000000000000000000000000000000000000000000000000000000000
-[              258620] : [DCache Miss] Addr:8001c300 Tag:8001c AcquireBlock:1 Data:0000000000000000000000000000000000000000000000000000000000000000
-[              258630] : [Dcache req] Addr: 8001c308  Cmd: 01  Wdata: 0000000000000000
-[              258639] : [Dcache req] Addr: 8001c310  Cmd: 01  Wdata: 0000000000000000
-[              258648] : [Dcache req] Addr: 8001c318  Cmd: 01  Wdata: 0000000000000000
-[              258657] : [Dcache req] Addr: 8001c320  Cmd: 01  Wdata: 0000000000000000
-[              258666] : [Dcache req] Addr: 8001c328  Cmd: 01  Wdata: 0000000000000000
-[              258675] : [Dcache req] Addr: 8001c330  Cmd: 01  Wdata: 0000000000000000
-[              258684] : [Dcache req] Addr: 8001c338  Cmd: 01  Wdata: 0000000000000000
-[              259135] : [Dcache req] Addr: 8000c300  Cmd: 00  Wdata: 0000000000000000
-[              260420] : [Dcache req] Addr: 8000c308  Cmd: 00  Wdata: 0000000000000000
-[              261297] : [Dcache req] Addr: 8000b308  Cmd: 00  Wdata: 0000000000000000
-[              261308] : [Probe] Addr: 8000c300  Tag:8000c  Data:000000000000000000000000000000000000000000000000000000008000bcf0
-[              261309] : [Probe] Addr: 8000c300  Tag:8000c  Data:0000000000000000000000000000000000000000000000000000000000000000
-[              261362] : [DCache Miss] Addr:8000b308 Tag:8000b AcquireBlock:1 Data:ffff58fcffff58fcffff575cffff5738ffff5780ffff57140000000000000000
-[              261363] : [DCache Miss] Addr:8000b308 Tag:8000b AcquireBlock:1 Data:ffff58fcffff58fcffff58fcffff58fcffff58fcffff58fcffff58fcffff58fc
-[              261766] : [Dcache req] Addr: 8000b30c  Cmd: 00  Wdata: 0000000000000000
-[              262162] : [Dcache req] Addr: 8000b308  Cmd: 00  Wdata: 0000000000000000
-[              262303] : [Dcache req] Addr: 8000b30c  Cmd: 00  Wdata: 0000000000000000
-[              262696] : [Dcache req] Addr: 8000b308  Cmd: 00  Wdata: 0000000000000000
-[              262814] : * Passed.
-[fib] Fibonacci number: * Passed.
-[sieve] Eratosthenes sieve: * Passed.
-[15pz] A* 15-puzzle search: [Dcache req] Addr: 8000b310  Cmd: 00  Wdata: 0000000000000000
-[              262871] : [Dcache req] Addr: 8000b310  Cmd: 00  Wdata: 0000000000000000
-[              262980] : [Dcache req] Addr: 8000b308  Cmd: 00  Wdata: 0000000000000000
-[              263169] : [Dcache req] Addr: 8000b310  Cmd: 00  Wdata: 0000000000000000
-[              263475] : [Dcache req] Addr: 8000b308  Cmd: 00  Wdata: 0000000000000000
-[              263575] : [Dcache req] Addr: 8000b310  Cmd: 00  Wdata: 0000000000000000
-[              263949] : [Dcache req] Addr: 8000b310  Cmd: 00  Wdata: 0000000000000000
-[              264251] : [Dcache req] Addr: 8000b308  Cmd: 00  Wdata: 0000000000000000
-[              264538] : [Dcache req] Addr: 8000b308  Cmd: 00  Wdata: 0000000000000000
-[              264639] : [Dcache req] Addr: 8000b310  Cmd: 00  Wdata: 0000000000000000
-[              265026] : [Dcache req] Addr: 8000b308  Cmd: 00  Wdata: 0000000000000000
-[              265194] : [Dcache req] Addr: 8000b310  Cmd: 00  Wdata: 0000000000000000
-[              265781] : [Dcache req] Addr: 8000b310  Cmd: 00  Wdata: 0000000000000000
-[              266247] : [Dcache req] Addr: 8000b308  Cmd: 00  Wdata: 0000000000000000
-[              266507] : [Dcache req] Addr: 8000b310  Cmd: 00  Wdata: 0000000000000000
-[              266812] : [Dcache req] Addr: 8000b308  Cmd: 00  Wdata: 0000000000000000
-[              266913] : [Dcache req] Addr: 8000b310  Cmd: 00  Wdata: 0000000000000000
-[              267650] : [Dcache req] Addr: 8000b308  Cmd: 00  Wdata: 0000000000000000
-[              267833] : [Dcache req] Addr: 8000b310  Cmd: 00  Wdata: 0000000000000000
-[              268494] : [Dcache req] Addr: 8000b308  Cmd: 00  Wdata: 0000000000000000
-[              268930] : [Dcache req] Addr: 8000b310  Cmd: 00  Wdata: 0000000000000000
-[              270083] : [Dcache req] Addr: 8000b308  Cmd: 00  Wdata: 0000000000000000
-[              270583] : [Dcache req] Addr: 8000b310  Cmd: 00  Wdata: 0000000000000000
-[              270794] : [Dcache req] Addr: 8000b308  Cmd: 00  Wdata: 0000000000000000
-[              271062] : [Dcache req] Addr: 8000b308  Cmd: 00  Wdata: 0000000000000000
-[              271191] : [Dcache req] Addr: 8000b310  Cmd: 00  Wdata: 0000000000000000
-[              271794] : [Dcache req] Addr: 8000b314  Cmd: 00  Wdata: 0000000000000000
-[              595551] : [Dcache req] Addr: 8000c308  Cmd: 00  Wdata: 0000000000000000
-[              595562] : [Probe] Addr: 8000b300  Tag:8000b  Data:ffff58fcffff58fcffff575cffff5738ffff5780ffff57140000000000000000
-[              595563] : [Probe] Addr: 8000b300  Tag:8000b  Data:ffff58fcffff58fcffff58fcffff58fcffff58fcffff58fcffff58fcffff58fc
-[              595571] : [DCache Miss] Addr:8000c308 Tag:8000c AcquireBlock:1 Data:000000000000000000000000000000000000000000000000000000008000bcf0
-[              595572] : [DCache Miss] Addr:8000c308 Tag:8000c AcquireBlock:1 Data:0000000000000000000000000000000000000000000000000000000000000000
-[              596046] : [Dcache req] Addr: 8000c300  Cmd: 00  Wdata: 0000000000000000
-[              596985] : [Probe] Addr: 80000300  Tag:80000  Data:00070793fd8427031d40006ffc042c23faf42e230005079345d0a0effcf42e23
-[              596986] : [Probe] Addr: 80000300  Tag:80000  Data:0000c797faf4382300e787b388c707130000c7170037979300e787b300479793
-[              599001] : [Probe] Addr: 80008300  Tag:80008  Data:fec42783fef4262300050793f25f70ef5c55051300003517084000ef02010413
-[              599002] : [Probe] Addr: 80008300  Tag:80008  Data:0007c783fe843783fea434230201041300813c23fe010113f95ff0ef00078513
-[              599080] : [Dcache req] Addr: 8000c300  Cmd: 01  Wdata: 000000008000bd78
-[              599135] : [Dcache req] Addr: 8000c300  Cmd: 00  Wdata: 0000000000000000
-[              599350] : [Probe] Addr: 8001c300  Tag:8001c  Data:0000000000000000000000000000000000000000000000000000000000000000
-[              599351] : [Probe] Addr: 8001c300  Tag:8001c  Data:0000000000000000000000000000000000000000000000000000000000000000
-[              600022] : [Probe] Addr: 8000c300  Tag:8000c  Data:000000000000000000000000000000000000000000000000000000008000bd78
-[              600023] : [Probe] Addr: 8000c300  Tag:8000c  Data:0000000000000000000000000000000000000000000000000000000000000000
-[              604266] : [Dcache req] Addr: 8000c300  Cmd: 00  Wdata: 0000000000000000
-[              604297] : [Probe] Addr: 80008300  Tag:80008  Data:fec42783fef4262300050793f25f70ef5c55051300003517084000ef02010413
-[              604298] : [Probe] Addr: 80008300  Tag:80008  Data:0007c783fe843783fea434230201041300813c23fe010113f95ff0ef00078513
-[              604306] : [DCache Miss] Addr:8000c300 Tag:8000c AcquireBlock:1 Data:000000000000000000000000000000000000000000000000000000008000bd78
-[              604307] : [DCache Miss] Addr:8000c300 Tag:8000c AcquireBlock:1 Data:0000000000000000000000000000000000000000000000000000000000000000
-[              604542] : [Dcache req] Addr: 8000c300  Cmd: 00  Wdata: 0000000000000000
-[              604736] : [Dcache req] Addr: 8000c300  Cmd: 00  Wdata: 0000000000000000
-[              604836] : [Dcache req] Addr: 8000c300  Cmd: 00  Wdata: 0000000000000000
-[              604938] : [Dcache req] Addr: 8000c300  Cmd: 00  Wdata: 0000000000000000
-[              605350] : [Dcache req] Addr: 8000c308  Cmd: 00  Wdata: 0000000000000000
-[              699588] : [Dcache req] Addr: 8000c308  Cmd: 00  Wdata: 0000000000000000
-[              700002] : [Dcache req] Addr: 8000c300  Cmd: 00  Wdata: 0000000000000000
-[              700357] : [Probe] Addr: 8000c300  Tag:8000c  Data:000000000000000000000000000000000000000000000000000000008000bd78
-[              700358] : [Probe] Addr: 8000c300  Tag:8000c  Data:0000000000000000000000000000000000000000000000000000000000000000
-[              701977] : [Dcache req] Addr: 8000c300  Cmd: 01  Wdata: 000000008000be00
-[              701988] : [Probe] Addr: 80019300  Tag:80019  Data:0000000000000000000000000000000000000000000000000000000000000000
-[              701989] : [Probe] Addr: 80019300  Tag:80019  Data:0000000000000000000000000000000000000000000000000000000000000000
-[              702009] : [DCache Miss] Addr:8000c300 Tag:8000c AcquireBlock:1 Data:000000000000000000000000000000000000000000000000000000008000bd78
-[              702010] : [DCache Miss] Addr:8000c300 Tag:8000c AcquireBlock:1 Data:0000000000000000000000000000000000000000000000000000000000000000
-[              702021] : [Dcache req] Addr: 8000c300  Cmd: 00  Wdata: 0000000000000000
-[              706513] : [Dcache req] Addr: 8000c300  Cmd: 00  Wdata: 0000000000000000
-[              706940] : [Dcache req] Addr: 8000c300  Cmd: 00  Wdata: 0000000000000000
-[              706987] : [Probe] Addr: 8000a300  Tag:8000a  Data:0207d7930206979310e7ec63012007930006871bf987869b0007879b0007c783
-[              706988] : [Probe] Addr: 8000a300  Tag:8000a  Data:69478793000017970007871b0007a78300f707b36a8787930000179700279713
-[              707435] : [Dcache req] Addr: 8000c308  Cmd: 00  Wdata: 0000000000000000
-[              720252] : [Dcache req] Addr: 8000c308  Cmd: 00  Wdata: 0000000000000000
-[              720357] : [Dcache req] Addr: 8000c300  Cmd: 00  Wdata: 0000000000000000
-[              722214] : [Dcache req] Addr: 8000c300  Cmd: 01  Wdata: 000000008000be88
-[              722225] : [Dcache req] Addr: 8000c300  Cmd: 00  Wdata: 0000000000000000
-[              722729] : [Probe] Addr: 8000c300  Tag:8000c  Data:000000000000000000000000000000000000000000000000000000008000bff8
-[              722730] : [Probe] Addr: 8000c300  Tag:8000c  Data:0000000000000000000000000000000000000000000000000000000000000000
-[              726643] : [Dcache req] Addr: 8000c308  Cmd: 00  Wdata: 0000000000000000
-[              726654] : [Probe] Addr: 8000a300  Tag:8000a  Data:0207d7930206979310e7ec63012007930006871bf987869b0007879b0007c783
-[              726655] : [Probe] Addr: 8000a300  Tag:8000a  Data:69478793000017970007871b0007a78300f707b36a8787930000179700279713
-[              726663] : [DCache Miss] Addr:8000c308 Tag:8000c AcquireBlock:1 Data:000000000000000000000000000000000000000000000000000000008000bff8
-[              726664] : [DCache Miss] Addr:8000c308 Tag:8sh: 1: spike-dasm: not found
+[WARNING] difftest store queue overflow
+[                7489] : [Dcache req] Addr: 80003280  Cmd: 01  Wdata: 000001dc000001dc
+[                7514] : [DCache Miss] Addr:80003280 Tag:80003 AcquireBlock:1 Data:0000000000000000000000000000000000000000000000000000000000000000
+[                7515] : [DCache Miss] Addr:80003280 Tag:80003 AcquireBlock:1 Data:0000000000000000000000000000000000000000000000000000000000000000
+[                7530] : [Dcache req] Addr: 80003284  Cmd: 01  Wdata: 000001dd000001dd
+[                7543] : [Dcache req] Addr: 80003288  Cmd: 01  Wdata: 000001de000001de
+[                7556] : [Dcache req] Addr: 8000328c  Cmd: 01  Wdata: 000001df000001df
+[                7569] : [Dcache req] Addr: 80003290  Cmd: 01  Wdata: 000001e0000001e0
+[                7582] : [Dcache req] Addr: 80003294  Cmd: 01  Wdata: 000001e1000001e1
+[                7595] : [Dcache req] Addr: 80003298  Cmd: 01  Wdata: 000001e2000001e2
+[                7608] : [Dcache req] Addr: 8000329c  Cmd: 01  Wdata: 000001e3000001e3
+[                7621] : [Dcache req] Addr: 800032a0  Cmd: 01  Wdata: 000001e4000001e4
+[                7634] : [Dcache req] Addr: 800032a4  Cmd: 01  Wdata: 000001e5000001e5
+[                7647] : [Dcache req] Addr: 800032a8  Cmd: 01  Wdata: 000001e6000001e6
+[                7660] : [Dcache req] Addr: 800032ac  Cmd: 01  Wdata: 000001e7000001e7
+[                7673] : [Dcache req] Addr: 800032b0  Cmd: 01  Wdata: 000001e8000001e8
+[                7686] : [Dcache req] Addr: 800032b4  Cmd: 01  Wdata: 000001e9000001e9
+[                7699] : [Dcache req] Addr: 800032b8  Cmd: 01  Wdata: 000001ea000001ea
+[                7712] : [Dcache req] Addr: 800032bc  Cmd: 01  Wdata: 000001eb000001eb
+[               22593] : [Dcache req] Addr: 80004280  Cmd: 01  Wdata: 000005dc000005dc
+[               22618] : [DCache Miss] Addr:80004280 Tag:80004 AcquireBlock:1 Data:0000000000000000000000000000000000000000000000000000000000000000
+[               22619] : [DCache Miss] Addr:80004280 Tag:80004 AcquireBlock:1 Data:0000000000000000000000000000000000000000000000000000000000000000
+[               22634] : [Dcache req] Addr: 80004284  Cmd: 01  Wdata: 000005dd000005dd
+[               22647] : [Dcache req] Addr: 80004288  Cmd: 01  Wdata: 000005de000005de
+[               22660] : [Dcache req] Addr: 8000428c  Cmd: 01  Wdata: 000005df000005df
+[               22673] : [Dcache req] Addr: 80004290  Cmd: 01  Wdata: 000005e0000005e0
+[               22686] : [Dcache req] Addr: 80004294  Cmd: 01  Wdata: 000005e1000005e1
+[               22699] : [Dcache req] Addr: 80004298  Cmd: 01  Wdata: 000005e2000005e2
+[               22712] : [Dcache req] Addr: 8000429c  Cmd: 01  Wdata: 000005e3000005e3
+[               22725] : [Dcache req] Addr: 800042a0  Cmd: 01  Wdata: 000005e4000005e4
+[               22738] : [Dcache req] Addr: 800042a4  Cmd: 01  Wdata: 000005e5000005e5
+[               22751] : [Dcache req] Addr: 800042a8  Cmd: 01  Wdata: 000005e6000005e6
+[               22764] : [Dcache req] Addr: 800042ac  Cmd: 01  Wdata: 000005e7000005e7
+[               22777] : [Dcache req] Addr: 800042b0  Cmd: 01  Wdata: 000005e8000005e8
+[               22790] : [Dcache req] Addr: 800042b4  Cmd: 01  Wdata: 000005e9000005e9
+[               22803] : [Dcache req] Addr: 800042b8  Cmd: 01  Wdata: 000005ea000005ea
+[               22816] : [Dcache req] Addr: 800042bc  Cmd: 01  Wdata: 000005eb000005eb
+[               37697] : [Dcache req] Addr: 80005280  Cmd: 01  Wdata: 000009dc000009dc
+[               37722] : [DCache Miss] Addr:80005280 Tag:80005 AcquireBlock:1 Data:0000000000000000000000000000000000000000000000000000000000000000
+[               37723] : [DCache Miss] Addr:80005280 Tag:80005 AcquireBlock:1 Data:0000000000000000000000000000000000000000000000000000000000000000
+[               37738] : [Dcache req] Addr: 80005284  Cmd: 01  Wdata: 000009dd000009dd
+[               37751] : [Dcache req] Addr: 80005288  Cmd: 01  Wdata: 000009de000009de
+[               37764] : [Dcache req] Addr: 8000528c  Cmd: 01  Wdata: 000009df000009df
+[               37777] : [Dcache req] Addr: 80005290  Cmd: 01  Wdata: 000009e0000009e0
+[               37790] : [Dcache req] Addr: 80005294  Cmd: 01  Wdata: 000009e1000009e1
+[               37803] : [Dcache req] Addr: 80005298  Cmd: 01  Wdata: 000009e2000009e2
+[               37816] : [Dcache req] Addr: 8000529c  Cmd: 01  Wdata: 000009e3000009e3
+[               37829] : [Dcache req] Addr: 800052a0  Cmd: 01  Wdata: 000009e4000009e4
+[               37842] : [Dcache req] Addr: 800052a4  Cmd: 01  Wdata: 000009e5000009e5
+[               37855] : [Dcache req] Addr: 800052a8  Cmd: 01  Wdata: 000009e6000009e6
+[               37868] : [Dcache req] Addr: 800052ac  Cmd: 01  Wdata: 000009e7000009e7
+[               37881] : [Dcache req] Addr: 800052b0  Cmd: 01  Wdata: 000009e8000009e8
+[               37894] : [Dcache req] Addr: 800052b4  Cmd: 01  Wdata: 000009e9000009e9
+[               37907] : [Dcache req] Addr: 800052b8  Cmd: 01  Wdata: 000009ea000009ea
+[               37920] : [Dcache req] Addr: 800052bc  Cmd: 01  Wdata: 000009eb000009eb
+[               52868] : [Dcache req] Addr: 80006280  Cmd: 01  Wdata: 00000ddc00000ddc
+[               52879] : [Probe] Addr: 80005280  Tag:80005  Data:000009e3000009e2000009e1000009e0000009df000009de000009dd000009dc
+[               52880] : [Probe] Addr: 80005280  Tag:80005  Data:000009eb000009ea000009e9000009e8000009e7000009e6000009e5000009e4
+[               52904] : [DCache Miss] Addr:80006280 Tag:80006 AcquireBlock:1 Data:0000000000000000000000000000000000000000000000000000000000000000
+[               52905] : [DCache Miss] Addr:80006280 Tag:80006 AcquireBlock:1 Data:0000000000000000000000000000000000000000000000000000000000000000
+[               52920] : [Dcache req] Addr: 80006284  Cmd: 01  Wdata: 00000ddd00000ddd
+[               52933] : [Dcache req] Addr: 80006288  Cmd: 01  Wdata: 00000dde00000dde
+[               52946] : [Dcache req] Addr: 8000628c  Cmd: 01  Wdata: 00000ddf00000ddf
+[               52959] : [Dcache req] Addr: 80006290  Cmd: 01  Wdata: 00000de000000de0
+[               52972] : [Dcache req] Addr: 80006294  Cmd: 01  Wdata: 00000de100000de1
+[               52985] : [Dcache req] Addr: 80006298  Cmd: 01  Wdata: 00000de200000de2
+[               52998] : [Dcache req] Addr: 8000629c  Cmd: 01  Wdata: 00000de300000de3
+[               53011] : [Dcache req] Addr: 800062a0  Cmd: 01  Wdata: 00000de400000de4
+[               53024] : [Dcache req] Addr: 800062a4  Cmd: 01  Wdata: 00000de500000de5
+[               53037] : [Dcache req] Addr: 800062a8  Cmd: 01  Wdata: 00000de600000de6
+[               53050] : [Dcache req] Addr: 800062ac  Cmd: 01  Wdata: 00000de700000de7
+[               53063] : [Dcache req] Addr: 800062b0  Cmd: 01  Wdata: 00000de800000de8
+[               53076] : [Dcache req] Addr: 800062b4  Cmd: 01  Wdata: 00000de900000de9
+[               53089] : [Dcache req] Addr: 800062b8  Cmd: 01  Wdata: 00000dea00000dea
+[               53102] : [Dcache req] Addr: 800062bc  Cmd: 01  Wdata: 00000deb00000deb
+[               69755] : [Dcache req] Addr: 80007280  Cmd: 01  Wdata: 000011dc000011dc
+[               69766] : [Probe] Addr: 80004280  Tag:80004  Data:000005e3000005e2000005e1000005e0000005df000005de000005dd000005dc
+[               69767] : [Probe] Addr: 80004280  Tag:80004  Data:000005eb000005ea000005e9000005e8000005e7000005e6000005e5000005e4
+[               69791] : [DCache Miss] Addr:80007280 Tag:80007 AcquireBlock:1 Data:0000000000000000000000000000000000000000000000000000000000000000
+[               69792] : [DCache Miss] Addr:80007280 Tag:80007 AcquireBlock:1 Data:0000000000000000000000000000000000000000000000000000000000000000
+[               69810] : [Dcache req] Addr: 80007284  Cmd: 01  Wdata: 000011dd000011dd
+[               69826] : [Dcache req] Addr: 80007288  Cmd: 01  Wdata: 000011de000011de
+[               69842] : [Dcache req] Addr: 8000728c  Cmd: 01  Wdata: 000011df000011df
+[               69858] : [Dcache req] Addr: 80007290  Cmd: 01  Wdata: 000011e0000011e0
+[               69874] : [Dcache req] Addr: 80007294  Cmd: 01  Wdata: 000011e1000011e1
+[               69890] : [Dcache req] Addr: 80007298  Cmd: 01  Wdata: 000011e2000011e2
+[               69906] : [Dcache req] Addr: 8000729c  Cmd: 01  Wdata: 000011e3000011e3
+[               69922] : [Dcache req] Addr: 800072a0  Cmd: 01  Wdata: 000011e4000011e4
+[               69938] : [Dcache req] Addr: 800072a4  Cmd: 01  Wdata: 000011e5000011e5
+[               69954] : [Dcache req] Addr: 800072a8  Cmd: 01  Wdata: 000011e6000011e6
+[               69970] : [Dcache req] Addr: 800072ac  Cmd: 01  Wdata: 000011e7000011e7
+[               69986] : [Dcache req] Addr: 800072b0  Cmd: 01  Wdata: 000011e8000011e8
+[               70002] : [Dcache req] Addr: 800072b4  Cmd: 01  Wdata: 000011e9000011e9
+[               70018] : [Dcache req] Addr: 800072b8  Cmd: 01  Wdata: 000011ea000011ea
+[               70034] : [Dcache req] Addr: 800072bc  Cmd: 01  Wdata: 000011eb000011eb
+[               88354] : [Dcache req] Addr: 80008280  Cmd: 01  Wdata: 000015dc000015dc
+[               88365] : [Probe] Addr: 80006280  Tag:80006  Data:00000de300000de200000de100000de000000ddf00000dde00000ddd00000ddc
+[               88366] : [Probe] Addr: 80006280  Tag:80006  Data:00000deb00000dea00000de900000de800000de700000de600000de500000de4
+[               88390] : [DCache Miss] Addr:80008280 Tag:80008 AcquireBlock:1 Data:0000000000000000000000000000000000000000000000000000000000000000
+[               88391] : [DCache Miss] Addr:80008280 Tag:80008 AcquireBlock:1 Data:0000000000000000000000000000000000000000000000000000000000000000
+[               88409] : [Dcache req] Addr: 80008284  Cmd: 01  Wdata: 000015dd000015dd
+[               88425] : [Dcache req] Addr: 80008288  Cmd: 01  Wdata: 000015de000015de
+[               88441] : [Dcache req] Addr: 8000828c  Cmd: 01  Wdata: 000015df000015df
+[               88457] : [Dcache req] Addr: 80008290  Cmd: 01  Wdata: 000015e0000015e0
+[               88473] : [Dcache req] Addr: 80008294  Cmd: 01  Wdata: 000015e1000015e1
+[               88489] : [Dcache req] Addr: 80008298  Cmd: 01  Wdata: 000015e2000015e2
+[               88505] : [Dcache req] Addr: 8000829c  Cmd: 01  Wdata: 000015e3000015e3
+[               88521] : [Dcache req] Addr: 800082a0  Cmd: 01  Wdata: 000015e4000015e4
+[               88537] : [Dcache req] Addr: 800082a4  Cmd: 01  Wdata: 000015e5000015e5
+[               88553] : [Dcache req] Addr: 800082a8  Cmd: 01  Wdata: 000015e6000015e6
+[               88569] : [Dcache req] Addr: 800082ac  Cmd: 01  Wdata: 000015e7000015e7
+[               88585] : [Dcache req] Addr: 800082b0  Cmd: 01  Wdata: 000015e8000015e8
+[               88601] : [Dcache req] Addr: 800082b4  Cmd: 01  Wdata: 000015e9000015e9
+[               88617] : [Dcache req] Addr: 800082b8  Cmd: 01  Wdata: 000015ea000015ea
+[               88633] : [Dcache req] Addr: 800082bc  Cmd: 01  Wdata: 000015eb000015eb
+[              107047] : [Dcache req] Addr: 80009280  Cmd: 01  Wdata: 000019dc000019dc
+[              107058] : [Probe] Addr: 80000280  Tag:80000  Data:0000000000000000000000000000000000000000000000000000000000000000
+[              107082] : [DCache Miss] Addr:80009280 Tag:80009 AcquireBlock:1 Data:0000000000000000000000000000000000000000000000000000000000000000
+[              107083] : [DCache Miss] Addr:80009280 Tag:80009 AcquireBlock:1 Data:0000000000000000000000000000000000000000000000000000000000000000
+[              107101] : [Dcache req] Addr: 80009284  Cmd: 01  Wdata: 000019dd000019dd
+[              107117] : [Dcache req] Addr: 80009288  Cmd: 01  Wdata: 000019de000019de
+[              107133] : [Dcache req] Addr: 8000928c  Cmd: 01  Wdata: 000019df000019df
+[              107149] : [Dcache req] Addr: 80009290  Cmd: 01  Wdata: 000019e0000019e0
+[              107165] : [Dcache req] Addr: 80009294  Cmd: 01  Wdata: 000019e1000019e1
+[              107181] : [Dcache req] Addr: 80009298  Cmd: 01  Wdata: 000019e2000019e2
+[              107197] : [Dcache req] Addr: 8000929c  Cmd: 01  Wdata: 000019e3000019e3
+[              107213] : [Dcache req] Addr: 800092a0  Cmd: 01  Wdata: 000019e4000019e4
+[              107229] : [Dcache req] Addr: 800092a4  Cmd: 01  Wdata: 000019e5000019e5
+[              107245] : [Dcache req] Addr: 800092a8  Cmd: 01  Wdata: 000019e6000019e6
+[              107261] : [Dcache req] Addr: 800092ac  Cmd: 01  Wdata: 000019e7000019e7
+[              107277] : [Dcache req] Addr: 800092b0  Cmd: 01  Wdata: 000019e8000019e8
+[              107293] : [Dcache req] Addr: 800092b4  Cmd: 01  Wdata: 000019e9000019e9
+[              107309] : [Dcache req] Addr: 800092b8  Cmd: 01  Wdata: 000019ea000019ea
+[              107325] : [Dcache req] Addr: 800092bc  Cmd: 01  Wdata: 000019eb000019eb
+[              125785] : [Dcache req] Addr: 8000a280  Cmd: 01  Wdata: 00001ddc00001ddc
+[              125787] : [Release] Addr:80003280 Tag:80003 Data:000001e3000001e2000001e1000001e0000001df000001de000001dd000001dc
+[              125788] : [Release] Addr:80003280 Tag:80003 Data:000001eb000001ea000001e9000001e8000001e7000001e6000001e5000001e4
+[              125792] : [DCache Miss] Addr:8000a280 Tag:8000a AcquireBlock:1 Data:0000000000000000000000000000000000000000000000000000000000000000
+[              125814] : [Probe] Addr: 80008280  Tag:80008  Data:000015e3000015e2000015e1000015e0000015df000015de000015dd000015dc
+[              125815] : [Probe] Addr: 80008280  Tag:80008  Data:000015eb000015ea000015e9000015e8000015e7000015e6000015e5000015e4
+[              125839] : [DCache Miss] Addr:8000a280 Tag:8000a AcquireBlock:1 Data:0000000000000000000000000000000000000000000000000000000000000000
+[              125840] : [DCache Miss] Addr:8000a280 Tag:8000a AcquireBlock:1 Data:0000000000000000000000000000000000000000000000000000000000000000
+[              125858] : [Dcache req] Addr: 8000a284  Cmd: 01  Wdata: 00001ddd00001ddd
+[              125874] : [Dcache req] Addr: 8000a288  Cmd: 01  Wdata: 00001dde00001dde
+[              125890] : [Dcache req] Addr: 8000a28c  Cmd: 01  Wdata: 00001ddf00001ddf
+[              125906] : [Dcache req] Addr: 8000a290  Cmd: 01  Wdata: 00001de000001de0
+[              125922] : [Dcache req] Addr: 8000a294  Cmd: 01  Wdata: 00001de100001de1
+[              125938] : [Dcache req] Addr: 8000a298  Cmd: 01  Wdata: 00001de200001de2
+[              125954] : [Dcache req] Addr: 8000a29c  Cmd: 01  Wdata: 00001de300001de3
+[              125970] : [Dcache req] Addr: 8000a2a0  Cmd: 01  Wdata: 00001de400001de4
+[              125986] : [Dcache req] Addr: 8000a2a4  Cmd: 01  Wdata: 00001de500001de5
+[              126002] : [Dcache req] Addr: 8000a2a8  Cmd: 01  Wdata: 00001de600001de6
+[              126018] : [Dcache req] Addr: 8000a2ac  Cmd: 01  Wdata: 00001de700001de7
+[              126034] : [Dcache req] Addr: 8000a2b0  Cmd: 01  Wdata: 00001de800001de8
+[              126050] : [Dcache req] Addr: 8000a2b4  Cmd: 01  Wdata: 00001de900001de9
+[              126066] : [Dcache req] Addr: 8000a2b8  Cmd: 01  Wdata: 00001dea00001dea
+[              126082] : [Dcache req] Addr: 8000a2bc  Cmd: 01  Wdata: 00001deb00001deb
+[              149606] : [Dcache req] Addr: 80003280  Cmd: 00  Wdata: 0000000000000000
+[              149615] : [DCache Miss] Addr:80003280 Tag:80003 AcquireBlock:1 Data:000001e3000001e2000001e1000001e0000001df000001de000001dd000001dc
+[              149616] : [DCache Miss] Addr:80003280 Tag:80003 AcquireBlock:1 Data:000001eb000001ea000001e9000001e8000001e7000001e6000001e5000001e4
+[              149627] : [Dcache req] Addr: 80007280  Cmd: 00  Wdata: 0000000000000000
+[              149644] : [Dcache req] Addr: 80003284  Cmd: 00  Wdata: 0000000000000000
+[              149653] : [Dcache req] Addr: 80007284  Cmd: 00  Wdata: 0000000000000000
+[              149670] : [Dcache req] Addr: 80003288  Cmd: 00  Wdata: 0000000000000000
+[              149679] : [Dcache req] Addr: 80007288  Cmd: 00  Wdata: 0000000000000000
+[              149696] : [Dcache req] Addr: 8000328c  Cmd: 00  Wdata: 0000000000000000
+[              149705] : [Dcache req] Addr: 8000728c  Cmd: 00  Wdata: 0000000000000000
+[              149722] : [Dcache req] Addr: 80003290  Cmd: 00  Wdata: 0000000000000000
+[              149731] : [Dcache req] Addr: 80007290  Cmd: 00  Wdata: 0000000000000000
+[              149748] : [Dcache req] Addr: 80003294  Cmd: 00  Wdata: 0000000000000000
+[              149757] : [Dcache req] Addr: 8000729sh: 1: spike-dasm: not found
 
 ============== Commit Group Trace (Core 0) ==============
-commit group [00]: pc 00800056f4 cmtcnt 1
-commit group [01]: pc 0080001540 cmtcnt 2
-commit group [02]: pc 0080001548 cmtcnt 1 <--
-commit group [03]: pc 0080006f90 cmtcnt 2
-commit group [04]: pc 0080006f98 cmtcnt 2
-commit group [05]: pc 0080006ff4 cmtcnt 1
-commit group [06]: pc 0080006ff8 cmtcnt 1
-commit group [07]: pc 0080006ffc cmtcnt 2
-commit group [08]: pc 0080006f7c cmtcnt 2
-commit group [09]: pc 0080006f84 cmtcnt 2
-commit group [10]: pc 0080007004 cmtcnt 1
-commit group [11]: pc 0080007008 cmtcnt 2
-commit group [12]: pc 0080007010 cmtcnt 1
-commit group [13]: pc 00800056e4 cmtcnt 1
-commit group [14]: pc 00800056e8 cmtcnt 1
-commit group [15]: pc 00800056ec cmtcnt 2
+commit group [00]: pc 0080000150 cmtcnt 2
+commit group [01]: pc 0080000158 cmtcnt 2
+commit group [02]: pc 0080000180 cmtcnt 1
+commit group [03]: pc 0080000184 cmtcnt 1
+commit group [04]: pc 0080000188 cmtcnt 1
+commit group [05]: pc 008000018c cmtcnt 2
+commit group [06]: pc 0080000194 cmtcnt 1
+commit group [07]: pc 0080000198 cmtcnt 2
+commit group [08]: pc 00800000e0 cmtcnt 2
+commit group [09]: pc 00800000e8 cmtcnt 1
+commit group [10]: pc 00800000ec cmtcnt 1
+commit group [11]: pc 00800000f0 cmtcnt 1 <--
+commit group [12]: pc 008000013c cmtcnt 1
+commit group [13]: pc 0080000140 cmtcnt 1
+commit group [14]: pc 0080000144 cmtcnt 1
+commit group [15]: pc 0080000148 cmtcnt 2
 
 ============== Commit Instr Trace ==============
-commit inst [00]: pc 0080001544 inst dc078793 wen 1 dst 0000000f data 000000008000c300
-commit inst [01]: pc 0080001548 inst 0007b783 wen 1 dst 0000000f data 000000008000bff8 <--
-commit inst [02]: pc 0080006fd4 inst 00f707bb wen 1 dst 0000000f data 0000000073a2f800
-commit inst [03]: pc 0080006fd8 inst 0007871b wen 1 dst 0000000e data 0000000073a2f800
-commit inst [04]: pc 0080006fdc inst fd843783 wen 1 dst 0000000f data 0000000080014e38
-commit inst [05]: pc 0080006fe0 inst 00e7aa23 wen 0 dst 00000000 data 0000000080006ff4
-commit inst [06]: pc 0080006fe4 inst fe842783 wen 1 dst 0000000f data 0000000000000004
-commit inst [07]: pc 0080006fe8 inst 0017879b wen 1 dst 0000000f data 0000000000000004
-commit inst [08]: pc 0080006fec inst fef42423 wen 0 dst 00000000 data 0000000080006ff4
-commit inst [09]: pc 0080006ff0 inst fa1ff06f wen 1 dst 00000000 data 0000000080006ff4
-commit inst [10]: pc 0080006f90 inst fe842783 wen 1 dst 0000000f data 0000000000000004
-commit inst [11]: pc 0080006f94 inst 0007871b wen 1 dst 0000000e data 0000000000000004
-commit inst [12]: pc 0080006f98 inst 00300793 wen 1 dst 0000000f data 0000000000000003
-commit inst [13]: pc 0080006f9c inst 04e7cc63 wen 0 dst 00000000 data 0000000080006ff4
-commit inst [14]: pc 0080006ff4 inst fec42783 wen 1 dst 0000000f data 0000000000000003
-commit inst [15]: pc 0080006ff8 inst 0017879b wen 1 dst 0000000f data 0000000000000004
-commit inst [16]: pc 0080006ffc inst fef42623 wen 0 dst 00000000 data 0000000080007004
-commit inst [17]: pc 0080007000 inst f7dff06f wen 1 dst 00000000 data 0000000080007004
-commit inst [18]: pc 0080006f7c inst fec42783 wen 1 dst 0000000f data 0000000000000004
-commit inst [19]: pc 0080006f80 inst 0007871b wen 1 dst 0000000e data 0000000000000004
-commit inst [20]: pc 0080006f84 inst 00300793 wen 1 dst 0000000f data 0000000000000003
-commit inst [21]: pc 0080006f88 inst 06e7ce63 wen 0 dst 00000000 data 0000000080007004
-commit inst [22]: pc 0080007004 inst 00000013 wen 1 dst 00000000 data 0000000000000000
-commit inst [23]: pc 0080007008 inst 02813403 wen 1 dst 00000008 data 0000000080014e20
-commit inst [24]: pc 008000700c inst 03010113 wen 1 dst 00000002 data 0000000080014da0
-commit inst [25]: pc 0080007010 inst 00008067 wen 1 dst 00000000 data 0000000080007014
-commit inst [26]: pc 00800056e4 inst 00000013 wen 1 dst 00000000 data 0000000000000000
-commit inst [27]: pc 00800056e8 inst 07813083 wen 1 dst 00000001 data 0000000080001540
-commit inst [28]: pc 00800056ec inst 07013403 wen 1 dst 00000008 data 0000000080014f30
-commit inst [29]: pc 00800056f0 inst 08010113 wen 1 dst 00000002 data 0000000080014e20
-commit inst [30]: pc 00800056f4 inst 00008067 wen 1 dst 00000000 data 00000000800056f8
-commit inst [31]: pc 0080001540 inst 0000b797 wen 1 dst 0000000f data 000000008000c300
+commit inst [00]: pc 008000018c inst fe842783 wen 1 dst 0000000f data 0000000000001000
+commit inst [01]: pc 0080000190 inst 0007071b wen 1 dst 0000000e data 00000000000005dd
+commit inst [02]: pc 0080000194 inst 0007879b wen 1 dst 0000000f data 0000000000001000
+commit inst [03]: pc 0080000198 inst f4f742e3 wen 0 dst 00000000 data 00000000800000dc
+commit inst [04]: pc 00800000dc inst 00003717 wen 1 dst 0000000e data 00000000800030dc
+commit inst [05]: pc 00800000e0 inst a3470713 wen 1 dst 0000000e data 0000000080002b10
+commit inst [06]: pc 00800000e4 inst fec42783 wen 1 dst 0000000f data 00000000000005dd
+commit inst [07]: pc 00800000e8 inst 00279793 wen 1 dst 0000000f data 0000000000001774
+commit inst [08]: pc 00800000ec inst 00f707b3 wen 1 dst 0000000f data 0000000080004284
+commit inst [09]: pc 00800000f0 inst 0007a703 wen 1 dst 0000000e data 0000000000000000 <--
+commit inst [10]: pc 00800000f4 inst fec42783 wen 1 dst 0000000f data 00000000000005dc
+commit inst [11]: pc 00800000f8 inst 0007879b wen 1 dst 0000000f data 00000000000005dc
+commit inst [12]: pc 00800000fc inst 02e78263 wen 0 dst 00000000 data 00000000800000dc
+commit inst [13]: pc 0080000120 inst fe442703 wen 1 dst 0000000e data 0000000000001000
+commit inst [14]: pc 0080000124 inst fec42783 wen 1 dst 0000000f data 00000000000015dc
+commit inst [15]: pc 0080000128 inst 00f707bb wen 1 dst 0000000f data 00000000000015dc
+commit inst [16]: pc 008000012c inst 0007879b wen 1 dst 0000000f data 00000000000015dc
+commit inst [17]: pc 0080000130 inst 00003717 wen 1 dst 0000000e data 0000000080003130
+commit inst [18]: pc 0080000134 inst 9e070713 wen 1 dst 0000000e data 0000000080002b10
+commit inst [19]: pc 0080000138 inst 00279793 wen 1 dst 0000000f data 0000000000005770
+commit inst [20]: pc 008000013c inst 00f707b3 wen 1 dst 0000000f data 0000000080008280
+commit inst [21]: pc 0080000140 inst 0007a683 wen 1 dst 0000000d data 00000000000015dc
+commit inst [22]: pc 0080000144 inst fe442703 wen 1 dst 0000000e data 0000000000001000
+commit inst [23]: pc 0080000148 inst fec42783 wen 1 dst 0000000f data 00000000000015dc
+commit inst [24]: pc 008000014c inst 00f707bb wen 1 dst 0000000f data 00000000000015dc
+commit inst [25]: pc 0080000150 inst 0007879b wen 1 dst 0000000f data 00000000000015dc
+commit inst [26]: pc 0080000154 inst 00068713 wen 1 dst 0000000e data 00000000000015dc
+commit inst [27]: pc 0080000158 inst 02f70263 wen 0 dst 00000000 data 00000000800000dc
+commit inst [28]: pc 008000017c inst fec42783 wen 1 dst 0000000f data 00000000000005dc
+commit inst [29]: pc 0080000180 inst 0017879b wen 1 dst 0000000f data 00000000000005dd
+commit inst [30]: pc 0080000184 inst fef42623 wen 0 dst 00000000 data 00000000800000dc
+commit inst [31]: pc 0080000188 inst fec42703 wen 1 dst 0000000e data 00000000000005dd
 
 ==============  REF Regs  ==============
-  $0: 0x0000000000000000   ra: 0x0000000080001540   sp: 0x0000000080014e20   gp: 0x4017ce0e03c9040a 
-  tp: 0xad171256cddbf78f   t0: 0xbd1e9aabf9c7f4e1   t1: 0x71563686541019f6   t2: 0x181c01b6d77b5af9 
-  s0: 0x0000000080014f30   s1: 0x305264bb478bbd9c   a0: 0x0000000080014e38   a1: 0x0000000000000000 
-  a2: 0x0000000080014e38   a3: 0x0000000000000003   a4: 0x0000000000000004   a5: 0x000000008000be88 
-  a6: 0xf7c3d9ca98c72b13   a7: 0xd16f0a6ddeb0c7f2   s2: 0x4edcbdd1b7317caf   s3: 0x5e5c72c257c54a90 
-  s4: 0x47a4b5a3c7d3ea80   s5: 0xac502bc8a92bc627   s6: 0x3620846eafc87e9f   s7: 0xe54ce523b9ef0639 
-  s8: 0x5dbcbd7115e91084   s9: 0x05be1358283393fd  s10: 0xba43895f0c63d8d2  s11: 0x0a9c9b28984ac277 
-  t3: 0xafd84f6abd04c93f   t4: 0xdd590bac27ad4d6a   t5: 0xf30b1a6dfc1ee2dd   t6: 0xe14400ec28de100a 
+  $0: 0x0000000000000000   ra: 0x0000000080000248   sp: 0x0000000080012fc0   gp: 0x7281df2e6e3d4759 
+  tp: 0x507706b92ec6ce97   t0: 0x1504250518868aa0   t1: 0x6e264ebd091451e6   t2: 0xa36decbc5f322438 
+  s0: 0x0000000080012fe0   s1: 0xa75a970f33e20b18   a0: 0x0000000080002825   a1: 0x0000000000000003 
+  a2: 0xeb5f610b9693fc8b   a3: 0x00000000000015dc   a4: 0x00000000000005dd   a5: 0x0000000080004284 
+  a6: 0x3f20a097f700e1b0   a7: 0x1efd4e4b27336843   s2: 0x116be0ad734db8d3   s3: 0x39eb0b2e46856696 
+  s4: 0x851dadc63c7c8c23   s5: 0x307df5c4eee97fa1   s6: 0x7a911e93e93bce50   s7: 0xf7efc02e52c4cf03 
+  s8: 0x9774636d65078b75   s9: 0xb9541c9102e89ecb  s10: 0x5fe4ce8868bffdba  s11: 0x839e2ec7472579a4 
+  t3: 0x8176d2fd934364fd   t4: 0x5ccef5ea1a46d9de   t5: 0x61db99401ce7123c   t6: 0xf2cd982bff390ad5 
  ft0: 0x0000000000000000  ft1: 0x0000000000000000  ft2: 0x0000000000000000  ft3: 0x0000000000000000 
  ft4: 0x0000000000000000  ft5: 0x0000000000000000  ft6: 0x0000000000000000  ft7: 0x0000000000000000 
  fs0: 0x0000000000000000  fs1: 0x0000000000000000  fa0: 0x0000000000000000  fa1: 0x0000000000000000 
@@ -313,7 +245,7 @@ commit inst [31]: pc 0080001540 inst 0000b797 wen 1 dst 0000000f data 0000000080
  fs4: 0x0000000000000000  fs5: 0x0000000000000000  fs6: 0x0000000000000000  fs7: 0x0000000000000000 
  fs8: 0x0000000000000000  fs9: 0x0000000000000000 fs10: 0x0000000000000000 fs11: 0x0000000000000000 
  ft8: 0x0000000000000000  ft9: 0x0000000000000000 ft10: 0x0000000000000000 ft11: 0x0000000000000000 
-pc: 0x000000008000154c mstatus: 0x0000000000000000 mcause: 0x0000000000000000 mepc: 0x0000000000000000
+pc: 0x00000000800000f4 mstatus: 0x0000000000000000 mcause: 0x0000000000000000 mepc: 0x0000000000000000
                        sstatus: 0x0000000000000000 scause: 0x0000000000000000 sepc: 0x0000000000000000
 satp: 0x0000000000000000
 mip: 0x0000000000000000 mie: 0x0000000000000000 mscratch: 0x0000000000000000 sscratch: 0x0000000000000000
@@ -329,11 +261,430 @@ privilege mode:3  pmp: below
 12: cfg:0x00 addr:0x0000000000000000|13: cfg:0x00 addr:0x0000000000000000
 14: cfg:0x00 addr:0x0000000000000000|15: cfg:0x00 addr:0x0000000000000000
 priviledgeMode: 3
-     a5 different at pc = 0x0080001548, right= 0x000000008000be88, wrong = 0x000000008000bff8
-Core 0: ABORT at pc = 0x80001548
-total guest instructions = 737,249
-instrCnt = 737,249, cycleCnt = 731,114, IPC = 1.008391
-Seed=0 Guest cycle spent: 731,117 (this will be different from cycleCnt if emu loads a snapshot)
-Host time spent: 50,557ms
-000c AcquireBlock:1 Data:0000000000000000000000000000000000000000000000000000000000000000
-[              731110] : [Dcache req] Addr: 8000c300  Cmd: 00  Wdata: 0000000000000000
+     a4 different at pc = 0x00800000f0, right= 0x00000000000005dd, wrong = 0x0000000000000000
+Core 0: ABORT at pc = 0x800000f0
+total guest instructions = 195,561
+instrCnt = 195,561, cycleCnt = 179,109, IPC = 1.091855
+Seed=0 Guest cycle spent: 179,112 (this will be different from cycleCnt if emu loads a snapshot)
+Host time spent: 12,482ms
+4  Cmd: 00  Wdata: 0000000000000000
+[              149774] : [Dcache req] Addr: 80003298  Cmd: 00  Wdata: 0000000000000000
+[              149783] : [Dcache req] Addr: 80007298  Cmd: 00  Wdata: 0000000000000000
+[              149800] : [Dcache req] Addr: 8000329c  Cmd: 00  Wdata: 0000000000000000
+[              149809] : [Dcache req] Addr: 8000729c  Cmd: 00  Wdata: 0000000000000000
+[              149826] : [Dcache req] Addr: 800032a0  Cmd: 00  Wdata: 0000000000000000
+[              149835] : [Dcache req] Addr: 800072a0  Cmd: 00  Wdata: 0000000000000000
+[              149852] : [Dcache req] Addr: 800032a4  Cmd: 00  Wdata: 0000000000000000
+[              149861] : [Dcache req] Addr: 800072a4  Cmd: 00  Wdata: 0000000000000000
+[              149878] : [Dcache req] Addr: 800032a8  Cmd: 00  Wdata: 0000000000000000
+[              149887] : [Dcache req] Addr: 800072a8  Cmd: 00  Wdata: 0000000000000000
+[              149904] : [Dcache req] Addr: 800032ac  Cmd: 00  Wdata: 0000000000000000
+[              149913] : [Dcache req] Addr: 800072ac  Cmd: 00  Wdata: 0000000000000000
+[              149930] : [Dcache req] Addr: 800032b0  Cmd: 00  Wdata: 0000000000000000
+[              149939] : [Dcache req] Addr: 800072b0  Cmd: 00  Wdata: 0000000000000000
+[              149956] : [Dcache req] Addr: 800032b4  Cmd: 00  Wdata: 0000000000000000
+[              149965] : [Dcache req] Addr: 800072b4  Cmd: 00  Wdata: 0000000000000000
+[              149982] : [Dcache req] Addr: 800032b8  Cmd: 00  Wdata: 0000000000000000
+[              149991] : [Dcache req] Addr: 800072b8  Cmd: 00  Wdata: 0000000000000000
+[              150008] : [Dcache req] Addr: 800032bc  Cmd: 00  Wdata: 0000000000000000
+[              150017] : [Dcache req] Addr: 800072bc  Cmd: 00  Wdata: 0000000000000000
+[              178966] : [Dcache req] Addr: 80004280  Cmd: 00  Wdata: 0000000000000000
+[              178968] : [Release] Addr:80009280 Tag:80009 Data:000019e3000019e2000019e1000019e0000019df000019de000019dd000019dc
+[              178969] : [Release] Addr:80009280 Tag:80009 Data:000019eb000019ea000019e9000019e8000019e7000019e6000019e5000019e4
+[              178973] : [DCache Miss] Addr:80004280 Tag:80004 AcquireBlock:1 Data:000015d3000015d2000015d1000015d0000015cf000015ce000015cd000015cc
+[              178981] : [DCache Miss] Addr:80004280 Tag:80004 AcquireBlock:1 Data:000005e3000005e2000005e1000005e0000005df000005de000005dd000005dc
+[              178982] : [DCache Miss] Addr:80004280 Tag:80004 AcquireBlock:1 Data:000005eb000005ea000005e9000005e8000005e7000005e6000005e5000005e4
+[              178993] : [Dcache req] Addr: 80008280  Cmd: 00  Wdata: 0000000000000000
+[              178995] : [Release] Addr:8000a280 Tag:8000a Data:00001de300001de200001de100001de000001ddf00001dde00001ddd00001ddc
+[              178996] : [Release] Addr:8000a280 Tag:8000a Data:00001deb00001dea00001de900001de800001de700001de600001de500001de4
+[              179000] : [DCache Miss] Addr:80008280 Tag:80008 AcquireBlock:1 Data:000015d3000015d2000015d1000015d0000015cf000015ce000015cd000015cc
+[              179022] : [Probe] Addr: 80004280  Tag:80004  Data:00001db300001db200001db100001db000001daf00001dae00001dad00001dac
+[              179042] : [DCache Miss] Addr:80008280 Tag:80008 AcquireBlock:1 Data:000015e3000015e2000015e1000015e0000015df000015de000015dd000015dc
+[              179043] : [DCache Miss] Addr:80008280 Tag:80008 AcquireBlock:1 Data:000015eb000015ea000015e9000015e8000015e7000015e6000015e5000015e4
+[              179062] : [Dcache req] Addr: 80004284  Cmd: 00  Wdata: 0000000000000000
+[              179102] : [DCache Miss] Addr:80004284 Tag:80004 AcquireBlock:1 Data:0000000000000000000000000000000000000000000000000000000000000000
+[              179103] : [DCache Miss] Addr:80004284 Tag:80004 AcquireBlock:1 Data:0000000000000000000000000000000000000000000000000000000000000000
+
+
+The image is ./ready-to-run/access-riscv64-nutshell.bin
+Using simulated 8192MB RAM
+--diff is not given, try to use $(NEMU_HOME)/build/riscv64-nemu-interpreter-so by default
+NemuProxy using /nfs/home/fuwenyi/main-xiaohe/NutShell/../../xiaohe/BNEMU/build/riscv64-nemu-interpreter-so
+The first instruction of core 0 has commited. Difftest enabled. 
+[WARNING] difftest store queue overflow
+[               21415] : [Dcache req] Addr: 80004140  Cmd: 01  Wdata: 0000058c0000058c
+[               21440] : [DCache Miss] Addr:80004140 Tag:40002 AcquireBlock:1 Data:0000000000000000000000000000000000000000000000000000000000000000
+[               21441] : [DCache Miss] Addr:80004140 Tag:40002 AcquireBlock:1 Data:0000000000000000000000000000000000000000000000000000000000000000
+[               21456] : [Dcache req] Addr: 80004144  Cmd: 01  Wdata: 0000058d0000058d
+[               21469] : [Dcache req] Addr: 80004148  Cmd: 01  Wdata: 0000058e0000058e
+[               21482] : [Dcache req] Addr: 8000414c  Cmd: 01  Wdata: 0000058f0000058f
+[               21495] : [Dcache req] Addr: 80004150  Cmd: 01  Wdata: 0000059000000590
+[               21508] : [Dcache req] Addr: 80004154  Cmd: 01  Wdata: 0000059100000591
+[               21521] : [Dcache req] Addr: 80004158  Cmd: 01  Wdata: 0000059200000592
+[               21534] : [Dcache req] Addr: 8000415c  Cmd: 01  Wdata: 0000059300000593
+[               21547] : [Dcache req] Addr: 80004160  Cmd: 01  Wdata: 0000059400000594
+[               21560] : [Dcache req] Addr: 80004164  Cmd: 01  Wdata: 0000059500000595
+[               21573] : [Dcache req] Addr: 80004168  Cmd: 01  Wdata: 0000059600000596
+[               21586] : [Dcache req] Addr: 8000416c  Cmd: 01  Wdata: 0000059700000597
+[               21599] : [Dcache req] Addr: 80004170  Cmd: 01  Wdata: 0000059800000598
+[               21612] : [Dcache req] Addr: 80004174  Cmd: 01  Wdata: 0000059900000599
+[               21625] : [Dcache req] Addr: 80004178  Cmd: 01  Wdata: 0000059a0000059a
+[               21638] : [Dcache req] Addr: 8000417c  Cmd: 01  Wdata: 0000059b0000059b
+[               51623] : [Dcache req] Addr: 80006140  Cmd: 01  Wdata: 00000d8c00000d8c
+[               51648] : [DCache Miss] Addr:80006140 Tag:40003 AcquireBlock:1 Data:0000000000000000000000000000000000000000000000000000000000000000
+[               51649] : [DCache Miss] Addr:80006140 Tag:40003 AcquireBlock:1 Data:0000000000000000000000000000000000000000000000000000000000000000
+[               51664] : [Dcache req] Addr: 80006144  Cmd: 01  Wdata: 00000d8d00000d8d
+[               51677] : [Dcache req] Addr: 80006148  Cmd: 01  Wdata: 00000d8e00000d8e
+[               51690] : [Dcache req] Addr: 8000614c  Cmd: 01  Wdata: 00000d8f00000d8f
+[               51703] : [Dcache req] Addr: 80006150  Cmd: 01  Wdata: 00000d9000000d90
+[               51716] : [Dcache req] Addr: 80006154  Cmd: 01  Wdata: 00000d9100000d91
+[               51729] : [Dcache req] Addr: 80006158  Cmd: 01  Wdata: 00000d9200000d92
+[               51742] : [Dcache req] Addr: 8000615c  Cmd: 01  Wdata: 00000d9300000d93
+[               51755] : [Dcache req] Addr: 80006160  Cmd: 01  Wdata: 00000d9400000d94
+[               51768] : [Dcache req] Addr: 80006164  Cmd: 01  Wdata: 00000d9500000d95
+[               51781] : [Dcache req] Addr: 80006168  Cmd: 01  Wdata: 00000d9600000d96
+[               51794] : [Dcache req] Addr: 8000616c  Cmd: 01  Wdata: 00000d9700000d97
+[               51807] : [Dcache req] Addr: 80006170  Cmd: 01  Wdata: 00000d9800000d98
+[               51820] : [Dcache req] Addr: 80006174  Cmd: 01  Wdata: 00000d9900000d99
+[               51833] : [Dcache req] Addr: 80006178  Cmd: 01  Wdata: 00000d9a00000d9a
+[               51846] : [Dcache req] Addr: 8000617c  Cmd: 01  Wdata: 00000d9b00000d9b
+[               86178] : [Dcache req] Addr: 80008140  Cmd: 01  Wdata: 0000158c0000158c
+[               86203] : [DCache Miss] Addr:80008140 Tag:40004 AcquireBlock:1 Data:0000000000000000000000000000000000000000000000000000000000000000
+[               86204] : [DCache Miss] Addr:80008140 Tag:40004 AcquireBlock:1 Data:0000000000000000000000000000000000000000000000000000000000000000
+[               86222] : [Dcache req] Addr: 80008144  Cmd: 01  Wdata: 0000158d0000158d
+[               86238] : [Dcache req] Addr: 80008148  Cmd: 01  Wdata: 0000158e0000158e
+[               86254] : [Dcache req] Addr: 8000814c  Cmd: 01  Wdata: 0000158f0000158f
+[               86270] : [Dcache req] Addr: 80008150  Cmd: 01  Wdata: 0000159000001590
+[               86286] : [Dcache req] Addr: 80008154  Cmd: 01  Wdata: 0000159100001591
+[               86302] : [Dcache req] Addr: 80008158  Cmd: 01  Wdata: 0000159200001592
+[               86318] : [Dcache req] Addr: 8000815c  Cmd: 01  Wdata: 0000159300001593
+[               86334] : [Dcache req] Addr: 80008160  Cmd: 01  Wdata: 0000159400001594
+[               86350] : [Dcache req] Addr: 80008164  Cmd: 01  Wdata: 0000159500001595
+[               86366] : [Dcache req] Addr: 80008168  Cmd: 01  Wdata: 0000159600001596
+[               86382] : [Dcache req] Addr: 8000816c  Cmd: 01  Wdata: 0000159700001597
+[               86398] : [Dcache req] Addr: 80008170  Cmd: 01  Wdata: 0000159800001598
+[               86414] : [Dcache req] Addr: 80008174  Cmd: 01  Wdata: 0000159900001599
+[               86430] : [Dcache req] Addr: 80008178  Cmd: 01  Wdata: 0000159a0000159a
+[               86446] : [Dcache req] Addr: 8000817c  Cmd: 01  Wdata: 0000159b0000159b
+[              122765] : [Dcache req] Addr: 8000a140  Cmd: 01  Wdata: 00001d8c00001d8c
+[              122790] : [DCache Miss] Addr:8000a140 Tag:40005 AcquireBlock:1 Data:0000000000000000000000000000000000000000000000000000000000000000
+[              122791] : [DCache Miss] Addr:8000a140 Tag:40005 AcquireBlock:1 Data:0000000000000000000000000000000000000000000000000000000000000000
+[              122809] : [Dcache req] Addr: 8000a144  Cmd: 01  Wdata: 00001d8d00001d8d
+[              122825] : [Dcache req] Addr: 8000a148  Cmd: 01  Wdata: 00001d8e00001d8e
+[              122841] : [Dcache req] Addr: 8000a14c  Cmd: 01  Wdata: 00001d8f00001d8f
+[              122857] : [Dcache req] Addr: 8000a150  Cmd: 01  Wdata: 00001d9000001d90
+[              122873] : [Dcache req] Addr: 8000a154  Cmd: 01  Wdata: 00001d9100001d91
+[              122889] : [Dcache req] Addr: 8000a158  Cmd: 01  Wdata: 00001d9200001d92
+[              122905] : [Dcache req] Addr: 8000a15c  Cmd: 01  Wdata: 00001d9300001d93
+[              122921] : [Dcache req] Addr: 8000a160  Cmd: 01  Wdata: 00001d9400001d94
+[              122937] : [Dcache req] Addr: 8000a164  Cmd: 01  Wdata: 00001d9500001d95
+[              122953] : [Dcache req] Addr: 8000a168  Cmd: 01  Wdata: 00001d9600001d96
+[              122969] : [Dcache req] Addr: 8000a16c  Cmd: 01  Wdata: 00001d9700001d97
+[              122985] : [Dcache req] Addr: 8000a170  Cmd: 01  Wdata: 00001d9800001d98
+[              123001] : [Dcache req] Addr: 8000a174  Cmd: 01  Wdata: 00001d9900001d99
+[              123017] : [Dcache req] Addr: 8000a178  Cmd: 01  Wdata: 00001d9a00001d9a
+[              123033] : [Dcache req] Addr: 8000a17c  Cmd: 01  Wdata: 00001d9b00001d9b
+[              134291] : [Probe] Addr: 80006140  Tag:40003  Data:00000d9300000d9200000d9100000d9000000d8f00000d8e00000d8d00000d8c
+[              134292] : [Probe] Addr: 80006140  Tag:40003  Data:00000d9b00000d9a00000d9900000d9800000d9700000d9600000d9500000d94
+[              134314] : [Probe] Addr: 8000a140  Tag:40005  Data:00001d9300001d9200001d9100001d9000001d8f00001d8e00001d8d00001d8c
+[              134315] : [Probe] Addr: 8000a140  Tag:40005  Data:00001d9b00001d9a00001d9900001d9800001d9700001d9600001d9500001d94
+[              171503] : [Dcache req] Addr: 80004140  Cmd: 00  Wdata: 0000000000000000
+[              171512] : [Dcache req] Addr: 80008140  Cmd: 00  Wdata: 0000000000000000
+[              171529] : [Dcache req] Addr: 80004144  Cmd: 00  Wdata: 0000000000000000
+[              171538] : [Dcache req] Addr: 80008144  Cmd: 00  Wdata: 0000000000000000
+[              171555] : [Dcache req] Addr: 80004148  Cmd: 00  Wdata: 0000000000000000
+[              171564] : [Dcache req] Addr: 80008148  Cmd: 00  Wdata: 0000000000000000
+[              171581] : [Dcache req] Addr: 8000414c  Cmd: 00  Wdata: 0000000000000000
+[              171590] : [Dcache req] Addr: 8000814c  Cmd: 00  Wdata: 0000000000000000
+[              171607] : [Dcache req] Addr: 80004150  Cmd: 00  Wdata: 0000000000000000
+[              171616] : [Dcache req] Addr: 80008150  Cmd: 00  Wdata: 0000000000000000
+[              171633] : [Dcache req] Addr: 800041sh: 1: spike-dasm: not found
+
+============== Commit Group Trace (Core 0) ==============
+commit group [00]: pc 0080000150 cmtcnt 2
+commit group [01]: pc 0080000158 cmtcnt 2
+commit group [02]: pc 0080000180 cmtcnt 1
+commit group [03]: pc 0080000184 cmtcnt 1
+commit group [04]: pc 0080000188 cmtcnt 1
+commit group [05]: pc 008000018c cmtcnt 2
+commit group [06]: pc 0080000194 cmtcnt 1
+commit group [07]: pc 0080000198 cmtcnt 2
+commit group [08]: pc 00800000e0 cmtcnt 2
+commit group [09]: pc 00800000e8 cmtcnt 1
+commit group [10]: pc 00800000ec cmtcnt 1
+commit group [11]: pc 00800000f0 cmtcnt 1 <--
+commit group [12]: pc 008000013c cmtcnt 1
+commit group [13]: pc 0080000140 cmtcnt 1
+commit group [14]: pc 0080000144 cmtcnt 1
+commit group [15]: pc 0080000148 cmtcnt 2
+
+============== Commit Instr Trace ==============
+commit inst [00]: pc 008000018c inst fe842783 wen 1 dst 0000000f data 0000000000001000
+commit inst [01]: pc 0080000190 inst 0007071b wen 1 dst 0000000e data 0000000000000d8d
+commit inst [02]: pc 0080000194 inst 0007879b wen 1 dst 0000000f data 0000000000001000
+commit inst [03]: pc 0080000198 inst f4f742e3 wen 0 dst 00000000 data 00000000800000dc
+commit inst [04]: pc 00800000dc inst 00003717 wen 1 dst 0000000e data 00000000800030dc
+commit inst [05]: pc 00800000e0 inst a3470713 wen 1 dst 0000000e data 0000000080002b10
+commit inst [06]: pc 00800000e4 inst fec42783 wen 1 dst 0000000f data 0000000000000d8d
+commit inst [07]: pc 00800000e8 inst 00279793 wen 1 dst 0000000f data 0000000000003634
+commit inst [08]: pc 00800000ec inst 00f707b3 wen 1 dst 0000000f data 0000000080006144
+commit inst [09]: pc 00800000f0 inst 0007a703 wen 1 dst 0000000e data 0000000000000000 <--
+commit inst [10]: pc 00800000f4 inst fec42783 wen 1 dst 0000000f data 0000000000000d8c
+commit inst [11]: pc 00800000f8 inst 0007879b wen 1 dst 0000000f data 0000000000000d8c
+commit inst [12]: pc 00800000fc inst 02e78263 wen 0 dst 00000000 data 00000000800000dc
+commit inst [13]: pc 0080000120 inst fe442703 wen 1 dst 0000000e data 0000000000001000
+commit inst [14]: pc 0080000124 inst fec42783 wen 1 dst 0000000f data 0000000000001d8c
+commit inst [15]: pc 0080000128 inst 00f707bb wen 1 dst 0000000f data 0000000000001d8c
+commit inst [16]: pc 008000012c inst 0007879b wen 1 dst 0000000f data 0000000000001d8c
+commit inst [17]: pc 0080000130 inst 00003717 wen 1 dst 0000000e data 0000000080003130
+commit inst [18]: pc 0080000134 inst 9e070713 wen 1 dst 0000000e data 0000000080002b10
+commit inst [19]: pc 0080000138 inst 00279793 wen 1 dst 0000000f data 0000000000007630
+commit inst [20]: pc 008000013c inst 00f707b3 wen 1 dst 0000000f data 000000008000a140
+commit inst [21]: pc 0080000140 inst 0007a683 wen 1 dst 0000000d data 0000000000001d8c
+commit inst [22]: pc 0080000144 inst fe442703 wen 1 dst 0000000e data 0000000000001000
+commit inst [23]: pc 0080000148 inst fec42783 wen 1 dst 0000000f data 0000000000001d8c
+commit inst [24]: pc 008000014c inst 00f707bb wen 1 dst 0000000f data 0000000000001d8c
+commit inst [25]: pc 0080000150 inst 0007879b wen 1 dst 0000000f data 0000000000001d8c
+commit inst [26]: pc 0080000154 inst 00068713 wen 1 dst 0000000e data 0000000000001d8c
+commit inst [27]: pc 0080000158 inst 02f70263 wen 0 dst 00000000 data 00000000800000dc
+commit inst [28]: pc 008000017c inst fec42783 wen 1 dst 0000000f data 0000000000000d8c
+commit inst [29]: pc 0080000180 inst 0017879b wen 1 dst 0000000f data 0000000000000d8d
+commit inst [30]: pc 0080000184 inst fef42623 wen 0 dst 00000000 data 00000000800000dc
+commit inst [31]: pc 0080000188 inst fec42703 wen 1 dst 0000000e data 0000000000000d8d
+
+==============  REF Regs  ==============
+  $0: 0x0000000000000000   ra: 0x0000000080000248   sp: 0x0000000080012fc0   gp: 0x7281df2e6e3d4759 
+  tp: 0x507706b92ec6ce97   t0: 0x1504250518868aa0   t1: 0x6e264ebd091451e6   t2: 0xa36decbc5f322438 
+  s0: 0x0000000080012fe0   s1: 0xa75a970f33e20b18   a0: 0x0000000080002825   a1: 0x0000000000000003 
+  a2: 0xeb5f610b9693fc8b   a3: 0x0000000000001d8c   a4: 0x0000000000000d8d   a5: 0x0000000080006144 
+  a6: 0x3f20a097f700e1b0   a7: 0x1efd4e4b27336843   s2: 0x116be0ad734db8d3   s3: 0x39eb0b2e46856696 
+  s4: 0x851dadc63c7c8c23   s5: 0x307df5c4eee97fa1   s6: 0x7a911e93e93bce50   s7: 0xf7efc02e52c4cf03 
+  s8: 0x9774636d65078b75   s9: 0xb9541c9102e89ecb  s10: 0x5fe4ce8868bffdba  s11: 0x839e2ec7472579a4 
+  t3: 0x8176d2fd934364fd   t4: 0x5ccef5ea1a46d9de   t5: 0x61db99401ce7123c   t6: 0xf2cd982bff390ad5 
+ ft0: 0x0000000000000000  ft1: 0x0000000000000000  ft2: 0x0000000000000000  ft3: 0x0000000000000000 
+ ft4: 0x0000000000000000  ft5: 0x0000000000000000  ft6: 0x0000000000000000  ft7: 0x0000000000000000 
+ fs0: 0x0000000000000000  fs1: 0x0000000000000000  fa0: 0x0000000000000000  fa1: 0x0000000000000000 
+ fa2: 0x0000000000000000  fa3: 0x0000000000000000  fa4: 0x0000000000000000  fa5: 0x0000000000000000 
+ fa6: 0x0000000000000000  fa7: 0x0000000000000000  fs2: 0x0000000000000000  fs3: 0x0000000000000000 
+ fs4: 0x0000000000000000  fs5: 0x0000000000000000  fs6: 0x0000000000000000  fs7: 0x0000000000000000 
+ fs8: 0x0000000000000000  fs9: 0x0000000000000000 fs10: 0x0000000000000000 fs11: 0x0000000000000000 
+ ft8: 0x0000000000000000  ft9: 0x0000000000000000 ft10: 0x0000000000000000 ft11: 0x0000000000000000 
+pc: 0x00000000800000f4 mstatus: 0x0000000000000000 mcause: 0x0000000000000000 mepc: 0x0000000000000000
+                       sstatus: 0x0000000000000000 scause: 0x0000000000000000 sepc: 0x0000000000000000
+satp: 0x0000000000000000
+mip: 0x0000000000000000 mie: 0x0000000000000000 mscratch: 0x0000000000000000 sscratch: 0x0000000000000000
+mideleg: 0x0000000000000000 medeleg: 0x0000000000000000
+mtval: 0x0000000000000000 stval: 0x0000000000000000 mtvec: 0x0000000000000000 stvec: 0x0000000000000000
+privilege mode:3  pmp: below
+ 0: cfg:0x00 addr:0x0000000000000000| 1: cfg:0x00 addr:0x0000000000000000
+ 2: cfg:0x00 addr:0x0000000000000000| 3: cfg:0x00 addr:0x0000000000000000
+ 4: cfg:0x00 addr:0x0000000000000000| 5: cfg:0x00 addr:0x0000000000000000
+ 6: cfg:0x00 addr:0x0000000000000000| 7: cfg:0x00 addr:0x0000000000000000
+ 8: cfg:0x00 addr:0x0000000000000000| 9: cfg:0x00 addr:0x0000000000000000
+10: cfg:0x00 addr:0x0000000000000000|11: cfg:0x00 addr:0x0000000000000000
+12: cfg:0x00 addr:0x0000000000000000|13: cfg:0x00 addr:0x0000000000000000
+14: cfg:0x00 addr:0x0000000000000000|15: cfg:0x00 addr:0x0000000000000000
+priviledgeMode: 3
+     a4 different at pc = 0x00800000f0, right= 0x0000000000000d8d, wrong = 0x0000000000000000
+Core 0: ABORT at pc = 0x800000f0
+total guest instructions = 258,537
+instrCnt = 258,537, cycleCnt = 226,033, IPC = 1.143802
+Seed=0 Guest cycle spent: 226,036 (this will be different from cycleCnt if emu loads a snapshot)
+Host time spent: 16,776ms
+54  Cmd: 00  Wdata: 0000000000000000
+[              171642] : [Dcache req] Addr: 80008154  Cmd: 00  Wdata: 0000000000000000
+[              171659] : [Dcache req] Addr: 80004158  Cmd: 00  Wdata: 0000000000000000
+[              171668] : [Dcache req] Addr: 80008158  Cmd: 00  Wdata: 0000000000000000
+[              171685] : [Dcache req] Addr: 8000415c  Cmd: 00  Wdata: 0000000000000000
+[              171694] : [Dcache req] Addr: 8000815c  Cmd: 00  Wdata: 0000000000000000
+[              171711] : [Dcache req] Addr: 80004160  Cmd: 00  Wdata: 0000000000000000
+[              171720] : [Dcache req] Addr: 80008160  Cmd: 00  Wdata: 0000000000000000
+[              171737] : [Dcache req] Addr: 80004164  Cmd: 00  Wdata: 0000000000000000
+[              171746] : [Dcache req] Addr: 80008164  Cmd: 00  Wdata: 0000000000000000
+[              171763] : [Dcache req] Addr: 80004168  Cmd: 00  Wdata: 0000000000000000
+[              171772] : [Dcache req] Addr: 80008168  Cmd: 00  Wdata: 0000000000000000
+[              171789] : [Dcache req] Addr: 8000416c  Cmd: 00  Wdata: 0000000000000000
+[              171798] : [Dcache req] Addr: 8000816c  Cmd: 00  Wdata: 0000000000000000
+[              171815] : [Dcache req] Addr: 80004170  Cmd: 00  Wdata: 0000000000000000
+[              171824] : [Dcache req] Addr: 80008170  Cmd: 00  Wdata: 0000000000000000
+[              171841] : [Dcache req] Addr: 80004174  Cmd: 00  Wdata: 0000000000000000
+[              171850] : [Dcache req] Addr: 80008174  Cmd: 00  Wdata: 0000000000000000
+[              171867] : [Dcache req] Addr: 80004178  Cmd: 00  Wdata: 0000000000000000
+[              171876] : [Dcache req] Addr: 80008178  Cmd: 00  Wdata: 0000000000000000
+[              171893] : [Dcache req] Addr: 8000417c  Cmd: 00  Wdata: 0000000000000000
+[              171902] : [Dcache req] Addr: 8000817c  Cmd: 00  Wdata: 0000000000000000
+[              225883] : [Dcache req] Addr: 80006140  Cmd: 00  Wdata: 0000000000000000
+[              225892] : [DCache Miss] Addr:80006140 Tag:40003 AcquireBlock:1 Data:00000d9300000d9200000d9100000d9000000d8f00000d8e00000d8d00000d8c
+[              225893] : [DCache Miss] Addr:80006140 Tag:40003 AcquireBlock:1 Data:00000d9b00000d9a00000d9900000d9800000d9700000d9600000d9500000d94
+[              225904] : [Dcache req] Addr: 8000a140  Cmd: 00  Wdata: 0000000000000000
+[              225915] : [Probe] Addr: 80006140  Tag:40003  Data:00000d7300000d7200000d7100000d7000000d6f00000d6e00000d6d00000d6c
+[              225953] : [DCache Miss] Addr:8000a140 Tag:40005 AcquireBlock:1 Data:00001d9300001d9200001d9100001d9000001d8f00001d8e00001d8d00001d8c
+[              225954] : [DCache Miss] Addr:8000a140 Tag:40005 AcquireBlock:1 Data:00001d9b00001d9a00001d9900001d9800001d9700001d9600001d9500001d94
+[              225973] : [Dcache req] Addr: 80006144  Cmd: 00  Wdata: 0000000000000000
+[              225984] : [Probe] Addr: 8000a140  Tag:40005  Data:00001d7300001d7200001d7100001d7000001d6f00001d6e00001d6d00001d6c
+[              226006] : [Probe] Addr: 80008140  Tag:40004  Data:000015930000159200001591000015900000158f0000158e0000158d0000158c
+[              226007] : [Probe] Addr: 80008140  Tag:40004  Data:0000159b0000159a000015990000159800001597000015960000159500001594
+[              226026] : [DCache Miss] Addr:80006144 Tag:40003 AcquireBlock:1 Data:0000000000000000000000000000000000000000000000000000000000000000
+[              226027] : [DCache Miss] Addr:80006144 Tag:40003 AcquireBlock:1 Data:0000000000000000000000000000000000000000000000000000000000000000
+
+
+
+
+
+
+fuwenyi@open02:~/main-xiaohe/NutShell$ ./build/emu -i ./ready-to-run/coremark-mt-riscv64-nutshell.bin
+Emu compiled at Apr  7 2023, 22:28:03
+The image is ./ready-to-run/coremark-mt-riscv64-nutshell.bin
+Using simulated 8192MB RAM
+--diff is not given, try to use $(NEMU_HOME)/build/riscv64-wukong-interpreter-dual-so by default
+NemuProxy using /nfs/home/fuwenyi/main-xiaohe/NutShell/../../xiaohe/BNEMU/build/riscv64-wukong-interpreter-dual-so
+NemuProxy using /nfs/home/fuwenyi/main-xiaohe/NutShell/../../xiaohe/BNEMU/build/riscv64-wukong-interpreter-dual-so
+The first instruction of core 0 has commited. Difftest enabled. 
+The first instruction of core 1 has commited. Difftest enabled. 
+---[DIFF Core0] This load instruction gets rectified!
+---    ltype: 0x2 paddr: 0x8000879c wen: 0x1 wdst: 0xf wdata: 0x1 pc: 0x8000481c
+---    golden: 0x0  original: 0x0
+---[DIFF Core1] This load instruction gets rectified!
+---    ltype: 0x5 paddr: 0x80010fbe wen: 0x1 wdst: 0xf wdata: 0x1 pc: 0x8000122c
+---    golden: 0x0  original: 0x0
+sh: 1: spike-dasm: not found
+
+============== Commit Group Trace (Core 1) ==============
+commit group [00]: pc 0080001218 cmtcnt 1
+commit group [01]: pc 008000121c cmtcnt 2
+commit group [02]: pc 0080001224 cmtcnt 1
+commit group [03]: pc 0080001228 cmtcnt 1
+commit group [04]: pc 008000122c cmtcnt 2 <--
+commit group [05]: pc 00800011e0 cmtcnt 2
+commit group [06]: pc 00800011e8 cmtcnt 1
+commit group [07]: pc 00800011ec cmtcnt 1
+commit group [08]: pc 00800011f0 cmtcnt 2
+commit group [09]: pc 0080001238 cmtcnt 2
+commit group [10]: pc 0080001240 cmtcnt 2
+commit group [11]: pc 00800011f8 cmtcnt 2
+commit group [12]: pc 0080001200 cmtcnt 2
+commit group [13]: pc 0080001208 cmtcnt 1
+commit group [14]: pc 008000120c cmtcnt 2
+commit group [15]: pc 0080001214 cmtcnt 1
+
+============== Commit Instr Trace ==============
+commit inst [00]: pc 00800011dc inst fc843783 wen 1 dst 0000000f data 0000000080007fb8
+commit inst [01]: pc 00800011e0 inst f2f43c23 wen 0 dst 00000000 data 00000000800039a0
+commit inst [02]: pc 00800011e4 inst 7d000793 wen 1 dst 0000000f data 00000000000007d0
+commit inst [03]: pc 00800011e8 inst f4f42c23 wen 0 dst 00000000 data 00000000800039a0
+commit inst [04]: pc 00800011ec inst f8041c23 wen 0 dst 00000000 data 00000000800039a0
+commit inst [05]: pc 00800011f0 inst fc041f23 wen 0 dst 00000000 data 00000000800011f8
+commit inst [06]: pc 00800011f4 inst 0440006f wen 1 dst 00000000 data 00000000800011f8
+commit inst [07]: pc 0080001238 inst fde45783 wen 1 dst 0000000f data 0000000000000000
+commit inst [08]: pc 008000123c inst 0007871b wen 1 dst 0000000e data 0000000000000000
+commit inst [09]: pc 0080001240 inst 00200793 wen 1 dst 0000000f data 0000000000000002
+commit inst [10]: pc 0080001244 inst fae7fae3 wen 0 dst 00000000 data 00000000800011f8
+commit inst [11]: pc 00800011f8 inst fde45783 wen 1 dst 0000000f data 0000000000000000
+commit inst [12]: pc 00800011fc inst 0007879b wen 1 dst 0000000f data 0000000000000000
+commit inst [13]: pc 0080001200 inst 00100713 wen 1 dst 0000000e data 0000000000000001
+commit inst [14]: pc 0080001204 inst 00f717bb wen 1 dst 0000000f data 0000000000000001
+commit inst [15]: pc 0080001208 inst 0007879b wen 1 dst 0000000f data 0000000000000001
+commit inst [16]: pc 008000120c inst 0007871b wen 1 dst 0000000e data 0000000000000001
+commit inst [17]: pc 0080001210 inst f6042783 wen 1 dst 0000000f data 0000000000000007
+commit inst [18]: pc 0080001214 inst 00f777b3 wen 1 dst 0000000f data 0000000000000001
+commit inst [19]: pc 0080001218 inst 0007879b wen 1 dst 0000000f data 0000000000000001
+commit inst [20]: pc 008000121c inst 00078863 wen 0 dst 00000000 data 00000000800011f8
+commit inst [21]: pc 0080001220 inst fda45783 wen 1 dst 0000000f data 0000000000000000
+commit inst [22]: pc 0080001224 inst 0017879b wen 1 dst 0000000f data 0000000000000001
+commit inst [23]: pc 0080001228 inst fcf41d23 wen 0 dst 00000000 data 00000000800011f8
+commit inst [24]: pc 008000122c inst fde45783 wen 1 dst 0000000f data 0000000000000001
+commit inst [25]: pc 0080001230 inst 0017879b wen 1 dst 0000000f data 0000000000000001 <--
+commit inst [26]: pc 0080001184 inst f3441783 wen 1 dst 0000000f data 0000000000000066
+commit inst [27]: pc 0080001188 inst 00079a63 wen 0 dst 00000000 data 00000000800039a0
+commit inst [28]: pc 008000119c inst f3041783 wen 1 dst 0000000f data 0000000000000000
+commit inst [29]: pc 00800011a0 inst 0007871b wen 1 dst 0000000e data 0000000000000000
+commit inst [30]: pc 00800011a4 inst 00100793 wen 1 dst 0000000f data 0000000000000001
+commit inst [31]: pc 00800011a8 inst 02f71a63 wen 0 dst 00000000 data 00000000800039a0
+
+==============  REF Regs  ==============
+  $0: 0x0000000000000000   ra: 0x0000000080001158   sp: 0x0000000080010f10   gp: 0x4a5db59a2abad8eb 
+  tp: 0x35143c329ee57966   t0: 0x0000000000000001   t1: 0xd689232bec1c3d73   t2: 0xb2d4298df213816f 
+  s0: 0x0000000080010fe0   s1: 0xd610358ddd802cc2   a0: 0x0000000000000000   a1: 0x0000000080010f8c 
+  a2: 0x0000000080010f80   a3: 0x0000000080010f80   a4: 0x0000000000000001   a5: 0x0000000000000002 
+  a6: 0xad3c0c272dea9d7f   a7: 0x230b4a4524735a0a   s2: 0x34559cc784ebf91f   s3: 0xa17bab03857d8c5e 
+  s4: 0x85d34eabca62e1a6   s5: 0xeb095dc18718368c   s6: 0x423b1e8d04df994d   s7: 0xda1b8497129c9cd7 
+  s8: 0x6195631ef3f895a8   s9: 0x60d46baa10308d25  s10: 0x8f0ed5ba512c49cb  s11: 0x6ae5c00a303b530c 
+  t3: 0x2e69066272727b9a   t4: 0xb9abec06f829ad71   t5: 0x4225ba23137d1312   t6: 0x54f2453263c10ec3 
+ ft0: 0x0000000000000000  ft1: 0x0000000000000000  ft2: 0x0000000000000000  ft3: 0x0000000000000000 
+ ft4: 0x0000000000000000  ft5: 0x0000000000000000  ft6: 0x0000000000000000  ft7: 0x0000000000000000 
+ fs0: 0x0000000000000000  fs1: 0x0000000000000000  fa0: 0x0000000000000000  fa1: 0x0000000000000000 
+ fa2: 0x0000000000000000  fa3: 0x0000000000000000  fa4: 0x0000000000000000  fa5: 0x0000000000000000 
+ fa6: 0x0000000000000000  fa7: 0x0000000000000000  fs2: 0x0000000000000000  fs3: 0x0000000000000000 
+ fs4: 0x0000000000000000  fs5: 0x0000000000000000  fs6: 0x0000000000000000  fs7: 0x0000000000000000 
+ fs8: 0x0000000000000000  fs9: 0x0000000000000000 fs10: 0x0000000000000000 fs11: 0x0000000000000000 
+ ft8: 0x0000000000000000  ft9: 0x0000000000000000 ft10: 0x0000000000000000 ft11: 0x0000000000000000 
+pc: 0x0000000080001234 mstatus: 0x0000000000000000 mcause: 0x0000000000000000 mepc: 0x0000000000000000
+                       sstatus: 0x0000000000000000 scause: 0x0000000000000000 sepc: 0x0000000000000000
+satp: 0x0000000000000000
+mip: 0x0000000000000000 mie: 0x0000000000000000 mscratch: 0x0000000000000000 sscratch: 0x0000000000000000
+mideleg: 0x0000000000000000 medeleg: 0x0000000000000000
+mtval: 0x0000000000000000 stval: 0x0000000000000000 mtvec: 0x0000000000000000 stvec: 0x0000000000000000
+privilege mode:3  pmp: below
+ 0: cfg:0x00 addr:0x0000000000000000| 1: cfg:0x00 addr:0x0000000000000000
+ 2: cfg:0x00 addr:0x0000000000000000| 3: cfg:0x00 addr:0x0000000000000000
+ 4: cfg:0x00 addr:0x0000000000000000| 5: cfg:0x00 addr:0x0000000000000000
+ 6: cfg:0x00 addr:0x0000000000000000| 7: cfg:0x00 addr:0x0000000000000000
+ 8: cfg:0x00 addr:0x0000000000000000| 9: cfg:0x00 addr:0x0000000000000000
+10: cfg:0x00 addr:0x0000000000000000|11: cfg:0x00 addr:0x0000000000000000
+12: cfg:0x00 addr:0x0000000000000000|13: cfg:0x00 addr:0x0000000000000000
+14: cfg:0x00 addr:0x0000000000000000|15: cfg:0x00 addr:0x0000000000000000
+priviledgeMode: 3
+     a5 different at pc = 0x008000122c, right= 0x0000000000000002, wrong = 0x0000000000000001
+Core 0: ABORT at pc = 0x80001154
+total guest instructions = 933
+instrCnt = 933, cycleCnt = 1,950, IPC = 0.478462
+Core 1: ABORT at pc = 0x8000122c
+total guest instructions = 312
+instrCnt = 312, cycleCnt = 1,460, IPC = 0.213699
+Seed=0 Guest cycle spent: 1,953 (this will be different from cycleCnt if emu loads a snapshot)
+Host time spent: 285ms
+[                 169] : csr write: pc 008000000c addr f14 rdata 0000000000000000 wdata 0000000000000000 func 02
+[                 169] : [MST] time                  169 pc 008000000c mstatus 0000000000000000 mideleg 0000000000000000 medeleg 0000000000000000 mode 3
+[                 264] : csr write: pc 00800047cc addr f14 rdata 0000000000000000 wdata 0000000000000000 func 02
+[                 264] : [MST] time                  264 pc 00800047cc mstatus 0000000000000000 mideleg 0000000000000000 medeleg 0000000000000000 mode 3
+[                 396] : [Dcache req] Addr: 8000cfb8  Cmd: 00  Wdata: 0000000000000000
+[                 421] : [DCache Miss] Addr:8000cfb8 Tag:40006 AcquireBlock:1 Data:0000000000000000000000000000000000000000000000000000000000000000
+[                 422] : [DCache Miss] Addr:8000cfb8 Tag:40006 AcquireBlock:1 Data:0000000000000000000000000000000000000000000000000000000000000000
+[                 425] : [Dcache req] Addr: 8000cfb7  Cmd: 00  Wdata: 0000000000000000
+[                 428] : [Dcache req] Addr: 8000cfb8  Cmd: 01  Wdata: 000000004060000c
+[                 429] : [Dcache req] Addr: 8000cfb7  Cmd: 01  Wdata: 0303030303030303
+[                 180] : csr write: pc 008000000c addr f14 rdata 0000000000000001 wdata 0000000000000001 func 02
+[                 180] : [MST] time                  180 pc 008000000c mstatus 0000000000000000 mideleg 0000000000000000 medeleg 0000000000000000 mode 3
+[                 325] : csr write: pc 00800047cc addr f14 rdata 0000000000000001 wdata 0000000000000001 func 02
+[                 325] : [MST] time                  325 pc 00800047cc mstatus 0000000000000000 mideleg 0000000000000000 medeleg 0000000000000000 mode 3
+[                 545] : [Dcache req] Addr: 80010f8c  Cmd: 01  Wdata: 0000000000000000
+[                 571] : [DCache Miss] Addr:80010f8c Tag:40008 AcquireBlock:1 Data:0000000000000000000000000000000000000000000000000000000000000000
+[                 572] : [DCache Miss] Addr:80010f8c Tag:40008 AcquireBlock:1 Data:0000000000000000000000000000000000000000000000000000000000000000
+[                 575] : [Dcache req] Addr: 80010fb8  Cmd: 01  Wdata: 000000000000ffff
+[                 576] : [Dcache req] Addr: 80010fb6  Cmd: 01  Wdata: 0000000000000000
+[                 577] : [Dcache req] Addr: 80010f9a  Cmd: 01  Wdata: 0000000000000000
+[                 578] : [Dcache req] Addr: 80010fa8  Cmd: 01  Wdata: 00000000800077e8
+[                1111] : [Dcache req] Addr: 8000cf8c  Cmd: 01  Wdata: 0000000000000000
+[                1112] : [Dcache req] Addr: 8000cfbc  Cmd: 01  Wdata: 0000000000000000
+[                 622] : csr write: pc 0080001024 addr f14 rdata 0000000000000001 wdata 0000000000000001 func 02
+[                 622] : [MST] time                  622 pc 0080001024 mstatus 0000000000000000 mideleg 0000000000000000 medeleg 0000000000000000 mode 3
+[                1113] : [Dcache req] Addr: 8000cfba  Cmd: 01  Wdata: 0000000000000000
+[                1114] : [Dcache req] Addr: 8000cfb8  Cmd: 01  Wdata: ffffffffffffffff
+[                1115] : [Dcache req] Addr: 8000cfb6  Cmd: 01  Wdata: 0000000000000000
+[                1116] : [Dcache req] Addr: 8000cf9a  Cmd: 01  Wdata: 0000000000000000
+[                1118] : [Dcache req] Addr: 8000cfa8  Cmd: 01  Wdata: 00000000800077e8
+[                 687] : [Dcache req] Addr: 80010f94  Cmd: 00  Wdata: 0000000000000000
+[                 689] : [Dcache req] Addr: 80010f94  Cmd: 01  Wdata: 0000000100000001
+[                 694] : [Dcache req] Addr: 80010fa8  Cmd: 01  Wdata: 0000000080007fb8
+[                1205] : csr write: pc 0080001024 addr f14 rdata 0000000000000000 wdata 0000000000000000 func 02
+[                1205] : [MST] time                 1205 pc 0080001024 mstatus 0000000000000000 mideleg 0000000000000000 medeleg 0000000000000000 mode 3
+[                1272] : [Dcache req] Addr: 8000cf94  Cmd: 00  Wdata: 0000000000000000
+[                1274] : [Dcache req] Addr: 8000cf94  Cmd: 01  Wdata: 0000000000000000
+[                1372] : [Dcache req] Addr: 80010fa8  Cmd: 00  Wdata: 0000000000000000
+[                1379] : [Dcache req] Addr: 80010fbe  Cmd: 01  Wdata: 0000000000000000
+[                1408] : [Dcache req] Addr: 80010fbe  Cmd: 00  Wdata: 0000000000000000
+[                1446] : [Dcache req] Addr: 80010fbe  Cmd: 00  Wdata: 0000000000000000
+[                1452] : [Dcache req] Addr: 80010fba  Cmd: 00  Wdata: 0000000000000000
+[                1456] : [Dcache req] Addr: 80010fbe  Cmd: 00  Wdata: 0000000000000000
+[                1458] : [Dcache req] Addr: 80010fba  Cmd: 01  Wdata: 0001000100010001
+[                1459] : [Dcache req] Addr: 80010fbe  Cmd: 00  Wdata: 0000000000000000

@@ -19,7 +19,7 @@ class Probe(edge: TLEdgeOut)(implicit val p: Parameters) extends DCacheModule {
     val metaWriteBus = CacheMetaArrayWriteBus()
     val tagReadBus = CacheTagArrayReadBus()
     val dataReadBus = Vec(sramNum, CacheDataArrayReadBus())
-    val probeVictim = new ProbeVictimIO
+    val relConcurrency = Flipped(new ReleaseConcurrencyIO)
   })
 
   def ProbeReq = new Bundle {
@@ -31,7 +31,7 @@ class Probe(edge: TLEdgeOut)(implicit val p: Parameters) extends DCacheModule {
   }
 
   // translate to inner req
-  val needData = io.mem_probe.bits.data(0)
+  //val needData = io.mem_probe.bits.data(0)
   val req = io.mem_probe.bits
 
   //reg for req
@@ -50,22 +50,20 @@ class Probe(edge: TLEdgeOut)(implicit val p: Parameters) extends DCacheModule {
   val tagWay = io.tagReadBus.resp.data
 
   //hit and select coh
-  //val waymask = VecInit(tagWay.map(t => (t.tag === addr.tag))).asUInt
+  //Probe maybe Miss
   val waymask = VecInit((tagWay zip metaWay).map{case (t, m) => (m.coh.asTypeOf(new ClientMetadata).isValid() && (t.tag === addr.tag))}).asUInt
-  val coh = Mux1H(waymask, metaWay).coh.asTypeOf(new ClientMetadata)
-  //val (probe_has_dirty_data, probe_shrink_param, probe_new_coh) = coh.onProbe(reqReg.param)
-  val (_, probe_shrink_param, probe_new_coh) = coh.onProbe(reqReg.param)
-  val probe_has_dirty_data = true.B
-
-  io.probeVictim.index := addr.index
-  io.probeVictim.victimWay := waymask
-  io.probeVictim.valid := state === s_probePB
+  //val coh = Mux1H(waymask, metaWay).coh.asTypeOf(new ClientMetadata)
+  val coh = Mux(waymask.asUInt === 0.U, ClientMetadata.onReset, Mux1H(waymask, metaWay).coh.asTypeOf(new ClientMetadata))
+  val (probe_has_dirty_data, probe_shrink_param, probe_new_coh) = coh.onProbe(reqReg.param)
+  //needData Bits or probe_has_dirty_data
+  val needData = reqReg.data(0) || probe_has_dirty_data
 
   //refill_count代表c线上refill到第几个了，读应该比它早一拍，比如它在refill第n个时应该读第n+1个
   val (_, _, release_done, refill_count) = edge.count(io.mem_probeAck)
   val count = WireInit(0.U((WordIndexBits - BankBits).W))
   count := Mux(state === s_probePB, 0.U, refill_count + 1.U)
-  val probe_block = state === s_probePB && probe_has_dirty_data
+  //val probe_block = state === s_probePB && probe_has_dirty_data
+  val probe_block = state === s_probePB && needData
   for (w <- 0 until sramNum) {
     io.dataReadBus(w).apply(valid = probe_block || state === s_probeAD, setIdx = Cat(addr.index, count))
   }
@@ -81,8 +79,13 @@ class Probe(edge: TLEdgeOut)(implicit val p: Parameters) extends DCacheModule {
   )
   io.metaWriteBus.req <> metaWriteBus.req
 
-  io.mem_probe.ready := Mux(state === s_idle, true.B, false.B) 
-  io.mem_probeAck.valid := Mux(state === s_probeA || state === s_probeAD, true.B, false.B)
+  /** Release concurrency limit:
+  *   Once the Release is issued, the master should not issue ProbeAcks, Acquires, or further Release until its recieves a ReleaseAck from the slave.
+  */
+  val conLimit = io.mem_probe.valid && io.mem_probe.bits.address === io.relConcurrency.addr && io.relConcurrency.relValid 
+
+  io.mem_probe.ready := Mux(state === s_idle && !conLimit, true.B, false.B) 
+  io.mem_probeAck.valid := Mux((state === s_probeA || state === s_probeAD) && !conLimit, true.B, false.B)
 
   val probeResponse = edge.ProbeAck(
     fromSource = reqReg.source,
@@ -104,12 +107,13 @@ class Probe(edge: TLEdgeOut)(implicit val p: Parameters) extends DCacheModule {
   switch(state) {
     //request for meta and data(id needdata)
     is(s_idle) {
-      when(io.mem_probe.valid) {
+      when(io.mem_probe.fire) {
         state := s_probePB
       }
     }
     is (s_probePB) {
-      state := Mux(probe_has_dirty_data, s_probeAD, s_probeA)
+      //state := Mux(probe_has_dirty_data, s_probeAD, s_probeA)
+      state := Mux(needData, s_probeAD, s_probeA)
     }
     is (s_probeA) {
       when(io.mem_probeAck.fire) {
@@ -123,5 +127,5 @@ class Probe(edge: TLEdgeOut)(implicit val p: Parameters) extends DCacheModule {
     }
   }
 
-  //Debug(io.mem_probeAck.fire && addr.index === 0xC.U, "[Probe] Addr: %x  Tag:%x  Data:%x\n", addr.asUInt, addr.tag, dataRead.asUInt)
+  Debug(io.mem_probeAck.fire && addr.index === 0x3e.U, "[Probe] Addr: %x  Tag:%x  Data:%x\n", addr.asUInt, addr.tag, dataRead.asUInt)
 }
