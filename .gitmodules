@@ -1,6 +1,6 @@
 [submodule "difftest"]
 	path = difftest
-	url = https://github.com/AugustusWillisWang/difftest.git
+	url = https://github.com/FuWenyi/wukong_difftest.git
 
 [submodule "rocket-chip"]
 	path = rocket-chip
