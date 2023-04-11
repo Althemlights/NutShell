@@ -3,6 +3,7 @@ package SSDbackend
 import bus.simplebus.SimpleBusUC
 import chisel3.{Mux, _}
 import chisel3.util._
+import _root_.utils.{LookupTree}
 import difftest._
 import utils.{PipelineConnect, SignExt}
 import nutcore._
@@ -822,6 +823,37 @@ class SSDbackend extends NutCoreModule with hasBypassConst {
     dt_ld1.io.paddr := RegNext(pipeOut(9).bits.rs1 + pipeOut(9).bits.offset)
     dt_ld1.io.fuType := 0xC.U
     dt_ld1.io.opType := RegNext(pipeOut(9).bits.fuOpType)
+
+    //StoreBuffer
+    //granularity is 64B
+    def align64_address(addr:UInt): UInt = {
+      addr & ("hfffffffffffffffff".U << 6.U)
+    }
+    def gen64BWmask(addr: UInt, sizeEncode: UInt): UInt = {
+      LookupTree(sizeEncode, List(
+        "b00".U -> 0x1.U, //0001 << addr(2:0)
+        "b01".U -> 0x3.U, //0011
+        "b10".U -> 0xf.U, //1111
+        "b11".U -> 0xff.U //11111111
+      )) << addr(5, 0)
+    }
+    val dt_sb0 = Module(new DifftestSbufferEvent)
+    dt_sb0.io.clock := clock
+    dt_sb0.io.coreid := hartid
+    dt_sb0.io.index := 1.U
+    dt_sb0.io.sbufferResp := RegNext(pipeOut(8).fire && !pipeInvalid(10) && pipeOut(8).bits.pc =/= 0.U && BypassPkt(8).decodePkt.store) && !RegNext(SSDcoretrap)
+    dt_sb0.io.sbufferAddr := RegNext(align64_address(pipeOut(8).bits.rs1 + pipeOut(8).bits.offset))
+    dt_sb0.io.sbufferData := RegNext((pipeOut(8).bits.rs2 << (((pipeOut(8).bits.rs1 + pipeOut(8).bits.offset)(5, 0)) << 3.U)).asTypeOf(Vec(64, UInt(8.W))))
+    dt_sb0.io.sbufferMask := RegNext(gen64BWmask(pipeOut(8).bits.rs1 + pipeOut(8).bits.offset, pipeOut(8).bits.fuOpType(1, 0)))
+
+    val dt_sb1 = Module(new DifftestSbufferEvent)
+    dt_sb1.io.clock := clock
+    dt_sb1.io.coreid := hartid
+    dt_sb1.io.index := 0.U
+    dt_sb1.io.sbufferResp := RegNext(pipeOut(9).fire && !pipeInvalid(11) && pipeOut(9).bits.pc =/= 0.U && BypassPkt(9).decodePkt.store) && !RegNext(SSDcoretrap)
+    dt_sb1.io.sbufferAddr := RegNext(align64_address(pipeOut(9).bits.rs1 + pipeOut(9).bits.offset))
+    dt_sb1.io.sbufferData := RegNext((pipeOut(9).bits.rs2 << (((pipeOut(9).bits.rs1 + pipeOut(9).bits.offset)(5, 0))<< 3.U)).asTypeOf(Vec(64, UInt(8.W))))
+    dt_sb1.io.sbufferMask := RegNext(gen64BWmask(pipeOut(9).bits.rs1 + pipeOut(9).bits.offset, pipeOut(9).bits.fuOpType(1, 0)))
     
 
     val dt_ic1 = Module(new DifftestInstrCommit)
