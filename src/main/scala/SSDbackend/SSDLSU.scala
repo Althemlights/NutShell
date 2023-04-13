@@ -130,6 +130,8 @@ class SSDLSU extends  NutCoreModule with HasStoreBufferConst{
   //stall signal
   val cacheStall = WireInit(false.B)
   BoringUtils.addSink(cacheStall,"cacheStall")
+  val mmioStall = WireInit(false.B)
+  BoringUtils.addSink(mmioStall,"mmioStall")
   val memXbarStall = WireInit(false.B)
   BoringUtils.addSink(memXbarStall,"memXbarStall")
   val  bufferFullStall = (storeBuffer.io.isAlmostFull && lsuPipeOut(1).bits.isStore) || storeBuffer.io.isFull  //when almost full, still can store one
@@ -137,7 +139,8 @@ class SSDLSU extends  NutCoreModule with HasStoreBufferConst{
   pc := io.lsuPC
   //BoringUtils.addSink(pc,"lsuPC")  
   //io.memStall := cacheStall && (isLoad || lsuPipeStage3.right.valid && !lsuPipeStage3.right.bits.isStore) || bufferFullStall
-  io.memStall := (cacheStall || memXbarStall) && (isLoad || lsuPipeStage3.right.valid && !lsuPipeStage3.right.bits.isStore) || bufferFullStall
+  //io.memStall := (cacheStall || memXbarStall) && (isLoad || lsuPipeStage3.right.valid && !lsuPipeStage3.right.bits.isStore) || bufferFullStall
+  io.memStall := (cacheStall || memXbarStall || mmioStall) && (isLoad || lsuPipeStage3.right.valid && !lsuPipeStage3.right.bits.isStore) || bufferFullStall
 
   lsuPipeIn(0).valid := isStore  || loadCacheIn.valid
   lsuPipeIn(0).bits.isStore := isStore
