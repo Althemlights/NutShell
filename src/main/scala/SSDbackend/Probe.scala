@@ -127,5 +127,5 @@ class Probe(edge: TLEdgeOut)(implicit val p: Parameters) extends DCacheModule {
     }
   }
 
-  //Debug(io.mem_probeAck.fire && addr.index === 0x3a.U, "[Probe] Addr: %x  Tag:%x  Data:%x\n", addr.asUInt, addr.tag, dataRead.asUInt)
+  Debug(io.mem_probeAck.fire && addr.index === 0x3e.U, "[Probe] Addr: %x  Tag:%x  Data:%x\n", addr.asUInt, addr.tag, dataRead.asUInt)
 }
