@@ -184,7 +184,7 @@ sealed class ICacheStage2(edge: TLEdgeOut)(implicit val p: Parameters) extends I
   val hit = hitTag && hitMeta && io.in.valid
     //miss need acquire and release(if not hitTag)
   val miss = !hit && io.in.valid
-  val victimWaymask = 3.U
+  val victimWaymask = 8.U
 
     //find invalid
   val invalidVec = VecInit(metaWay.map(m => m.coh === ClientStates.Nothing)).asUInt
@@ -272,8 +272,14 @@ sealed class ICacheStage2(edge: TLEdgeOut)(implicit val p: Parameters) extends I
   val victimCoh = Mux1H(waymask, metaWay).coh.asTypeOf(new ClientMetadata)
   val vicAddr = Cat(Mux1H(waymask, tagWay).tag, addr.index, 0.U(6.W))
 
+    //release操作完成
+  val isrelDone = RegInit(false.B)
+  when (release.io.release_ok) {isrelDone := true.B}
+  when (io.out.fire) {isrelDone := false.B}
+  val relOK = !needRel || (needRel && isrelDone)
+
   release.io.req.bits := req
-  release.io.req.valid := needRel     //choose victim
+  release.io.req.valid := needRel && !isrelDone     //choose victim
   release.io.req.bits.addr := vicAddr
   release.io.mem_release <> io.mem_release
   release.io.mem_releaseAck <> io.mem_grantReleaseAck
@@ -281,12 +287,6 @@ sealed class ICacheStage2(edge: TLEdgeOut)(implicit val p: Parameters) extends I
   release.io.waymask := waymask
   //io.dataReadBus <> release.io.dataReadBus
   (io.dataReadBus zip release.io.dataReadBus).map{case (s, r) => (s <> r)}
-
-    //release操作完成
-  val isrelDone = RegInit(false.B)
-  when (release.io.release_ok) {isrelDone := true.B}
-  when (io.out.fire) {isrelDone := false.B}
-  val relOK = !needRel || (needRel && isrelDone)
 
   val isGrant = io.mem_grantReleaseAck.bits.opcode === TLMessages.Grant || io.mem_grantReleaseAck.bits.opcode === TLMessages.GrantData
   val isRelAck = io.mem_grantReleaseAck.bits.opcode === TLMessages.ReleaseAck
