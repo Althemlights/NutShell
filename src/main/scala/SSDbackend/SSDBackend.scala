@@ -847,7 +847,9 @@ class SSDbackend extends NutCoreModule with hasBypassConst {
     dt_sb0.io.sbufferAddr := RegNext(align64_address(pipeOut(8).bits.rs1 + pipeOut(8).bits.offset))
     dt_sb0.io.sbufferData := RegNext((pipeOut(8).bits.rs2 << (((pipeOut(8).bits.rs1 + pipeOut(8).bits.offset)(5, 0)) << 3.U)).asTypeOf(Vec(64, UInt(8.W))))
     dt_sb0.io.sbufferMask := RegNext(gen64BWmask(pipeOut(8).bits.rs1 + pipeOut(8).bits.offset, pipeOut(8).bits.fuOpType(1, 0)))
-    //Debug(dt_sb0.io.sbufferResp, "Commit SB0 Addr: %x\n", dt_sb0.io.sbufferAddr)
+    val dt_sb0_valid = pipeOut(8).fire && !pipeInvalid(10) && pipeOut(8).bits.pc =/= 0.U && BypassPkt(8).decodePkt.store
+    val dt_sb0_addr = align64_address(pipeOut(8).bits.rs1 + pipeOut(8).bits.offset)
+    //Debug(dt_sb0_valid && (dt_sb0_addr === 0x0800087C0L.U), "Commit SB0 Addr: %x\n", dt_sb0.io.sbufferAddr)
 
     val dt_sb1 = Module(new DifftestSbufferEvent)
     dt_sb1.io.clock := clock
@@ -857,7 +859,9 @@ class SSDbackend extends NutCoreModule with hasBypassConst {
     dt_sb1.io.sbufferAddr := RegNext(align64_address(pipeOut(9).bits.rs1 + pipeOut(9).bits.offset))
     dt_sb1.io.sbufferData := RegNext((pipeOut(9).bits.rs2 << (((pipeOut(9).bits.rs1 + pipeOut(9).bits.offset)(5, 0))<< 3.U)).asTypeOf(Vec(64, UInt(8.W))))
     dt_sb1.io.sbufferMask := RegNext(gen64BWmask(pipeOut(9).bits.rs1 + pipeOut(9).bits.offset, pipeOut(9).bits.fuOpType(1, 0)))
-    //Debug(dt_sb1.io.sbufferResp, "Commit SB1 Addr: %x\n", dt_sb1.io.sbufferAddr)
+    val dt_sb1_valid = pipeOut(9).fire && !pipeInvalid(11) && pipeOut(9).bits.pc =/= 0.U && BypassPkt(9).decodePkt.store
+    val dt_sb1_addr = align64_address(pipeOut(9).bits.rs1 + pipeOut(9).bits.offset)
+    //Debug(dt_sb1_valid && (dt_sb1_addr === 0x800087C0L.U), "Commit SB1 Addr: %x\n", dt_sb1.io.sbufferAddr)
 
     val dt_ic1 = Module(new DifftestInstrCommit)
     dt_ic1.io.clock := clock
