@@ -264,3 +264,20 @@ Host time spent: 45,272ms
 [               12645] : [MST] time                12645 pc 0080005ed4 mstatus 0000000000000000 mideleg 0000000000000000 medeleg 0000000000000000 mode 3
 [              300686] : csr write: pc 0080005ef0 addr b00 rdata 000000000004968e wdata 000000000004968e func 02
 [              300686] : [MST] time               300686 pc 0080005ef0 mstatus 0000000000000000 mideleg 0000000000000000 medeleg 0000000000000000 mode 3
+
+img_size: 9a30
+
+2K performance run parameters for coremark.
+CoreMark Size    : ---    ltype: 0x2 paddr: 0x800088dc wen: 0x1 wdst: 0xe wdata: 0x80007990 pc: 0x80007870
+---    golden: 0x0  original: 0xfffffffffffff1b0
+golden未加载, golden是0
+
+第一种可能，golden读错了
+paddr: 0x800088dc  golden: 0x0  len: 4
+没读错
+
+第二种可能，被写为0过
+没有被写过
+
+第三种可能，golden memory未被初始化
+ram是仿真内存， pmem是golden mem

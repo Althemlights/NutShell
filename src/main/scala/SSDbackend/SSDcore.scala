@@ -3,7 +3,7 @@ package SSDbackend
 import chisel3._
 
 case class SSDCoreConfig(
-                          EnableDebug: Boolean = true,
+                          EnableDebug: Boolean = false,
                           EnableDifftest : Boolean = true,
                           EnablePMU : Boolean = true,
                           EnablePipestageDebug : Boolean = false,

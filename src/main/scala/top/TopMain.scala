@@ -26,18 +26,38 @@ import chisel3.stage._
 
 import freechips.rocketchip.diplomacy.{DisableMonitors, AddressSet, LazyModule, LazyModuleImp}
 import chipsalliance.rocketchip.config._
+import freechips.rocketchip.diplomacy._
 
-class Top extends Module {
-  val io = IO(new Bundle{})
-  lazy val config = new DefaultConfig(FPGAPlatform = false)
-  val l_nutshell = LazyModule(new NutShell()(config))
-  val nutshell = Module(l_nutshell.module)
-  val vga = Module(new AXI4VGA)
+class Top()(implicit p: Parameters) extends LazyModule {
+  //val io = IO(new Bundle{})
+  //lazy val config = new DefaultConfig(FPGAPlatform = false)
+  //val l_nutshell = LazyModule(new NutShell()(config))
+  val l_nutshell = LazyModule(new NutShell())
+  //val nutshell = Module(l_nutshell.module)
+  //val vga = Module(new AXI4VGA)
 
-  nutshell.io := DontCare
-  vga.io := DontCare
-  dontTouch(nutshell.io)
-  dontTouch(vga.io)
+  //nutshell.io := DontCare
+  //vga.io := DontCare
+  //nutshell.memory := DontCare
+  //nutshell.peripheral := DontCare
+  //dontTouch(nutshell.io)
+  //dontTouch(vga.io)
+
+  lazy val module = new LazyModuleImp(this) {
+
+    val io = IO(new Bundle {})
+
+    val nutshell = l_nutshell.module
+    val memory = IO(nutshell.memory.cloneType)
+    memory <> nutshell.memory
+
+    val vga = Module(new AXI4VGA)
+    nutshell.io := DontCare
+    vga.io := DontCare
+    nutshell.peripheral := DontCare
+    dontTouch(nutshell.io)
+    dontTouch(vga.io)
+  }
 }
 
 object Generator {
@@ -86,9 +106,11 @@ object TopMain extends App {
       )
     )*/
   } else {
-    (new ChiselStage).execute(args, Seq(
+    /*(new ChiselStage).execute(args, 
+    Seq(
       ChiselGeneratorAnnotation(() => new Top))
-    )
+    )*/
+    Generator.execute(args, (DisableMonitors(p => LazyModule(new Top()(p)))(config)).module)
   }
 }
 

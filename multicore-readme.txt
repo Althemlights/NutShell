@@ -13,3 +13,6 @@
 多核test:
 1.ready-to-run/ldvio-riscv64-nutshell.bin
 运行命令：  ./build/emu -i ./ready-to-run/ldvio-riscv64-nutshell.bin
+
+// Dcache Icache DataTemplate
+Index bits: 7   Ways: 4   Banks: 4  SramTemplate Addr bits: 7 + 1 = 8  SramDatabits: 6
