@@ -2,8 +2,8 @@ module S011HD1P_X32Y2D128(
     Q, CLK, CEN, WEN, A, D
 );
 parameter Bits = 64;
-parameter Word_Depth = 128;
-parameter Add_Width = 7;
+parameter Word_Depth = 256;
+parameter Add_Width = 8;
 
 output  reg [Bits-1:0]      Q;
 input                   CLK;

@@ -55,8 +55,8 @@ class NutcoreWithL2()(implicit p: Parameters) extends LazyModule{
       ),
       //prefetch = Some(huancun.prefetch.BOPParameters()),
       reqField = Seq(),
-      echoField = Seq(),
-      enableDebug = true
+      echoField = Seq()
+      //enableDebug = true
     )
   })))
 
