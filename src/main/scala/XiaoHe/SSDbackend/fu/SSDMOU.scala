@@ -1,63 +1,75 @@
-/**************************************************************************************
-* Copyright (c) 2020 Institute of Computing Technology, CAS
-* Copyright (c) 2020 University of Chinese Academy of Sciences
-* 
-* NutShell is licensed under Mulan PSL v2.
-* You can use this software according to the terms and conditions of the Mulan PSL v2. 
-* You may obtain a copy of Mulan PSL v2 at:
-*             http://license.coscl.org.cn/MulanPSL2 
-* 
-* THIS SOFTWARE IS PROVIDED ON AN "AS IS" BASIS, WITHOUT WARRANTIES OF ANY KIND, EITHER 
-* EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO NON-INFRINGEMENT, MERCHANTABILITY OR 
-* FIT FOR A PARTICULAR PURPOSE.  
-*
-* See the Mulan PSL v2 for more details.  
-***************************************************************************************/
+package XiaoHe.SSDbackend.fu
 
-package nutcore
-
+import XiaoHe._
 import chisel3._
 import chisel3.util._
 import chisel3.util.experimental.BoringUtils
-
-import utils._
-
-// memory order unit
-object MOUOpType {
-  def fence  = "b00".U
-  def fencei = "b01".U
-  def sfence_vma = "b10".U
+class SSDMOUIO extends NutCoreBundle {
+  val pipelinevalid = Input(Bool())
+  val in = Flipped(Decoupled(new Bundle {
+    val func = Output(FuOpType())
+  }))
+  val out = Decoupled(Output(UInt(XLEN.W)))
+  val flush = Input(Bool())
 }
 
-class MOUIO extends FunctionUnitIO {
-  val cfIn = Flipped(new CtrlFlowIO)
-  val redirect = new RedirectIO
-}
-
-class MOU extends NutCoreModule {
-  val io = IO(new MOUIO)
-
-  val (valid, src1, src2, func) = (io.in.valid, io.in.bits.src1, io.in.bits.src2, io.in.bits.func)
-  def access(valid: Bool, src1: UInt, src2: UInt, func: UInt): UInt = {
-    this.valid := valid
-    this.src1 := src1
-    this.src2 := src2
-    this.func := func
-    io.out.bits
+class SSDMOU extends NutCoreModule{
+  val io = IO(new SSDMOUIO)
+  val sbIsempty = WireInit(false.B)
+  BoringUtils.addSink(sbIsempty, "sbIsempty")
+  val DCache_done = WireInit(false.B)
+  BoringUtils.addSink(DCache_done, "DCache_done")
+  val s1_idle :: pipeline_check :: sbcheck :: flush_dcache :: flush_icache :: flush_done :: Nil = Enum(6)
+  val state1 = RegInit(s1_idle)
+  switch(state1) {
+    is(s1_idle) {
+      when(io.in.valid) {
+        state1 := pipeline_check
+      }
+    }
+    is(pipeline_check) {
+      when(io.flush) {
+        state1 := s1_idle
+      }.elsewhen(!io.pipelinevalid) {
+        state1 := sbcheck
+      }
+    }
+    is(sbcheck) {
+      when(io.flush) {
+        state1 := s1_idle
+      }.elsewhen(sbIsempty) {
+        state1 := flush_dcache
+      }
+    }
+    is(flush_dcache) {
+      when(DCache_done) {
+        state1 := flush_icache
+      }.elsewhen(io.flush) {
+        state1 := s1_idle
+      }
+    }
+    is(flush_icache) {
+      state1 := flush_done
+    }
+    is(flush_done) {
+      state1 := s1_idle
+    }
   }
+//  when (state1 === s1_idle && io.in.valid) { state1 := pipeline_check }
+//  when (state1 === pipeline_check && (!io.pipelinevalid)) {state1 := sbcheck}
+//  when (state1 === sbcheck && sbIsempty) {state1 := flush_dcache}
+//  when (state1 === flush_dcache && DCache_done) {state1 := flush_icache}
+//  when (state1 === flush_icache) {state1 := flush_done}
+//  when (state1 === flush_done) {state1 := s1_idle}
+//  when (io.flush) {state1 := s1_idle}
 
-  io.redirect.target := io.cfIn.pc + 4.U
-  io.redirect.valid := valid
-  io.redirect.rtype := 0.U
-  val flushICache = valid && (func === MOUOpType.fencei)
-  //BoringUtils.addSource(flushICache, "MOUFlushICache")
-  Debug(flushICache, "Flush I$ at %x\n", io.cfIn.pc)
-
-  val flushTLB = valid && (func === MOUOpType.sfence_vma)
-  //BoringUtils.addSource(flushTLB, "MOUFlushTLB")
-  Debug(flushTLB, "Sfence.vma at %x\n", io.cfIn.pc)
+  val flushICache = (state1 === flush_icache)
+  BoringUtils.addSource(flushICache, "MOUFlushICache")
+  val flushDCache = (state1 === flush_dcache)
+  BoringUtils.addSource(flushDCache, "MOUFlushDCache")
 
   io.out.bits := 0.U
-  io.in.ready := true.B
-  io.out.valid := valid
+  io.in.ready := state1 === s1_idle
+  io.out.valid := state1 === flush_done
+
 }

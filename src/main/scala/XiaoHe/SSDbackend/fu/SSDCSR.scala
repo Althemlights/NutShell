@@ -1,4 +1,4 @@
-package SSDbackend
+package XiaoHe.SSDbackend.fu
 
 /**************************************************************************************
  * Copyright (c) 2020 Institute of Computing Technology, CAS
@@ -21,10 +21,11 @@ package SSDbackend
 import chisel3._
 import chisel3.util._
 import chisel3.util.experimental.BoringUtils
-import utils._
 import top.Settings
-import difftest._
-import nutcore.{CtrlFlowIO, FunctionUnitIO, NutCoreModule, RedirectIO}
+import utils._
+//import difftest._
+import XiaoHe.SSDbackend._
+import XiaoHe._
 
 object SSDCSROpType {
   def jmp  = "b000".U
@@ -194,7 +195,7 @@ class SSDCSRIO extends FunctionUnitIO {
   val hartid = Input(UInt(XLEN.W))
 }
 
-class SSDCSR extends NutCoreModule with SSDHasCSRConst{
+class SSDCSR extends NutCoreModule with SSDHasCSRConst with SSDHasExceptionNO {
   val io = IO(new SSDCSRIO)
 
   val (valid, src1, src2, func) = (io.in.valid, io.in.bits.src1, io.in.bits.src2, io.in.bits.func)
@@ -526,8 +527,8 @@ class SSDCSR extends NutCoreModule with SSDHasCSRConst{
   val isSret = addr === privSret   && func === SSDCSROpType.jmp && !io.isBackendException
   val isUret = addr === privUret   && func === SSDCSROpType.jmp && !io.isBackendException
 
-  Debug(wen, "csr write: pc %x addr %x rdata %x wdata %x func %x\n", io.cfIn.pc, addr, rdata, wdata, func)
-  Debug(wen, "[MST] time %d pc %x mstatus %x mideleg %x medeleg %x mode %x\n", GTimer(), io.cfIn.pc, mstatus, mideleg , medeleg, priviledgeMode)
+//  Debug(wen, "csr write: pc %x addr %x rdata %x wdata %x func %x\n", io.cfIn.pc, addr, rdata, wdata, func)
+//  Debug(wen, "[MST] time %d pc %x mstatus %x mideleg %x medeleg %x mode %x\n", GTimer(), io.cfIn.pc, mstatus, mideleg , medeleg, priviledgeMode)
 
   // MMU Permission Check
 
@@ -670,15 +671,13 @@ class SSDCSR extends NutCoreModule with SSDHasCSRConst{
   io.redirect.valid := (valid && func === SSDCSROpType.jmp) || raiseExceptionIntr || resetSatp
   io.redirect.rtype := 0.U
   io.redirect.target := Mux(resetSatp, io.cfIn.pc + 4.U, Mux(raiseExceptionIntr, trapTarget, retTarget))
-  io.redirect.ghr := 0.U
-  io.redirect.ghrUpdateValid := false.B
   io.redirect.btbIsBranch := 0.U
   io.redirect.pc := io.cfIn.pc
-  Debug(raiseExceptionIntr, "excin %b excgen %b", csrExceptionVec.asUInt, iduExceptionVec.asUInt)
-  Debug(raiseExceptionIntr, "int/exc: pc %x int (%d):%x exc: (%d):%x\n",io.cfIn.pc, intrNO, io.cfIn.intrVec.asUInt, exceptionNO, raiseExceptionVec.asUInt)
-  Debug(raiseExceptionIntr, "[MST] time %d pc %x mstatus %x mideleg %x medeleg %x mode %x\n", GTimer(), io.cfIn.pc, mstatus, mideleg , medeleg, priviledgeMode)
-  Debug(io.redirect.valid, "redirect to %x\n", io.redirect.target)
-  Debug(resetSatp, "satp reset\n")
+//  Debug(raiseExceptionIntr, "excin %b excgen %b", csrExceptionVec.asUInt(), iduExceptionVec.asUInt())
+//  Debug(raiseExceptionIntr, "int/exc: pc %x int (%d):%x exc: (%d):%x\n",io.cfIn.pc, intrNO, io.cfIn.intrVec.asUInt, exceptionNO, raiseExceptionVec.asUInt)
+//  Debug(raiseExceptionIntr, "[MST] time %d pc %x mstatus %x mideleg %x medeleg %x mode %x\n", GTimer(), io.cfIn.pc, mstatus, mideleg , medeleg, priviledgeMode)
+//  Debug(io.redirect.valid, "redirect to %x\n", io.redirect.target)
+//  Debug(resetSatp, "satp reset\n")
 
   // Branch control
 

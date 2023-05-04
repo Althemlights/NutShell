@@ -16,7 +16,6 @@
 
 package top
 
-import nutcore._
 import bus.simplebus._
 import device._
 import utils._

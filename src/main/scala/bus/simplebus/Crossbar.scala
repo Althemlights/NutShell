@@ -135,13 +135,13 @@ class SimpleBusCrossbar1toN(addressSpace: List[(Long, Long)]) extends Module{
   //进入的req addr是无效地址（不在范围内）
   val reqInvalidAddr = io.in.req.valid && !outSelVec.asUInt.orR
 
-  when((io.in.req.valid && !outSelVec.asUInt.orR) || (io.in.req.valid && outSelVec.asUInt.andR)){
-    Debug(){
-      printf("crossbar access bad addr %x, time %d\n", addr, GTimer())
-    }
-  }
+//  when((io.in.req.valid && !outSelVec.asUInt.orR) || (io.in.req.valid && outSelVec.asUInt.andR)){
+//    Debug(){
+//      printf("crossbar access bad addr %x, time %d\n", addr, GTimer())
+//    }
+//  }
   // assert(!io.in.req.valid || outSelVec.asUInt.orR, "address decode error, bad addr = 0x%x\n", addr)
-  assert(!(io.in.req.valid && outSelVec.asUInt.andR), "address decode error, bad addr = 0x%x\n", addr)
+//  assert(!(io.in.req.valid && outSelVec.asUInt.andR), "address decode error, bad addr = 0x%x\n", addr)
 
   // bind out.req channel
   (io.out zip (outSelVec zip outSelVecResp)).map { case (o, (v, r)) => {
@@ -169,6 +169,9 @@ class SimpleBusCrossbar1toN(addressSpace: List[(Long, Long)]) extends Module{
     }
     is (s_error) { when(io.in.resp.fire){ state := s_idle } }
   }
+  val outError = Wire(new SimpleBusRespBundle)
+  outError.cmd := "b0110".U
+  outError.rdata := 0.U
 
   io.in.resp.valid := outSelResp.resp.fire || state === s_error
   io.in.resp.bits <> outSelResp.resp.bits
@@ -207,7 +210,8 @@ class SimpleBusCrossbarNto1(n: Int, userBits:Int = 0) extends Module {
     val in = Flipped(Vec(n, new SimpleBusUC(userBits)))
     val out = new SimpleBusUC(userBits)
   })
-
+//  val flush_mmio_xbar = WireInit(false.B)
+//  BoringUtils.addSink(flush_mmio_xbar, "flush_mmio_xbar")
   val s_idle :: s_readResp :: s_writeResp :: Nil = Enum(3)
   val state = RegInit(s_idle)
 

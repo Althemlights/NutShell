@@ -3,9 +3,8 @@
 package bus.axi4
 
 import chisel3._
+import chisel3.internal.firrtl.Width
 import chisel3.util._
-
-import nutcore.HasNutCoreParameter
 import utils._
 import freechips.rocketchip.amba.axi4._ 
 
@@ -14,25 +13,25 @@ object AXI4Parameters extends HasNutCoreParameter {
   val lenBits   = 8
   val sizeBits  = 3
   val burstBits = 2
-  val cacheBits = 4
-  val protBits  = 3
-  val qosBits   = 4
+  val cacheBits = 0
+  val protBits  = 0
+  val qosBits   = 0
   val respBits  = 2
 
   // These are not fixed:
-  val idBits    = 1
+  val idBits    = 4
   val addrBits  = PAddrBits
   val dataBits  = DataBits
-  val userBits  = 1
+  val userBits  = 0
 
-  def CACHE_RALLOCATE  = 8.U(cacheBits.W)
-  def CACHE_WALLOCATE  = 4.U(cacheBits.W)
-  def CACHE_MODIFIABLE = 2.U(cacheBits.W)
-  def CACHE_BUFFERABLE = 1.U(cacheBits.W)
-
-  def PROT_PRIVILEDGED = 1.U(protBits.W)
-  def PROT_INSECURE    = 2.U(protBits.W)
-  def PROT_INSTRUCTION = 4.U(protBits.W)
+//  def CACHE_RALLOCATE  = 8.U(cacheBits.W)
+//  def CACHE_WALLOCATE  = 4.U(cacheBits.W)
+//  def CACHE_MODIFIABLE = 2.U(cacheBits.W)
+//  def CACHE_BUFFERABLE = 1.U(cacheBits.W)
+//
+//  def PROT_PRIVILEDGED = 1.U(protBits.W)
+//  def PROT_INSECURE    = 2.U(protBits.W)
+//  def PROT_INSTRUCTION = 4.U(protBits.W)
 
   def BURST_FIXED = 0.U(burstBits.W)
   def BURST_INCR  = 1.U(burstBits.W)
@@ -103,9 +102,9 @@ class AXI4BundleA(override val idBits: Int) extends AXI4LiteBundleA with AXI4Has
   val len   = Output(UInt(AXI4Parameters.lenBits.W))  // number of beats - 1
   val size  = Output(UInt(AXI4Parameters.sizeBits.W)) // bytes in beat = 2^size
   val burst = Output(UInt(AXI4Parameters.burstBits.W))
-  val lock  = Output(Bool())
-  val cache = Output(UInt(AXI4Parameters.cacheBits.W))
-  val qos   = Output(UInt(AXI4Parameters.qosBits.W))  // 0=no QoS, bigger = higher priority
+//  val lock  = Output(Bool())
+//  val cache = Output(UInt(AXI4Parameters.cacheBits.W))
+//  val qos   = Output(UInt(AXI4Parameters.qosBits.W))  // 0=no QoS, bigger = higher priority
   // val region = UInt(width = 4) // optional
 
   override def toPrintable: Printable = p"addr = 0x${Hexadecimal(addr)}, id = ${id}, len = ${len}, size = ${size}"

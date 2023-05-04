@@ -19,47 +19,7 @@ help(){
   echo "-r: Run test cases of the specifoed directory"
   echo "-h: Help information"
 }
-cmarktest(){
-  make clean
-  make emu -j4
-  build/emu -i /home/jy/xs-env/nexus-am/apps/coremark/build/coremark-riscv64-nutshell.bin --wave-path=wave.vcd -b 0 >1.log 2>&1
-  python3 bpu.py
-}
-bputest(){
-  make clean
-  make emu -j4
-  build/emu -i /home/jy/xs-env/nexus-am/apps/brancntest/build/branchtest-riscv64-nutshell.bin --wave-path=wave.vcd -b 0 >1.log 2>&1
-  python3 bpu.py
-}
-moduleGenVerilog(){
-  rm -rf moduleBuild/
-  mkdir moduleBuild
-  mill chiselModule.runMain top.moduleTop -td moduleBuild --output-file nutcore.v
-}
 
-
-#create_soft_link() {
-#  mkdir ${1} 1>/dev/null 2>&1
-#  find -L ${1} -type l -delete
-#  FILES=`eval "find ${2} -mindepth 1 -maxdepth 1 -name ${3}"`
-#  for FILE in ${FILES[@]}
-#  do
-#    eval "ln -s \"`realpath --relative-to="${1}" "$FILE"`\" \"${1}/${FILE##*/}\" 1>/dev/null 2>&1"
-#  done
-#}
-#
-#create_bin_soft_link() {
-#  find -L $TEST_BIN_FLODER -maxdepth 1 -type l -delete
-#  FOLDERS=`find bin -mindepth 1 -maxdepth 1 -type d`
-#  for FOLDER in ${FOLDERS[@]}
-#  do
-#    SUBFOLDER=${FOLDER##*/}
-#  eval "ln -s \"`realpath --relative-to="$BUILD_PATH" "$OSCPU_PATH/$FOLDER"`\" \"$BUILD_PATH/${FOLDER##*/}\" 1>/dev/null 2>&1"
-#  done
-#
-#  # create soft link ($BUILD_PATH/*.bin -> $OSCPU_PATH/$BIN_FOLDER/*.bin). Why? Because of laziness!
-#    create_soft_link $BUILD_PATH $OSCPU_PATH/$BIN_FOLDER \"*.bin\"
-#}
 
 while getopts "c b r:h m" OPT; do
   case $OPT in

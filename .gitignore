@@ -353,4 +353,8 @@ fpga/.Xil/
 
 # temp.scala
 tmp.scala
-.metals/*
+*.v
+*.f
+*.json
+*.fir
+metal*

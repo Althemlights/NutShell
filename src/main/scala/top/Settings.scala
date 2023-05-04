@@ -43,7 +43,10 @@ object DefaultSettings {
     "EnableDebug" -> true,
     "EnableRVC" -> true,
 
-    "CoreNums" -> 0x2
+    "CoreNums" -> 0x2,
+    "SoCTest" -> false,
+    "CLINTBase" -> 0x0000000038000000L,
+    "PLICBase" -> 0x000000003c000000L
   )
 }
 
@@ -77,6 +80,47 @@ object OOOSettings {
   def apply() = Map(
     "EnableMultiIssue" -> true,
     "EnableOutOfOrderExec" -> true
+  )
+}
+
+object SoCTestSettings {
+  def apply() = Map(
+    "NrExtIntr" -> 1,
+    "EnableILA" -> false,
+    "SoCTest" -> true,
+    "ResetVector" -> 0x30000000L,
+    "MMIOBase" -> 0x0000000010000000L,
+    "MMIOSize" -> 0x0000000070000000L,
+    "CLINTBase"-> 0x0000000002000000L,
+    "PLICBase" -> 0x0000000002010000L,
+    "EnableDebug" -> false,
+    "FPGAPlatform" -> false,
+    "HasL2cache" -> false,
+    "HasPrefetch" -> false,
+
+    "MemMapBase" -> 0x0000000000000000L,
+    "MemMapRegionBits" -> 0,
+//    "MMIOBase" -> 0x0000000040000000L,
+//    "MMIOSize" -> 0x0000000040000000L,
+//    "ResetVector" -> 0x80000000L,
+//    "NrExtIntr" -> 1,
+//
+//    "HasL2cache" -> false,
+//    "HasPrefetch" -> false,
+    "EnableMultiIssue" -> true,
+    "EnableOutOfOrderExec" -> true,
+    "HasDTLB" -> true,
+    "HasITLB" -> true,
+    "HasDcache" -> true,
+    "HasIcache" -> true,
+    "MmodeOnly" -> false,
+    "IsRV32" -> false,
+
+//    "FPGAPlatform" -> false,
+//    "EnableILA" -> true,
+    "EnableDebug" -> false,
+    "EnableRVC" -> true
+//    "SoCTest" -> false
   )
 }
 

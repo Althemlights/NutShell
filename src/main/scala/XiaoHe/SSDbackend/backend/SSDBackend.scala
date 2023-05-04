@@ -1,18 +1,19 @@
-package SSDbackend
+package XiaoHe.SSDbackend.backend
 
+import XiaoHe.SSDbackend.Regfile.SSDRF
+import XiaoHe.SSDbackend.fu._
 import bus.simplebus.SimpleBusUC
-import chisel3.{Mux, _}
 import chisel3.util._
 import chisel3.util.experimental.BoringUtils
 import utils._
 import _root_.utils.{LookupTree}
-import difftest._
-import utils.{PipelineConnect, SignExt}
-import nutcore._
+import chisel3.{Mux, _}
+//import difftest._
+import XiaoHe.SSDbackend._
+import XiaoHe.SSDfrontend._
+import XiaoHe._
 import chisel3.util.experimental.BoringUtils
-
-import java.io.PipedOutputStream
-
+import utils.SignExt
 
 class SSDbackend extends NutCoreModule with hasBypassConst {
   val io = IO(new Bundle{
@@ -38,7 +39,7 @@ class SSDbackend extends NutCoreModule with hasBypassConst {
   val pipeIn = Wire(Vec(10,Flipped(Decoupled(new FuPkt))))
   val pipeOut = Wire(Vec(10,Decoupled(new FuPkt)))
   val pipeFire = Wire(Vec(10,Bool()))
-  val pipeFlush = Wire(Vec(10,Bool()))
+  // val pipeFlush = Wire(Vec(10,Bool()))
   val pipeInvalid = Wire(Vec(12,Bool()))
 
   val coupledPipeIn = Wire(Vec(4,Decoupled(new FuPkt)))
@@ -67,8 +68,11 @@ class SSDbackend extends NutCoreModule with hasBypassConst {
   val coupledPipeRegStage8 = Module(new normalPipeConnect(new FuPkt)).suggestName("coupledPipeStage8")
   val coupledPipeRegStage9 = Module(new normalPipeConnect(new FuPkt)).suggestName("coupledPipeStage9")
 
-  pipeFlush := Bypass.io.pipeFlush
-  pipeInvalid := Bypass.io.pipeInvalid
+  // pipeFlush := Bypass.io.pipeFlush
+  val test1 = Wire(Vec(12,Bool()))
+  test1 := Bypass.io.pipeInvalid
+
+  
   for(i <- 0 to 3){
     pipeFire(2*i) := pipeOut(2*i).valid && pipeIn(2*i+2).ready
     pipeFire(2*i+1) := pipeOut(2*i+1).valid && pipeIn(2*i+3).ready
@@ -87,11 +91,26 @@ class SSDbackend extends NutCoreModule with hasBypassConst {
   issueStall := Bypass.io.issueStall
   val BypassPkt = Wire(Vec(10,new BypassPkt))
   val BypassPktE0 = Wire(Vec(2,Decoupled(new BypassPkt)))
-  dontTouch(BypassPktE0)
+  //  dontTouch(BypassPktE0)
   val BypassPktValid = Wire(Vec(10,Bool()))
   BypassPkt := Bypass.io.BypassPkt
   BypassPktE0 := Bypass.io.decodeBypassPkt
   BypassPktValid := Bypass.io.BypassPktValid
+
+
+  for (i <- 0 to 11) {
+    pipeInvalid(i) := test1(i)
+  }
+  for (i <- 0 to 7) {
+    pipeInvalid(i) := !(memStall || mduStall) && test1(i)
+  }
+
+  // val test = List(0,1,2,3,4,5,6,7)
+
+  // test.foreach{ case i => test1(i) := pipeInvalid(i)}
+  // test.foreach{ case i => pipeInvalid(i) := test1(i) && !(memStall || mduStall)}
+
+
 
   Bypass.io.decodeBypassPkt(0).ready := pipeIn(0).ready
   Bypass.io.decodeBypassPkt(1).ready := pipeIn(1).ready
@@ -126,7 +145,6 @@ class SSDbackend extends NutCoreModule with hasBypassConst {
     SSDCSR.io.cfIn.isRVC                := pipeOut(0).bits.isRVC
     SSDCSR.io.cfIn.isBranch             := pipeOut(0).bits.isBranch
     SSDCSR.io.cfIn.redirect.btbIsBranch := pipeOut(0).bits.btbIsBranch
-    SSDCSR.io.cfIn.redirect.ghr         := pipeOut(0).bits.ghr
   }.elsewhen(i1CSRValid) {
     SSDCSR.io.cfIn.pc                   := pipeOut(1).bits.pc
     SSDCSR.io.cfIn.pnpc                 := pipeOut(1).bits.pnpc
@@ -135,7 +153,6 @@ class SSDbackend extends NutCoreModule with hasBypassConst {
     SSDCSR.io.cfIn.isRVC                := pipeOut(1).bits.isRVC
     SSDCSR.io.cfIn.isBranch             := pipeOut(1).bits.isBranch
     SSDCSR.io.cfIn.redirect.btbIsBranch := pipeOut(1).bits.btbIsBranch
-    SSDCSR.io.cfIn.redirect.ghr         := pipeOut(1).bits.ghr
   }
 //  when(RegNext(i0CSRValid)) {
 //    Redirect2_csr := RegNext(RegNext(SSDCSR.io.redirect))
@@ -180,6 +197,13 @@ class SSDbackend extends NutCoreModule with hasBypassConst {
   ALU_6.io.cfIn := 0.U.asTypeOf(new CtrlFlowIO)
   ALU_7.io.cfIn := 0.U.asTypeOf(new CtrlFlowIO)
 
+//  BoringUtils.addSource((
+//    ALU_0.io.redirect.valid ||
+//    ALU_1.io.redirect.valid ||
+//    ALU_6.io.redirect.valid ||
+//    ALU_7.io.redirect.valid
+//  ) && memStall, "redirectAtMemstall")
+
   (ALUList zip pipeOut2ALUList).foreach{ case(a,b) =>
     a.io.offset := b.bits.offset
     a.io.out.ready := true.B
@@ -190,13 +214,20 @@ class SSDbackend extends NutCoreModule with hasBypassConst {
     a.io.cfIn.isRVC := b.bits.isRVC
     a.io.cfIn.isBranch := b.bits.isBranch
     a.io.cfIn.redirect.btbIsBranch := b.bits.btbIsBranch
-    a.io.cfIn.redirect.ghr := b.bits.ghr
+    //for sfb
+    a.io.cfIn.sfb := b.bits.sfb
   }
+  val fourAluSfbWrong = VecInit((0 until 4) map {i => ALUList(i).io.sfbPredictwrong})
+
+  BoringUtils.addSource(fourAluSfbWrong(0),"alu0sfbw")
+  BoringUtils.addSource(fourAluSfbWrong(1),"alu1sfbw")
+  BoringUtils.addSource(fourAluSfbWrong(2),"alu2sfbw")
+  BoringUtils.addSource(fourAluSfbWrong(3),"alu3sfbw")
   (ALURedirectList zip pipeOut2Redirect).foreach{ case(a,b) => a := b.bits.redirect}
   (bpuUpdateReqList zip ALUList).foreach{ case(a,b) => a := b.io.bpuUpdateReq}
   (alu2pmuList zip ALUList).foreach{ case(a,b) => a := b.io.alu2pmu}
-  Bypass.io.flush(0) := (Redirect2.valid) && pipeOut(2).valid
-  Bypass.io.flush(1) := (Redirect3.valid) && pipeOut(3).valid
+  Bypass.io.flush(0) := (Redirect2.valid) && pipeOut(2).valid 
+  Bypass.io.flush(1) := (Redirect3.valid) && pipeOut(3).valid 
   Bypass.io.flush(2) := Redirect8.valid && pipeOut(8).valid
   Bypass.io.flush(3) := Redirect9.valid && pipeOut(9).valid
 
@@ -224,8 +255,8 @@ class SSDbackend extends NutCoreModule with hasBypassConst {
     pipeOut(7).valid && BypassPkt(7).decodePkt.alu && BypassPkt(7).decodePkt.subalu
   )
 
-  ALU_0.access(pipeOut(0).valid && !BypassPkt(0).decodePkt.alu,aluValid(0),pipeOut(0).bits.rs1,pipeOut(0).bits.rs2,pipeOut(0).bits.fuOpType)
-  ALU_1.access(pipeOut(1).valid && !BypassPkt(1).decodePkt.alu,aluValid(1),pipeOut(1).bits.rs1,pipeOut(1).bits.rs2,pipeOut(1).bits.fuOpType)
+  ALU_0.access(pipeOut(0).valid && !BypassPkt(0).decodePkt.alu, aluValid(0),pipeOut(0).bits.rs1,pipeOut(0).bits.rs2,pipeOut(0).bits.fuOpType)
+  ALU_1.access(pipeOut(1).valid && !BypassPkt(1).decodePkt.alu, aluValid(1),pipeOut(1).bits.rs1,pipeOut(1).bits.rs2,pipeOut(1).bits.fuOpType)
   ALU_6.access(false.B,
     aluValid(2),
     Mux(pipeOut(6).valid, pipeOut(6).bits.rs1,coupledPipeRegStage6.io.right.bits.rs1),
@@ -240,37 +271,25 @@ class SSDbackend extends NutCoreModule with hasBypassConst {
   //LSU
   val LSU = Module(new SSDLSU)
   io.dmem <> LSU.io.dmem
-  //LSU.io.lsuPC := lsuPC
-  dontTouch(io.dmem.resp.ready)
-  LSU.io.out.ready := true.B//!(Redirect6.valid || Redirect7.valid)
+//  dontTouch(io.dmem.resp.ready)
+  LSU.io.out.ready := pipeIn(6).ready && pipeIn(7).ready //!(Redirect6.valid || Redirect7.valid)
   memStall := LSU.io.memStall
   LSU.io.storeBypassCtrl <> Bypass.io.LSUBypassCtrl.storeBypassCtrlE2
   val i0LSUValid = BypassPktValid(2) && (BypassPkt(2).decodePkt.load || BypassPkt(2).decodePkt.store)
   val i1LSUValid = BypassPktValid(3) && (BypassPkt(3).decodePkt.load || BypassPkt(3).decodePkt.store)
   //LSU flush
-//  LSU.io.flush(0) := pipeOut(2).bits.redirect.valid && pipeOut(2).valid || pipeOut(3).bits.redirect.valid && pipeOut(3).valid ||
-//    ALU_6.io.redirect.valid || ALU_7.io.redirect.valid
-//  LSU.io.flush(1) := ALU_6.io.redirect.valid || ALU_7.io.redirect.valid
-//  LSU.io.flush(2) := ALU_6.io.redirect.valid || ALU_7.io.redirect.valid
-//  LSU.io.flush(3) := false.B
-//  LSU.io.invalid(0) := false.B
-//  LSU.io.invalid(1) := pipeOut(3).bits.redirect.valid && pipeOut(3).valid && (BypassPkt(2).decodePkt.load || BypassPkt(2).decodePkt.store)
-//  LSU.io.invalid(2) := false.B
-//  LSU.io.invalid(3) := ALU_7.io.redirect.valid && BypassPktValid(6) && BypassPkt(6).decodePkt.store
-    LSU.io.flush(0) := ALU_6.io.redirect.valid || ALU_7.io.redirect.valid
-    LSU.io.flush(1) := ALU_6.io.redirect.valid || ALU_7.io.redirect.valid
-    LSU.io.flush(2) := false.B
-    LSU.io.invalid(0) := pipeOut(3).bits.redirect.valid && pipeOut(3).valid && (BypassPkt(2).decodePkt.load || BypassPkt(2).decodePkt.store)
-    LSU.io.invalid(1) := false.B
-    LSU.io.invalid(2) := ALU_7.io.redirect.valid && BypassPktValid(6) && BypassPkt(6).decodePkt.store
 
-  dontTouch(i0LSUValid)
-  dontTouch(i1LSUValid)
+    LSU.io.invalid(0) := ALU_6.io.redirect.valid || ALU_7.io.redirect.valid
+    LSU.io.invalid(1) := ALU_6.io.redirect.valid || ALU_7.io.redirect.valid
+    LSU.io.invalid(2) := ALU_6.io.redirect.valid && BypassPktValid(7) && BypassPkt(7).decodePkt.store
+
+//  dontTouch(i0LSUValid)
+//  dontTouch(i1LSUValid)
   val LSUValid = i0LSUValid || i1LSUValid
-  val LSUfunc = Mux(i1LSUValid,pipeRegStage3.right.bits.fuOpType,pipeRegStage2.right.bits.fuOpType)
-  val LSUsrc1 = Mux(i1LSUValid,pipeRegStage3.right.bits.rs1,pipeRegStage2.right.bits.rs1)
-  val LSUsrc2 = Mux(i1LSUValid,pipeRegStage3.right.bits.rs2,pipeRegStage2.right.bits.rs2)
-  val LSUoffset = Mux(i1LSUValid,pipeRegStage3.right.bits.offset,pipeRegStage2.right.bits.offset)
+  val LSUfunc = Mux(i0LSUValid,pipeRegStage2.right.bits.fuOpType,pipeRegStage3.right.bits.fuOpType)
+  val LSUsrc1 = Mux(i0LSUValid,pipeRegStage2.right.bits.rs1,pipeRegStage3.right.bits.rs1)
+  val LSUsrc2 = Mux(i0LSUValid,pipeRegStage2.right.bits.rs2,pipeRegStage3.right.bits.rs2)
+  val LSUoffset = Mux(i0LSUValid,pipeRegStage2.right.bits.offset,pipeRegStage3.right.bits.offset)
   LSU.access(LSUValid,LSUsrc1,LSUsrc2,LSUfunc,LSUoffset)
   //MDU
   val MDU = Module(new SSDMDU)
@@ -282,8 +301,7 @@ class SSDbackend extends NutCoreModule with hasBypassConst {
   val MDUsrc1 = Mux(i1MDUValid,pipeRegStage1.right.bits.rs1,pipeRegStage0.right.bits.rs1)
   val MDUsrc2 = Mux(i1MDUValid,pipeRegStage1.right.bits.rs2,pipeRegStage0.right.bits.rs2)
   MDU.access(MDUValid,MDUsrc1,MDUsrc2,MDUfunc)
-  mduStall := (BypassPkt(4).decodePkt.muldiv && pipeRegStage4.right.valid || BypassPkt(5).decodePkt.muldiv && pipeRegStage5.right.valid) && !MDU.io.out.valid ||
-    MDUValid && !MDU.io.in.ready
+  mduStall := (BypassPkt(4).decodePkt.muldiv && pipeRegStage4.right.valid || BypassPkt(5).decodePkt.muldiv && pipeRegStage5.right.valid) && !MDU.io.out.valid
   //Bypass signal and data port
   val ByPassEna = Wire(Vec(14,Bool()))
   ByPassEna := Seq(
@@ -313,48 +331,79 @@ class SSDbackend extends NutCoreModule with hasBypassConst {
   val BypassPortE3 = Wire(Vec(E3BypassPort,UInt(64.W)))
   val lsuBypassPortE1 = Wire(Vec(E1StoreBypassPort,UInt(64.W)))
   val StoreBypassPortE2 = Wire(Vec(E2StoreBypassPort,UInt(64.W)))
-  BypassPortE0 := Seq(pipeIn(2).bits.rd,pipeIn(3).bits.rd,pipeIn(4).bits.rd,pipeIn(5).bits.rd,
-    pipeIn(6).bits.rd,pipeIn(7).bits.rd,LSU.io.out.bits,MDU.io.out.bits,
-    pipeIn(8).bits.rd,pipeIn(9).bits.rd,pipeOut(8).bits.rd,pipeOut(9).bits.rd)
-  BypassPortE2 := Seq(coupledPipeOut(2).bits.rd,coupledPipeOut(3).bits.rd)
-  BypassPortE3 := Seq(coupledPipeIn(1).bits.rd,coupledPipeIn(2).bits.rd,coupledPipeIn(3).bits.rd,coupledPipeOut(2).bits.rd,coupledPipeOut(3).bits.rd)
+  BypassPortE0 := Seq(pipeIn(3).bits.rd,
+    pipeIn(2).bits.rd,
+    pipeIn(5).bits.rd,
+    pipeIn(4).bits.rd,
+    Mux(BypassPkt(5).decodePkt.load, LSU.io.out.bits,
+      Mux(BypassPkt(5).decodePkt.muldiv,MDU.io.out.bits,
+        pipeIn(7).bits.rd)),
+    Mux(BypassPkt(4).decodePkt.load, LSU.io.out.bits,
+      Mux(BypassPkt(4).decodePkt.muldiv, MDU.io.out.bits,
+        pipeIn(6).bits.rd)),
 
-  lsuBypassPortE1 := Seq(coupledPipeIn(0).bits.rd,coupledPipeIn(1).bits.rd,coupledPipeIn(2).bits.rd,coupledPipeIn(3).bits.rd)
-  StoreBypassPortE2 := Seq(coupledPipeIn(0).bits.rd,coupledPipeIn(1).bits.rd,coupledPipeIn(2).bits.rd,coupledPipeIn(3).bits.rd,coupledPipeOut(2).bits.rd,coupledPipeOut(3).bits.rd)
+    // pipeIn(7).bits.rd,
+    // LSU.io.out.bits,
+    // MDU.io.out.bits,
+    pipeIn(9).bits.rd,
+    pipeIn(8).bits.rd,
+    pipeOut(9).bits.rd,
+    pipeOut(8).bits.rd
+    )
+  
+  BypassPortE2 := Seq(coupledPipeOut(3).bits.rd,coupledPipeOut(2).bits.rd)
+  BypassPortE3 := Seq(coupledPipeIn(0).bits.rd,
+  coupledPipeIn(3).bits.rd,
+  coupledPipeIn(2).bits.rd,
+  coupledPipeOut(3).bits.rd,
+  coupledPipeOut(2).bits.rd)
+
+  lsuBypassPortE1 := Seq(pipeIn(2).bits.rd,
+  coupledPipeIn(1).bits.rd,
+  coupledPipeIn(0).bits.rd,
+  coupledPipeIn(3).bits.rd,
+  coupledPipeIn(2).bits.rd)
+  StoreBypassPortE2 := Seq(pipeIn(4).bits.rd,
+  coupledPipeIn(1).bits.rd,
+  coupledPipeIn(0).bits.rd,
+  coupledPipeIn(3).bits.rd,
+  coupledPipeIn(2).bits.rd,
+  coupledPipeOut(3).bits.rd,
+  coupledPipeOut(2).bits.rd)
   
   LSU.io.storeBypassPort <> StoreBypassPortE2
-  dontTouch(BypassPortE0)
-  dontTouch(BypassPortE2)
-  dontTouch(BypassPortE3)
-  dontTouch(lsuBypassPortE1)
-  dontTouch(StoreBypassPortE2)
+  // val sadf = WireInit(false.B)
+  // BoringUtils.addSink(sadf, "i0i1LoadBlockLoadtouse")
+  // when(sadf) {
+  //   printf("pc: ->  %x\n",io.in(1).bits.cf.pc)
+  // }
   //decode & issue
   //rs1 data type: pc, regfile or bypassa
   //rs2 data type: imm, regfilw or bypass
   val e0ByapssRs1 = VecInit(0.U(64.W),0.U(64.W))
   val e0ByapssRs2 = VecInit(0.U(64.W),0.U(64.W))
   e0ByapssRs1(0) := BypassMux(ByPassEna(0), BypassPktE0(0).bits.BypassCtl.rs1bypasse0,BypassPortE0, regfile.io.readPorts(0).data)
-  e0ByapssRs1(1) := BypassMux(ByPassEna(2), BypassPktE0(1).bits.BypassCtl.rs1bypasse0,BypassPortE0, regfile.io.readPorts(2).data)
   e0ByapssRs2(0) := BypassMux(ByPassEna(1), BypassPktE0(0).bits.BypassCtl.rs2bypasse0,BypassPortE0, regfile.io.readPorts(1).data)
+  e0ByapssRs1(1) := BypassMux(ByPassEna(2), BypassPktE0(1).bits.BypassCtl.rs1bypasse0,BypassPortE0, regfile.io.readPorts(2).data)
   e0ByapssRs2(1) := BypassMux(ByPassEna(3), BypassPktE0(1).bits.BypassCtl.rs2bypasse0,BypassPortE0, regfile.io.readPorts(3).data)
   //myDebug(pipeIn(0).bits.pc === "h8000003c".U,"pipeIn(0) pc: %x, rs1Bypasse0: %b,rs1Bypass data: %x",pipeIn(0).bits.pc,BypassPktE0(0).bits.BypassCtl.rs1bypasse0.asUInt,e0ByapssRs1(0))
 
   for(i <-0 to 1){
-    pipeIn(i).valid := io.in(1-i).valid
-    io.in(i).ready := pipeIn(1-i).ready
+    pipeIn(i).valid := io.in(i).valid
+    io.in(i).ready := pipeIn(i).ready
     pipeIn(i).bits.rd := 0.U(64.W)
-    pipeIn(i).bits.rs1 := Mux(io.in(1-i).bits.ctrl.src1Type === SrcType.pc,
-      SignExt(io.in(1-i).bits.cf.pc, 64),e0ByapssRs1(i))
-    pipeIn(i).bits.rs2 := Mux(io.in(1-i).bits.ctrl.src2Type =/= SrcType.reg,
-      io.in(1-i).bits.data.imm,e0ByapssRs2(i))
-    pipeIn(i).bits.fuOpType := io.in(1-i).bits.ctrl.fuOpType
-    pipeIn(i).bits.offset := io.in(1-i).bits.data.imm
-    pipeIn(i).bits.instr := io.in(1-i).bits.cf.instr
-    pipeIn(i).bits.pc := io.in(1-i).bits.cf.pc
-    pipeIn(i).bits.pnpc := io.in(1-i).bits.cf.pnpc
-    pipeIn(i).bits.isRVC := io.in(1-i).bits.cf.isRVC
-    pipeIn(i).bits.brIdx := io.in(1-i).bits.cf.brIdx
-    pipeIn(i).bits.isBranch := ALUOpType.isBru(io.in(1-i).bits.ctrl.fuOpType)
+    pipeIn(i).bits.rs1 := Mux(io.in(i).bits.ctrl.src1Type === SrcType.pc,
+      SignExt(io.in(i).bits.cf.pc, 64),e0ByapssRs1(i))
+    pipeIn(i).bits.rs2 := Mux(io.in(i).bits.ctrl.src2Type =/= SrcType.reg,
+      io.in(i).bits.data.imm,e0ByapssRs2(i))
+    pipeIn(i).bits.fuOpType := io.in(i).bits.ctrl.fuOpType
+    pipeIn(i).bits.offset := io.in(i).bits.data.imm
+    pipeIn(i).bits.instr := io.in(i).bits.cf.instr
+    pipeIn(i).bits.pc := io.in(i).bits.cf.pc
+    pipeIn(i).bits.pnpc := io.in(i).bits.cf.pnpc
+    pipeIn(i).bits.isRVC := io.in(i).bits.cf.isRVC
+    pipeIn(i).bits.brIdx := io.in(i).bits.cf.brIdx
+    pipeIn(i).bits.isBranch := ALUOpType.isBru(io.in(i).bits.ctrl.fuOpType)
     pipeIn(i).bits.bpuUpdateReq := 0.U.asTypeOf(new BPUUpdateReq)
     pipeIn(i).bits.alu2pmu := 0.U.asTypeOf(new ALU2PMUIO)
     pipeIn(i).bits.redirect := 0.U.asTypeOf(new RedirectIO)
@@ -363,23 +412,24 @@ class SSDbackend extends NutCoreModule with hasBypassConst {
     //for MMIO
     pipeIn(i).bits.isMMIO := DontCare
     //for Debug
-    pipeIn(i).bits.debugInfo.rs1 := io.in(1-i).bits.ctrl.rfSrc1
-    pipeIn(i).bits.debugInfo.rs2 := io.in(1-i).bits.ctrl.rfSrc2
-    pipeIn(i).bits.debugInfo.rd  := io.in(1-i).bits.ctrl.rfDest
-    pipeIn(i).bits.debugInfo.rdValid  := io.in(1-i).bits.ctrl.rfWen
-    pipeIn(i).bits.debugInfo.rs1Valid  := io.in(1-i).bits.ctrl.src1Type === SrcType.reg
-    pipeIn(i).bits.debugInfo.rs2Valid  := io.in(1-i).bits.ctrl.src2Type === SrcType.reg
-    pipeIn(i).bits.debugInfo.rs1Pc  := io.in(1-i).bits.ctrl.src1Type === SrcType.pc
-    pipeIn(i).bits.debugInfo.rs2Imm  := io.in(1-i).bits.ctrl.src2Type === SrcType.imm
+    pipeIn(i).bits.debugInfo.rs1 := io.in(i).bits.ctrl.rfSrc1
+    pipeIn(i).bits.debugInfo.rs2 := io.in(i).bits.ctrl.rfSrc2
+    pipeIn(i).bits.debugInfo.rd  := io.in(i).bits.ctrl.rfDest
+    pipeIn(i).bits.debugInfo.rdValid  := io.in(i).bits.ctrl.rfWen
+    pipeIn(i).bits.debugInfo.rs1Valid  := io.in(i).bits.ctrl.src1Type === SrcType.reg
+    pipeIn(i).bits.debugInfo.rs2Valid  := io.in(i).bits.ctrl.src2Type === SrcType.reg
+    pipeIn(i).bits.debugInfo.rs1Pc  := io.in(i).bits.ctrl.src1Type === SrcType.pc
+    pipeIn(i).bits.debugInfo.rs2Imm  := io.in(i).bits.ctrl.src2Type === SrcType.imm
     //for csr inst
-    pipeIn(i).bits.csrInst := io.in(1-i).bits.cf.instr(6,0) === "b1110011".U
-    // for update ghr
-    pipeIn(i).bits.ghr := io.in(1-i).bits.cf.redirect.ghr
-    pipeIn(i).bits.btbIsBranch := io.in(1-i).bits.cf.redirect.btbIsBranch
+    pipeIn(i).bits.csrInst := io.in(i).bits.cf.instr(6,0) === "b1110011".U
+
+    pipeIn(i).bits.btbIsBranch := io.in(i).bits.cf.redirect.btbIsBranch
     pipeIn(i).bits.branchTaken := DontCare
     //for difftest
     pipeIn(i).bits.CSRregfile := DontCare
     pipeIn(i).bits.ArchEvent := DontCare
+    //for sfb
+    pipeIn(i).bits.sfb := io.in(i).bits.cf.sfb
   }
 
   for(i <- 2 to 9 ){
@@ -513,10 +563,10 @@ class SSDbackend extends NutCoreModule with hasBypassConst {
 
 
   //i1rs1,i1rs2,i0rs1,i0rs2
-  regfile.io.readPorts(0).addr := io.in(1).bits.ctrl.rfSrc1
-  regfile.io.readPorts(1).addr := io.in(1).bits.ctrl.rfSrc2
-  regfile.io.readPorts(2).addr := io.in(0).bits.ctrl.rfSrc1
-  regfile.io.readPorts(3).addr := io.in(0).bits.ctrl.rfSrc2
+  regfile.io.readPorts(0).addr := io.in(0).bits.ctrl.rfSrc1
+  regfile.io.readPorts(1).addr := io.in(0).bits.ctrl.rfSrc2
+  regfile.io.readPorts(2).addr := io.in(1).bits.ctrl.rfSrc1
+  regfile.io.readPorts(3).addr := io.in(1).bits.ctrl.rfSrc2
 
   // for debug
   val lsuPC =WireInit(0.U(VAddrBits.W))
@@ -534,7 +584,7 @@ class SSDbackend extends NutCoreModule with hasBypassConst {
     a.io.left <> pipeIn(b)
     a.io.right <> pipeOut(b)
     a.io.rightOutFire <> pipeFire(b)
-    a.io.isFlush <> pipeFlush(b)
+    // a.io.isFlush <> pipeFlush(b)
     a.io.inValid <> pipeInvalid(b)
   }
   pipeRegStage0.io.isStall := issueStall(0)
@@ -549,9 +599,13 @@ class SSDbackend extends NutCoreModule with hasBypassConst {
     a.io.left <> pipeIn(b)
     a.io.right <> pipeOut(b)
     a.io.rightOutFire <> pipeFire(b)
-    a.io.isFlush <> pipeFlush(b)
+    // a.io.isFlush <> pipeFlush(b)
     a.io.inValid <> pipeInvalid(b)
   }
+  val stallAndFlush =  !pipeRegStage2.io.right.ready && Redirect2.valid || !pipeRegStage3.io.right.ready && Redirect3.valid
+
+  pipeRegStage2.io.inValid := Mux(stallAndFlush , false.B, pipeInvalid(2))
+  pipeRegStage3.io.inValid := Mux(!pipeRegStage3.io.right.ready && Redirect3.valid , false.B, pipeInvalid(3))
 
   val coupledStageList = List(coupledPipeRegStage6,coupledPipeRegStage7,coupledPipeRegStage8,coupledPipeRegStage9)
   val coupledIndexList = List(0,1,2,3)
@@ -564,27 +618,7 @@ class SSDbackend extends NutCoreModule with hasBypassConst {
     a.io.inValid <> false.B
   }
 
-  //GHR commit
-  val GHRCommit = RegInit(0.U(GhrLength.W))
-  val i0IsBranch = pipeOut(8).fire && !pipeInvalid(10) && pipeOut(8).bits.isBranch && ALUOpType.isBranch(pipeOut(8).bits.fuOpType)
-  val i1IsBranch = pipeOut(9).fire && !pipeInvalid(11) && pipeOut(9).bits.isBranch && ALUOpType.isBranch(pipeOut(9).bits.fuOpType)
-  val GHRCommitUpdate = i0IsBranch || i1IsBranch
-  val nextGHRCommit = Cat(GHRCommit(GhrLength-2,0),Mux(i0IsBranch,pipeOut(8).bits.branchTaken,pipeOut(9).bits.branchTaken))
-  when(GHRCommitUpdate){ GHRCommit := nextGHRCommit}
-  val branchInstPC = Mux(GHRCommitUpdate,Mux(i0IsBranch,pipeOut(8).bits.pc,pipeOut(9).bits.pc),0.U)
-  val ghrCompared = Mux(i0IsBranch,pipeOut(8).bits.bpuUpdateReq.ghrNotUpdated,Mux(i1IsBranch,pipeOut(9).bits.bpuUpdateReq.ghrNotUpdated, 0.U))
-  val ghrTag = Mux(i0IsBranch,pipeOut(8).bits.bpuUpdateReq.ghrNotUpdated =/= GHRCommit,
-    Mux(i1IsBranch,pipeOut(9).bits.bpuUpdateReq.ghrNotUpdated =/= GHRCommit,false.B))
-  //assert(RegNext(!ghrTag))
-  dontTouch(branchInstPC)
-  dontTouch(nextGHRCommit)
-  dontTouch(GHRCommit)
-  if(SSDCoreConfig().EnableGHRDebug){
-    myDebug(GHRCommitUpdate,"pc = %x, taken: %b, GHR now: %b, GHR compared %b\n",
-      branchInstPC,Mux(i0IsBranch,pipeOut(8).bits.branchTaken,pipeOut(9).bits.branchTaken).asUInt,GHRCommit,ghrCompared)
-  }
-  dontTouch(ghrTag)
-  dontTouch(ghrCompared)
+
   //Call/Ret Debug
   val i0Call = pipeOut(8).fire && !pipeInvalid(10) && ALUOpType.call === pipeOut(8).bits.fuOpType
   val i1Call = pipeOut(9).fire && !pipeInvalid(11) && ALUOpType.call === pipeOut(9).bits.fuOpType
@@ -592,22 +626,27 @@ class SSDbackend extends NutCoreModule with hasBypassConst {
   val i1Ret = pipeOut(9).fire && !pipeInvalid(11) && ALUOpType.ret === pipeOut(9).bits.fuOpType
   val CallCond = i0Call || i1Call
   val RetCond = i0Ret || i1Ret
-  dontTouch(CallCond)
-  dontTouch(RetCond)
+//  dontTouch(CallCond)
+//  dontTouch(RetCond)
   val CallPC = Mux(CallCond,Mux(i0Call,pipeOut(8).bits.pc,pipeOut(9).bits.pc),0.U)
   val RetPC = Mux(RetCond,Mux(i0Ret,pipeOut(8).bits.pc,pipeOut(9).bits.pc),0.U)
   val RetWrong = RetCond &&  Mux(i0Ret,pipeOut(8).bits.alu2pmu.retWrong,pipeOut(9).bits.alu2pmu.retWrong)
-  dontTouch(RetWrong)
-  if(SSDCoreConfig().EnableRetDebug){
-    myDebug(CallCond,"Call: pc = %x, Targe = %x \n",
-      CallPC,Mux(i0Call,pipeOut(8).bits.bpuUpdateReq.actualTarget,pipeOut(9).bits.bpuUpdateReq.actualTarget).asUInt)
-  }
-  if(SSDCoreConfig().EnableRetDebug){
-    myDebug(RetCond,"Ret : pc = %x, Targe = %x, isMisPredict = %b \n",
-      RetPC,Mux(i0Ret,pipeOut(8).bits.bpuUpdateReq.actualTarget,pipeOut(9).bits.bpuUpdateReq.actualTarget).asUInt,
-      Mux(i0Ret,pipeOut(8).bits.alu2pmu.retWrong,pipeOut(9).bits.alu2pmu.retWrong).asUInt)
-  }
+//  dontTouch(RetWrong)
+//  if(SSDCoreConfig().EnableRetDebug){
+//    myDebug(CallCond,"Call: pc = %x, Targe = %x \n",
+//      CallPC,Mux(i0Call,pipeOut(8).bits.bpuUpdateReq.actualTarget,pipeOut(9).bits.bpuUpdateReq.actualTarget).asUInt)
+//  }
+//  if(SSDCoreConfig().EnableRetDebug){
+//    myDebug(RetCond,"Ret : pc = %x, Targe = %x, isMisPredict = %b \n",
+//      RetPC,Mux(i0Ret,pipeOut(8).bits.bpuUpdateReq.actualTarget,pipeOut(9).bits.bpuUpdateReq.actualTarget).asUInt,
+//      Mux(i0Ret,pipeOut(8).bits.alu2pmu.retWrong,pipeOut(9).bits.alu2pmu.retWrong).asUInt)
+//  }
   //PMU perfCnt signal
+
+  val backendRetretire = ( pipeOut(8).fire() && !pipeInvalid(10) && pipeOut(8).bits.isBranch && ALUOpType.ret === pipeOut(8).bits.fuOpType) ||
+    ( pipeOut(9).fire() && !pipeInvalid(11) && pipeOut(9).bits.isBranch && ALUOpType.ret === pipeOut(9).bits.fuOpType)
+  BoringUtils.addSource(backendRetretire , "backendRetretire")
+
   val perfCntIO = Wire(new PMUIO1)
   PMU.io.in1 <> perfCntIO
 
@@ -660,66 +699,69 @@ class SSDbackend extends NutCoreModule with hasBypassConst {
   instCommitCntIO.divInst := ( pipeOut(8).fire && !pipeInvalid(10)  && MDUOpType.isDiv(pipeOut(8).bits.fuOpType) && BypassPktValid(8) && BypassPkt(8).decodePkt.muldiv).asUInt +
     ( pipeOut(9).fire && !pipeInvalid(11) && MDUOpType.isDiv(pipeOut(9).bits.fuOpType) && BypassPktValid(9) && BypassPkt(9).decodePkt.muldiv).asUInt
 
-
+  BoringUtils.addSource(memStall,"memStallCycle")
+  BoringUtils.addSource(memStall & (!RegNext(memStall)),"memStallCnt")
+  BoringUtils.addSource(mduStall,"mduStallCycle")
+  BoringUtils.addSource(mduStall & (!RegNext(mduStall)),"mduStallCnt")
 
   //Pipeline basic information
-  def instTypePrint(valid:Bool, BypassPkt: BypassPkt)={
-    val aluCond = BypassPkt.decodePkt.alu && !BypassPkt.decodePkt.subalu
-    val subaluCond = BypassPkt.decodePkt.alu &&  BypassPkt.decodePkt.subalu
-    val loadCond = BypassPkt.decodePkt.load
-    val storeCond = BypassPkt.decodePkt.store
-    val elseCond = !aluCond && !subaluCond && !loadCond && !storeCond && valid || ! valid
-    myDebug(valid && aluCond,   " ALU   ")
-    myDebug(valid && subaluCond," SubALU")
-    myDebug(valid && loadCond,  " Load  ")
-    myDebug(valid && storeCond, " Store ")
-    myDebug(elseCond,           "       ")
-  }
-  def rsrdPrintf (valid:Bool, pipeinfo:FuPkt )={
-    myDebug(valid && pipeinfo.debugInfo.rs1Valid,"rs1[%x]: %x ;",pipeinfo.debugInfo.rs1,pipeinfo.rs1)
-    myDebug(valid && pipeinfo.debugInfo.rs1Pc,   "rs1[pc ]: %x ;",pipeinfo.pc)
-    myDebug(valid && pipeinfo.debugInfo.rs2Valid,"rs2[%x]: %x ;",pipeinfo.debugInfo.rs2,pipeinfo.rs2)
-    myDebug(valid && pipeinfo.debugInfo.rs2Imm,  "rs2[imm]: %x ;",pipeinfo.offset)
-    myDebug(valid && pipeinfo.debugInfo.rdValid, "rd [%x]: %x ;",pipeinfo.debugInfo.rd,pipeinfo.rd)
-    myDebug(valid && !pipeinfo.debugInfo.rdValid,"             \n")
-  }
-  def pipeInPrintf (valid:Bool, pipeIn:FuPkt )={
-    myDebug(valid,"rs1:%x, rs2:%x, rd:%x",pipeIn.rs1,pipeIn.rs2,pipeIn.rd)
-  }
-  val tag = pipeIn(0).bits.pc === "h800000d8".U || pipeIn(1).bits.pc === "h800000d8".U
-  dontTouch(tag)
-  if(SSDCoreConfig().EnablePipestageDebug){
-    printf("=========================================================\n")
-    printf("--------------------- Pipeline state --------------------\n")
-    printf("=========================================================\n")
-    for(i <- 0 to 4){
-      myDebug(pipeOut(2*i).valid,"| %x | %x ",(2*i).U,pipeOut(2*i).bits.pc)
-      myDebug(!pipeOut(2*i).valid,"| %x |            ",(2*i).U)
-      instTypePrint(Bypass.io.BypassPktValid(2*i),Bypass.io.BypassPkt(2*i))
-      myDebug(pipeOut(2*i+1).valid,"| %x | %x ",(2*i+1).U,pipeOut(2*i+1).bits.pc)
-      myDebug(!pipeOut(2*i+1).valid,"| %x |            ",(2*i+1).U)
-      instTypePrint(Bypass.io.BypassPktValid(2*i+1),Bypass.io.BypassPkt(2*i+1))
-      printf("|\n")
-    }
-    printf("=========================================================\n")
-    printf("---------------------- rd / rs info ---------------------\n")
-    printf("=========================================================\n")
-    for(i <- 0 to 9){
-      printf("Pipe%x: ",i.U)
-      rsrdPrintf(pipeOut(i).valid,pipeOut(i).bits)
-      printf("\n")
-    }
-    printf("=========================================================\n")
-    printf("--------------------- Pipeline Input --------------------\n")
-    printf("=========================================================\n")
-    for(i <- 0 to 9){
-      printf("Pipe%x: ",i.U)
-      pipeInPrintf(pipeIn(i).valid,pipeIn(i).bits)
-      printf("\n")
-    }
-    printf("=========================================================\n")
-
-  } //SSDCore Performance Counter
+//  def instTypePrint(valid:Bool, BypassPkt: BypassPkt)={
+//    val aluCond = BypassPkt.decodePkt.alu && !BypassPkt.decodePkt.subalu
+//    val subaluCond = BypassPkt.decodePkt.alu &&  BypassPkt.decodePkt.subalu
+//    val loadCond = BypassPkt.decodePkt.load
+//    val storeCond = BypassPkt.decodePkt.store
+//    val elseCond = !aluCond && !subaluCond && !loadCond && !storeCond && valid || ! valid
+//    myDebug(valid && aluCond,   " ALU   ")
+//    myDebug(valid && subaluCond," SubALU")
+//    myDebug(valid && loadCond,  " Load  ")
+//    myDebug(valid && storeCond, " Store ")
+//    myDebug(elseCond,           "       ")
+//  }
+//  def rsrdPrintf (valid:Bool, pipeinfo:FuPkt )={
+//    myDebug(valid && pipeinfo.debugInfo.rs1Valid,"rs1[%x]: %x ;",pipeinfo.debugInfo.rs1,pipeinfo.rs1)
+//    myDebug(valid && pipeinfo.debugInfo.rs1Pc,   "rs1[pc ]: %x ;",pipeinfo.pc)
+//    myDebug(valid && pipeinfo.debugInfo.rs2Valid,"rs2[%x]: %x ;",pipeinfo.debugInfo.rs2,pipeinfo.rs2)
+//    myDebug(valid && pipeinfo.debugInfo.rs2Imm,  "rs2[imm]: %x ;",pipeinfo.offset)
+//    myDebug(valid && pipeinfo.debugInfo.rdValid, "rd [%x]: %x ;",pipeinfo.debugInfo.rd,pipeinfo.rd)
+//    myDebug(valid && !pipeinfo.debugInfo.rdValid,"             \n")
+//  }
+//  def pipeInPrintf (valid:Bool, pipeIn:FuPkt )={
+//    myDebug(valid,"rs1:%x, rs2:%x, rd:%x",pipeIn.rs1,pipeIn.rs2,pipeIn.rd)
+//  }
+//  val tag = pipeIn(0).bits.pc === "h800000d8".U || pipeIn(1).bits.pc === "h800000d8".U
+//  dontTouch(tag)
+//  if(SSDCoreConfig().EnablePipestageDebug){
+//    printf("=========================================================\n")
+//    printf("--------------------- Pipeline state --------------------\n")
+//    printf("=========================================================\n")
+//    for(i <- 0 to 4){
+//      myDebug(pipeOut(2*i).valid,"| %x | %x ",(2*i).U,pipeOut(2*i).bits.pc)
+//      myDebug(!pipeOut(2*i).valid,"| %x |            ",(2*i).U)
+//      instTypePrint(Bypass.io.BypassPktValid(2*i),Bypass.io.BypassPkt(2*i))
+//      myDebug(pipeOut(2*i+1).valid,"| %x | %x ",(2*i+1).U,pipeOut(2*i+1).bits.pc)
+//      myDebug(!pipeOut(2*i+1).valid,"| %x |            ",(2*i+1).U)
+//      instTypePrint(Bypass.io.BypassPktValid(2*i+1),Bypass.io.BypassPkt(2*i+1))
+//      printf("|\n")
+//    }
+//    printf("=========================================================\n")
+//    printf("---------------------- rd / rs info ---------------------\n")
+//    printf("=========================================================\n")
+//    for(i <- 0 to 9){
+//      printf("Pipe%x: ",i.U)
+//      rsrdPrintf(pipeOut(i).valid,pipeOut(i).bits)
+//      printf("\n")
+//    }
+//    printf("=========================================================\n")
+//    printf("--------------------- Pipeline Input --------------------\n")
+//    printf("=========================================================\n")
+//    for(i <- 0 to 9){
+//      printf("Pipe%x: ",i.U)
+//      pipeInPrintf(pipeIn(i).valid,pipeIn(i).bits)
+//      printf("\n")
+//    }
+//    printf("=========================================================\n")
+//
+//  } //SSDCore Performance Counter
   val SSDCorePerfCntList = Map(
     "i0Issue"   -> (0x0, "perfCntI0Issue"      ),
     "i1Issue"   -> (0x1, "perfCntI1Issue"      ),
@@ -863,103 +905,108 @@ class SSDbackend extends NutCoreModule with hasBypassConst {
     val dt_sb1_addr = align64_address(pipeOut(9).bits.rs1 + pipeOut(9).bits.offset)
     //Debug(dt_sb1_valid && (dt_sb1_addr === 0x800087C0L.U), "Commit SB1 Addr: %x\n", dt_sb1.io.sbufferAddr)
 
-    val dt_ic1 = Module(new DifftestInstrCommit)
-    dt_ic1.io.clock := clock
-    dt_ic1.io.coreid := hartid
-    dt_ic1.io.index := 0.U
-    dt_ic1.io.valid := RegNext(pipeOut(9).fire && !pipeInvalid(11) && pipeOut(9).bits.pc =/= 0.U) && !RegNext(SSDcoretrap)
-    dt_ic1.io.pc := RegNext(Cat(0.U((64 - VAddrBits).W), pipeOut(9).bits.pc))
-    dt_ic1.io.instr := RegNext(pipeOut(9).bits.instr)
-    dt_ic1.io.special := 0.U
-//    dt_ic1.io.skip := (RegNext(pipeOut(9).fire && !pipeInvalid(11) && ((pipeOut(9).bits.csrInst && pipeOut(8).bits.instr=/=0x73.U && pipeOut(9).bits.instr=/=0x30571073.U && pipeOut(9).bits.instr=/=0x30031073.U && pipeOut(9).bits.instr =/=0x34139073.U && pipeOut(9).bits.instr =/= 0x30200073.U) || pipeOut(9).bits.isMMIO))) || RegNext(pipeOut(9).bits.instr === 0x7b.U)
-    dt_ic1.io.skip := (RegNext(pipeOut(9).fire && !pipeInvalid(11) && (pipeOut(9).bits.isMMIO))) || RegNext(pipeOut(9).bits.instr === 0x7b.U) ||
-      RegNext(pipeOut(9).bits.instr(6,0) === "hb0002973".U(6,0) && pipeOut(9).bits.instr(31,12) === "hb0002973".U(31,12)) //trap & csrr mcycle
-    dt_ic1.io.isRVC := false.B
-    dt_ic1.io.scFailed := false.B
-    dt_ic1.io.wen := RegNext(regfile.io.writePorts(1).wen)
-    dt_ic1.io.wpdest := RegNext(Cat(0.U(3.W), regfile.io.writePorts(1).addr))
-    dt_ic1.io.wdest := RegNext(Cat(0.U(3.W), regfile.io.writePorts(1).addr))
+//    val dt_ic1 = Module(new DifftestInstrCommit)
+    BoringUtils.addSource(RegNext(pipeOut(8).fire() && !pipeInvalid(10) && pipeOut(8).bits.pc =/= 0.U) && !RegNext(SSDcoretrap),"dt_ic1_valid")
+    BoringUtils.addSource(RegNext(Cat(0.U((64 - VAddrBits).W), pipeOut(8).bits.pc)),"dt_ic1_pc")
+    BoringUtils.addSource(RegNext(pipeOut(8).bits.instr),"dt_ic1_instr")
+    BoringUtils.addSource(RegNext(pipeOut(8).bits.isRVC), "dt_ic1_isRVC")
+    BoringUtils.addSource((RegNext(pipeOut(8).fire() && !pipeInvalid(10) && (pipeOut(8).bits.isMMIO))) || RegNext(pipeOut(8).bits.instr === 0x7b.U) ||
+      RegNext(pipeOut(8).bits.instr(6, 0) === "hb0002973".U(6, 0) && pipeOut(8).bits.instr(31, 12) === "hb0002973".U(31, 12)), "dt_ic1_skip")
+    BoringUtils.addSource(RegNext(regfile.io.writePorts(0).wen), "dt_ic1_wen")
+    BoringUtils.addSource(RegNext(Cat(0.U(3.W), regfile.io.writePorts(0).addr)), "dt_ic1_wpdest")
+    BoringUtils.addSource(RegNext(Cat(0.U(3.W), regfile.io.writePorts(0).addr)), "dt_ic1_wdest")
+//    dt_ic1.io.clock := clock
+//    dt_ic1.io.coreid := hartid
+//    dt_ic1.io.index := 0.U
+//    dt_ic1.io.valid := RegNext(pipeOut(9).fire && !pipeInvalid(11) && pipeOut(9).bits.pc =/= 0.U) && !RegNext(SSDcoretrap)
+//    dt_ic1.io.pc := RegNext(Cat(0.U((64 - VAddrBits).W), pipeOut(9).bits.pc))
+//    dt_ic1.io.instr := RegNext(pipeOut(9).bits.instr)
+//    dt_ic1.io.special := 0.U
+////    dt_ic1.io.skip := (RegNext(pipeOut(9).fire && !pipeInvalid(11) && ((pipeOut(9).bits.csrInst && pipeOut(8).bits.instr=/=0x73.U && pipeOut(9).bits.instr=/=0x30571073.U && pipeOut(9).bits.instr=/=0x30031073.U && pipeOut(9).bits.instr =/=0x34139073.U && pipeOut(9).bits.instr =/= 0x30200073.U) || pipeOut(9).bits.isMMIO))) || RegNext(pipeOut(9).bits.instr === 0x7b.U)
+//    dt_ic1.io.skip := (RegNext(pipeOut(9).fire && !pipeInvalid(11) && (pipeOut(9).bits.isMMIO))) || RegNext(pipeOut(9).bits.instr === 0x7b.U) ||
+//      RegNext(pipeOut(9).bits.instr(6,0) === "hb0002973".U(6,0) && pipeOut(9).bits.instr(31,12) === "hb0002973".U(31,12)) //trap & csrr mcycle
+//    dt_ic1.io.isRVC := false.B
+//    dt_ic1.io.scFailed := false.B
+//    dt_ic1.io.wen := RegNext(regfile.io.writePorts(1).wen)
+//    dt_ic1.io.wpdest := RegNext(Cat(0.U(3.W), regfile.io.writePorts(1).addr))
+//    dt_ic1.io.wdest := RegNext(Cat(0.U(3.W), regfile.io.writePorts(1).addr))
+    BoringUtils.addSource(RegNext(pipeOut(9).fire() && !pipeInvalid(11) && pipeOut(9).bits.pc =/= 0.U), "dt_ic0_valid")
+    BoringUtils.addSource(RegNext(Cat(0.U((64 - VAddrBits).W), pipeOut(9).bits.pc)), "dt_ic0_pc")
+    BoringUtils.addSource(RegNext(pipeOut(9).bits.instr), "dt_ic0_instr")
+    BoringUtils.addSource(RegNext(pipeOut(9).bits.isRVC), "dt_ic0_isRVC")
+    BoringUtils.addSource((RegNext(pipeOut(9).fire() && !pipeInvalid(11) && (pipeOut(9).bits.isMMIO))) || RegNext(pipeOut(9).bits.instr === 0x7b.U) ||
+      RegNext(pipeOut(9).bits.instr(6, 0) === "hb0002973".U(6, 0) && pipeOut(9).bits.instr(31, 12) === "hb0002973".U(31, 12)), "dt_ic0_skip")
+    BoringUtils.addSource(RegNext(regfile.io.writePorts(1).wen), "dt_ic0_wen")
+    BoringUtils.addSource(RegNext(Cat(0.U(3.W), regfile.io.writePorts(1).addr)), "dt_ic0_wpdest")
+    BoringUtils.addSource(RegNext(Cat(0.U(3.W), regfile.io.writePorts(1).addr)), "dt_ic0_wdest")
 
-    val dt_ic0 = Module(new DifftestInstrCommit)
-    dt_ic0.io.clock := clock
-    dt_ic0.io.coreid := hartid
-    dt_ic0.io.index := 1.U
 
-    dt_ic0.io.valid := RegNext(pipeOut(8).fire && !pipeInvalid(10) && pipeOut(8).bits.pc =/= 0.U)
-    dt_ic0.io.pc := RegNext(Cat(0.U((64 - VAddrBits).W), pipeOut(8).bits.pc))
-    dt_ic0.io.instr := RegNext(pipeOut(8).bits.instr)
-    dt_ic0.io.special := 0.U
-//    dt_ic0.io.skip := (RegNext(pipeOut(8).fire && !pipeInvalid(10) && ((pipeOut(8).bits.csrInst && pipeOut(8).bits.instr=/=0x73.U && pipeOut(8).bits.instr=/=0x30571073.U && pipeOut(8).bits.instr=/=0x30031073.U && pipeOut(8).bits.instr =/=0x34139073.U && pipeOut(8).bits.instr =/= 0x30200073.U) || pipeOut(8).bits.isMMIO))) || RegNext(pipeOut(8).bits.instr === 0x7b.U)
-    dt_ic0.io.skip := (RegNext(pipeOut(8).fire && !pipeInvalid(10) && (pipeOut(8).bits.isMMIO))) || RegNext(pipeOut(8).bits.instr === 0x7b.U) ||
-      RegNext(pipeOut(8).bits.instr(6,0) === "hb0002973".U(6,0) && pipeOut(8).bits.instr(31,12) === "hb0002973".U(31,12))
-    dt_ic0.io.isRVC := false.B
-    dt_ic0.io.scFailed := false.B
-    dt_ic0.io.wen := RegNext(regfile.io.writePorts(0).wen)
-    dt_ic0.io.wpdest := RegNext(Cat(0.U(3.W), regfile.io.writePorts(0).addr))
-    dt_ic0.io.wdest := RegNext(Cat(0.U(3.W), regfile.io.writePorts(0).addr))
-
+    BoringUtils.addSource(RegNext(regfile.io.writePorts(1).wen),"dt_iw0_valid")
+    BoringUtils.addSource(RegNext(Cat(0.U(3.W), regfile.io.writePorts(1).addr)),"dt_iw0_dest")
+    BoringUtils.addSource(RegNext(regfile.io.writePorts(1).data), "dt_iw0_data")
+//    val dt_iw0 = Module(new DifftestIntWriteback)
+//    dt_iw0.io.clock := clock
+//    dt_iw0.io.coreid := 0.U
+//    dt_iw0.io.valid := RegNext(regfile.io.writePorts(1).wen)
+//    dt_iw0.io.dest := RegNext(regfile.io.writePorts(1).addr)
+//    dt_iw0.io.data := RegNext(regfile.io.writePorts(1).data)
     val regP0 = regfile.io.writePorts(0).addr
     val regP1 = regfile.io.writePorts(1).addr
-    val dt_iw0 = Module(new DifftestIntWriteback)
-    dt_iw0.io.clock := clock
-    dt_iw0.io.coreid := hartid
-    dt_iw0.io.valid := RegNext(regfile.io.writePorts(0).wen)
-    //dt_iw0.io.valid := RegNext(Mux(regP0 === regP1 && regfile.io.writePorts(0).wen && regfile.io.writePorts(1).wen, false.B, regfile.io.writePorts(1).wen))
-    dt_iw0.io.dest := RegNext(regfile.io.writePorts(0).addr)
-    dt_iw0.io.data := RegNext(regfile.io.writePorts(0).data)
+    
+    BoringUtils.addSource(RegNext(Mux(regP0 === regP1 && regfile.io.writePorts(0).wen && regfile.io.writePorts(1).wen ,false.B,regfile.io.writePorts(0).wen)), "dt_iw1_valid")
+    BoringUtils.addSource(RegNext(Cat(0.U(3.W), regfile.io.writePorts(0).addr)), "dt_iw1_dest")
+    BoringUtils.addSource(RegNext(regfile.io.writePorts(0).data), "dt_iw1_data")
+//    val dt_iw1 = Module(new DifftestIntWriteback)
+//    dt_iw1.io.clock := clock
+//    dt_iw1.io.coreid := 0.U
+//    dt_iw1.io.valid := RegNext(regfile.io.writePorts(0).wen)
+//    dt_iw1.io.dest := RegNext(regfile.io.writePorts(0).addr)
+//    dt_iw1.io.data := RegNext(regfile.io.writePorts(0).data)
+    BoringUtils.addSource(RegNext(Mux(pipeOut(9).bits.csrInst,pipeOut(9).bits.ArchEvent.intrNO,pipeOut(8).bits.ArchEvent.intrNO)), "dt_ae_intrNO")
+    BoringUtils.addSource(RegNext(Mux(pipeOut(9).bits.csrInst,pipeOut(9).bits.ArchEvent.cause,pipeOut(8).bits.ArchEvent.cause)), "dt_ae_cause")
+    BoringUtils.addSource(RegNext(Mux(pipeOut(9).bits.csrInst,pipeOut(9).bits.ArchEvent.exceptionPC,pipeOut(8).bits.ArchEvent.exceptionPC)), "dt_ae_exceptionPC")
+
+//    val dt_ae = Module(new DifftestArchEvent)
+//    dt_ae.io.clock := clock
+//    dt_ae.io.coreid :=      0.U
+//    dt_ae.io.intrNO :=      RegNext(Mux(pipeOut(8).bits.csrInst,pipeOut(8).bits.ArchEvent.intrNO,pipeOut(9).bits.ArchEvent.intrNO))
+//    dt_ae.io.cause :=       RegNext(Mux(pipeOut(8).bits.csrInst,pipeOut(8).bits.ArchEvent.cause,pipeOut(9).bits.ArchEvent.cause))
+//    dt_ae.io.exceptionPC := RegNext(Mux(pipeOut(8).bits.csrInst,pipeOut(8).bits.ArchEvent.exceptionPC,pipeOut(9).bits.ArchEvent.exceptionPC))
+    BoringUtils.addSource(RegNext(SSDcoretrap), "dt_te_valid")
+    BoringUtils.addSource(rf_a0(2, 0), "dt_te_code")
+    BoringUtils.addSource(Mux(RegNext(pipeOut(8).bits.instr === "h0000006b".U), RegNext(Cat(0.U((64 - VAddrBits).W), pipeOut(8).bits.pc)), RegNext(Cat(0.U((64 - VAddrBits).W), pipeOut(9).bits.pc))), "dt_te_pc")
+    BoringUtils.addSource(cycle_cnt, "dt_te_cycleCnt")
+    BoringUtils.addSource(instr_cnt, "dt_te_instrCnt")
+//    val dt_te = Module(new DifftestTrapEvent)
+//    dt_te.io.clock := clock
+//    dt_te.io.coreid := 0.U
+//    dt_te.io.valid := RegNext(SSDcoretrap)
+//    dt_te.io.code := rf_a0(2, 0)
+//    dt_te.io.pc := Mux(RegNext(pipeOut(8).bits.instr === "h0000006b".U), RegNext(Cat(0.U((64 - VAddrBits).W), pipeOut(8).bits.pc)), RegNext(Cat(0.U((64 - VAddrBits).W), pipeOut(9).bits.pc)))
+//    dt_te.io.cycleCnt := cycle_cnt
+//    dt_te.io.instrCnt := instr_cnt
+    BoringUtils.addSource(RegNext(Mux(pipeOut(8).bits.csrInst,pipeOut(8).bits.CSRregfile.mstatus ,pipeOut(9).bits.CSRregfile.mstatus )), "dt_cs_mstatus")
+    BoringUtils.addSource(RegNext(Mux(pipeOut(8).bits.csrInst,pipeOut(8).bits.CSRregfile.sstatus ,pipeOut(9).bits.CSRregfile.sstatus )), "dt_cs_sstatus")
+    BoringUtils.addSource(RegNext(Mux(pipeOut(8).bits.csrInst,pipeOut(8).bits.CSRregfile.mepc    ,pipeOut(9).bits.CSRregfile.mepc    )), "dt_cs_mepc")
+    BoringUtils.addSource(RegNext(Mux(pipeOut(8).bits.csrInst,pipeOut(8).bits.CSRregfile.sepc    ,pipeOut(9).bits.CSRregfile.sepc    )), "dt_cs_sepc")
+    BoringUtils.addSource(RegNext(Mux(pipeOut(8).bits.csrInst,pipeOut(8).bits.CSRregfile.mtval   ,pipeOut(9).bits.CSRregfile.mtval   )), "dt_cs_mtval")
+    BoringUtils.addSource(RegNext(Mux(pipeOut(8).bits.csrInst,pipeOut(8).bits.CSRregfile.stval   ,pipeOut(9).bits.CSRregfile.stval   )), "dt_cs_stval")
+    BoringUtils.addSource(RegNext(Mux(pipeOut(8).bits.csrInst,pipeOut(8).bits.CSRregfile.mtvec   ,pipeOut(9).bits.CSRregfile.mtvec   )), "dt_cs_mtvec")
+    BoringUtils.addSource(RegNext(Mux(pipeOut(8).bits.csrInst,pipeOut(8).bits.CSRregfile.stvec   ,pipeOut(9).bits.CSRregfile.stvec   )), "dt_cs_stvec")
+    BoringUtils.addSource(RegNext(Mux(pipeOut(8).bits.csrInst,pipeOut(8).bits.CSRregfile.mcause  ,pipeOut(9).bits.CSRregfile.mcause  )), "dt_cs_mcause")
+    BoringUtils.addSource(RegNext(Mux(pipeOut(8).bits.csrInst,pipeOut(8).bits.CSRregfile.scause  ,pipeOut(9).bits.CSRregfile.scause  )), "dt_cs_scause")
+    BoringUtils.addSource(RegNext(Mux(pipeOut(8).bits.csrInst,pipeOut(8).bits.CSRregfile.satp    ,pipeOut(9).bits.CSRregfile.satp    )), "dt_cs_satp")
+    BoringUtils.addSource(RegNext(Mux(pipeOut(8).bits.csrInst,pipeOut(8).bits.CSRregfile.mip     ,pipeOut(9).bits.CSRregfile.mip     )), "dt_cs_mip")
+    BoringUtils.addSource(RegNext(Mux(pipeOut(8).bits.csrInst,pipeOut(8).bits.CSRregfile.mie     ,pipeOut(9).bits.CSRregfile.mie     )), "dt_cs_mie")
+    BoringUtils.addSource(RegNext(Mux(pipeOut(8).bits.csrInst,pipeOut(8).bits.CSRregfile.mscratch,pipeOut(9).bits.CSRregfile.mscratch)), "dt_cs_mscratch")
+    BoringUtils.addSource(RegNext(Mux(pipeOut(8).bits.csrInst,pipeOut(8).bits.CSRregfile.sscratch,pipeOut(9).bits.CSRregfile.sscratch)), "dt_cs_sscratch")
+    BoringUtils.addSource(RegNext(Mux(pipeOut(8).bits.csrInst,pipeOut(8).bits.CSRregfile.mideleg ,pipeOut(9).bits.CSRregfile.mideleg )), "dt_cs_mideleg")
+    BoringUtils.addSource(RegNext(Mux(pipeOut(8).bits.csrInst,pipeOut(8).bits.CSRregfile.medeleg ,pipeOut(9).bits.CSRregfile.medeleg )), "dt_cs_medeleg")
+
+    BoringUtils.addSource(regfile.io.debugPorts, "dt_irs_gpr")
 
 
-    val dt_iw1 = Module(new DifftestIntWriteback)
-    dt_iw1.io.clock := clock
-    dt_iw1.io.coreid := hartid
-    //dt_iw1.io.valid := RegNext(regfile.io.writePorts(1).wen)
-    dt_iw1.io.valid := RegNext(Mux(regP0 === regP1 && regfile.io.writePorts(0).wen && regfile.io.writePorts(1).wen, false.B, regfile.io.writePorts(1).wen))
-    dt_iw1.io.dest := RegNext(regfile.io.writePorts(1).addr)
-    dt_iw1.io.data := RegNext(regfile.io.writePorts(1).data)
-
-
-    val dt_ae = Module(new DifftestArchEvent)
-    dt_ae.io.clock := clock
-    dt_ae.io.coreid :=      hartid
-    dt_ae.io.intrNO :=      RegNext(Mux(pipeOut(8).bits.csrInst,pipeOut(8).bits.ArchEvent.intrNO,pipeOut(9).bits.ArchEvent.intrNO))
-    dt_ae.io.cause :=       RegNext(Mux(pipeOut(8).bits.csrInst,pipeOut(8).bits.ArchEvent.cause,pipeOut(9).bits.ArchEvent.cause))
-    dt_ae.io.exceptionPC := RegNext(Mux(pipeOut(8).bits.csrInst,pipeOut(8).bits.ArchEvent.exceptionPC,pipeOut(9).bits.ArchEvent.exceptionPC))
-
-    val dt_te = Module(new DifftestTrapEvent)
-    dt_te.io.clock := clock
-    dt_te.io.coreid := hartid
-    dt_te.io.valid := RegNext(SSDcoretrap)
-    dt_te.io.code := rf_a0(2, 0)
-    dt_te.io.pc := Mux(RegNext(pipeOut(8).bits.instr === "h0000006b".U), RegNext(Cat(0.U((64 - VAddrBits).W), pipeOut(8).bits.pc)), RegNext(Cat(0.U((64 - VAddrBits).W), pipeOut(9).bits.pc)))
-    dt_te.io.cycleCnt := cycle_cnt
-    dt_te.io.instrCnt := instr_cnt
-
-    val dt_cs = Module(new DifftestCSRState)
-    dt_cs.io.clock := clock
-    dt_cs.io.coreid := hartid
-    dt_cs.io.priviledgeMode := 3.U // Machine mode
-    dt_cs.io.mstatus :=  RegNext(Mux(pipeOut(8).bits.csrInst,pipeOut(8).bits.CSRregfile.mstatus ,pipeOut(9).bits.CSRregfile.mstatus ))
-    dt_cs.io.sstatus :=  RegNext(Mux(pipeOut(8).bits.csrInst,pipeOut(8).bits.CSRregfile.sstatus ,pipeOut(9).bits.CSRregfile.sstatus ))
-    dt_cs.io.mepc :=     RegNext(Mux(pipeOut(8).bits.csrInst,pipeOut(8).bits.CSRregfile.mepc    ,pipeOut(9).bits.CSRregfile.mepc    ))
-    dt_cs.io.sepc :=     RegNext(Mux(pipeOut(8).bits.csrInst,pipeOut(8).bits.CSRregfile.sepc    ,pipeOut(9).bits.CSRregfile.sepc    ))
-    dt_cs.io.mtval :=    RegNext(Mux(pipeOut(8).bits.csrInst,pipeOut(8).bits.CSRregfile.mtval   ,pipeOut(9).bits.CSRregfile.mtval   ))
-    dt_cs.io.stval :=    RegNext(Mux(pipeOut(8).bits.csrInst,pipeOut(8).bits.CSRregfile.stval   ,pipeOut(9).bits.CSRregfile.stval   ))
-    dt_cs.io.mtvec :=    RegNext(Mux(pipeOut(8).bits.csrInst,pipeOut(8).bits.CSRregfile.mtvec   ,pipeOut(9).bits.CSRregfile.mtvec   ))
-    dt_cs.io.stvec :=    RegNext(Mux(pipeOut(8).bits.csrInst,pipeOut(8).bits.CSRregfile.stvec   ,pipeOut(9).bits.CSRregfile.stvec   ))
-    dt_cs.io.mcause :=   RegNext(Mux(pipeOut(8).bits.csrInst,pipeOut(8).bits.CSRregfile.mcause  ,pipeOut(9).bits.CSRregfile.mcause  ))
-    dt_cs.io.scause :=   RegNext(Mux(pipeOut(8).bits.csrInst,pipeOut(8).bits.CSRregfile.scause  ,pipeOut(9).bits.CSRregfile.scause  ))
-    dt_cs.io.satp :=     RegNext(Mux(pipeOut(8).bits.csrInst,pipeOut(8).bits.CSRregfile.satp    ,pipeOut(9).bits.CSRregfile.satp    ))
-    dt_cs.io.mip :=      RegNext(Mux(pipeOut(8).bits.csrInst,pipeOut(8).bits.CSRregfile.mip     ,pipeOut(9).bits.CSRregfile.mip     ))
-    dt_cs.io.mie :=      RegNext(Mux(pipeOut(8).bits.csrInst,pipeOut(8).bits.CSRregfile.mie     ,pipeOut(9).bits.CSRregfile.mie     ))
-    dt_cs.io.mscratch := RegNext(Mux(pipeOut(8).bits.csrInst,pipeOut(8).bits.CSRregfile.mscratch,pipeOut(9).bits.CSRregfile.mscratch))
-    dt_cs.io.sscratch := RegNext(Mux(pipeOut(8).bits.csrInst,pipeOut(8).bits.CSRregfile.sscratch,pipeOut(9).bits.CSRregfile.sscratch))
-    dt_cs.io.mideleg :=  RegNext(Mux(pipeOut(8).bits.csrInst,pipeOut(8).bits.CSRregfile.mideleg ,pipeOut(9).bits.CSRregfile.mideleg ))
-    dt_cs.io.medeleg :=  RegNext(Mux(pipeOut(8).bits.csrInst,pipeOut(8).bits.CSRregfile.medeleg ,pipeOut(9).bits.CSRregfile.medeleg ))
-
-    val dt_irs = Module(new DifftestArchIntRegState)
-    dt_irs.io.clock := clock
-    dt_irs.io.coreid := hartid
-    dt_irs.io.gpr := regfile.io.debugPorts
+  
   }
 
 

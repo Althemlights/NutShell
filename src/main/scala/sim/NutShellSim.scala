@@ -16,9 +16,8 @@
 
 package sim
 
+import XiaoHe.NutCoreConfig
 import system._
-import nutcore.NutCoreConfig
-
 import chisel3._
 import chisel3.util._
 import chisel3.util.experimental.BoringUtils
@@ -74,7 +73,7 @@ class SimTop(implicit p: Parameters) extends Module {
   //mmio.io.rw <> soc.io.mmio
   mmio.io.rw <> DontCare
 
-  soc.io.meip := mmio.io.meip
+  xiaohe.io.interrupt := mmio.io.meip
 
   val log_begin, log_end, log_level = WireInit(0.U(64.W))
   log_begin := io.logCtrl.log_begin
@@ -82,7 +81,7 @@ class SimTop(implicit p: Parameters) extends Module {
   log_level := io.logCtrl.log_level
 
   assert(log_begin <= log_end)
-  //BoringUtils.addSource((GTimer() >= log_begin) && (GTimer() < log_end), "DISPLAY_ENABLE")
+  BoringUtils.addSource((GTimer() >= log_begin) && (GTimer() < log_end), "DISPLAY_ENABLE")
 
   // make BoringUtils not report boring exception when EnableDebug is set to false
   val dummyWire = WireInit(false.B)

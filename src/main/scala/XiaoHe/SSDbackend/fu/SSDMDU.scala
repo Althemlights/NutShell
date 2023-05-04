@@ -14,15 +14,13 @@
  * See the Mulan PSL v2 for more details.
  ***************************************************************************************/
 
-package SSDbackend
+package XiaoHe.SSDbackend.fu
 
+import XiaoHe.SSDbackend._
+import XiaoHe._
 import chisel3._
 import chisel3.util._
-import chisel3.util.experimental.BoringUtils
-
 import utils._
-import nutcore._
-
 object MDUOpType {
   def mul    = "b0000".U
   def mulh   = "b0001".U
@@ -100,7 +98,7 @@ class Divider(len: Int = 64) extends NutCoreModule {
   val aValx2Reg = RegEnable(Cat(aVal, "b0".U), newReq || anotherReq)
 
   val cnt = Counter(len)
-  dontTouch(cnt.value)
+//  dontTouch(cnt.value)
   when (newReq) {
     state := s_log2
   } .elsewhen (state === s_log2) {
@@ -178,9 +176,9 @@ class SSDMDU extends NutCoreModule {
   mul.io.in.bits.src(0) := LookupTree(func(1,0), mulInputFuncTable.map(p => (p._1(1,0), p._2._1(src1))))
   mul.io.in.bits.src(1) := LookupTree(func(1,0), mulInputFuncTable.map(p => (p._1(1,0), p._2._2(src2))))
   mul.io.in.bits.src(2) := DontCare
-  mul.ctrl.sign := DontCare
-  mul.ctrl.isW := isW
-  mul.ctrl.isHi := isHi
+  mul.io.ctrl.sign := DontCare
+  mul.io.ctrl.isW := isW
+  mul.io.ctrl.isHi := isHi
   mul.io.out.ready := io.out.ready
 
   val divInputFunc = (x: UInt) => Mux(isW, Mux(isDivSign, SignExt(x(31,0), XLEN), ZeroExt(x(31,0), XLEN)), x)

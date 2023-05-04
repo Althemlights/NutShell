@@ -19,8 +19,6 @@ package bus.memport
 import chisel3._
 import chisel3.util._
 
-import nutcore.HasNutCoreParameter
-
 trait MemoryOpConstants
 {
    val MT_X  = 0.asUInt(3.W)

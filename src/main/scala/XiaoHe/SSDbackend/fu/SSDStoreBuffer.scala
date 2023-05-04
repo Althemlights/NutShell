@@ -1,11 +1,10 @@
-package SSDbackend
+package XiaoHe.SSDbackend.fu
 
-import bus.simplebus.SimpleBusCmd
+import XiaoHe._
+import _root_.utils._
 import chisel3._
-import nutcore._
 import chisel3.util._
-import utils._
-
+import chisel3.util.experimental.BoringUtils
 trait HasStoreBufferConst{
   val StoreBufferSize = 16
 }
@@ -94,6 +93,7 @@ class StoreBuffer extends NutCoreModule with HasStoreBufferConst{
   io.isAlmostFull := (writeAddr === readAddr - 1.U) && writeFlag =/= readFlag
   io.isFull := writeAddr === readAddr && writeFlag =/= readFlag
   io.isEmpty := writeAddr === readAddr && writeFlag === readFlag
+  BoringUtils.addSource(io.isEmpty, "sbIsempty")
 
   //merge check & merge
   for(i <- 0 to 2*StoreBufferSize-1){
@@ -143,7 +143,7 @@ class StoreBuffer extends NutCoreModule with HasStoreBufferConst{
   val SBCounter = WireInit(0.U((log2Up(StoreBufferSize)+1).W))
   when(writeFlag === readFlag){SBCounter := Cat(0.U(1.W),writeAddr) - Cat(0.U(1.W),readAddr)}
     .otherwise{SBCounter := Cat(1.U(1.W),writeAddr) - Cat(0.U(1.W),readAddr)}
-  dontTouch(SBCounter)
+//  dontTouch(SBCounter)
 
 }
 
