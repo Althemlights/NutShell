@@ -353,3 +353,4 @@ fpga/.Xil/
 
 # temp.scala
 tmp.scala
+.metals/*
