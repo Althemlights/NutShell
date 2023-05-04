@@ -3,12 +3,12 @@ package top
 import chisel3._
 import chisel3.util._
 import utils._
-import nutcore._
+import XiaoHe._
 import system._
 import huancun._
 
 import chipsalliance.rocketchip.config._
-import SSDbackend.{DCacheParamsKey, DCacheParameters, ICacheParamsKey, ICacheParameters}
+import XiaoHe.SSDbackend.{DCacheParamsKey, DCacheParameters, ICacheParamsKey, ICacheParameters}
 
 class DefaultConfig(FPGAPlatform: Boolean = true) extends Config((site, here, up) => {
   case NutCoreParamsKey => NutCoreParameters(FPGAPlatform = FPGAPlatform)

@@ -201,4 +201,3 @@ class IFU_ooo extends NutCoreModule with HasResetVector {
 
   //BoringUtils.addSource(BoolStopWatch(io.imem.req.valid, io.imem.resp.fire), "perfCntCondMimemStall")
   //BoringUtils.addSource(io.flushVec.orR, "perfCntCondMifuFlush")
-}
