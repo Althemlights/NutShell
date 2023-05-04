@@ -24,7 +24,7 @@ import chisel3.util.experimental.BoringUtils
 
 //import bus.axi4._
 //import device.AXI4RAM
-import nutcore._
+import XiaoHe._
 import utils.GTimer
 import difftest._
 import freechips.rocketchip.amba.axi4.{AXI4Xbar, AXI4Delayer}

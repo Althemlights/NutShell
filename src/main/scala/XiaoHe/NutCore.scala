@@ -16,7 +16,9 @@
 
 package XiaoHe
 
-import XiaoHe.SSDbackend.{SSDCache, SSDCacheConfig}
+import XiaoHe.SSDbackend._
+import XiaoHe.SSDbackend.backend._
+import XiaoHe.SSDbackend.fu._
 import XiaoHe.SSDfrontend.Frontend_ooo
 import bus.simplebus._
 import chisel3._
@@ -96,7 +98,7 @@ object AddressSpace extends HasNutCoreParameter {
   }).reduce(_ || _)
 }
 
-class NutCore()(implicit p: Parameters) extends LazyModule with HasNutCoreParameter with HasNutCoreConst with HasExceptionNO with HasBackendConst with HasNutCoreParameters{
+class NutCore()(implicit p: Parameters) extends LazyModule with HasNutCoreParameter with HasNutCoreConst with SSDHasExceptionNO  with HasNutCoreParameters{
 
   val dcache = LazyModule(new DCache())
   val icache = LazyModule(new ICache())
@@ -105,7 +107,7 @@ class NutCore()(implicit p: Parameters) extends LazyModule with HasNutCoreParame
   lazy val module = new NutCoreImp(this)
 }
 
-class NutCoreImp(outer: NutCore) extends LazyModuleImp(outer) with HasNutCoreParameter with HasNutCoreConst with HasExceptionNO with HasBackendConst{
+class NutCoreImp(outer: NutCore) extends LazyModuleImp(outer) with HasNutCoreParameter with HasNutCoreConst with SSDHasExceptionNO {
   
   val dcache = outer.dcache.module
   val icache = outer.icache.module
@@ -121,11 +123,8 @@ class NutCoreImp(outer: NutCore) extends LazyModuleImp(outer) with HasNutCorePar
   val io = IO(new NutCoreIO)
 
   // Frontend
-  val frontend = (Settings.get("IsRV32"), Settings.get("EnableOutOfOrderExec")) match {
-    case (true, _)      => Module(new Frontend_embedded())
-    case (false, true)  => Module(new Frontend_ooo)
-    case (false, false) => Module(new Frontend_inorder)
-  }
+  val frontend =  Module(new Frontend_ooo)
+
 
   // Backend
   val BoolTmp0 = WireInit(false.B)

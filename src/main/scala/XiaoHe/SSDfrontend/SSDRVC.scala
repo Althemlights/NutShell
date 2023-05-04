@@ -3,8 +3,8 @@
 package SSDfrontend
 import chisel3._
 import chisel3.util._
-import nutcore._
-import SSDbackend._
+import XiaoHe._
+import XiaoHe.SSDbackend._
 
 class ExpandedInstruction extends Bundle {
   val bits = UInt(32.W)
