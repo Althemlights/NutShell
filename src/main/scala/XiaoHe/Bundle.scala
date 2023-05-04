@@ -14,7 +14,7 @@
  * See the Mulan PSL v2 for more details.
  ***************************************************************************************/
 
-package nutcore
+package XiaoHe
 
 import chisel3._
 import chisel3.util._
@@ -50,8 +50,6 @@ class RedirectIO extends NutCoreBundle {
   val target = Output(UInt(VAddrBits.W))
   val rtype = Output(UInt(1.W)) // 1: branch mispredict: only need to flush frontend  0: others: flush the whole pipeline
   val valid = Output(Bool())
-  val ghr = Output(UInt(GhrLength.W))
-  val ghrUpdateValid = Output(Bool())
   val btbIsBranch = Output(UInt(4.W))
   //for debug
   val pc = Output(UInt(VAddrBits.W))
@@ -64,12 +62,7 @@ class RedirectIO_nooo extends NutCoreBundle {
 }
 
 
-class MisPredictionRecIO extends NutCoreBundle {
-  val redirect = new RedirectIO
-  val valid = Output(Bool())
-  val checkpoint = Output(UInt(brTagWidth.W))
-  val prfidx = Output(UInt(prfAddrWidth.W))
-}
+
 
 class BypassIO extends  Bundle{
   val isALU = Output(Bool())
@@ -78,7 +71,6 @@ class BypassIO extends  Bundle{
   val isStore = Output(Bool())
 }
 class CtrlFlowIO extends NutCoreBundle {
-  //  val ghr = Output(UInt(GhrLength.W))
   val instr = Output(UInt(64.W))
   val pc = Output(UInt(VAddrBits.W))
   val pnpc = Output(UInt(VAddrBits.W))
@@ -90,6 +82,9 @@ class CtrlFlowIO extends NutCoreBundle {
   val crossPageIPFFix = Output(Bool())
   val runahead_checkpoint_id = Output(UInt(64.W))
   val isBranch = Output(Bool())
+
+  //sfb add
+  val sfb = Output(Bool())
 }
 
 class DecodeIO extends NutCoreBundle {
@@ -111,16 +106,7 @@ class CommitIO extends NutCoreBundle {
   val commits = Output(Vec(FuType.num, UInt(XLEN.W)))
 }
 
-class OOCommitIO extends NutCoreBundle with HasBackendConst{
-  val decode = new DecodeIO
-  val isMMIO = Output(Bool())
-  val intrNO = Output(UInt(XLEN.W))
-  val commits = Output(UInt(XLEN.W))
-  val prfidx = Output(UInt(prfAddrWidth.W)) //also as robidx
-  val exception = Output(Bool())
-  val store = Output(Bool())
-  val brMask = Output(UInt(checkpointSize.W))
-}
+
 
 class FunctionUnitIO extends NutCoreBundle {
   val in = Flipped(Decoupled(new Bundle {
@@ -176,26 +162,17 @@ class TLBExuIO extends NutCoreBundle {
   }
 }
 
-class InstFetchIO extends NutCoreBundle {
+class PredictPkt extends NutCoreBundle {
   val pc = Output(UInt(VAddrBits.W)) // real PC will be regenerated in IBF
   val pnpc = Output(UInt(VAddrBits.W))
   val brIdx = Output(UInt(4.W))
   val instValid = Output(UInt(4.W))
   //above will be used as user bits in icache
   val icachePF = Output(Bool())
-  val instr = Output(UInt(64.W))
-  val checkPointGHR = Output(UInt(GhrLength.W))
-  val ghr = Output(UInt(GhrLength.W))
   val btbIsBranch = Output(UInt(4.W))
+
+  //sfb add
+  val sfb = Output(UInt(4.W))
 }
 
 // Micro OP
-class RenamedDecodeIO extends NutCoreBundle with HasBackendConst {
-  val decode = new DecodeIO
-  val prfDest = Output(UInt(prfAddrWidth.W))
-  val prfSrc1 = Output(UInt(prfAddrWidth.W))
-  val prfSrc2 = Output(UInt(prfAddrWidth.W))
-  val src1Rdy = Output(Bool())
-  val src2Rdy = Output(Bool())
-  val brMask = Output(UInt(checkpointSize.W))
-}

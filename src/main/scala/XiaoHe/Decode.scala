@@ -1,23 +1,26 @@
 /**************************************************************************************
 * Copyright (c) 2020 Institute of Computing Technology, CAS
 * Copyright (c) 2020 University of Chinese Academy of Sciences
-* 
-* NutShell is licensed under Mulan PSL v2.
-* You can use this software according to the terms and conditions of the Mulan PSL v2. 
-* You may obtain a copy of Mulan PSL v2 at:
-*             http://license.coscl.org.cn/MulanPSL2 
-* 
-* THIS SOFTWARE IS PROVIDED ON AN "AS IS" BASIS, WITHOUT WARRANTIES OF ANY KIND, EITHER 
-* EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO NON-INFRINGEMENT, MERCHANTABILITY OR 
-* FIT FOR A PARTICULAR PURPOSE.  
 *
-* See the Mulan PSL v2 for more details.  
+* NutShell is licensed under Mulan PSL v2.
+* You can use this software according to the terms and conditions of the Mulan PSL v2.
+* You may obtain a copy of Mulan PSL v2 at:
+*             http://license.coscl.org.cn/MulanPSL2
+*
+* THIS SOFTWARE IS PROVIDED ON AN "AS IS" BASIS, WITHOUT WARRANTIES OF ANY KIND, EITHER
+* EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO NON-INFRINGEMENT, MERCHANTABILITY OR
+* FIT FOR A PARTICULAR PURPOSE.
+*
+* See the Mulan PSL v2 for more details.
 ***************************************************************************************/
 
-package nutcore
+package XiaoHe
 
+import XiaoHe.isa._
 import chisel3._
 import chisel3.util._
+import XiaoHe.SSDbackend._
+import XiaoHe.SSDbackend.fu.SSDCSROpType
 
 trait HasInstrType {
   def InstrN  = "b0000".U
@@ -72,7 +75,7 @@ object FuOpType {
 
 object Instructions extends HasInstrType with HasNutCoreParameter {
   def NOP = 0x00000013.U
-  val DecodeDefault = List(InstrN, FuType.csr, CSROpType.jmp)
+  val DecodeDefault = List(InstrN, FuType.csr, SSDCSROpType.jmp)
   def DecodeTable = RVIInstr.table ++ NutCoreTrap.table ++
     (if (HasMExtension) RVMInstr.table else Nil) ++
     (if (HasCExtension) RVCInstr.table else Nil) ++

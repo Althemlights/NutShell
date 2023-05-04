@@ -1,4 +1,4 @@
-package SSDbackend
+package XiaoHe.SSDbackend
 
 import chisel3._
 import chisel3.util._
@@ -72,6 +72,7 @@ class PMUIO2 extends Bundle{
   val storeInst = Output(UInt(2.W))
   val mulInst = Output(UInt(2.W))
   val divInst = Output(UInt(2.W))
+  val aluInst = Output(UInt(2.W))
 }
 
 class PMU extends Module{
@@ -96,8 +97,8 @@ class PMU extends Module{
     in0.loadRsNotreadyi0+in0.storeRsNotreadyi0+in0.mulRsNotreadyi0+in0.divRsNotreadyi0
 //  assert(issue1Num === 1.U)
 //  assert(issue0Num === 1.U)
-  dontTouch(issue1Num)
-  dontTouch(issue0Num)
+//  dontTouch(issue1Num)
+//  dontTouch(issue0Num)
 
   //stall counter
   val StallCntList = Map(
@@ -185,10 +186,12 @@ class PMU extends Module{
     io.in2Commit.loadInst         ->   (0x0c,  "loadInstCommit    "),
     io.in2Commit.storeInst        ->   (0x0d,  "storeInstCommit   "),
     io.in2Commit.mulInst          ->   (0x0e,  "mulInstCommit     "),
-    io.in2Commit.divInst          ->   (0x0f,  "divInstCommit     ")
+    io.in2Commit.divInst          ->   (0x0f,  "divInstCommit     "),
+    io.in2Issue.aluInst           ->   (0x10,  "aluInstIssue      "),
+    io.in2Commit.aluInst          ->   (0x11,  "aluInstCommit     ")
   )
 
-  val instCntNum = 16
+  val instCntNum = 18
   val instCnts = List.fill(instCntNum)(RegInit(0.U(64.W)))
   val instIncrease = List.fill(instCntNum)(WireInit(0.U(2.W)))
   if(SSDCoreConfig().EnablePMU){(instCnts zip instIncrease).map{ case(a,b) => { a := a + b }}}
@@ -202,23 +205,25 @@ class PMU extends Module{
     }
   }
   val cacheCntList = Map(
-    "icacheLoad"                  ->   (0x00,  "icacheLoad        "),
-    "icacheStore"                 ->   (0x01,  "icacheStore       "),
-    "icacheLoadMiss"              ->   (0x02,  "icacheLoadMiss    "),
-    "icacheStoreMiss"             ->   (0x03,  "icacheStoreMiss   "),
-    "dcacheLoad"                  ->   (0x04,  "dcacheLoad        "),
-    "dcacheStore"                 ->   (0x05,  "dcacheStore       "),
-    "dcacheLoadMiss"              ->   (0x06,  "dcacheLoadMiss    "),
-    "dcacheStoreMiss"             ->   (0x07,  "dcacheStoreMiss   "),
+//    "icacheLoad"                  ->   (0x00,  "icacheLoad        "),
+//    "icacheStore"                 ->   (0x01,  "icacheStore       "),
+//    "icacheLoadMiss"              ->   (0x02,  "icacheLoadMiss    "),
+//    "icacheStoreMiss"             ->   (0x03,  "icacheStoreMiss   "),
+//    "dcacheLoad"                  ->   (0x04,  "dcacheLoad        "),
+//    "dcacheStore"                 ->   (0x05,  "dcacheStore       "),
+    "s1NotReadyCnt"              ->   (0x06,  "s1NotReadyCnt"),
+    "cacheStallCnt"             ->   (0x07,  "cacheStallCnt"),
     //tmp
-    "pmuUpdateCnt"                ->   (0x08,  "pmuUpdateCnt      ")
-//    "pmuBranshReqCnt"             ->   (0x08,  "pmuBranshReqCnt   "),
-//    "pmuJalReqCnt"                ->   (0x08,  "pmuJalReqCnt      "),
+    "pmuUpdateCnt"                ->   (0x08,  "pmuUpdateCnt      "),
+    "s1NotReady"             ->   (0x09,  "s1NotReady   "),
+    "cacheStall"                ->   (0x0a,  "cacheStall      "),
+    "dcacheMissCycle"             ->   (0x0b,  "dcacheMissCycle   "),
+    "dcacheMissCnt"                ->   (0x0c,  "dcacheMissCnt      ")
 //    "pmuJalrReqCnt"               ->   (0x08,  "pmuJalrReqCnt     "),
 //    "pmuRetReqCnt"                ->   (0x08,  "pmuRetReqCnt      "),
   )
 
-  val cacheCntNum = 9
+  val cacheCntNum = 13
   val cacheCnts = List.fill(cacheCntNum)(RegInit(0.U(64.W)))
   val cacheCntCond = List.fill(cacheCntNum)(WireInit(false.B))
   if(SSDCoreConfig().EnablePMU){(cacheCnts zip cacheCntCond).map{ case(a,b) => { when(b) { a := a + 1.U }}}}
@@ -228,6 +233,56 @@ class PMU extends Module{
   if(SSDCoreConfig().EnableCacheCnt) {
     when(RegNext(io.coreTrap)) {
       cacheCntList.map { case (a, (b, c)) => {printf(c + " ->  %d\n", cacheCnts(b))}
+      }
+    }
+  }
+
+  val stall1CntList = Map(
+    "memStallCycle"                ->   (0x00,  "memStallCycle"),
+    "memStallCnt"                  ->   (0x01,  "memStallCnt"  ),
+    "mduStallCycle"                ->   (0x02,  "mduStallCycle"),
+    "mduStallCnt"                  ->   (0x03,  "mduStallCnt"  ),
+    "issueStalli0Cycle"            ->   (0x04,  "issueStalli0Cycle"),
+    "issueStalli0Cnt"              ->   (0x05,  "issueStalli0Cnt"),
+    "issueStalli1Cycle"            ->   (0x06,  "issueStalli1Cycle"),
+    "issueStalli1Cnt"              ->   (0x07,  "issueStalli1Cnt"),
+    "mduNotReady1"                 ->   (0x08, "mduNotReady1"),
+    "mduNotReady0"                 ->   (0x09, "mduNotReady0"),
+
+    "LSU_load_store_confilct"      ->   (0x0a, "LSU_load_store_confilct"),
+    "i0i1LSBlock"                  ->   (0x0b, "i0i1LSBlock"),
+    "i0i1LoadBlockLoadtouse"                ->   (0x0c, "i0i1LoadBlockLoadtouse"),
+    "i0i1StoreBlock"               ->   (0x0d, "i0i1StoreBlock"),
+    "i0i1AlternaingBlock"          ->   (0x0e, "i0i1AlternaingBlock"),
+
+    "i1LoadBlock"                  ->   (0x0f, "i1LoadBlock"),
+    "i1MulBlock"                   ->   (0x10, "i1MulBlock"),
+    "i1Dependi0_noneBlockCase"     ->   (0x11, "i1Dependi0_noneBlockCase"),
+    "i1SecondaryBlock"             ->   (0x12, "i1SecondaryBlock"),
+
+    "i1LoadDependi0ALu"             ->   (0x13, "i1LoadDependi0ALu"),
+    "i1rs2StoreDependi0ALu"             ->   (0x14, "i1rs2StoreDependi0ALu"),
+    "i1AluDependi0ALu"             ->   (0x15, "i1AluDependi0ALu"),
+    "sfbHigh"             ->   (0x16, "sfbHigh"),
+
+    "alu0sfbw"             ->   (0x17, "alu0sfbw"),
+    "alu1sfbw"             ->   (0x18, "alu1sfbw"),
+    "alu2sfbw"             ->   (0x19, "alu2sfbw"),
+    "alu3sfbw"             ->   (0x1a, "alu3sfbw")
+    
+
+  )
+
+  val stall1CntNum = 32
+  val stall1Cnts = List.fill(stall1CntNum)(RegInit(0.U(64.W)))
+  val stall1CntCond = List.fill(stall1CntNum)(WireInit(false.B))
+  if(SSDCoreConfig().EnablePMU){(stall1Cnts zip stall1CntCond).map{ case(a,b) => { when(b) { a := a + 1.U }}}}
+  stall1CntList.map{ case(a,(b,c)) => { BoringUtils.addSink(stall1CntCond(b),a)}}
+
+
+  if(SSDCoreConfig().EnableStall1Cnt) {
+    when(RegNext(io.coreTrap)) {
+      stall1CntList.map { case (a, (b, c)) => {printf(c + " ->  %d\n", stall1Cnts(b))}
       }
     }
   }

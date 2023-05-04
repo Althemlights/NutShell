@@ -1,12 +1,14 @@
-package SSDbackend
+package XiaoHe.SSDbackend
+
 
 import chisel3._
-import nutcore._
-
+import XiaoHe._
+import XiaoHe.SSDbackend._
+import XiaoHe.SSDfrontend._
 class StallFlushIO extends Bundle{
   //stall point : (0,2) -> i0pipestall, i1pipestall, memsstall
   val stall = Output(Vec(3,Bool()))
-  val flush = Output(Vec(10,Bool())) //10 + 2 (2 is for regfile invalid write)
+  // val flush = Output(Vec(10,Bool())) //10 + 2 (2 is for regfile invalid write)
   val invalid = Output(Vec(12,Bool()))
 }
 class decodePkt extends  NutCoreBundle{
@@ -20,13 +22,14 @@ class decodePkt extends  NutCoreBundle{
   val branch = Output(Bool())
   val csr = Output(Bool())
   val skip = Output(Bool())
+  val mou  = Output(Bool())
 }
 trait hasBypassConst{
-  def E0BypassPort = 12  // 0->9: alu1,alu0,e21,e20,e31,e30,mem3,mdu3,subalu1,subalu0,e51,e50
+  def E0BypassPort = 10  // 0->9: alu1,alu0,e21,e20,e31,e30,mem3,mdu3,subalu1,subalu0,e51,e50
   def E2BypassPort = 2   // 0->1: e51,e50
   def E3BypassPort = 5   // 0->8 : e30,e40,e41,e50,e51
-  def E1StoreBypassPort = 4
-  def E2StoreBypassPort = 6
+  def E1StoreBypassPort = 5
+  def E2StoreBypassPort = 7
 }
 class BypassCtl extends Bundle with hasBypassConst {
   val rs1bypasse0 = Output(Vec(E0BypassPort,Bool()))
@@ -87,14 +90,15 @@ class FuPkt extends NutCoreBundle {
   val isSubALU = Output(Bool())
   //for MMIO
   val isMMIO = Output(Bool())
-  //for ghr update
-  val ghr = Output(UInt(GhrLength.W))
-  val btbIsBranch = Output(Bool())  //for update ghr
-  //for ghr commit
+
+  val btbIsBranch = Output(Bool())  //for update 
+
   val branchTaken = Output(Bool())
   //for difftest
   val CSRregfile = new CSRregfile
   val ArchEvent = new ArchEvent
+  //for sfb
+  val sfb = Output(Bool())
 }
 class CSRregfile extends NutCoreBundle {
   val priviledgeMode      =  Output(UInt(XLEN.W))

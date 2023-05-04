@@ -14,9 +14,11 @@
  * See the Mulan PSL v2 for more details.
  ***************************************************************************************/
 
-package nutcore
+package XiaoHe
 
-import SSDbackend._
+import XiaoHe.SSDbackend.{SSDCache, SSDCacheConfig}
+import XiaoHe.SSDfrontend.Frontend_ooo
+import bus.simplebus._
 import chisel3._
 import chisel3.util._
 import chisel3.util.experimental.BoringUtils
@@ -41,8 +43,6 @@ trait HasNutCoreParameter {
   val HasDTLB = Settings.get("HasDTLB")
   val AddrBits = 64 // AddrBits is used in some cases
   val VAddrBits = if (Settings.get("IsRV32")) 32 else 39 // VAddrBits is Virtual Memory addr bits
-  val GhrLength = 5
-  val GhrMid    = GhrLength / 2
   val PAddrBits = 32 // PAddrBits is Phyical Memory addr bits
   val AddrBytes = AddrBits / 8 // unused
   val DataBits = XLEN
@@ -54,11 +54,14 @@ trait HasNutCoreParameter {
   val EnableOutOfOrderExec = Settings.get("EnableOutOfOrderExec")
   val EnableMultiCyclePredictor = false // false unless a customized condition branch predictor is included
   val EnableOutOfOrderMemAccess = false // enable out of order mem access will improve OoO backend's performance
+
+  val FetchBytes = 8
+  val FetchSize = 2 //without compress instr
 }
 
 trait HasNutCoreConst extends HasNutCoreParameter {
   val CacheReadWidth = 8
-  val ICacheUserBundleWidth = VAddrBits*2 + 9 + GhrLength + 4
+  val ICacheUserBundleWidth = VAddrBits*2 + 9  + 4
   val DCacheUserBundleWidth = 16
   val IndependentBru = if (Settings.get("EnableOutOfOrderExec")) true else false
 }
@@ -67,11 +70,11 @@ trait HasNutCoreLog { this: RawModule =>
   implicit val moduleName: String = this.name
 }
 
-abstract class NutCoreModule extends Module with HasNutCoreParameter with HasNutCoreConst with HasExceptionNO with HasBackendConst with HasNutCoreLog
-abstract class NutCoreBundle extends Bundle with HasNutCoreParameter with HasNutCoreConst with HasBackendConst
+abstract class NutCoreModule extends Module with HasNutCoreParameter with HasNutCoreConst with SSDHasExceptionNO with HasNutCoreLog
+abstract class NutCoreBundle extends Bundle with HasNutCoreParameter with HasNutCoreConst
 
 case class NutCoreConfig (
-                           FPGAPlatform: Boolean = true,
+                           FPGAPlatform: Boolean = false,
                            EnableDebug: Boolean = Settings.get("EnableDebug"),
                            EnhancedLog: Boolean = true
                          )
@@ -87,7 +90,7 @@ object AddressSpace extends HasNutCoreParameter {
   )
 
   def isMMIO(addr: UInt) = mmio.map(range => {
-    require(isPow2(range._2))
+//    require(isPow2(range._2))
     val bits = log2Up(range._2)
     (addr ^ range._1.U)(PAddrBits-1, bits) === 0.U
   }).reduce(_ || _)
@@ -168,7 +171,7 @@ class NutCoreImp(outer: NutCore) extends LazyModuleImp(outer) with HasNutCorePar
   io.frontend.req.ready := false.B
   io.frontend.resp.valid := false.B
 
-  //io.mmio <> mmioXbar.io.out
+  io.mmio <> mmioXbar.io.out
 
 //  val mmioXbar = Module(new SimpleBusCrossbarNto1(2))
 //  val s2NotReady = WireInit(false.B)

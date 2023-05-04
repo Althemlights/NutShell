@@ -16,11 +16,10 @@
 
 package bus.simplebus
 
+import XiaoHe.HasNutCoreParameter
 import chisel3._
 import chisel3.util._
 import chisel3.util.experimental.loadMemoryFromFile
-
-import nutcore.HasNutCoreParameter
 
 class DistributedMem(memByte: Int, dualPort: Boolean, delayCycles: Int = 0, dataFile: String = "")
   extends Module with HasNutCoreParameter {

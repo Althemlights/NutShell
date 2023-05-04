@@ -16,9 +16,9 @@
 
 package device
 
+import XiaoHe.FuType.DataBits
 import chisel3._
 import chisel3.util._
-
 import bus.axi4._
 import utils._
 

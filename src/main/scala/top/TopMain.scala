@@ -16,13 +16,72 @@
 
 package top
 
-import nutcore.NutCoreConfig
-import system.NutShell
-import device.{AXI4VGA}
+import XiaoHe.NutCoreConfig
+import bus.axi4.ysyxAXI4IO
+import system.XiaoHe
+import device.AXI4VGA
 import sim.SimTop
-
 import chisel3._
 import chisel3.stage._
+import top.XiaoHeSim.args
+import top.ysyx.args
+class riscv_cpu_io extends Bundle {
+  val master = new ysyxAXI4IO()
+  val slave  = Flipped(new ysyxAXI4IO())
+  val interrupt = Input(Bool())
+}
+class ysyx extends Module {
+  val io : riscv_cpu_io = IO(new riscv_cpu_io)
+  val core = Module(new XiaoHe()(NutCoreConfig()))
+  core.io.master := DontCare
+  core.io.slave := DontCare
+
+  core.io.master.ar.ready     := io.master.arready
+  io.master.arvalid         := core.io.master.ar.valid
+  io.master.araddr          := core.io.master.ar.bits.addr
+  io.master.arid            := core.io.master.ar.bits.id
+  io.master.arlen           := core.io.master.ar.bits.len
+  io.master.arsize          := core.io.master.ar.bits.size
+  io.master.arburst         := core.io.master.ar.bits.burst
+
+
+  core.io.master.r.valid      := io.master.rvalid
+  io.master.rready          := core.io.master.r.ready
+  core.io.master.r.bits.resp  := io.master.rresp
+  core.io.master.r.bits.data  := io.master.rdata
+  core.io.master.r.bits.last  := io.master.rlast
+  core.io.master.r.bits.id    := io.master.rid
+
+
+  core.io.master.aw.ready     := io.master.awready
+  io.master.awvalid         := core.io.master.aw.valid
+  io.master.awaddr          := core.io.master.aw.bits.addr
+  io.master.awid            := core.io.master.aw.bits.id
+  io.master.awlen           := core.io.master.aw.bits.len
+  io.master.awsize          := core.io.master.aw.bits.size
+  io.master.awburst         := core.io.master.aw.bits.burst
+
+  core.io.master.w.ready      := io.master.wready
+  io.master.wvalid          := core.io.master.w.valid
+  io.master.wdata           := core.io.master.w.bits.data
+  io.master.wlast           := core.io.master.w.bits.last
+  io.master.wstrb           := core.io.master.w.bits.strb
+
+  io.master.bready          := core.io.master.b.ready
+  core.io.master.b.valid      := io.master.bvalid
+  core.io.master.b.bits.resp  := io.master.bresp
+  core.io.master.b.bits.id    := io.master.bid
+
+  io.slave := DontCare
+  io.slave.arready := false.B
+  io.slave.rvalid  := false.B
+  io.slave.awready := false.B
+  io.slave.wready  := false.B
+  io.slave.bvalid  := false.B
+//  io.interrupt := false.B
+  core.io.interrupt := false.B
+}
+
 
 import freechips.rocketchip.diplomacy.{DisableMonitors, AddressSet, LazyModule, LazyModuleImp}
 import chipsalliance.rocketchip.config._
@@ -82,6 +141,7 @@ object TopMain extends App {
     case "pynq"   => PynqSettings()
     case "axu3cg" => Axu3cgSettings()
     case "PXIe"   => PXIeSettings()
+    case "soctest" => SoCTestSettings()
   } ) ++ ( core match {
     case "inorder"  => InOrderSettings()
     case "ooo"  => OOOSettings()

@@ -1,26 +1,29 @@
 /**************************************************************************************
 * Copyright (c) 2020 Institute of Computing Technology, CAS
 * Copyright (c) 2020 University of Chinese Academy of Sciences
-* 
-* NutShell is licensed under Mulan PSL v2.
-* You can use this software according to the terms and conditions of the Mulan PSL v2. 
-* You may obtain a copy of Mulan PSL v2 at:
-*             http://license.coscl.org.cn/MulanPSL2 
-* 
-* THIS SOFTWARE IS PROVIDED ON AN "AS IS" BASIS, WITHOUT WARRANTIES OF ANY KIND, EITHER 
-* EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO NON-INFRINGEMENT, MERCHANTABILITY OR 
-* FIT FOR A PARTICULAR PURPOSE.  
 *
-* See the Mulan PSL v2 for more details.  
+* NutShell is licensed under Mulan PSL v2.
+* You can use this software according to the terms and conditions of the Mulan PSL v2.
+* You may obtain a copy of Mulan PSL v2 at:
+*             http://license.coscl.org.cn/MulanPSL2
+*
+* THIS SOFTWARE IS PROVIDED ON AN "AS IS" BASIS, WITHOUT WARRANTIES OF ANY KIND, EITHER
+* EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO NON-INFRINGEMENT, MERCHANTABILITY OR
+* FIT FOR A PARTICULAR PURPOSE.
+*
+* See the Mulan PSL v2 for more details.
 ***************************************************************************************/
 
-package nutcore
+package XiaoHe.isa
 
 import chisel3._
 import chisel3.util._
 import chisel3.util.experimental.BoringUtils
-
 import utils._
+import XiaoHe._
+import XiaoHe.SSDbackend._
+import XiaoHe.SSDbackend.fu.{ALUOpType, LSUOpType, SSDCSROpType}
+import XiaoHe.SSDfrontend._
 
 trait HasRVCConst {
 
@@ -135,7 +138,7 @@ object RVCInstr extends HasInstrType with HasRVCConst {
 //   def is_C_ADDI4SPN(op: UInt) = op(12,5) =/= 0.U
   
   val table = Array(
-    C_ILLEGAL    -> List(InstrN, FuType.csr, CSROpType.jmp),
+    C_ILLEGAL    -> List(InstrN, FuType.csr, SSDCSROpType.jmp),
     C_ADDI4SPN   -> List(InstrI, FuType.alu, ALUOpType.add),
     // C_FLD        -> List(InstrI, FuType.alu, ALUOpType.add),
     C_LW         -> List(InstrI, FuType.lsu, LSUOpType.lw),
@@ -169,7 +172,7 @@ object RVCInstr extends HasInstrType with HasRVCConst {
     C_LDSP       -> List(InstrI, FuType.lsu, LSUOpType.ld),
     C_JR         -> List(InstrI, FuType.bru, ALUOpType.jalr),
     C_MV         -> List(InstrR, FuType.alu, ALUOpType.add),
-    C_EBREAK     -> List(InstrI, FuType.csr, CSROpType.jmp),
+    C_EBREAK     -> List(InstrI, FuType.csr, SSDCSROpType.jmp),
     C_JALR       -> List(InstrI, FuType.bru, ALUOpType.jalr),
     C_ADD        -> List(InstrR, FuType.alu, ALUOpType.add),
     // C_FSDSP      -> List(InstrI, FuType.alu, ALUOpType.add),

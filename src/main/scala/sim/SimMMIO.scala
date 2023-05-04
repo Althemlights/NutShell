@@ -18,11 +18,11 @@ package sim
 
 import chisel3._
 import chisel3.util._
-
 import bus.simplebus._
 import bus.axi4._
-import device._
-import difftest._
+import device.{AXI4UART, _}
+import difftest.UARTIO
+//import difftest._
 
 import freechips.rocketchip.diplomacy.{IdRange, LazyModule, LazyModuleImp, TransferSizes, AddressSet, InModuleBody}
 import chipsalliance.rocketchip.config.{Field, Parameters}

@@ -16,12 +16,11 @@
 
 package utils
 
+import XiaoHe.NutCoreConfig
 import chisel3._
 import chisel3.util._
 import chisel3.util.experimental.BoringUtils
 import utils.LogLevel.LogLevel
-
-import nutcore.NutCoreConfig
 
 object LogLevel extends Enumeration {
   type LogLevel = Value

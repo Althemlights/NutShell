@@ -14,8 +14,10 @@
 * See the Mulan PSL v2 for more details.
 ***************************************************************************************/
 
-package nutcore
+package XiaoHe.mem
 
+import XiaoHe.SSDbackend.fu.StoreBufferEntry
+import XiaoHe.{AddressSpace, HasNutCoreLog, HasNutCoreParameter}
 import chisel3._
 import chisel3.util._
 import chisel3.util.experimental.BoringUtils
@@ -25,7 +27,6 @@ import chisel3.experimental.IO
 import com.google.protobuf.Internal.FloatList
 import utils._
 import top.Settings
-import SSDbackend._
 
 case class CacheConfig (
   ro: Boolean = false,

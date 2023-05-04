@@ -14,16 +14,16 @@
  * See the Mulan PSL v2 for more details.
  ***************************************************************************************/
 
-package nutcore
+package XiaoHe.SSDbackend.fu
 
-import SSDbackend._
+import XiaoHe.isa.RV32I_BRUInstr
+import _root_.utils._
 import chisel3._
 import chisel3.util._
-import chisel3.util.experimental.BoringUtils
-import utils._
-import difftest._
-import top.Settings
-
+//import difftest._
+import XiaoHe.SSDbackend._
+import XiaoHe.SSDfrontend._
+import XiaoHe._
 object ALUOpType {
   def add  = "b1000000".U
   def sll  = "b0000001".U
@@ -57,6 +57,7 @@ object ALUOpType {
   def call = "b1011100".U  //0x5c
   def ret  = "b1011110".U  //0x5e
 
+  def isAlu(func: UInt) = !func(4)
   def isAdd(func: UInt) = func(6)
   def pcPlus2(func: UInt) = func(5)
   def isBru(func: UInt) = func(4)
@@ -74,6 +75,10 @@ class ALUIO extends FunctionUnitIO {
   val bpuUpdateReq = new BPUUpdateReq
   val branchTaken = Output(Bool())
   val instCheckValid = Input(Bool()) // for all inst to check whether it is mispredicted as a branch instruction
+
+  //for sfb
+
+  val sfbPredictwrong = Output(Bool())
 }
 
 
@@ -131,18 +136,15 @@ class ALU(hasBru: Boolean = false) extends NutCoreModule {
   val ALUInstBPW = valid && !(isBru && isBranch) && io.cfIn.redirect.btbIsBranch(0) // mispredict other insts as branch inst (Branch Predict Wrong)
   val notALUInstBPW = instCheckValid && io.cfIn.redirect.btbIsBranch(0)
   val branchPredictWrong = ALUInstBPW || notALUInstBPW
-  assert(io.cfIn.instr(1,0) === "b11".U || isRVC || !valid)
-  Debug(valid && (io.cfIn.instr(1,0) === "b11".U) =/= !isRVC, "[ERROR] pc %x inst %x rvc %x\n",io.cfIn.pc, io.cfIn.instr, isRVC)
+//  assert(io.cfIn.instr(1,0) === "b11".U || isRVC || !valid)
+//  Debug(valid && (io.cfIn.instr(1,0) === "b11".U) =/= !isRVC, "[ERROR] pc %x inst %x rvc %x\n",io.cfIn.pc, io.cfIn.instr, isRVC)
   io.redirect.target := Mux(!taken && isBranch , Mux(isRVC, io.cfIn.pc + 2.U, io.cfIn.pc + 4.U), target)
   // with branch predictor, this is actually to fix the wrong prediction
   io.redirect.valid := valid && isBru && predictWrong //|| branchPredictMiss //|| branchPredictWrong
 
-  io.redirect.ghrUpdateValid := valid && isBru && predictWrong //|| branchPredictMiss || branchPredictWrong // maybe = io.redirect.valid ?
   val redirectRtype = if (EnableOutOfOrderExec) 1.U else 0.U
   io.redirect.btbIsBranch := DontCare
   io.redirect.rtype := redirectRtype
-  //io.redirect.ghr := Mux((branchPredictMiss || valid && isBru && isBranch && (taken =/= io.cfIn.brIdx(0))),Cat(io.cfIn.redirect.ghr(GhrLength-2,0),taken),io.cfIn.redirect.ghr)
-  io.redirect.ghr := Cat(io.cfIn.redirect.ghr(GhrLength-2,0),taken)
   io.redirect.pc := io.cfIn.pc
   // mark redirect type as speculative exec fix
   // may be can be moved to ISU to calculate pc + 4
@@ -150,16 +152,16 @@ class ALU(hasBru: Boolean = false) extends NutCoreModule {
   io.branchTaken := taken
   io.out.bits := Mux(isBru, Mux(!isRVC, SignExt(io.cfIn.pc, AddrBits) + 4.U, SignExt(io.cfIn.pc, AddrBits) + 2.U), aluRes)
 
-  //Debug(valid && isBru, "tgt %x, valid:%d, npc: %x, pdwrong: %x\n", io.redirect.target, io.redirect.valid, io.cfIn.pnpc, predictWrong)
-  //Debug(valid && isBru, "taken:%d addrRes:%x src1:%x src2:%x func:%x\n", taken, adderRes, src1, src2, func)
-  //Debug(valid && isBru, "[BPW] pc %x tgt %x, npc: %x, pdwrong: %x type: %x%x%x%x\n", io.cfIn.pc, io.redirect.target, io.cfIn.pnpc, predictWrong, isBranch, (func === ALUOpType.jal || func === ALUOpType.call), func === ALUOpType.jalr, func === ALUOpType.ret)
-  //Debug("valid:%d isBru:%d isBranch:%d \n", valid, isBru, isBranch)
+//  Debug(valid && isBru, "tgt %x, valid:%d, npc: %x, pdwrong: %x\n", io.redirect.target, io.redirect.valid, io.cfIn.pnpc, predictWrong)
+//  Debug(valid && isBru, "taken:%d addrRes:%x src1:%x src2:%x func:%x\n", taken, adderRes, src1, src2, func)
+//  Debug(valid && isBru, "[BPW] pc %x tgt %x, npc: %x, pdwrong: %x type: %x%x%x%x\n", io.cfIn.pc, io.redirect.target, io.cfIn.pnpc, predictWrong, isBranch, (func === ALUOpType.jal || func === ALUOpType.call), func === ALUOpType.jalr, func === ALUOpType.ret)
+//  Debug("valid:%d isBru:%d isBranch:%d \n", valid, isBru, isBranch)
   // Debug("pc %x instr %x tgt %x, npc: %x, pdwrong: %x type: %x%x%x%x\n", io.cfIn.pc, io.cfIn.instr, io.redirect.target, io.cfIn.pnpc, predictWrong, isBranch, (func === ALUOpType.jal || func === ALUOpType.call), func === ALUOpType.jalr, func === ALUOpType.ret)
   // Debug("func:%b ", func)
   // Debug("tgt %x, npc: %x, pdwrong: %x\n", io.redirect.target, io.cfIn.pnpc, predictWrong)
   // Debug("taken:%d addrRes:%x src1:%x src2:%x func:%x\n", taken, adderRes, src1, src2, func)
 
-  //Debug(valid && isBru, " bpuUpdateReq: valid:%d pc:%x isMissPredict:%d actualTarget:%x actualTaken:%x fuOpType:%x btbType:%x isRVC:%d \n", valid && isBru, io.cfIn.pc, predictWrong, target, taken, func, LookupTree(func, RV32I_BRUInstr.bruFuncTobtbTypeTable), isRVC)
+//  Debug(valid && isBru, " bpuUpdateReq: valid:%d pc:%x isMissPredict:%d actualTarget:%x actualTaken:%x fuOpType:%x btbType:%x isRVC:%d \n", valid && isBru, io.cfIn.pc, predictWrong, target, taken, func, LookupTree(func, RV32I_BRUInstr.bruFuncTobtbTypeTable), isRVC)
 
   io.in.ready := io.out.ready
   io.out.valid := valid
@@ -174,7 +176,6 @@ class ALU(hasBru: Boolean = false) extends NutCoreModule {
   bpuUpdateReq.fuOpType := func
   bpuUpdateReq.btbType := LookupTree(func, RV32I_BRUInstr.bruFuncTobtbTypeTable)
   bpuUpdateReq.isRVC := isRVC
-  bpuUpdateReq.ghrNotUpdated := io.cfIn.redirect.ghr
   bpuUpdateReq.btbBtypeMiss := branchPredictMiss
   io.bpuUpdateReq := bpuUpdateReq
 
@@ -195,4 +196,5 @@ class ALU(hasBru: Boolean = false) extends NutCoreModule {
   io.alu2pmu.branchTargetWrong := wrong && isBranch && targetWrong
   io.alu2pmu.branchDirectionWrong := wrong && isBranch && directionWrong
 
+  io.sfbPredictwrong := io.cfIn.sfb && valid && isBru && predictWrong
 }

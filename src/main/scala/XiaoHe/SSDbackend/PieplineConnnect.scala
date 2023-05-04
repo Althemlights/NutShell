@@ -1,4 +1,4 @@
-package SSDbackend
+package XiaoHe.SSDbackend
 
 import chisel3._
 import chisel3.util.{DecoupledIO, _}
@@ -32,18 +32,18 @@ class stallPointConnect[T <: Data](gen : T) extends Module {
     val right = DecoupledIO(gen)
     val rightOutFire = Input(Bool())
     val inValid = Input(Bool())
-    val isFlush = Input(Bool())
+    // val isFlush = Input(Bool())
     val isStall = Input(Bool())
   })
-  val (left,right,rightOutFire,isFlush,isStall,inValid) = (io.left,io.right,io.rightOutFire,io.isFlush,io.isStall,io.inValid)
+  val (left,right,rightOutFire,isStall,inValid) = (io.left,io.right,io.rightOutFire,io.isStall,io.inValid)
 
   val valid = RegInit(false.B)
   when (rightOutFire) { valid := false.B }
   when (left.valid && right.ready && !isStall && !inValid) { valid := true.B }
-  when (isFlush) { valid := false.B }
+  when (inValid) { valid := false.B }
 
   left.ready := right.ready && !isStall
-  right.bits := RegEnable(left.bits, left.valid && left.ready && !inValid)
+  right.bits := RegEnable(left.bits, 0.U.asTypeOf(gen) , left.valid && left.ready && !inValid)
   right.valid := valid //&& !isFlush
 
 
@@ -54,17 +54,17 @@ class normalPipeConnect[T <: Data](gen : T) extends Module {
     val right = DecoupledIO(gen)
     val rightOutFire = Input(Bool())
     val inValid = Input(Bool())
-    val isFlush = Input(Bool())
+    // val isFlush = Input(Bool())
   })
-  val (left,right,rightOutFire,isFlush,inValid) = (io.left,io.right,io.rightOutFire,io.isFlush,io.inValid)
+  val (left,right,rightOutFire,inValid) = (io.left,io.right,io.rightOutFire,io.inValid)
 
   val valid = RegInit(false.B)
   when (rightOutFire) { valid := false.B }
   when (left.valid && right.ready && !inValid) { valid := true.B }
-  when (isFlush) { valid := false.B }
+  when (inValid) { valid := false.B }
 
   left.ready := right.ready
-  right.bits := RegEnable(left.bits, left.valid && right.ready && !inValid)
+  right.bits := RegEnable(left.bits, 0.U.asTypeOf(gen) ,left.valid && right.ready && !inValid)
   right.valid := valid //&& !isFlush
 
 
