@@ -10,6 +10,7 @@ import com.google.protobuf.Internal.FloatList
 import utils._
 import top.Settings
 import XiaoHe._
+import XiaoHe.SSDbackend.fu._
 import system._
 
 import freechips.rocketchip.tilelink._

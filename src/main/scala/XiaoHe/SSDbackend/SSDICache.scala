@@ -365,8 +365,8 @@ class ICacheImp(outer: ICache) extends LazyModuleImp(outer) with HasICacheIO wit
   val probe = Module(new Probe(edge))
 
   //meta 
-  val tagArray = Module(new MetaSRAMTemplateWithArbiter(nRead = 2, new DTagBundle, set = Sets, way = Ways, shouldReset = true))
-  val metaArray = Module(new MetaSRAMTemplateWithArbiter(nRead = 2, new DMetaBundle, set = Sets, way = Ways, shouldReset = true))
+  val tagArray = Module(new MetaSRAMTemplateWithArbiter(nRead = 2, nWrite = 1, new DTagBundle, set = Sets, way = Ways, shouldReset = true))
+  val metaArray = Module(new MetaSRAMTemplateWithArbiter(nRead = 2, nWrite = 1, new DMetaBundle, set = Sets, way = Ways, shouldReset = true))
   //val dataArray = Module(new DataSRAMTemplateWithArbiter(nRead = 3, new DDataBundle, set = Sets * LineBeats, way = Ways))
 
   metaArray.reset := reset.asAsyncReset
@@ -424,7 +424,7 @@ class ICacheImp(outer: ICache) extends LazyModuleImp(outer) with HasICacheIO wit
   //val dataWriteArb = Module(new Arbiter(CacheDataArrayWriteBus().req.bits, 2))
   metaWriteArb.io.in(1) <> s2.io.metaWriteBus.req
   metaWriteArb.io.in(0) <> probe.io.metaWriteBus.req
-  metaArray.io.w.req <> metaWriteArb.io.out
+  metaArray.io.w(0).req <> metaWriteArb.io.out
   //metaArray.io.w <> s2.io.metaWriteBus
   //dataWriteArb.io.in(0) <> probe.io.dataWriteBus
   //dataWriteArb.io.in(1) <> s2.io.dataWriteBus

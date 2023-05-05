@@ -14,7 +14,7 @@
 * See the Mulan PSL v2 for more details.  
 ***************************************************************************************/
 
-package nutcore
+package XiaoHe.mem
 
 import chisel3._
 import chisel3.util._
@@ -23,6 +23,7 @@ import bus.simplebus._
 import bus.axi4._
 import chisel3.experimental.IO
 import utils._
+import XiaoHe._
 import top.Settings
 
 trait HasTLBIO extends HasNutCoreParameter with HasTlbConst with HasCSRConst {

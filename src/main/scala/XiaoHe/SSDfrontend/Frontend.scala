@@ -25,6 +25,9 @@ import XiaoHe._
 import XiaoHe.SSDbackend._
 import XiaoHe.SSDfrontend._
 import nutcore.PipelineVector2Connect
+import chipsalliance.rocketchip.config.Parameters
+import chisel3.experimental.IO
+
 class FrontendIO(implicit p: Parameters) extends Bundle with HasNutCoreConst {
   val imem = new SimpleBusUC(userBits = ICacheUserBundleWidth, addrBits = VAddrBits)
   val out = Vec(4, Decoupled(new DecodeIO))
@@ -38,7 +41,7 @@ class FrontendIO(implicit p: Parameters) extends Bundle with HasNutCoreConst {
 
 
 trait HasFrontendIO {
-  implicit val p: NutCoreConfig
+  implicit val p: Parameters
   val io = IO(new FrontendIO)
 }
 
