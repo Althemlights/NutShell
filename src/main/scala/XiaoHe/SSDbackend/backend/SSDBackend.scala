@@ -8,7 +8,7 @@ import chisel3.util.experimental.BoringUtils
 import utils._
 import _root_.utils.{LookupTree}
 import chisel3.{Mux, _}
-//import difftest._
+import difftest._
 import XiaoHe.SSDbackend._
 import XiaoHe.SSDfrontend._
 import XiaoHe._

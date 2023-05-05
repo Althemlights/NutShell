@@ -479,9 +479,9 @@ class DCacheImp(outer: DCache) extends LazyModuleImp(outer) with HasDCacheIO wit
   val probe = Module(new Probe(edge))
 
   //meta 
-  val tagArray = Module(new MetaSRAMTemplateWithArbiter(nRead = 2, new DTagBundle, set = Sets, way = Ways, shouldReset = true))
-  val metaArray = Module(new MetaSRAMTemplateWithArbiter(nRead = 2, new DMetaBundle, set = Sets, way = Ways, shouldReset = true))
-  val wayIdArray = Module(new MetaSRAMTemplateWithArbiter(nRead = 1, new DWayIdBundle, set = Sets, way = 1, shouldReset = true))
+  val tagArray = Module(new MetaSRAMTemplateWithArbiter(nRead = 2, nWrite = 1, new DTagBundle, set = Sets, way = Ways, shouldReset = true))
+  val metaArray = Module(new MetaSRAMTemplateWithArbiter(nRead = 2, nWrite = 1, new DMetaBundle, set = Sets, way = Ways, shouldReset = true))
+  val wayIdArray = Module(new MetaSRAMTemplateWithArbiter(nRead = 1, nWrite = 1, new DWayIdBundle, set = Sets, way = 1, shouldReset = true))
   //val dataArray = Module(new DataSRAMTemplateWithArbiter(nRead = 3, new DDataBundle, set = Sets * LineBeats, way = Ways))
 
   val dataArray = Array.fill(sramNum) {
@@ -531,13 +531,13 @@ class DCacheImp(outer: DCache) extends LazyModuleImp(outer) with HasDCacheIO wit
 
   s1.io.wayIdReadBus <> wayIdArray.io.r(0)
   s2.io.wayIdReadResp := s1.io.wayIdReadBus.resp.data(0)
-  s2.io.wayIdWriteBus.req <> wayIdArray.io.w.req
+  s2.io.wayIdWriteBus.req <> wayIdArray.io.w(0).req
 
   val metaWriteArb = Module(new Arbiter(CacheMetaArrayWriteBus().req.bits, 2))
   //val dataWriteArb = Module(new Arbiter(CacheDataArrayWriteBus().req.bits, 2))
   metaWriteArb.io.in(1) <> s2.io.metaWriteBus.req
   metaWriteArb.io.in(0) <> probe.io.metaWriteBus.req
-  metaArray.io.w.req <> metaWriteArb.io.out
+  metaArray.io.w(0).req <> metaWriteArb.io.out
   //metaArray.io.w <> s2.io.metaWriteBus
   //dataWriteArb.io.in(0) <> probe.io.dataWriteBus
   //dataWriteArb.io.in(1) <> s2.io.dataWriteBus

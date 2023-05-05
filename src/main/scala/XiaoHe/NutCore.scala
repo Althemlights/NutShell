@@ -170,7 +170,7 @@ class NutCoreImp(outer: NutCore) extends LazyModuleImp(outer) with HasNutCorePar
   io.frontend.req.ready := false.B
   io.frontend.resp.valid := false.B
 
-  io.mmio <> mmioXbar.io.out
+  //io.mmio <> mmioXbar.io.out
 
 //  val mmioXbar = Module(new SimpleBusCrossbarNto1(2))
 //  val s2NotReady = WireInit(false.B)

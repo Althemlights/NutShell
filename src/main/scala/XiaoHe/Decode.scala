@@ -20,7 +20,7 @@ import XiaoHe.isa._
 import chisel3._
 import chisel3.util._
 import XiaoHe.SSDbackend._
-import XiaoHe.SSDbackend.fu.SSDCSROpType
+import XiaoHe.SSDbackend.fu._
 
 trait HasInstrType {
   def InstrN  = "b0000".U

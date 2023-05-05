@@ -17,7 +17,7 @@
 package XiaoHe.SSDfrontend
 
 import XiaoHe.SSDbackend.fu.{ALUOpType, LSUOpType}
-import XiaoHe.isa.{Priviledged, RV32I_BRUInstr, RVCInstr}
+import XiaoHe.isa.{Priviledged, RV32I_BRUInstr, RVCInstr, MOUOpType}
 import chisel3._
 import chisel3.util._
 import chisel3.util.experimental.BoringUtils

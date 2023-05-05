@@ -52,10 +52,12 @@ class IFU_ooo extends NutCoreModule with HasResetVector {
     val flushVec = Output(UInt(4.W))
     val bpFlush = Output(Bool())
     val ipf = Input(Bool())
+    val bpuUpdateReq = Flipped(new BPUUpdateReq)
   })
 
   // Next-line branch predictor
   val nlp = Module(new BPU_ooo)
+  nlp.io.bpuUpdateReq := io.bpuUpdateReq
 
   // pc
   val pc = RegInit(resetVector.U(VAddrBits.W))
