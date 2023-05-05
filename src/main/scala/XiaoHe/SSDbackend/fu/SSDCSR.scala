@@ -1,5 +1,3 @@
-package XiaoHe.SSDbackend.fu
-
 /**************************************************************************************
  * Copyright (c) 2020 Institute of Computing Technology, CAS
  * Copyright (c) 2020 University of Chinese Academy of Sciences

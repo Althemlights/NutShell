@@ -614,7 +614,7 @@ class SSDbackend extends NutCoreModule with hasBypassConst {
     a.io.left <> coupledPipeIn(b)
     a.io.right <> coupledPipeOut(b)
     a.io.rightOutFire <> coupledPipeOut(b).fire
-    a.io.isFlush <> false.B
+    // a.io.isFlush <> false.B
     a.io.inValid <> false.B
   }
 

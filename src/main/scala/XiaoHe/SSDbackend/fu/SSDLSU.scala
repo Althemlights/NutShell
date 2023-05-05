@@ -224,7 +224,7 @@ class SSDLSU extends  NutCoreModule with HasStoreBufferConst{
     a.io.left <> lsuPipeIn(b)
     a.io.right <> lsuPipeOut(b)
     a.io.rightOutFire <> lsuPipeOut(b).fire
-    a.io.isFlush <> flush(b)
+    // a.io.isFlush <> flush(b)
     a.io.inValid <> invalid(b)
   }
   //store buffer
@@ -396,22 +396,8 @@ class SSDLSU extends  NutCoreModule with HasStoreBufferConst{
   io.isMMIO := lsuPipeStage3.right.bits.isMMIO
   val partialLoad = !lsuPipeOut(0).bits.isStore && (lsuPipeOut(0).bits.func =/= LSUOpType.ld) && lsuPipeOut(0).valid
   val out = Mux(partialLoad,rdataFinal,Mux(addrHitE3,mergedDataE3,io.dmem.resp.bits.rdata))
-  // val outLatch = RegEnable(out, io.out.valid && !dmemFireLatch )
-  // val outValidLatch = RegEnable(io.out.valid, io.out.valid && !dmemFireLatch )
-
-  val outLatch = RegInit(0.U(64.W))
-  val outValidLatch = RegInit(false.B)
-  when (rdataValid && !io.out.ready && !outValidLatch) {
-    outLatch := out
-    outValidLatch := true.B
-  }
-  when (outValidLatch && io.out.ready) {
-    outLatch := 0.U
-    outValidLatch := false.B
-  }
-
-  io.out.valid := Mux(outValidLatch && io.out.ready, outValidLatch, rdataValid)
-  io.out.bits := Mux(!RegNext(io.out.ready) && io.out.ready, outLatch, out)
+  val outLatch = RegEnable(out,io.out.valid && !dmemFireLatch)
+  io.out.bits := Mux(io.out.valid,out,outLatch)
 
 
   // io.out.bits := Mux(io.out.valid,out,outLatch)
@@ -426,11 +412,6 @@ class SSDLSU extends  NutCoreModule with HasStoreBufferConst{
   val storeCond = lsuPipeOut(0).fire && lsuPipeOut(0).bits.isStore
   dontTouch(loadCond)
   dontTouch(storeCond)
-  val tag = lsuPipeOut(0).bits.paddr === "h80022b70".U
-//  dontTouch(tag)
-
-  val sdtag = (io.dmem.req.valid && (io.dmem.req.bits.addr === "hfc011718".U))
-  dontTouch(sdtag)
 
   if(SSDCoreConfig().EnableLSUDebug){
   myDebug(loadCond, "Load  addr:%x, mask:%b, data:%x, at PC: %x\n",lsuPipeOut(0).bits.paddr,lsuPipeOut(0).bits.mask,io.out.bits,lsuPipeOut(0).bits.pc)
