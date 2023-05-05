@@ -16,14 +16,14 @@
 
 package XiaoHe.SSDbackend.fu
 
-import XiaoHe.isa.RV32I_BRUInstr
+import _root_.XiaoHe.isa.RV32I_BRUInstr
 import _root_.utils._
 import chisel3._
 import chisel3.util._
 //import difftest._
-import XiaoHe.SSDbackend._
-import XiaoHe.SSDfrontend._
+import _root_.XiaoHe.SSDfrontend._
 import XiaoHe._
+import XiaoHe.SSDbackend._
 object ALUOpType {
   def add  = "b1000000".U
   def sll  = "b0000001".U
