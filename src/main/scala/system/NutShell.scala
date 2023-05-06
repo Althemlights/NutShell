@@ -162,12 +162,15 @@ class NutShell()(implicit p: Parameters) extends LazyModule{
 }
 
 class NutShellImp(outer: NutShell) extends LazyRawModuleImp(outer) with HasNutCoreParameters with HasSoCParameter{
+  val corenum = Settings.getInt("CoreNums")
+  
   val io = IO(new Bundle{
     val clock = Input(Bool())
     val reset = Input(AsyncReset())
     //val frontend = Flipped(new AXI4)
     val meip = Input(UInt(Settings.getInt("NrExtIntr").W))
     val ila = if (FPGAPlatform && EnableILA) Some(Output(new ILABundle)) else None
+    val diff = Flipped(Vec(corenum, new DIFFTESTIO))
   })
 
   //val memory = IO(outer.memory.cloneType)
@@ -175,6 +178,7 @@ class NutShellImp(outer: NutShell) extends LazyRawModuleImp(outer) with HasNutCo
   val peripheral = outer.peripheralNode.makeIOs()
   //val nutcore = outer.nutcore.module
   val nutcore_withl2 = outer.core_with_l2.map(_.module)
+  (io.diff zip nutcore_withl2) map {case (i, o) => i <> o.io.diff} 
   //val imem = outer.imem.module
   val core_rst_nodes = outer.core_rst_nodes
 
@@ -182,8 +186,6 @@ class NutShellImp(outer: NutShell) extends LazyRawModuleImp(outer) with HasNutCo
   //axi2sb.io.in <> io.frontend
   //io.frontend <> DontCare
   //nutcore.io.frontend <> axi2sb.io.out
-  
-  val corenum = Settings.getInt("CoreNums")
   /*for (i <- 0 until corenum) {
     //nutcore_withl2(i).io.frontend <> axi2sb.io.out
     nutcore_withl2(i).io.frontend <> DontCare
