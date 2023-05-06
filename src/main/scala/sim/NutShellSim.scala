@@ -73,7 +73,7 @@ class SimTop(implicit p: Parameters) extends Module {
   //mmio.io.rw <> soc.io.mmio
   mmio.io.rw <> DontCare
 
-  xiaohe.io.interrupt := mmio.io.meip
+  soc.io.meip := mmio.io.meip
 
   val log_begin, log_end, log_level = WireInit(0.U(64.W))
   log_begin := io.logCtrl.log_begin

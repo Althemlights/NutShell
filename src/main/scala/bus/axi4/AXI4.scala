@@ -24,14 +24,14 @@ object AXI4Parameters extends HasNutCoreParameter {
   val dataBits  = DataBits
   val userBits  = 0
 
-//  def CACHE_RALLOCATE  = 8.U(cacheBits.W)
-//  def CACHE_WALLOCATE  = 4.U(cacheBits.W)
-//  def CACHE_MODIFIABLE = 2.U(cacheBits.W)
-//  def CACHE_BUFFERABLE = 1.U(cacheBits.W)
-//
-//  def PROT_PRIVILEDGED = 1.U(protBits.W)
-//  def PROT_INSECURE    = 2.U(protBits.W)
-//  def PROT_INSTRUCTION = 4.U(protBits.W)
+  def CACHE_RALLOCATE  = 8.U(cacheBits.W)
+  def CACHE_WALLOCATE  = 4.U(cacheBits.W)
+  def CACHE_MODIFIABLE = 2.U(cacheBits.W)
+  def CACHE_BUFFERABLE = 1.U(cacheBits.W)
+
+  def PROT_PRIVILEDGED = 1.U(protBits.W)
+  def PROT_INSECURE    = 2.U(protBits.W)
+  def PROT_INSTRUCTION = 4.U(protBits.W)
 
   def BURST_FIXED = 0.U(burstBits.W)
   def BURST_INCR  = 1.U(burstBits.W)
