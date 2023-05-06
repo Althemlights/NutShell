@@ -88,5 +88,29 @@ class SimTop(implicit p: Parameters) extends Module {
   BoringUtils.addSink(dummyWire, "DISPLAY_ENABLE")
 
   io.uart <> mmio.io.uart
-  
+
+  val corenum = Settings.getInt("CoreNums")
+  val dt_ic1 = Seq.fill(corenum)(Module(new DifftestInstrCommit))
+  val dt_ic0 = Seq.fill(corenum)(Module(new DifftestInstrCommit))
+
+  (dt_ic0 zip soc.io.diff) map { case (i,o) => i.io <> o.dt_ic0 }
+  (dt_ic1 zip soc.io.diff) map { case (i,o) => i.io <> o.dt_ic1 }
+
+  val dt_iw1 = Seq.fill(corenum)(Module(new DifftestIntWriteback))
+  val dt_iw0 = Seq.fill(corenum)(Module(new DifftestIntWriteback))
+
+  (dt_iw0 zip soc.io.diff) map { case (i,o) => i.io <> o.dt_iw0 }
+  (dt_iw1 zip soc.io.diff) map { case (i,o) => i.io <> o.dt_iw1 }
+
+  val dt_ae = Seq.fill(corenum)(Module(new DifftestArchEvent))
+  (dt_ae zip soc.io.diff) map { case (i,o) => i.io <> o.dt_ae }
+
+  val dt_te = Seq.fill(corenum)(Module(new DifftestTrapEvent))
+  (dt_te zip soc.io.diff) map { case (i,o) => i.io <> o.dt_te }
+
+  val dt_cs = Seq.fill(corenum)(Module(new DifftestCSRState))
+  (dt_cs zip soc.io.diff) map { case (i,o) => i.io <> o.dt_cs }
+
+  val dt_irs = Seq.fill(corenum)(Module(new DifftestArchIntRegState))
+  (dt_irs zip soc.io.diff) map { case (i,o) => i.io <> o.dt_irs }
 }

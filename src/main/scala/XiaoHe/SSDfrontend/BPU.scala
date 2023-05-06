@@ -114,9 +114,10 @@ class BPU_ooo extends NutCoreModule {
   val flushTLB = WireInit(false.B)
   BoringUtils.addSink(flushBTB, "MOUFlushICache")
   BoringUtils.addSink(flushTLB, "MOUFlushTLB")
-  (0 to 3).map(i => (btb(i).reset := reset.asBool || (flushBTB || flushTLB)))
+  //(0 to 3).map(i => (btb(i).reset := reset.asBool || (flushBTB || flushTLB)))
+  (0 to 3).map(i => (btb(i).reset := (reset.asBool || (flushBTB || flushTLB)).asAsyncReset))
 
-  Debug(reset.asBool || (flushBTB || flushTLB), "[BPU-RESET] bpu-reset flushBTB:%d flushTLB:%d\n", flushBTB, flushTLB)
+  //Debug(reset.asBool || (flushBTB || flushTLB), "[BPU-RESET] bpu-reset flushBTB:%d flushTLB:%d\n", flushBTB, flushTLB)
 
   (0 to 3).map(i => (btb(i).io.r.req.valid := io.in.pc.valid))
   (0 to 3).map(i => (btb(i).io.r.req.bits.setIdx := btbAddr.getIdx(io.in.pc.bits)))

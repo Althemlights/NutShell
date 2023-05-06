@@ -23,6 +23,7 @@ class SSDbackend extends NutCoreModule with hasBypassConst {
     val hartid = Input(UInt(XLEN.W))
     val pipelineEmpty = Output(Bool())
     val bpuUpdateReq = new BPUUpdateReq
+    val diff = Flipped(new DIFFTESTIO)
     //val mmio = new SimpleBusUC
   })
   def BypassMux(sel:Bool,BypassCtl:Vec[Bool],BypassDataPort:Vec[UInt],rdata:UInt):UInt ={
@@ -681,6 +682,7 @@ class SSDbackend extends NutCoreModule with hasBypassConst {
     (pipeOut(1).fire && !MDUOpType.isDiv(pipeOut(1).bits.fuOpType) && BypassPktValid(1) && BypassPkt(1).decodePkt.muldiv).asUInt
   instIssueCntIO.divInst := (pipeOut(0).fire  && MDUOpType.isDiv(pipeOut(0).bits.fuOpType) && BypassPktValid(0) && BypassPkt(0).decodePkt.muldiv).asUInt +
     (pipeOut(1).fire && MDUOpType.isDiv(pipeOut(1).bits.fuOpType) && BypassPktValid(1) && BypassPkt(1).decodePkt.muldiv).asUInt
+  instIssueCntIO.aluInst := DontCare
 
   instCommitCntIO.branchInst := ( pipeOut(8).fire && !pipeInvalid(10) && pipeOut(8).bits.isBranch && ALUOpType.isBranch(pipeOut(8).bits.fuOpType)).asUInt +
     ( pipeOut(9).fire && !pipeInvalid(11) && pipeOut(9).bits.isBranch && ALUOpType.isBranch(pipeOut(9).bits.fuOpType)).asUInt
@@ -698,6 +700,7 @@ class SSDbackend extends NutCoreModule with hasBypassConst {
     ( pipeOut(9).fire && !pipeInvalid(11) && !MDUOpType.isDiv(pipeOut(9).bits.fuOpType) && BypassPktValid(9) && BypassPkt(9).decodePkt.muldiv).asUInt
   instCommitCntIO.divInst := ( pipeOut(8).fire && !pipeInvalid(10)  && MDUOpType.isDiv(pipeOut(8).bits.fuOpType) && BypassPktValid(8) && BypassPkt(8).decodePkt.muldiv).asUInt +
     ( pipeOut(9).fire && !pipeInvalid(11) && MDUOpType.isDiv(pipeOut(9).bits.fuOpType) && BypassPktValid(9) && BypassPkt(9).decodePkt.muldiv).asUInt
+  instCommitCntIO.aluInst := DontCare
 
   BoringUtils.addSource(memStall,"memStallCycle")
   BoringUtils.addSource(memStall & (!RegNext(memStall)),"memStallCnt")
@@ -906,109 +909,89 @@ class SSDbackend extends NutCoreModule with hasBypassConst {
     //Debug(dt_sb1_valid && (dt_sb1_addr === 0x800087C0L.U), "Commit SB1 Addr: %x\n", dt_sb1.io.sbufferAddr)
 
 //    val dt_ic1 = Module(new DifftestInstrCommit)
-    BoringUtils.addSource(RegNext(pipeOut(8).fire() && !pipeInvalid(10) && pipeOut(8).bits.pc =/= 0.U) && !RegNext(SSDcoretrap),"dt_ic1_valid")
-    BoringUtils.addSource(RegNext(Cat(0.U((64 - VAddrBits).W), pipeOut(8).bits.pc)),"dt_ic1_pc")
-    BoringUtils.addSource(RegNext(pipeOut(8).bits.instr),"dt_ic1_instr")
-    BoringUtils.addSource(RegNext(pipeOut(8).bits.isRVC), "dt_ic1_isRVC")
-    BoringUtils.addSource((RegNext(pipeOut(8).fire() && !pipeInvalid(10) && (pipeOut(8).bits.isMMIO))) || RegNext(pipeOut(8).bits.instr === 0x7b.U) ||
-      RegNext(pipeOut(8).bits.instr(6, 0) === "hb0002973".U(6, 0) && pipeOut(8).bits.instr(31, 12) === "hb0002973".U(31, 12)), "dt_ic1_skip")
-    BoringUtils.addSource(RegNext(regfile.io.writePorts(0).wen), "dt_ic1_wen")
-    BoringUtils.addSource(RegNext(Cat(0.U(3.W), regfile.io.writePorts(0).addr)), "dt_ic1_wpdest")
-    BoringUtils.addSource(RegNext(Cat(0.U(3.W), regfile.io.writePorts(0).addr)), "dt_ic1_wdest")
-//    dt_ic1.io.clock := clock
-//    dt_ic1.io.coreid := hartid
-//    dt_ic1.io.index := 0.U
-//    dt_ic1.io.valid := RegNext(pipeOut(9).fire && !pipeInvalid(11) && pipeOut(9).bits.pc =/= 0.U) && !RegNext(SSDcoretrap)
-//    dt_ic1.io.pc := RegNext(Cat(0.U((64 - VAddrBits).W), pipeOut(9).bits.pc))
-//    dt_ic1.io.instr := RegNext(pipeOut(9).bits.instr)
-//    dt_ic1.io.special := 0.U
-////    dt_ic1.io.skip := (RegNext(pipeOut(9).fire && !pipeInvalid(11) && ((pipeOut(9).bits.csrInst && pipeOut(8).bits.instr=/=0x73.U && pipeOut(9).bits.instr=/=0x30571073.U && pipeOut(9).bits.instr=/=0x30031073.U && pipeOut(9).bits.instr =/=0x34139073.U && pipeOut(9).bits.instr =/= 0x30200073.U) || pipeOut(9).bits.isMMIO))) || RegNext(pipeOut(9).bits.instr === 0x7b.U)
-//    dt_ic1.io.skip := (RegNext(pipeOut(9).fire && !pipeInvalid(11) && (pipeOut(9).bits.isMMIO))) || RegNext(pipeOut(9).bits.instr === 0x7b.U) ||
-//      RegNext(pipeOut(9).bits.instr(6,0) === "hb0002973".U(6,0) && pipeOut(9).bits.instr(31,12) === "hb0002973".U(31,12)) //trap & csrr mcycle
-//    dt_ic1.io.isRVC := false.B
-//    dt_ic1.io.scFailed := false.B
-//    dt_ic1.io.wen := RegNext(regfile.io.writePorts(1).wen)
-//    dt_ic1.io.wpdest := RegNext(Cat(0.U(3.W), regfile.io.writePorts(1).addr))
-//    dt_ic1.io.wdest := RegNext(Cat(0.U(3.W), regfile.io.writePorts(1).addr))
-    BoringUtils.addSource(RegNext(pipeOut(9).fire() && !pipeInvalid(11) && pipeOut(9).bits.pc =/= 0.U), "dt_ic0_valid")
-    BoringUtils.addSource(RegNext(Cat(0.U((64 - VAddrBits).W), pipeOut(9).bits.pc)), "dt_ic0_pc")
-    BoringUtils.addSource(RegNext(pipeOut(9).bits.instr), "dt_ic0_instr")
-    BoringUtils.addSource(RegNext(pipeOut(9).bits.isRVC), "dt_ic0_isRVC")
-    BoringUtils.addSource((RegNext(pipeOut(9).fire() && !pipeInvalid(11) && (pipeOut(9).bits.isMMIO))) || RegNext(pipeOut(9).bits.instr === 0x7b.U) ||
-      RegNext(pipeOut(9).bits.instr(6, 0) === "hb0002973".U(6, 0) && pipeOut(9).bits.instr(31, 12) === "hb0002973".U(31, 12)), "dt_ic0_skip")
-    BoringUtils.addSource(RegNext(regfile.io.writePorts(1).wen), "dt_ic0_wen")
-    BoringUtils.addSource(RegNext(Cat(0.U(3.W), regfile.io.writePorts(1).addr)), "dt_ic0_wpdest")
-    BoringUtils.addSource(RegNext(Cat(0.U(3.W), regfile.io.writePorts(1).addr)), "dt_ic0_wdest")
+    io.diff.dt_ic1.clock   := clock
+    io.diff.dt_ic1.coreid  := hartid
+    io.diff.dt_ic1.index   := 0.U
+    io.diff.dt_ic1.valid  = RegNext(pipeOut(8).fire() && !pipeInvalid(10) && pipeOut(8).bits.pc =/= 0.U) && !RegNext(SSDcoretrap)
+    io.diff.dt_ic1.pc     = RegNext(Cat(0.U((64 - VAddrBits).W), pipeOut(8).bits.pc))
+    io.diff.dt_ic1.instr  = RegNext(pipeOut(8).bits.instr)
+    io.diff.dt_ic1.special := 0.U
+    io.diff.dt_ic1.isRVC  = RegNext(pipeOut(8).bits.isRVC)
+    io.diff.dt_ic1.skip   = (RegNext(pipeOut(8).fire() && !pipeInvalid(10) && (pipeOut(8).bits.isMMIO))) || RegNext(pipeOut(8).bits.instr === 0x7b.U) ||
+      RegNext(pipeOut(8).bits.instr(6, 0) === "hb0002973".U(6, 0) && pipeOut(8).bits.instr(31, 12) === "hb0002973".U(31, 12))
+    io.diff.dt_ic1.scFailed:= false.B
+    io.diff.dt_ic1.wen    = RegNext(regfile.io.writePorts(0).wen)
+    io.diff.dt_ic1.wpdest = RegNext(Cat(0.U(3.W), regfile.io.writePorts(0).addr))
+    io.diff.dt_ic1.wdest  = RegNext(Cat(0.U(3.W), regfile.io.writePorts(0).addr))
+
+    io.diff.dt_ic0.clock   := clock
+    io.diff.dt_ic0.coreid  := hartid
+    io.diff.dt_ic0.index   := 1.U
+    io.diff.dt_ic0.valid  = RegNext(pipeOut(9).fire() && !pipeInvalid(11) && pipeOut(9).bits.pc =/= 0.U)
+    io.diff.dt_ic0.pc     = RegNext(Cat(0.U((64 - VAddrBits).W), pipeOut(9).bits.pc))
+    io.diff.dt_ic0.instr  = RegNext(pipeOut(9).bits.instr)
+    io.diff.dt_ic0.special := 0.U
+    io.diff.dt_ic0.isRVC  = RegNext(pipeOut(9).bits.isRVC)
+    io.diff.dt_ic0.skip   = (RegNext(pipeOut(9).fire() && !pipeInvalid(11) && (pipeOut(9).bits.isMMIO))) || RegNext(pipeOut(9).bits.instr === 0x7b.U) ||
+      RegNext(pipeOut(9).bits.instr(6, 0) === "hb0002973".U(6, 0) && pipeOut(9).bits.instr(31, 12) === "hb0002973".U(31, 12))
+    io.diff.dt_ic0.scFailed:= false.B
+    io.diff.dt_ic0.wen    = RegNext(regfile.io.writePorts(1).wen)
+    io.diff.dt_ic0.wpdest = RegNext(Cat(0.U(3.W), regfile.io.writePorts(1).addr))
+    io.diff.dt_ic0.wdest  = RegNext(Cat(0.U(3.W), regfile.io.writePorts(1).addr))
 
 
-    BoringUtils.addSource(RegNext(regfile.io.writePorts(1).wen),"dt_iw0_valid")
-    BoringUtils.addSource(RegNext(Cat(0.U(3.W), regfile.io.writePorts(1).addr)),"dt_iw0_dest")
-    BoringUtils.addSource(RegNext(regfile.io.writePorts(1).data), "dt_iw0_data")
-//    val dt_iw0 = Module(new DifftestIntWriteback)
-//    dt_iw0.io.clock := clock
-//    dt_iw0.io.coreid := 0.U
-//    dt_iw0.io.valid := RegNext(regfile.io.writePorts(1).wen)
-//    dt_iw0.io.dest := RegNext(regfile.io.writePorts(1).addr)
-//    dt_iw0.io.data := RegNext(regfile.io.writePorts(1).data)
+    io.diff.dt_iw0.clock := clock
+    io.diff.dt_iw0.coreid := hartid
+    io.diff.dt_iw0.valid := RegNext(regfile.io.writePorts(1).wen)
+    io.diff.dt_iw0.dest := RegNext(regfile.io.writePorts(1).addr)
+    io.diff.dt_iw0.data := RegNext(regfile.io.writePorts(1).data)
     val regP0 = regfile.io.writePorts(0).addr
     val regP1 = regfile.io.writePorts(1).addr
     
-    BoringUtils.addSource(RegNext(Mux(regP0 === regP1 && regfile.io.writePorts(0).wen && regfile.io.writePorts(1).wen ,false.B,regfile.io.writePorts(0).wen)), "dt_iw1_valid")
-    BoringUtils.addSource(RegNext(Cat(0.U(3.W), regfile.io.writePorts(0).addr)), "dt_iw1_dest")
-    BoringUtils.addSource(RegNext(regfile.io.writePorts(0).data), "dt_iw1_data")
-//    val dt_iw1 = Module(new DifftestIntWriteback)
-//    dt_iw1.io.clock := clock
-//    dt_iw1.io.coreid := 0.U
-//    dt_iw1.io.valid := RegNext(regfile.io.writePorts(0).wen)
-//    dt_iw1.io.dest := RegNext(regfile.io.writePorts(0).addr)
-//    dt_iw1.io.data := RegNext(regfile.io.writePorts(0).data)
-    BoringUtils.addSource(RegNext(Mux(pipeOut(9).bits.csrInst,pipeOut(9).bits.ArchEvent.intrNO,pipeOut(8).bits.ArchEvent.intrNO)), "dt_ae_intrNO")
-    BoringUtils.addSource(RegNext(Mux(pipeOut(9).bits.csrInst,pipeOut(9).bits.ArchEvent.cause,pipeOut(8).bits.ArchEvent.cause)), "dt_ae_cause")
-    BoringUtils.addSource(RegNext(Mux(pipeOut(9).bits.csrInst,pipeOut(9).bits.ArchEvent.exceptionPC,pipeOut(8).bits.ArchEvent.exceptionPC)), "dt_ae_exceptionPC")
+    io.diff.dt_iw1.clock := clock
+    io.diff.dt_iw1.coreid := hartid
+    io.diff.dt_iw1.valid := RegNext(Mux(regP0 === regP1 && regfile.io.writePorts(0).wen && regfile.io.writePorts(1).wen ,false.B,regfile.io.writePorts(0).wen))
+    io.diff.dt_iw1.dest := RegNext(regfile.io.writePorts(0).addr)
+    io.diff.dt_iw1.data := RegNext(regfile.io.writePorts(0).data)
 
-//    val dt_ae = Module(new DifftestArchEvent)
-//    dt_ae.io.clock := clock
-//    dt_ae.io.coreid :=      0.U
-//    dt_ae.io.intrNO :=      RegNext(Mux(pipeOut(8).bits.csrInst,pipeOut(8).bits.ArchEvent.intrNO,pipeOut(9).bits.ArchEvent.intrNO))
-//    dt_ae.io.cause :=       RegNext(Mux(pipeOut(8).bits.csrInst,pipeOut(8).bits.ArchEvent.cause,pipeOut(9).bits.ArchEvent.cause))
-//    dt_ae.io.exceptionPC := RegNext(Mux(pipeOut(8).bits.csrInst,pipeOut(8).bits.ArchEvent.exceptionPC,pipeOut(9).bits.ArchEvent.exceptionPC))
-    BoringUtils.addSource(RegNext(SSDcoretrap), "dt_te_valid")
-    BoringUtils.addSource(rf_a0(2, 0), "dt_te_code")
-    BoringUtils.addSource(Mux(RegNext(pipeOut(8).bits.instr === "h0000006b".U), RegNext(Cat(0.U((64 - VAddrBits).W), pipeOut(8).bits.pc)), RegNext(Cat(0.U((64 - VAddrBits).W), pipeOut(9).bits.pc))), "dt_te_pc")
-    BoringUtils.addSource(cycle_cnt, "dt_te_cycleCnt")
-    BoringUtils.addSource(instr_cnt, "dt_te_instrCnt")
-//    val dt_te = Module(new DifftestTrapEvent)
-//    dt_te.io.clock := clock
-//    dt_te.io.coreid := 0.U
-//    dt_te.io.valid := RegNext(SSDcoretrap)
-//    dt_te.io.code := rf_a0(2, 0)
-//    dt_te.io.pc := Mux(RegNext(pipeOut(8).bits.instr === "h0000006b".U), RegNext(Cat(0.U((64 - VAddrBits).W), pipeOut(8).bits.pc)), RegNext(Cat(0.U((64 - VAddrBits).W), pipeOut(9).bits.pc)))
-//    dt_te.io.cycleCnt := cycle_cnt
-//    dt_te.io.instrCnt := instr_cnt
-    BoringUtils.addSource(RegNext(Mux(pipeOut(8).bits.csrInst,pipeOut(8).bits.CSRregfile.mstatus ,pipeOut(9).bits.CSRregfile.mstatus )), "dt_cs_mstatus")
-    BoringUtils.addSource(RegNext(Mux(pipeOut(8).bits.csrInst,pipeOut(8).bits.CSRregfile.sstatus ,pipeOut(9).bits.CSRregfile.sstatus )), "dt_cs_sstatus")
-    BoringUtils.addSource(RegNext(Mux(pipeOut(8).bits.csrInst,pipeOut(8).bits.CSRregfile.mepc    ,pipeOut(9).bits.CSRregfile.mepc    )), "dt_cs_mepc")
-    BoringUtils.addSource(RegNext(Mux(pipeOut(8).bits.csrInst,pipeOut(8).bits.CSRregfile.sepc    ,pipeOut(9).bits.CSRregfile.sepc    )), "dt_cs_sepc")
-    BoringUtils.addSource(RegNext(Mux(pipeOut(8).bits.csrInst,pipeOut(8).bits.CSRregfile.mtval   ,pipeOut(9).bits.CSRregfile.mtval   )), "dt_cs_mtval")
-    BoringUtils.addSource(RegNext(Mux(pipeOut(8).bits.csrInst,pipeOut(8).bits.CSRregfile.stval   ,pipeOut(9).bits.CSRregfile.stval   )), "dt_cs_stval")
-    BoringUtils.addSource(RegNext(Mux(pipeOut(8).bits.csrInst,pipeOut(8).bits.CSRregfile.mtvec   ,pipeOut(9).bits.CSRregfile.mtvec   )), "dt_cs_mtvec")
-    BoringUtils.addSource(RegNext(Mux(pipeOut(8).bits.csrInst,pipeOut(8).bits.CSRregfile.stvec   ,pipeOut(9).bits.CSRregfile.stvec   )), "dt_cs_stvec")
-    BoringUtils.addSource(RegNext(Mux(pipeOut(8).bits.csrInst,pipeOut(8).bits.CSRregfile.mcause  ,pipeOut(9).bits.CSRregfile.mcause  )), "dt_cs_mcause")
-    BoringUtils.addSource(RegNext(Mux(pipeOut(8).bits.csrInst,pipeOut(8).bits.CSRregfile.scause  ,pipeOut(9).bits.CSRregfile.scause  )), "dt_cs_scause")
-    BoringUtils.addSource(RegNext(Mux(pipeOut(8).bits.csrInst,pipeOut(8).bits.CSRregfile.satp    ,pipeOut(9).bits.CSRregfile.satp    )), "dt_cs_satp")
-    BoringUtils.addSource(RegNext(Mux(pipeOut(8).bits.csrInst,pipeOut(8).bits.CSRregfile.mip     ,pipeOut(9).bits.CSRregfile.mip     )), "dt_cs_mip")
-    BoringUtils.addSource(RegNext(Mux(pipeOut(8).bits.csrInst,pipeOut(8).bits.CSRregfile.mie     ,pipeOut(9).bits.CSRregfile.mie     )), "dt_cs_mie")
-    BoringUtils.addSource(RegNext(Mux(pipeOut(8).bits.csrInst,pipeOut(8).bits.CSRregfile.mscratch,pipeOut(9).bits.CSRregfile.mscratch)), "dt_cs_mscratch")
-    BoringUtils.addSource(RegNext(Mux(pipeOut(8).bits.csrInst,pipeOut(8).bits.CSRregfile.sscratch,pipeOut(9).bits.CSRregfile.sscratch)), "dt_cs_sscratch")
-    BoringUtils.addSource(RegNext(Mux(pipeOut(8).bits.csrInst,pipeOut(8).bits.CSRregfile.mideleg ,pipeOut(9).bits.CSRregfile.mideleg )), "dt_cs_mideleg")
-    BoringUtils.addSource(RegNext(Mux(pipeOut(8).bits.csrInst,pipeOut(8).bits.CSRregfile.medeleg ,pipeOut(9).bits.CSRregfile.medeleg )), "dt_cs_medeleg")
+    io.diff.dt_ae.clock := clock
+    io.diff.dt_ae.coreid := hartid
+    io.diff.dt_ae.intrNO := RegNext(Mux(pipeOut(9).bits.csrInst,pipeOut(9).bits.ArchEvent.intrNO,pipeOut(8).bits.ArchEvent.intrNO))
+    io.diff.dt_ae.cause := RegNext(Mux(pipeOut(9).bits.csrInst,pipeOut(9).bits.ArchEvent.cause,pipeOut(8).bits.ArchEvent.cause))
+    io.diff.dt_ae.exceptionPC := RegNext(Mux(pipeOut(9).bits.csrInst,pipeOut(9).bits.ArchEvent.exceptionPC,pipeOut(8).bits.ArchEvent.exceptionPC))
 
-    BoringUtils.addSource(regfile.io.debugPorts, "dt_irs_gpr")
+    io.diff.dt_te.clock := clock
+    io.diff.dt_te.coreid := hartid
+    io.diff.dt_te.valid := RegNext(SSDcoretrap)
+    io.diff.dt_te.code := rf_a0(2, 0)
+    io.diff.dt_te.pc := Mux(RegNext(pipeOut(8).bits.instr === "h0000006b".U), RegNext(Cat(0.U((64 - VAddrBits).W), pipeOut(8).bits.pc)), RegNext(Cat(0.U((64 - VAddrBits).W), pipeOut(9).bits.pc)))
+    io.diff.dt_te.cycleCnt := cycle_cnt
+    io.diff.dt_te.instrCnt := instr_cnt
 
+    io.diff.dt_cs.clock := clock
+    io.diff.dt_cs.coreid := hartid
+    io.diff.dt_cs.priviledgeMode := 3.U
+    io.diff.dt_cs.mstatus := RegNext(Mux(pipeOut(8).bits.csrInst,pipeOut(8).bits.CSRregfile.mstatus ,pipeOut(9).bits.CSRregfile.mstatus ))
+    io.diff.dt_cs.sstatus := RegNext(Mux(pipeOut(8).bits.csrInst,pipeOut(8).bits.CSRregfile.sstatus ,pipeOut(9).bits.CSRregfile.sstatus ))
+    io.diff.dt_cs.mepc := RegNext(Mux(pipeOut(8).bits.csrInst,pipeOut(8).bits.CSRregfile.mepc    ,pipeOut(9).bits.CSRregfile.mepc    ))
+    io.diff.dt_cs.sepc := RegNext(Mux(pipeOut(8).bits.csrInst,pipeOut(8).bits.CSRregfile.sepc    ,pipeOut(9).bits.CSRregfile.sepc    ))
+    io.diff.dt_cs.mtval := RegNext(Mux(pipeOut(8).bits.csrInst,pipeOut(8).bits.CSRregfile.mtval   ,pipeOut(9).bits.CSRregfile.mtval   ))
+    io.diff.dt_cs.stval := RegNext(Mux(pipeOut(8).bits.csrInst,pipeOut(8).bits.CSRregfile.stval   ,pipeOut(9).bits.CSRregfile.stval   ))
+    io.diff.dt_cs.mtvec := RegNext(Mux(pipeOut(8).bits.csrInst,pipeOut(8).bits.CSRregfile.mtvec   ,pipeOut(9).bits.CSRregfile.mtvec   ))
+    io.diff.dt_cs.stvec := RegNext(Mux(pipeOut(8).bits.csrInst,pipeOut(8).bits.CSRregfile.stvec   ,pipeOut(9).bits.CSRregfile.stvec   ))
+    io.diff.dt_cs.mcause := RegNext(Mux(pipeOut(8).bits.csrInst,pipeOut(8).bits.CSRregfile.mcause  ,pipeOut(9).bits.CSRregfile.mcause  ))
+    io.diff.dt_cs.scause := RegNext(Mux(pipeOut(8).bits.csrInst,pipeOut(8).bits.CSRregfile.scause  ,pipeOut(9).bits.CSRregfile.scause  ))
+    io.diff.dt_cs.satp := RegNext(Mux(pipeOut(8).bits.csrInst,pipeOut(8).bits.CSRregfile.satp    ,pipeOut(9).bits.CSRregfile.satp    ))
+    io.diff.dt_cs.mip := RegNext(Mux(pipeOut(8).bits.csrInst,pipeOut(8).bits.CSRregfile.mip     ,pipeOut(9).bits.CSRregfile.mip     ))
+    io.diff.dt_cs.mie := RegNext(Mux(pipeOut(8).bits.csrInst,pipeOut(8).bits.CSRregfile.mie     ,pipeOut(9).bits.CSRregfile.mie     ))
+    io.diff.dt_cs.mscratch := RegNext(Mux(pipeOut(8).bits.csrInst,pipeOut(8).bits.CSRregfile.mscratch,pipeOut(9).bits.CSRregfile.mscratch))
+    io.diff.dt_cs.sscratch := RegNext(Mux(pipeOut(8).bits.csrInst,pipeOut(8).bits.CSRregfile.sscratch,pipeOut(9).bits.CSRregfile.sscratch))
+    io.diff.dt_cs.mideleg := RegNext(Mux(pipeOut(8).bits.csrInst,pipeOut(8).bits.CSRregfile.mideleg ,pipeOut(9).bits.CSRregfile.mideleg ))
+    io.diff.dt_cs.medeleg := RegNext(Mux(pipeOut(8).bits.csrInst,pipeOut(8).bits.CSRregfile.medeleg ,pipeOut(9).bits.CSRregfile.medeleg ))
 
-  
+    val dt_irs_gpr = WireInit(VecInit(Seq.fill(32)(0.U(64.W))))
+    io.diff.dt_irs.clock:= clock
+    io.diff.dt_irs.coreid := hartid
+    io.diff.dt_irs.gpr := dt_irs_gpr
   }
-
-
-
 }

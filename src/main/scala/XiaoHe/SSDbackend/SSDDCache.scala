@@ -405,7 +405,7 @@ class SSDCache(implicit val cacheConfig: SSDCacheConfig) extends CacheModule wit
   val s1 = Module(new SSDCacheStage1)
   val s2 = Module(new SSDCacheStage2)
 
-  val metaArray = Module(new MetaSRAMTemplateWithArbiter(nRead = 1, nWrite = 1, new MetaBundle, set = Sets, way = Ways, shouldReset = true))
+  val metaArray = Module(new MetaSRAMTemplateWithArbiter(nRead = 1, new MetaBundle, set = Sets, way = Ways, shouldReset = true))
   val dataArray = Module(new DataSRAMTemplateWithArbiter(nRead = 2, new DataBundle, set = Sets * LineBeats, way = Ways))
 
   if (cacheName == "icache") {

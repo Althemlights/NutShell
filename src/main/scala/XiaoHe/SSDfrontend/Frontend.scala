@@ -45,7 +45,7 @@ trait HasFrontendIO {
   val io = IO(new FrontendIO)
 }
 
-class Frontend_ooo(implicit p: Parameters) extends NutCoreModule with HasFrontendIO {
+class Frontend_ooo(implicit val p: Parameters) extends NutCoreModule with HasFrontendIO {
   def pipelineConnect2[T <: Data](left: DecoupledIO[T], right: DecoupledIO[T],
     isFlush: Bool, entries: Int = 4, pipe: Boolean = false) = {
     // NOTE: depend on https://github.com/chipsalliance/chisel3/pull/2245

@@ -129,6 +129,7 @@ class AXI4VGA(sim: Boolean = false) extends Module with HasVGAParameter {
   // but it only readable by the internel controller
   fb.io.in.aw <> io.in.fb.aw
   fb.io.in.w <> io.in.fb.w
+  fb.io.in.ar.bits.prot <> DontCare
   io.in.fb.b <> fb.io.in.b
   io.in.fb.ar.ready := true.B
   io.in.fb.r.bits.data := 0.U
