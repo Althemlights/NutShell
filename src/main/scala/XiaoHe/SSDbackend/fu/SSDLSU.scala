@@ -165,7 +165,7 @@ class SSDLSU extends  NutCoreModule with HasStoreBufferConst{
   BoringUtils.addSource(MMIOStorePkt.bits,"MMIOStorePktBits")
   BoringUtils.addSink(MMIOStorePkt.ready,"MMIOStorePktReady")
   BoringUtils.addSource(MMIOStorePending,"MMIOStorePending")
-  BoringUtils.addSource(outBufferFire,"outBufferFire")
+  // BoringUtils.addSource(outBufferFire,"outBufferFire")
 
   //stall signal
   val cacheStall = WireInit(false.B)
