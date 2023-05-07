@@ -23,7 +23,7 @@ class SSDbackend extends NutCoreModule with hasBypassConst {
     val hartid = Input(UInt(XLEN.W))
     val pipelineEmpty = Output(Bool())
     val bpuUpdateReq = new BPUUpdateReq
-    val diff = Flipped(new DIFFTESTIO)
+    val diff = new DIFFTESTIO
     //val mmio = new SimpleBusUC
   })
   def BypassMux(sel:Bool,BypassCtl:Vec[Bool],BypassDataPort:Vec[UInt],rdata:UInt):UInt ={
@@ -912,32 +912,32 @@ class SSDbackend extends NutCoreModule with hasBypassConst {
     io.diff.dt_ic1.clock   := clock
     io.diff.dt_ic1.coreid  := hartid
     io.diff.dt_ic1.index   := 0.U
-    io.diff.dt_ic1.valid  = RegNext(pipeOut(8).fire() && !pipeInvalid(10) && pipeOut(8).bits.pc =/= 0.U) && !RegNext(SSDcoretrap)
-    io.diff.dt_ic1.pc     = RegNext(Cat(0.U((64 - VAddrBits).W), pipeOut(8).bits.pc))
-    io.diff.dt_ic1.instr  = RegNext(pipeOut(8).bits.instr)
+    io.diff.dt_ic1.valid  := RegNext(pipeOut(8).fire() && !pipeInvalid(10) && pipeOut(8).bits.pc =/= 0.U) && !RegNext(SSDcoretrap)
+    io.diff.dt_ic1.pc     := RegNext(Cat(0.U((64 - VAddrBits).W), pipeOut(8).bits.pc))
+    io.diff.dt_ic1.instr  := RegNext(pipeOut(8).bits.instr)
     io.diff.dt_ic1.special := 0.U
-    io.diff.dt_ic1.isRVC  = RegNext(pipeOut(8).bits.isRVC)
-    io.diff.dt_ic1.skip   = (RegNext(pipeOut(8).fire() && !pipeInvalid(10) && (pipeOut(8).bits.isMMIO))) || RegNext(pipeOut(8).bits.instr === 0x7b.U) ||
+    io.diff.dt_ic1.isRVC  := RegNext(pipeOut(8).bits.isRVC)
+    io.diff.dt_ic1.skip   := (RegNext(pipeOut(8).fire() && !pipeInvalid(10) && (pipeOut(8).bits.isMMIO))) || RegNext(pipeOut(8).bits.instr === 0x7b.U) ||
       RegNext(pipeOut(8).bits.instr(6, 0) === "hb0002973".U(6, 0) && pipeOut(8).bits.instr(31, 12) === "hb0002973".U(31, 12))
     io.diff.dt_ic1.scFailed:= false.B
-    io.diff.dt_ic1.wen    = RegNext(regfile.io.writePorts(0).wen)
-    io.diff.dt_ic1.wpdest = RegNext(Cat(0.U(3.W), regfile.io.writePorts(0).addr))
-    io.diff.dt_ic1.wdest  = RegNext(Cat(0.U(3.W), regfile.io.writePorts(0).addr))
+    io.diff.dt_ic1.wen    := RegNext(regfile.io.writePorts(0).wen)
+    io.diff.dt_ic1.wpdest := RegNext(Cat(0.U(3.W), regfile.io.writePorts(0).addr))
+    io.diff.dt_ic1.wdest  := RegNext(Cat(0.U(3.W), regfile.io.writePorts(0).addr))
 
     io.diff.dt_ic0.clock   := clock
     io.diff.dt_ic0.coreid  := hartid
     io.diff.dt_ic0.index   := 1.U
-    io.diff.dt_ic0.valid  = RegNext(pipeOut(9).fire() && !pipeInvalid(11) && pipeOut(9).bits.pc =/= 0.U)
-    io.diff.dt_ic0.pc     = RegNext(Cat(0.U((64 - VAddrBits).W), pipeOut(9).bits.pc))
-    io.diff.dt_ic0.instr  = RegNext(pipeOut(9).bits.instr)
+    io.diff.dt_ic0.valid  := RegNext(pipeOut(9).fire() && !pipeInvalid(11) && pipeOut(9).bits.pc =/= 0.U)
+    io.diff.dt_ic0.pc     := RegNext(Cat(0.U((64 - VAddrBits).W), pipeOut(9).bits.pc))
+    io.diff.dt_ic0.instr  := RegNext(pipeOut(9).bits.instr)
     io.diff.dt_ic0.special := 0.U
-    io.diff.dt_ic0.isRVC  = RegNext(pipeOut(9).bits.isRVC)
-    io.diff.dt_ic0.skip   = (RegNext(pipeOut(9).fire() && !pipeInvalid(11) && (pipeOut(9).bits.isMMIO))) || RegNext(pipeOut(9).bits.instr === 0x7b.U) ||
+    io.diff.dt_ic0.isRVC  := RegNext(pipeOut(9).bits.isRVC)
+    io.diff.dt_ic0.skip   := (RegNext(pipeOut(9).fire() && !pipeInvalid(11) && (pipeOut(9).bits.isMMIO))) || RegNext(pipeOut(9).bits.instr === 0x7b.U) ||
       RegNext(pipeOut(9).bits.instr(6, 0) === "hb0002973".U(6, 0) && pipeOut(9).bits.instr(31, 12) === "hb0002973".U(31, 12))
     io.diff.dt_ic0.scFailed:= false.B
-    io.diff.dt_ic0.wen    = RegNext(regfile.io.writePorts(1).wen)
-    io.diff.dt_ic0.wpdest = RegNext(Cat(0.U(3.W), regfile.io.writePorts(1).addr))
-    io.diff.dt_ic0.wdest  = RegNext(Cat(0.U(3.W), regfile.io.writePorts(1).addr))
+    io.diff.dt_ic0.wen    := RegNext(regfile.io.writePorts(1).wen)
+    io.diff.dt_ic0.wpdest := RegNext(Cat(0.U(3.W), regfile.io.writePorts(1).addr))
+    io.diff.dt_ic0.wdest  := RegNext(Cat(0.U(3.W), regfile.io.writePorts(1).addr))
 
 
     io.diff.dt_iw0.clock := clock
