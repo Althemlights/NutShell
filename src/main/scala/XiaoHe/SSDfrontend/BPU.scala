@@ -197,7 +197,7 @@ class BPU_ooo extends NutCoreModule {
   val rasEmpty = RegEnable(sp.value === 0.U, io.in.pc.valid)
 
   val backendRetretire = WireInit(false.B)
-  BoringUtils.addSink(backendRetretire , "backendRetretire")
+  // BoringUtils.addSink(backendRetretire , "backendRetretire")
 
   when (rasWen)  {
     ras.write(sp.value + 1.U, retPC)  //TODO: modify for RVC
