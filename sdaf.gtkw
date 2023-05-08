@@ -1,28 +1,37 @@
 [*]
-[*] GTKWave Analyzer v3.3.104 (w)1999-2020 BSI
-[*] Thu Mar 23 15:12:07 2023
+[*] GTKWave Analyzer v3.3.103 (w)1999-2019 BSI
+[*] Mon May  8 06:11:26 2023
 [*]
-[dumpfile] "/home/oslab/xs-env/NutShell/build/2023-03-23@23:10:51.vcd"
-[dumpfile_mtime] "Thu Mar 23 15:10:52 2023"
-[dumpfile_size] 29694244
-[savefile] "/home/oslab/xs-env/NutShell/sdaf.gtkw"
-[timestart] 1230
-[size] 1532 615
-[pos] 521 179
-*0.000000 1231 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1
+[dumpfile] "/home/jpz/xs-env/NutShell/build/2023-05-08@14:07:29.vcd"
+[dumpfile_mtime] "Mon May  8 06:07:29 2023"
+[dumpfile_size] 21563633
+[savefile] "/home/jpz/xs-env/NutShell/sdaf.gtkw"
+[timestart] 1756
+[size] 2031 877
+[pos] -1 -1
+*-3.000000 1797 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1
 [treeopen] TOP.
 [treeopen] TOP.SimTop.
-[treeopen] TOP.SimTop.xiaohe.
-[treeopen] TOP.SimTop.xiaohe.nutcore.
-[treeopen] TOP.SimTop.xiaohe.nutcore.SSDbackend.
-[treeopen] TOP.SimTop.xiaohe.nutcore.SSDbackend.LSU.
-[sst_width] 314
+[treeopen] TOP.SimTop.l_soc.
+[treeopen] TOP.SimTop.l_soc.core_with_l2.
+[treeopen] TOP.SimTop.l_soc.core_with_l2.nutcore.
+[treeopen] TOP.SimTop.l_soc.core_with_l2.nutcore.SSDbackend.
+[sst_width] 384
 [signals_width] 287
 [sst_expanded] 1
-[sst_vpaned_height] 149
+[sst_vpaned_height] 388
 @22
-TOP.SimTop.xiaohe.nutcore.SSDbackend.ALU0.io_cfIn_pc[38:0]
-TOP.SimTop.xiaohe.nutcore.SSDbackend.ALU1.io_cfIn_pc[38:0]
+TOP.SimTop.l_soc.core_with_l2.nutcore.SSDbackend.ALU0.io_cfIn_pc[38:0]
+TOP.SimTop.l_soc.core_with_l2.nutcore.SSDbackend.ALU1.io_cfIn_pc[38:0]
+TOP.SimTop.l_soc.core_with_l2.nutcore.SSDbackend.ALU6.io_cfIn_pc[38:0]
+TOP.SimTop.l_soc.core_with_l2.nutcore.SSDbackend.ALU7.io_cfIn_pc[38:0]
+@200
+-
+@28
+TOP.SimTop.l_soc.core_with_l2.nutcore.SSDbackend.ALU0_io_redirect_valid
+TOP.SimTop.l_soc.core_with_l2.nutcore.SSDbackend.ALU1_io_redirect_valid
+TOP.SimTop.l_soc.core_with_l2.nutcore.SSDbackend.ALU6_io_redirect_valid
+TOP.SimTop.l_soc.core_with_l2.nutcore.SSDbackend.ALU7_io_redirect_valid
 @201
 -
 [pattern_trace] 1
