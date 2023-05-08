@@ -235,10 +235,10 @@ class SSDbackend extends NutCoreModule with hasBypassConst {
 
 
   io.redirectOut := Mux(SSDCSR.io.redirect.valid,SSDCSR.io.redirect,
-    Mux(Redirect9.valid &&  pipeOut(9).valid && !pipeInvalid(11),Redirect9,
-      Mux(Redirect8.valid &&  pipeOut(8).valid && !pipeInvalid(10),Redirect8,
-        Mux(Redirect3.valid && pipeOut(3).valid,Redirect3,
-          Mux(Redirect2.valid && pipeOut(2).valid,Redirect2,0.U.asTypeOf(new RedirectIO))))))
+    Mux(Redirect8.valid &&  pipeOut(8).valid && !pipeInvalid(10),Redirect8,
+      Mux(Redirect9.valid &&  pipeOut(9).valid && !pipeInvalid(11),Redirect9,
+        Mux(Redirect2.valid && pipeOut(2).valid,Redirect2,
+          Mux(Redirect3.valid && pipeOut(3).valid,Redirect3,0.U.asTypeOf(new RedirectIO))))))
   finalBpuUpdateReq := Mux(pipeOut(9).bits.bpuUpdateReq.valid && pipeOut(9).fire && !pipeInvalid(11),pipeOut(9).bits.bpuUpdateReq,
     Mux(pipeOut(8).bits.bpuUpdateReq.valid && pipeOut(8).fire && !pipeInvalid(10),pipeOut(8).bits.bpuUpdateReq,0.U.asTypeOf(new BPUUpdateReq)))
   io.bpuUpdateReq := finalBpuUpdateReq

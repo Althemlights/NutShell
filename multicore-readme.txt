@@ -8,7 +8,7 @@
 1.NutShell/difftest/Makefile NUM_CORES为2
 2.difftest/src/test/csrc/difftest NEMU_SO_FILENAME "build/riscv64-wukong-interpreter-dual-so"
 3.src/main/scala/top/Settings: CoreNums 改为2
-编译命令：  make emu EMU_CXX_EXTRA_FLAGS="-DFIRST_INST_ADDRESS=0x80000000" EMU_TRACE=1
+编译命令：  make emu EMU_CXX_EXTRA_FLAGS="-DFIRST_INST_ADDRESS=0x80000000" EMU_TRACE=1 -j8
 
 多核test:
 1.ready-to-run/ldvio-riscv64-nutshell.bin
