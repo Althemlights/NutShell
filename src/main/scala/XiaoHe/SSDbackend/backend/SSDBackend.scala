@@ -915,8 +915,8 @@ class SSDbackend extends NutCoreModule with hasBypassConst {
       RegNext(pipeOut(8).bits.instr(6, 0) === "hb0002973".U(6, 0) && pipeOut(8).bits.instr(31, 12) === "hb0002973".U(31, 12))
     io.diff.dt_ic1.scFailed:= false.B
     io.diff.dt_ic1.wen    := RegNext(regfile.io.writePorts(0).wen)
-    io.diff.dt_ic1.wpdest := RegNext(Cat(0.U(3.W), regfile.io.writePorts(0).addr))
-    io.diff.dt_ic1.wdest  := RegNext(Cat(0.U(3.W), regfile.io.writePorts(0).addr))
+    io.diff.dt_ic1.wpdest := RegNext(regfile.io.writePorts(0).addr)
+    io.diff.dt_ic1.wdest  := RegNext(regfile.io.writePorts(0).addr)
 
     io.diff.dt_ic0.clock   := clock
     io.diff.dt_ic0.coreid  := hartid
@@ -930,8 +930,8 @@ class SSDbackend extends NutCoreModule with hasBypassConst {
       RegNext(pipeOut(9).bits.instr(6, 0) === "hb0002973".U(6, 0) && pipeOut(9).bits.instr(31, 12) === "hb0002973".U(31, 12))
     io.diff.dt_ic0.scFailed:= false.B
     io.diff.dt_ic0.wen    := RegNext(regfile.io.writePorts(1).wen)
-    io.diff.dt_ic0.wpdest := RegNext(Cat(0.U(3.W), regfile.io.writePorts(1).addr))
-    io.diff.dt_ic0.wdest  := RegNext(Cat(0.U(3.W), regfile.io.writePorts(1).addr))
+    io.diff.dt_ic0.wpdest := RegNext(regfile.io.writePorts(1).addr)
+    io.diff.dt_ic0.wdest  := RegNext(regfile.io.writePorts(1).addr)
 
 
     io.diff.dt_iw0.clock := clock
@@ -984,9 +984,10 @@ class SSDbackend extends NutCoreModule with hasBypassConst {
     io.diff.dt_cs.mideleg := RegNext(Mux(pipeOut(8).bits.csrInst,pipeOut(8).bits.CSRregfile.mideleg ,pipeOut(9).bits.CSRregfile.mideleg ))
     io.diff.dt_cs.medeleg := RegNext(Mux(pipeOut(8).bits.csrInst,pipeOut(8).bits.CSRregfile.medeleg ,pipeOut(9).bits.CSRregfile.medeleg ))
 
-    val dt_irs_gpr = WireInit(VecInit(Seq.fill(32)(0.U(64.W))))
+    //val dt_irs_gpr = WireInit(VecInit(Seq.fill(32)(0.U(64.W))))
     io.diff.dt_irs.clock:= clock
     io.diff.dt_irs.coreid := hartid
-    io.diff.dt_irs.gpr := dt_irs_gpr
+    //io.diff.dt_irs.gpr := dt_irs_gpr
+    io.diff.dt_irs.gpr := regfile.io.debugPorts
   }
 }

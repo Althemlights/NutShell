@@ -43,7 +43,7 @@ object DefaultSettings {
     "EnableDebug" -> true,
     "EnableRVC" -> true,
 
-    "CoreNums" -> 0x2,
+    "CoreNums" -> 0x1,
     "SoCTest" -> false,
     "CLINTBase" -> 0x0000000038000000L,
     "PLICBase" -> 0x000000003c000000L
