@@ -90,6 +90,18 @@ class SimTop(implicit p: Parameters) extends Module {
   io.uart <> mmio.io.uart
 
   val corenum = Settings.getInt("CoreNums")
+  val dt_ld1 = Seq.fill(corenum)(Module(new DifftestLoadEvent))
+  val dt_ld0 = Seq.fill(corenum)(Module(new DifftestLoadEvent))
+
+  (dt_ld0 zip soc.io.diff) map { case (i,o) => i.io <> o.dt_ld0 }
+  (dt_ld1 zip soc.io.diff) map { case (i,o) => i.io <> o.dt_ld1 }
+
+  val dt_sb1 = Seq.fill(corenum)(Module(new DifftestSbufferEvent))
+  val dt_sb0 = Seq.fill(corenum)(Module(new DifftestSbufferEvent))
+
+  (dt_sb0 zip soc.io.diff) map { case (i,o) => i.io <> o.dt_sb0 }
+  (dt_sb1 zip soc.io.diff) map { case (i,o) => i.io <> o.dt_sb1 }
+
   val dt_ic1 = Seq.fill(corenum)(Module(new DifftestInstrCommit))
   val dt_ic0 = Seq.fill(corenum)(Module(new DifftestInstrCommit))
 
