@@ -332,7 +332,7 @@ class DecodeIO2BypassPkt extends Module {
                       (io.out0.bits.decodePkt.subalu && i1Hiti0Rs2 && i1NotAlu)
   
   io.issueStall(0) := 
-    i0decodePkt.csr && instInPipe || (i0decodePkt.mou && (! mou.io.out.valid)) ||
+    i0decodePkt.csr && instInPipe || (i0decodePkt.mou && (instInPipe)) ||
     mduNotReady1 ||
     i0LoadBlock ||
     i0MulBlock ||
