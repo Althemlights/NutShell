@@ -853,20 +853,20 @@ class SSDbackend extends NutCoreModule with hasBypassConst {
     io.diff.dt_ld0.clock := clock
     io.diff.dt_ld0.coreid := hartid
     io.diff.dt_ld0.index := 1.U    
-    io.diff.dt_ld0.valid := RegNext(pipeOut(8).fire && !pipeInvalid(10) && pipeOut(8).bits.pc =/= 0.U && BypassPkt(8).decodePkt.load) && !RegNext(SSDcoretrap)
-    io.diff.dt_ld0.paddr := RegNext(pipeOut(8).bits.rs1 + pipeOut(8).bits.offset)
+    io.diff.dt_ld0.valid := RegNext(pipeOut(9).fire && !pipeInvalid(11) && pipeOut(9).bits.pc =/= 0.U && BypassPkt(9).decodePkt.load) && !RegNext(SSDcoretrap)
+    io.diff.dt_ld0.paddr := RegNext(pipeOut(9).bits.rs1 + pipeOut(9).bits.offset)
     //0xc means simple load, 0xf means atomic
     io.diff.dt_ld0.fuType := 0xC.U
     //size
-    io.diff.dt_ld0.opType := RegNext(pipeOut(8).bits.fuOpType)
+    io.diff.dt_ld0.opType := RegNext(pipeOut(9).bits.fuOpType)
 
     io.diff.dt_ld1.clock := clock
     io.diff.dt_ld1.coreid := hartid
     io.diff.dt_ld1.index := 0.U    
-    io.diff.dt_ld1.valid := RegNext(pipeOut(9).fire && !pipeInvalid(11) && pipeOut(9).bits.pc =/= 0.U && BypassPkt(9).decodePkt.load) && !RegNext(SSDcoretrap)
-    io.diff.dt_ld1.paddr := RegNext(pipeOut(9).bits.rs1 + pipeOut(9).bits.offset)
+    io.diff.dt_ld1.valid := RegNext(pipeOut(8).fire && !pipeInvalid(10) && pipeOut(8).bits.pc =/= 0.U && BypassPkt(8).decodePkt.load) && !RegNext(SSDcoretrap)
+    io.diff.dt_ld1.paddr := RegNext(pipeOut(8).bits.rs1 + pipeOut(8).bits.offset)
     io.diff.dt_ld1.fuType := 0xC.U
-    io.diff.dt_ld1.opType := RegNext(pipeOut(9).bits.fuOpType)
+    io.diff.dt_ld1.opType := RegNext(pipeOut(8).bits.fuOpType)
 
     //StoreBuffer
     //granularity is 64B
@@ -884,23 +884,23 @@ class SSDbackend extends NutCoreModule with hasBypassConst {
     io.diff.dt_sb0.clock := clock
     io.diff.dt_sb0.coreid := hartid
     io.diff.dt_sb0.index := 1.U
-    io.diff.dt_sb0.sbufferResp := RegNext(pipeOut(8).fire && !pipeInvalid(10) && pipeOut(8).bits.pc =/= 0.U && BypassPkt(8).decodePkt.store && ((pipeOut(8).bits.rs1 + pipeOut(8).bits.offset) >= 0x80000000L.U)) && !RegNext(SSDcoretrap)
-    io.diff.dt_sb0.sbufferAddr := RegNext(align64_address(pipeOut(8).bits.rs1 + pipeOut(8).bits.offset))
-    io.diff.dt_sb0.sbufferData := RegNext((pipeOut(8).bits.rs2 << (((pipeOut(8).bits.rs1 + pipeOut(8).bits.offset)(5, 0)) << 3.U)).asTypeOf(Vec(64, UInt(8.W))))
-    io.diff.dt_sb0.sbufferMask := RegNext(gen64BWmask(pipeOut(8).bits.rs1 + pipeOut(8).bits.offset, pipeOut(8).bits.fuOpType(1, 0)))
-    val dt_sb0_valid = pipeOut(8).fire && !pipeInvalid(10) && pipeOut(8).bits.pc =/= 0.U && BypassPkt(8).decodePkt.store
-    val dt_sb0_addr = align64_address(pipeOut(8).bits.rs1 + pipeOut(8).bits.offset)
+    io.diff.dt_sb0.sbufferResp := RegNext(pipeOut(9).fire && !pipeInvalid(11) && pipeOut(9).bits.pc =/= 0.U && BypassPkt(9).decodePkt.store && ((pipeOut(9).bits.rs1 + pipeOut(9).bits.offset) >= 0x80000000L.U)) && !RegNext(SSDcoretrap)
+    io.diff.dt_sb0.sbufferAddr := RegNext(align64_address(pipeOut(9).bits.rs1 + pipeOut(9).bits.offset))
+    io.diff.dt_sb0.sbufferData := RegNext((pipeOut(9).bits.rs2 << (((pipeOut(9).bits.rs1 + pipeOut(9).bits.offset)(5, 0)) << 3.U)).asTypeOf(Vec(64, UInt(8.W))))
+    io.diff.dt_sb0.sbufferMask := RegNext(gen64BWmask(pipeOut(9).bits.rs1 + pipeOut(9).bits.offset, pipeOut(9).bits.fuOpType(1, 0)))
+    val dt_sb0_valid = pipeOut(9).fire && !pipeInvalid(11) && pipeOut(9).bits.pc =/= 0.U && BypassPkt(9).decodePkt.store
+    val dt_sb0_addr = align64_address(pipeOut(9).bits.rs1 + pipeOut(9).bits.offset)
     //Debug(dt_sb0_valid && (dt_sb0_addr === 0x0800087C0L.U), "Commit SB0 Addr: %x\n", dt_sb0.sbufferAddr)
 
     io.diff.dt_sb1.clock := clock
     io.diff.dt_sb1.coreid := hartid
     io.diff.dt_sb1.index := 0.U
-    io.diff.dt_sb1.sbufferResp := RegNext(pipeOut(9).fire && !pipeInvalid(11) && pipeOut(9).bits.pc =/= 0.U && BypassPkt(9).decodePkt.store && ((pipeOut(9).bits.rs1 + pipeOut(9).bits.offset) >= 0x80000000L.U)) && !RegNext(SSDcoretrap)
-    io.diff.dt_sb1.sbufferAddr := RegNext(align64_address(pipeOut(9).bits.rs1 + pipeOut(9).bits.offset))
-    io.diff.dt_sb1.sbufferData := RegNext((pipeOut(9).bits.rs2 << (((pipeOut(9).bits.rs1 + pipeOut(9).bits.offset)(5, 0))<< 3.U)).asTypeOf(Vec(64, UInt(8.W))))
-    io.diff.dt_sb1.sbufferMask := RegNext(gen64BWmask(pipeOut(9).bits.rs1 + pipeOut(9).bits.offset, pipeOut(9).bits.fuOpType(1, 0)))
-    val dt_sb1_valid = pipeOut(9).fire && !pipeInvalid(11) && pipeOut(9).bits.pc =/= 0.U && BypassPkt(9).decodePkt.store
-    val dt_sb1_addr = align64_address(pipeOut(9).bits.rs1 + pipeOut(9).bits.offset)
+    io.diff.dt_sb1.sbufferResp := RegNext(pipeOut(8).fire && !pipeInvalid(10) && pipeOut(8).bits.pc =/= 0.U && BypassPkt(8).decodePkt.store && ((pipeOut(8).bits.rs1 + pipeOut(8).bits.offset) >= 0x80000000L.U)) && !RegNext(SSDcoretrap)
+    io.diff.dt_sb1.sbufferAddr := RegNext(align64_address(pipeOut(8).bits.rs1 + pipeOut(8).bits.offset))
+    io.diff.dt_sb1.sbufferData := RegNext((pipeOut(8).bits.rs2 << (((pipeOut(8).bits.rs1 + pipeOut(8).bits.offset)(5, 0))<< 3.U)).asTypeOf(Vec(64, UInt(8.W))))
+    io.diff.dt_sb1.sbufferMask := RegNext(gen64BWmask(pipeOut(8).bits.rs1 + pipeOut(8).bits.offset, pipeOut(8).bits.fuOpType(1, 0)))
+    val dt_sb1_valid = pipeOut(8).fire && !pipeInvalid(10) && pipeOut(8).bits.pc =/= 0.U && BypassPkt(8).decodePkt.store
+    val dt_sb1_addr = align64_address(pipeOut(8).bits.rs1 + pipeOut(8).bits.offset)
     //Debug(dt_sb1_valid && (dt_sb1_addr === 0x800087C0L.U), "Commit SB1 Addr: %x\n", dt_sb1.io.sbufferAddr)
 
     io.diff.dt_ic1.clock   := clock
