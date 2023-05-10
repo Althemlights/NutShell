@@ -26,7 +26,7 @@ import freechips.rocketchip.regmapper.RegField
 class TLTimer(address: Seq[AddressSet], sim: Boolean)(implicit p: Parameters) extends LazyModule {
 
   val device = new SimpleDevice("clint", Seq("XiangShan", "clint"))
-  val node = TLRegisterNode(address, device, beatBytes = 8)
+  val node = TLRegisterNode(address, device, concurrency = 1, beatBytes = 8)
 
   lazy val module = new LazyModuleImp(this) {
     val io = IO(new Bundle() {
