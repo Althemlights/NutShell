@@ -22,8 +22,8 @@ object DefaultSettings {
     "MemMapRegionBits" -> 0,
     "MMIOBase" -> 0x0000000040000000L,
     "MMIOSize" -> 0x0000000040000000L,
-    "UnCacheBase" -> 0x0L,
-    "UnCacheSize" -> 0x0000000080000000L,
+    "UnCacheBase" -> 0x0000000020000000L,
+    "UnCacheSize" -> 0x0000000060000000L,
     "ResetVector" -> 0x80000000L,
     "NrExtIntr" -> 1,
 
@@ -43,9 +43,10 @@ object DefaultSettings {
     "EnableDebug" -> true,
     "EnableRVC" -> true,
 
-    "CoreNums" -> 0x2,
+    "CoreNums" -> 0x1,
     "SoCTest" -> false,
-    "CLINTBase" -> 0x0000000038000000L,
+    "CLINTBase" -> 0x38000000L,
+    "CLINTSize" -> 0x00010000L,
     "PLICBase" -> 0x000000003c000000L
   )
 }

@@ -47,7 +47,7 @@ class DmemSimpleBusCrossbar1toN(addressSpace: List[(Long, Long)]) extends Module
 
   when((io.in.req.valid && !outSelVec.asUInt.orR) || (io.in.req.valid && outSelVec.asUInt.andR)){
     Debug(){
-      printf("crossbar access bad addr %x, time %d\n", addr, GTimer())
+      //printf("crossbar access bad addr %x, time %d\n", addr, GTimer())
     }
   }
   // assert(!io.in.req.valid || outSelVec.asUInt.orR, "address decode error, bad addr = 0x%x\n", addr)
