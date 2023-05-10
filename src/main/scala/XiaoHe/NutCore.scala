@@ -30,8 +30,10 @@ import utils._
 import top._
 import chipsalliance.rocketchip.config.Parameters
 import system.HasNutCoreParameters
+import device.TLTimer
+import freechips.rocketchip.tilelink._ 
 
-import freechips.rocketchip.diplomacy.{LazyModule, LazyModuleImp}
+import freechips.rocketchip.diplomacy.{LazyModule, LazyModuleImp, AddressSet}
 
 trait HasNutCoreParameter {
   // General Parameter for NutShell
@@ -103,6 +105,11 @@ class NutCore()(implicit p: Parameters) extends LazyModule with HasNutCoreParame
   val dcache = LazyModule(new DCache())
   val icache = LazyModule(new ICache())
   val uncache = LazyModule(new UnCache())
+  val clintSpace = Seq(AddressSet(Settings.getLong("CLINTBase"), Settings.getLong("CLINTSize") - 0x1L)) // CLINT
+  val timer = LazyModule(new TLTimer(clintSpace, sim = true))
+  val mmioxbar = TLXbar()
+  mmioxbar := uncache.clientNode
+  timer.node := mmioxbar
   //Debug() {printf("%d", FPGAPlatform)}
   lazy val module = new NutCoreImp(this)
 }
@@ -112,6 +119,10 @@ class NutCoreImp(outer: NutCore) extends LazyModuleImp(outer) with HasNutCorePar
   val dcache = outer.dcache.module
   val icache = outer.icache.module
   val uncache = outer.uncache.module
+  val timer = outer.timer.module
+
+  BoringUtils.addSource(timer.io.mtip, "mtip")
+  BoringUtils.addSource(timer.io.msip, "msip")
 
   class NutCoreIO extends Bundle {
     //val imem = new SimpleBusC
@@ -126,11 +137,9 @@ class NutCoreImp(outer: NutCore) extends LazyModuleImp(outer) with HasNutCorePar
   // Frontend
   val frontend =  Module(new Frontend_ooo)
 
-
   // Backend
   val BoolTmp0 = WireInit(false.B)
   val BoolTmp1 = WireInit(false.B)
-
 
   val SSDbackend = Module(new SSDbackend)
   SSDbackend.io.in <> frontend.io.out
