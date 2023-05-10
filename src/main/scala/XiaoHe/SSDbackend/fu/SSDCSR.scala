@@ -920,7 +920,7 @@ class SSDCSR extends NutCoreModule with SSDHasCSRConst with SSDHasExceptionNO {
   }.elsewhen(addr === Mepc.U && io.in.valid) {
     mepc_wire := wdata
   }.elsewhen(addr === Mstatus.U && io.in.valid) {
-    mstatus_wire := wdata
+    mstatus_wire := mstatusUpdateSideEffect(wdata)
   }.elsewhen(addr === Mie.U && io.in.valid) {
     mie_wire := wdata
   }.elsewhen(addr === Mtval.U && io.in.valid){
@@ -945,8 +945,8 @@ class SSDCSR extends NutCoreModule with SSDHasCSRConst with SSDHasExceptionNO {
 
 
   io.CSRregfile.priviledgeMode :=     priviledgeMode
-  io.CSRregfile.mstatus :=            mstatus
-  io.CSRregfile.sstatus :=            mstatus & sstatusRmask
+  io.CSRregfile.mstatus :=            mstatus //wrong
+  io.CSRregfile.sstatus :=            mstatus_wire & sstatusRmask //modify
   io.CSRregfile.mepc     :=           mepc
   io.CSRregfile.sepc     :=           sepc
   io.CSRregfile.mtval    :=           mtval
@@ -1033,33 +1033,4 @@ class SSDCSR extends NutCoreModule with SSDHasCSRConst with SSDHasExceptionNO {
         BoringUtils.addSource(readWithScala(perfCntList("Minstret")._1), "ilaInstrCnt")
       }
     }*/
-}
-class CSR_fake extends NutCoreModule with SSDHasCSRConst {
-  val io = IO(new SSDCSRIO)
-
-  val (valid, src1, src2, func) = (io.in.valid, io.in.bits.src1, io.in.bits.src2, io.in.bits.func)
-
-  def access(valid: Bool, src1: UInt, src2: UInt, func: UInt): UInt = {
-    this.valid := valid
-    this.src1 := src1
-    this.src2 := src2
-    this.func := func
-    io.out.bits
-  }
-
-  io.redirect := 0.U.asTypeOf(new RedirectIO)
-  io.intrNO := 0.U(XLEN.W)
-  io.wenFix := false.B
-
-//  io.imemMMU.priviledgeMode := 3.U(2.W)
-//  io.imemMMU.status_mxr := false.B
-//  io.imemMMU.status_sum := false.B
-//
-//  io.dmemMMU.priviledgeMode := 3.U(2.W)
-//  io.dmemMMU.status_mxr := false.B
-//  io.dmemMMU.status_sum := false.B
-
-  io.out.bits := 0.U(XLEN.W)
-  io.out.valid := false.B
-  io.in.ready := false.B
 }
