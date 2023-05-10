@@ -35,7 +35,7 @@ class TLTimer(address: Seq[AddressSet], sim: Boolean)(implicit p: Parameters) ex
     })
 
     val mtime = RegInit(0.U(64.W))  // unit: us
-    val mtimecmp = RegInit(0.U(64.W))
+    val mtimecmp = RegInit(200.U(64.W))
     val msip = RegInit(0.U(64.W))
 
     val clk = (if (!sim) 40 /* 40MHz / 1000000 */ else 10000)
@@ -48,14 +48,14 @@ class TLTimer(address: Seq[AddressSet], sim: Boolean)(implicit p: Parameters) ex
     val tick = (nextCnt === freq)
     when (tick) { mtime := mtime + inc }
 
-    var clintMapping = Seq(
-      0x0    -> RegField.bytes(msip),
-      0x4000 -> RegField.bytes(mtimecmp),
-      0x8000 -> RegField.bytes(freq),
-      0x8008 -> RegField.bytes(inc),
-      0xbff8 -> RegField.bytes(mtime))
 
-    node.regmap( mapping = clintMapping:_* )
+    node.regmap( 
+      0x0    -> Seq(RegField(64,msip)),
+      0x4000 -> Seq(RegField(64,mtimecmp)),
+      0x8000 -> Seq(RegField(64,freq)),
+      0x8008 -> Seq(RegField(64,inc)),
+      0xbff8 -> Seq(RegField(64,mtime))
+   )
 
     io.mtip := RegNext(mtime >= mtimecmp)
     io.msip := RegNext(msip =/= 0.U)
