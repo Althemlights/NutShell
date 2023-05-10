@@ -1,4 +1,4 @@
 cd ..
 source env.sh
-cd WuKong
+cd NutShell
 source env.sh

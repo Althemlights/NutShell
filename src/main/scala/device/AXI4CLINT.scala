@@ -30,7 +30,7 @@ class ClintIO extends Bundle {
 
 class AXI4CLINT(sim: Boolean = false) extends AXI4SlaveModule(new AXI4Lite, new ClintIO) {
   val mtime = RegInit(0.U(64.W))  // unit: us
-  val mtimecmp = RegInit(0.U(64.W))
+  val mtimecmp = RegInit(1000.U(64.W))
   val msip = RegInit(0.U(64.W))
 
   val clk = (if (!sim) 40 /* 40MHz / 1000000 */ else 10000)
