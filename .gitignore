@@ -360,3 +360,4 @@ tmp.scala
 .metals/*
 .metals/workspace-symbol.md
 /log/*
+/project/*

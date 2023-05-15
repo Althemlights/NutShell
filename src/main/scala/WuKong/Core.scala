@@ -98,11 +98,6 @@ class Core(implicit val p: WuKongConfig) extends CoreModule {
   // Frontend
   val frontend = Module(new Frontend)
 
-  // Backend
-  val BoolTmp0 = WireInit(false.B)
-  val BoolTmp1 = WireInit(false.B)
-
-
   val Backend = Module(new Backend)
   Backend.io.in <> frontend.io.out
   frontend.io.redirect <> Backend.io.redirectOut
