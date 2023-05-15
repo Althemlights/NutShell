@@ -1,0 +1,40 @@
+[*]
+[*] GTKWave Analyzer v3.3.103 (w)1999-2019 BSI
+[*] Mon May 15 07:14:30 2023
+[*]
+[dumpfile] "/home/jpz/xs-env/NutShell/build/2023-05-15@15:12:55.vcd"
+[dumpfile_mtime] "Mon May 15 07:12:55 2023"
+[dumpfile_size] 6793734
+[savefile] "/home/jpz/xs-env/NutShell/debug.gtkw"
+[timestart] 297
+[size] 1464 878
+[pos] -1 -1
+*-2.650614 318 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1
+[treeopen] TOP.
+[treeopen] TOP.SimTop.
+[treeopen] TOP.SimTop.wukong.
+[treeopen] TOP.SimTop.wukong.core.
+[treeopen] TOP.SimTop.wukong.core.Backend.
+[treeopen] TOP.SimTop.wukong.core.Backend.LSU.
+[sst_width] 312
+[signals_width] 313
+[sst_expanded] 1
+[sst_vpaned_height] 241
+@22
+TOP.SimTop.wukong.core.Backend.ALU0.io_cfIn_pc[38:0]
+TOP.SimTop.wukong.core.Backend.ALU1.io_cfIn_pc[38:0]
+TOP.SimTop.wukong.core.Backend.ALU6.io_cfIn_pc[38:0]
+TOP.SimTop.wukong.core.Backend.ALU7.io_cfIn_pc[38:0]
+@200
+-
+@29
+TOP.SimTop.wukong.core.Backend.LSU.io_dmem_0_req_valid
+@28
+TOP.SimTop.wukong.core.Backend.LSU.io_dmem_1_req_valid
+@200
+-
+@22
+TOP.SimTop.wukong.core.Backend.pipeStage2.io_right_bits_pc[38:0]
+TOP.SimTop.wukong.core.Backend.pipeStage3.io_right_bits_pc[38:0]
+[pattern_trace] 1
+[pattern_trace] 0

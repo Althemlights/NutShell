@@ -57,6 +57,8 @@ class LoadPipeIO extends CoreBundle with HasStoreBufferConst {
     val pc = Input(UInt(VAddrBits.W))
     //s2 valid
     val loadS2Valid = Output(Bool())
+    //load mmio
+    val mmio = Output(Bool())
 
 }
 class LoadPipe (implicit val lname:String)extends CoreModule with HasStoreBufferConst {
@@ -225,6 +227,7 @@ class LoadPipe (implicit val lname:String)extends CoreModule with HasStoreBuffer
     lsuPipeStage1.io.inValid <> io.invalid
     lsuPipeStage1.io.isStall <> io.stall
     lsuPipeStage1.io.rightOutFire <> loadS2.fire()
+    io.mmio := loadS2.bits.isMMIO
 
     // d$ req
     io.dmem.req.bits.addr := reqAddr

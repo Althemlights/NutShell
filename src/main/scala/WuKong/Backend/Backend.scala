@@ -526,13 +526,13 @@ class Backend extends CoreModule with hasBypassConst {
   pipeIn(6).bits.rd := Mux(BypassPkt(4).decodePkt.load,LSU.io.out(0).bits,Mux(BypassPkt(4).decodePkt.muldiv,MDU.io.out.bits,pipeOut(4).bits.rd))
   pipeIn(6).bits.rs1 := BypassMux(ByPassEna(10), BypassPkt(4).BypassCtl.rs1bypasse3,BypassPortE3, pipeOut(4).bits.rs1)
   pipeIn(6).bits.rs2 := BypassMux(ByPassEna(11), BypassPkt(4).BypassCtl.rs2bypasse3,BypassPortE3, pipeOut(4).bits.rs2)
-  pipeIn(6).bits.isMMIO := Mux(BypassPkt(4).decodePkt.load || BypassPkt(4).decodePkt.store,LSU.io.isMMIO,false.B)
+  pipeIn(6).bits.isMMIO := Mux(BypassPkt(4).decodePkt.load || BypassPkt(4).decodePkt.store,LSU.io.isMMIO(0),false.B)
   // pipeIn(6).valid := Mux(BypassPkt(4).decodePkt.load,LSU.io.out(0).valid,Mux(BypassPkt(4).decodePkt.muldiv,MDU.io.out.valid,pipeOut(4).valid))
 
   pipeIn(7).bits.rd := Mux(BypassPkt(5).decodePkt.load,LSU.io.out(1).bits,Mux(BypassPkt(5).decodePkt.muldiv,MDU.io.out.bits,pipeOut(5).bits.rd))
   pipeIn(7).bits.rs1 := BypassMux(ByPassEna(12), BypassPkt(5).BypassCtl.rs1bypasse3,BypassPortE3, pipeOut(5).bits.rs1)
   pipeIn(7).bits.rs2 := BypassMux(ByPassEna(13), BypassPkt(5).BypassCtl.rs2bypasse3,BypassPortE3, pipeOut(5).bits.rs2)
-  pipeIn(7).bits.isMMIO := Mux(BypassPkt(5).decodePkt.load || BypassPkt(5).decodePkt.store,LSU.io.isMMIO,false.B)
+  pipeIn(7).bits.isMMIO := Mux(BypassPkt(5).decodePkt.load || BypassPkt(5).decodePkt.store,LSU.io.isMMIO(1),false.B)
   // pipeIn(7).valid := Mux(BypassPkt(5).decodePkt.load,LSU.io.out(1).valid,Mux(BypassPkt(5).decodePkt.muldiv,MDU.io.out.valid,pipeOut(5).valid))
 
 

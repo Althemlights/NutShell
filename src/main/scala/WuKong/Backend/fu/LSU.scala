@@ -58,7 +58,7 @@ class LSUIO extends BankedFunctionUnitIO {
 
   val storeBypassCtrl = Flipped((new LSUPipeBypassCtrl).storeBypassCtrlE2)
   val storeBypassPort = Flipped((new StorePipeBypassPort).storeBypassPortE2)
-  val isMMIO = Output(Bool())
+  val isMMIO = Output(Vec(2,Bool()))
 }
 
 class StoreHitCtrl extends Bundle{
@@ -325,7 +325,8 @@ class LSU extends  CoreModule with HasStoreBufferConst{
   io.in(0).ready := lsuPipeIn(0).ready || loadCacheIn.ready
   io.in(1).ready := loadCacheIn.ready
 
-  io.isMMIO := lsuPipeStage3.right.bits.isMMIO
+  io.isMMIO(0) := lsuPipeStage3.right.bits.isMMIO || loadPipe0.io.mmio
+  io.isMMIO(1) := loadPipe1.io.mmio
   //store buffer snapshit
   storeBuffer.io.in.valid := lsuPipeStage4.io.right.valid && lsuPipeStage4.io.right.bits.isStore && !lsuPipeStage4.io.right.bits.isMMIOStore && !invalid(2)
   storeBuffer.io.in.bits.paddr := lsuPipeStage4.io.right.bits.paddr
