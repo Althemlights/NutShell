@@ -67,11 +67,10 @@ class StoreHitCtrl extends Bundle{
   val hitMask = Output(UInt(8.W))
 }
 class storePipeEntry extends StoreBufferEntry{
-  val isStore             = Output(Bool())
   val isCacheStore        = Output(Bool())
   val isMMIOStore         = Output(Bool())
-  val isMMIOStoreInvalid  = Output(Bool())
-  val isMMIO              = Output(Bool())  //load or store
+  val isI0MMIOStore       = Output(Bool())
+  val isI1MMIOStore       = Output(Bool())
   val func                = Output(UInt(7.W))
   val pc                  = Output(UInt(VAddrBits.W))
   val offset              = Output(UInt(64.W))
@@ -165,8 +164,7 @@ class LSU extends  CoreModule with HasStoreBufferConst{
   //MMIO & OutBuffer
   val outBuffer = Module(new Queue(new StoreBufferEntry, entries = 1))
   val MMIOStorePkt = Wire(Decoupled(new StoreBufferEntry))
-  val isMMIOStore = AddressSpace.isMMIO(storeReqAddr) && i0isStore
-  val isMMIO = AddressSpace.isMMIO(storeReqAddr)
+  val isMMIOStore = AddressSpace.isMMIO(storeReqAddr) && (i0isStore || i1isStore)
   val MMIOStorePending = (lsuPipeStage4.right.valid && lsuPipeStage4.right.bits.isMMIOStore) || outBuffer.io.deq.valid
 
   outBuffer.io.enq.valid := lsuPipeStage4.right.valid && lsuPipeStage4.right.bits.isMMIOStore && !invalid(2)
@@ -186,9 +184,11 @@ class LSU extends  CoreModule with HasStoreBufferConst{
   BoringUtils.addSource(outBufferFire,"outBufferFire")
 
   //stall signal
-  val cacheStall = WireInit(false.B)
-  BoringUtils.addSink(cacheStall,"cacheStall")
-  val  bufferFullStall = (storeBuffer.io.isAlmostFull && lsuPipeOut(1).bits.isStore && lsuPipeOut(1).valid) || storeBuffer.io.isFull  //when almost full, still can store one
+  val cacheStoreStall = WireInit(false.B)
+  BoringUtils.addSink(cacheStoreStall,"cacheStoreStall")
+  val cacheLoadStall = WireInit(false.B)
+  BoringUtils.addSink(cacheLoadStall,"cacheLoadStall")
+  val  bufferFullStall = (storeBuffer.io.isAlmostFull && lsuPipeOut(1).valid && lsuPipeOut(1).valid) || storeBuffer.io.isFull  //when almost full, still can store one
   BoringUtils.addSource(bufferFullStall,"bufferFullStall")
   
   val pc = WireInit(0.U(VAddrBits.W))  //for LSU debug
@@ -201,10 +201,11 @@ class LSU extends  CoreModule with HasStoreBufferConst{
   val real_bank_conflict = WireInit(false.B)
   BoringUtils.addSink(real_bank_conflict,"real_bank_conflict")
 
-  io.memStall := (cacheStall || !cacheIn.ready) && (i0isLoad || i1isLoad || loads2valid0 || loads2valid1) || bufferFullStall || real_bank_conflict
+  // io.memStall := (cacheStall || !cacheIn.ready) && (i0isLoad || i1isLoad || loads2valid0 || loads2valid1) || bufferFullStall || real_bank_conflict
+  io.memStall := (cacheStoreStall) && (i0isLoad || i1isLoad || loads2valid0 || loads2valid1) || bufferFullStall || real_bank_conflict || (cacheLoadStall ) ||
+      !cacheIn.ready && (i0isLoad || i1isLoad)
 
-  lsuPipeIn(0).valid := i0isStore || i1isStore
-  lsuPipeIn(0).bits.isStore := i0isStore || i1isStore
+  lsuPipeIn(0).valid := (i0isStore || i1isStore) && !invalid(0)
   lsuPipeIn(0).bits.paddr := storeReqAddr(PAddrBits-1,0)
   lsuPipeIn(0).bits.offset := storeOffset
   lsuPipeIn(0).bits.rs1 := storeSrc1
@@ -216,8 +217,8 @@ class LSU extends  CoreModule with HasStoreBufferConst{
   lsuPipeIn(0).bits.isCacheStore := cacheIn.fire() && cacheIn.bits(0).cmd === SimpleBusCmd.write
   lsuPipeIn(0).bits.pc := pc
   lsuPipeIn(0).bits.isMMIOStore := isMMIOStore
-  lsuPipeIn(0).bits.isMMIOStoreInvalid := isMMIOStore
-  lsuPipeIn(0).bits.isMMIO := isMMIO
+  lsuPipeIn(0).bits.isI0MMIOStore := isMMIOStore && i0isStore
+  lsuPipeIn(0).bits.isI1MMIOStore := isMMIOStore && i1isStore
   lsuPipeOut(1).ready := !bufferFullStall
   lsuPipeStage3.io.isStall := false.B
   lsuPipeStage4.io.isStall := io.memStall //There is only one stall point in LSU
@@ -270,7 +271,7 @@ class LSU extends  CoreModule with HasStoreBufferConst{
   }
 
   //store pipeline Rs bypass 
-  val bypassEnaE2 = io.storeBypassCtrl.asUInt.orR && lsuPipeIn(0).bits.isStore
+  val bypassEnaE2 = io.storeBypassCtrl.asUInt.orR && lsuPipeIn(0).valid
   val bypassDataE2 = PriorityMux(io.storeBypassCtrl,io.storeBypassPort)
   val bypassWdata = genWdata(bypassDataE2,lsuPipeIn(0).bits.func(1,0))
   lsuPipeIn(0).bits.data := Mux(bypassEnaE2,bypassWdata,storeReqWdata)
@@ -325,10 +326,10 @@ class LSU extends  CoreModule with HasStoreBufferConst{
   io.in(0).ready := lsuPipeIn(0).ready || loadCacheIn.ready
   io.in(1).ready := loadCacheIn.ready
 
-  io.isMMIO(0) := lsuPipeStage3.right.bits.isMMIO || loadPipe0.io.mmio
-  io.isMMIO(1) := loadPipe1.io.mmio
+  io.isMMIO(0) := lsuPipeStage3.right.bits.isI0MMIOStore || loadPipe0.io.mmio
+  io.isMMIO(1) := lsuPipeStage3.right.bits.isI1MMIOStore || loadPipe1.io.mmio
   //store buffer snapshit
-  storeBuffer.io.in.valid := lsuPipeStage4.io.right.valid && lsuPipeStage4.io.right.bits.isStore && !lsuPipeStage4.io.right.bits.isMMIOStore && !invalid(2)
+  storeBuffer.io.in.valid := lsuPipeStage4.io.right.valid && lsuPipeStage4.io.right.valid && !lsuPipeStage4.io.right.bits.isMMIOStore && !invalid(2)
   storeBuffer.io.in.bits.paddr := lsuPipeStage4.io.right.bits.paddr
   storeBuffer.io.in.bits.data := lsuPipeStage4.io.right.bits.data
   storeBuffer.io.in.bits.mask := lsuPipeStage4.io.right.bits.mask

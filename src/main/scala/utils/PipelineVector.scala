@@ -73,9 +73,5 @@ object PipelineVector2Connect {
         ringBufferTail := 0.U
     }
 
-    Debug(){
-        printf("[DPQ] size %x head %x tail %x enq %x deq %x\n", (bufferSize.asUInt() +& ringBufferHead.asUInt() - ringBufferTail.asUInt()) % bufferSize.asUInt(), ringBufferHead, ringBufferTail ,enqueueSize, dequeueSize)
-    }
-
   }
 }

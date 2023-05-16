@@ -760,7 +760,7 @@ class Bypass extends Module{
   val BypassPkt = Wire(Vec(10, new BypassPkt))
   val BypassPktValid = Wire(Vec(10,Bool()))
   for(i <- 0 to 9) BypassPkt(i) := pipeOut(i).bits
-  for(i <- 0 to 9) BypassPktValid(i) := pipeOut(i).valid && !io.pipeInvalid(i+2)
+  for(i <- 0 to 9) BypassPktValid(i) := pipeOut(i).valid 
 
   PipelineCtl.io.i0pipeStall <>  DecodeIO2BypassPkt.io.issueStall(0)
   PipelineCtl.io.i1pipeStall <>  DecodeIO2BypassPkt.io.issueStall(1)
@@ -843,14 +843,14 @@ class Bypass extends Module{
   // (asfd zip nsafd).foreach{case (a,b) =>
   //   a.io.inValid <> PipelineCtl.io.pipeCtl.invalid(b) && !(io.mduStall || io.memStall)
   // }
-    pipeStage0.io.inValid := PipelineCtl.io.pipeCtl.invalid(0) && !(io.mduStall || io.memStall)
-    pipeStage1.io.inValid := PipelineCtl.io.pipeCtl.invalid(1) && !(io.mduStall || io.memStall)
-    pipeStage2.io.inValid := PipelineCtl.io.pipeCtl.invalid(2) && !(io.mduStall || io.memStall)
-    pipeStage3.io.inValid := PipelineCtl.io.pipeCtl.invalid(3) && !(io.mduStall || io.memStall)
-    pipeStage4.io.inValid := PipelineCtl.io.pipeCtl.invalid(4) && !(io.mduStall || io.memStall)
-    pipeStage5.io.inValid := PipelineCtl.io.pipeCtl.invalid(5) && !(io.mduStall || io.memStall)
-    pipeStage6.io.inValid := PipelineCtl.io.pipeCtl.invalid(6) && !(io.mduStall || io.memStall)
-    pipeStage7.io.inValid := PipelineCtl.io.pipeCtl.invalid(7) && !(io.mduStall || io.memStall)
+    // pipeStage0.io.inValid := PipelineCtl.io.pipeCtl.invalid(0) && !(io.mduStall || io.memStall)
+    // pipeStage1.io.inValid := PipelineCtl.io.pipeCtl.invalid(1) && !(io.mduStall || io.memStall)
+    // pipeStage2.io.inValid := PipelineCtl.io.pipeCtl.invalid(2) && !(io.mduStall || io.memStall)
+    // pipeStage3.io.inValid := PipelineCtl.io.pipeCtl.invalid(3) && !(io.mduStall || io.memStall)
+    // pipeStage4.io.inValid := PipelineCtl.io.pipeCtl.invalid(4) && !(io.mduStall || io.memStall)
+    // pipeStage5.io.inValid := PipelineCtl.io.pipeCtl.invalid(5) && !(io.mduStall || io.memStall)
+    // pipeStage6.io.inValid := PipelineCtl.io.pipeCtl.invalid(6) && !(io.mduStall || io.memStall)
+    // pipeStage7.io.inValid := PipelineCtl.io.pipeCtl.invalid(7) && !(io.mduStall || io.memStall)
 }
 
 

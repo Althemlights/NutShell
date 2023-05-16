@@ -215,7 +215,7 @@ class LoadPipe (implicit val lname:String)extends CoreModule with HasStoreBuffer
     loadS1In.bits.paddr := reqAddr
     loadS1In.bits.mask := s1Mask
     loadS1In.bits.size := size
-    loadS1In.bits.isMMIO := AddressSpace.isMMIO(reqAddr)
+    loadS1In.bits.isMMIO := AddressSpace.isMMIO(reqAddr) 
     loadS1In.bits.func := io.in.bits.func
     loadS1In.bits.pc := io.pc
 
@@ -227,7 +227,7 @@ class LoadPipe (implicit val lname:String)extends CoreModule with HasStoreBuffer
     lsuPipeStage1.io.inValid <> io.invalid
     lsuPipeStage1.io.isStall <> io.stall
     lsuPipeStage1.io.rightOutFire <> loadS2.fire()
-    io.mmio := loadS2.bits.isMMIO
+    io.mmio := loadS2.bits.isMMIO && loadS2.valid
 
     // d$ req
     io.dmem.req.bits.addr := reqAddr

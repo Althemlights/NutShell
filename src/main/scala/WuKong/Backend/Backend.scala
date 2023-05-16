@@ -95,15 +95,9 @@ class Backend extends CoreModule with hasBypassConst {
   for (i <- 0 to 11) {
     pipeInvalid(i) := test1(i)
   }
-  for (i <- 0 to 7) {
-    pipeInvalid(i) := !(memStall || mduStall) && test1(i)
-  }
-
-  // val test = List(0,1,2,3,4,5,6,7)
-
-  // test.foreach{ case i => test1(i) := pipeInvalid(i)}
-  // test.foreach{ case i => pipeInvalid(i) := test1(i) && !(memStall || mduStall)}
-
+  // for (i <- 0 to 7) {
+  //   pipeInvalid(i) := !(memStall || mduStall) && test1(i)
+  // }
 
 
   Bypass.io.decodeBypassPkt(0).ready := pipeIn(0).ready
@@ -119,6 +113,7 @@ class Backend extends CoreModule with hasBypassConst {
 //  Redirect2_csr := 0.U.asTypeOf(new RedirectIO)
 //  Redirect3_csr := 0.U.asTypeOf(new RedirectIO)
   val CSR = Module(new CSR)
+  CSR.io.hartid := DontCare
   CSR.io.out.ready := true.B
   val i0CSRValid = BypassPktValid(0) && (BypassPkt(0).decodePkt.csr) && (BypassPkt(0).decodePkt.skip)
   val i1CSRValid = BypassPktValid(1) && (BypassPkt(1).decodePkt.csr) && (BypassPkt(1).decodePkt.skip)
@@ -219,8 +214,8 @@ class Backend extends CoreModule with hasBypassConst {
   (ALURedirectList zip pipeOut2Redirect).foreach{ case(a,b) => a := b.bits.redirect}
   (bpuUpdateReqList zip ALUList).foreach{ case(a,b) => a := b.io.bpuUpdateReq}
   (alu2pmuList zip ALUList).foreach{ case(a,b) => a := b.io.alu2pmu}
-  Bypass.io.flush(0) := (Redirect2.valid) && pipeOut(2).valid 
-  Bypass.io.flush(1) := (Redirect3.valid) && pipeOut(3).valid 
+  Bypass.io.flush(0) := (Redirect2.valid) && pipeOut(2).valid && !(memStall)
+  Bypass.io.flush(1) := (Redirect3.valid) && pipeOut(3).valid && !(memStall)
   Bypass.io.flush(2) := Redirect8.valid && pipeOut(8).valid
   Bypass.io.flush(3) := Redirect9.valid && pipeOut(9).valid
 
@@ -232,6 +227,8 @@ class Backend extends CoreModule with hasBypassConst {
       Mux(Redirect9.valid &&  pipeOut(9).valid && !pipeInvalid(11),Redirect9,
         Mux(Redirect2.valid && pipeOut(2).valid && !(memStall || mduStall),Redirect2,
           Mux(Redirect3.valid && pipeOut(3).valid && !(memStall || mduStall),Redirect3,0.U.asTypeOf(new RedirectIO))))))
+  val ex4Flush = Redirect8.valid &&  pipeOut(8).valid && !pipeInvalid(10) || Redirect9.valid &&  pipeOut(9).valid && !pipeInvalid(11)
+  val i0AluFlush = Redirect2.valid && pipeOut(2).valid 
   finalBpuUpdateReq := Mux(pipeOut(8).bits.bpuUpdateReq.valid && pipeOut(8).fire() && !pipeInvalid(10),pipeOut(8).bits.bpuUpdateReq,
     Mux(pipeOut(9).bits.bpuUpdateReq.valid && pipeOut(9).fire() && !pipeInvalid(11),pipeOut(9).bits.bpuUpdateReq,0.U.asTypeOf(new BPUUpdateReq)))
   BoringUtils.addSource(finalBpuUpdateReq, "bpuUpdateReq")
@@ -267,8 +264,8 @@ class Backend extends CoreModule with hasBypassConst {
   
   memStall := LSU.io.memStall
   LSU.io.storeBypassCtrl <> Bypass.io.LSUBypassCtrl.storeBypassCtrlE2
-  val i0LSUValid = BypassPktValid(2) && (BypassPkt(2).decodePkt.load || BypassPkt(2).decodePkt.store)
-  val i1LSUValid = BypassPktValid(3) && (BypassPkt(3).decodePkt.load || BypassPkt(3).decodePkt.store)
+  val i0LSUValid = BypassPktValid(2) && !ex4Flush && (BypassPkt(2).decodePkt.load || BypassPkt(2).decodePkt.store)
+  val i1LSUValid = BypassPktValid(3) && !ex4Flush && !i0AluFlush && (BypassPkt(3).decodePkt.load || BypassPkt(3).decodePkt.store)
   //LSU flush
 
     LSU.io.invalid(0) := ALU_6.io.redirect.valid || ALU_7.io.redirect.valid
@@ -609,10 +606,10 @@ class Backend extends CoreModule with hasBypassConst {
     // a.io.isFlush <> pipeFlush(b)
     a.io.inValid <> pipeInvalid(b)
   }
-  val stallAndFlush =  !pipeRegStage2.io.right.ready && Redirect2.valid || !pipeRegStage3.io.right.ready && Redirect3.valid
+  // val stallAndFlush =  !pipeRegStage2.io.right.ready && Redirect2.valid || !pipeRegStage3.io.right.ready && Redirect3.valid
 
-  pipeRegStage2.io.inValid := Mux(stallAndFlush , false.B, pipeInvalid(2))
-  pipeRegStage3.io.inValid := Mux(!pipeRegStage3.io.right.ready && Redirect3.valid , false.B, pipeInvalid(3))
+  // pipeRegStage2.io.inValid := Mux(stallAndFlush , false.B, pipeInvalid(2))
+  // pipeRegStage3.io.inValid := Mux(!pipeRegStage3.io.right.ready && Redirect3.valid , false.B, pipeInvalid(3))
 
   val coupledStageList = List(coupledPipeRegStage6,coupledPipeRegStage7,coupledPipeRegStage8,coupledPipeRegStage9)
   val coupledIndexList = List(0,1,2,3)
@@ -638,17 +635,7 @@ class Backend extends CoreModule with hasBypassConst {
   val CallPC = Mux(CallCond,Mux(i0Call,pipeOut(8).bits.pc,pipeOut(9).bits.pc),0.U)
   val RetPC = Mux(RetCond,Mux(i0Ret,pipeOut(8).bits.pc,pipeOut(9).bits.pc),0.U)
   val RetWrong = RetCond &&  Mux(i0Ret,pipeOut(8).bits.alu2pmu.retWrong,pipeOut(9).bits.alu2pmu.retWrong)
-//  dontTouch(RetWrong)
-//  if(WuKongConfig().EnableRetDebug){
-//    myDebug(CallCond,"Call: pc = %x, Targe = %x \n",
-//      CallPC,Mux(i0Call,pipeOut(8).bits.bpuUpdateReq.actualTarget,pipeOut(9).bits.bpuUpdateReq.actualTarget).asUInt)
-//  }
-//  if(WuKongConfig().EnableRetDebug){
-//    myDebug(RetCond,"Ret : pc = %x, Targe = %x, isMisPredict = %b \n",
-//      RetPC,Mux(i0Ret,pipeOut(8).bits.bpuUpdateReq.actualTarget,pipeOut(9).bits.bpuUpdateReq.actualTarget).asUInt,
-//      Mux(i0Ret,pipeOut(8).bits.alu2pmu.retWrong,pipeOut(9).bits.alu2pmu.retWrong).asUInt)
-//  }
-  //PMU perfCnt signal
+
 
   val backendRetretire = ( pipeOut(8).fire() && !pipeInvalid(10) && pipeOut(8).bits.isBranch && ALUOpType.ret === pipeOut(8).bits.fuOpType) ||
     ( pipeOut(9).fire() && !pipeInvalid(11) && pipeOut(9).bits.isBranch && ALUOpType.ret === pipeOut(9).bits.fuOpType)
@@ -715,64 +702,7 @@ class Backend extends CoreModule with hasBypassConst {
   BoringUtils.addSource(mduStall,"mduStallCycle")
   BoringUtils.addSource(mduStall & (!RegNext(mduStall)),"mduStallCnt")
 
-  //Pipeline basic information
-//  def instTypePrint(valid:Bool, BypassPkt: BypassPkt)={
-//    val aluCond = BypassPkt.decodePkt.alu && !BypassPkt.decodePkt.subalu
-//    val subaluCond = BypassPkt.decodePkt.alu &&  BypassPkt.decodePkt.subalu
-//    val loadCond = BypassPkt.decodePkt.load
-//    val storeCond = BypassPkt.decodePkt.store
-//    val elseCond = !aluCond && !subaluCond && !loadCond && !storeCond && valid || ! valid
-//    myDebug(valid && aluCond,   " ALU   ")
-//    myDebug(valid && subaluCond," SubALU")
-//    myDebug(valid && loadCond,  " Load  ")
-//    myDebug(valid && storeCond, " Store ")
-//    myDebug(elseCond,           "       ")
-//  }
-//  def rsrdPrintf (valid:Bool, pipeinfo:FuPkt )={
-//    myDebug(valid && pipeinfo.debugInfo.rs1Valid,"rs1[%x]: %x ;",pipeinfo.debugInfo.rs1,pipeinfo.rs1)
-//    myDebug(valid && pipeinfo.debugInfo.rs1Pc,   "rs1[pc ]: %x ;",pipeinfo.pc)
-//    myDebug(valid && pipeinfo.debugInfo.rs2Valid,"rs2[%x]: %x ;",pipeinfo.debugInfo.rs2,pipeinfo.rs2)
-//    myDebug(valid && pipeinfo.debugInfo.rs2Imm,  "rs2[imm]: %x ;",pipeinfo.offset)
-//    myDebug(valid && pipeinfo.debugInfo.rdValid, "rd [%x]: %x ;",pipeinfo.debugInfo.rd,pipeinfo.rd)
-//    myDebug(valid && !pipeinfo.debugInfo.rdValid,"             \n")
-//  }
-//  def pipeInPrintf (valid:Bool, pipeIn:FuPkt )={
-//    myDebug(valid,"rs1:%x, rs2:%x, rd:%x",pipeIn.rs1,pipeIn.rs2,pipeIn.rd)
-//  }
-//  val tag = pipeIn(0).bits.pc === "h800000d8".U || pipeIn(1).bits.pc === "h800000d8".U
-//  dontTouch(tag)
-//  if(WuKongConfig().EnablePipestageDebug){
-//    printf("=========================================================\n")
-//    printf("--------------------- Pipeline state --------------------\n")
-//    printf("=========================================================\n")
-//    for(i <- 0 to 4){
-//      myDebug(pipeOut(2*i).valid,"| %x | %x ",(2*i).U,pipeOut(2*i).bits.pc)
-//      myDebug(!pipeOut(2*i).valid,"| %x |            ",(2*i).U)
-//      instTypePrint(Bypass.io.BypassPktValid(2*i),Bypass.io.BypassPkt(2*i))
-//      myDebug(pipeOut(2*i+1).valid,"| %x | %x ",(2*i+1).U,pipeOut(2*i+1).bits.pc)
-//      myDebug(!pipeOut(2*i+1).valid,"| %x |            ",(2*i+1).U)
-//      instTypePrint(Bypass.io.BypassPktValid(2*i+1),Bypass.io.BypassPkt(2*i+1))
-//      printf("|\n")
-//    }
-//    printf("=========================================================\n")
-//    printf("---------------------- rd / rs info ---------------------\n")
-//    printf("=========================================================\n")
-//    for(i <- 0 to 9){
-//      printf("Pipe%x: ",i.U)
-//      rsrdPrintf(pipeOut(i).valid,pipeOut(i).bits)
-//      printf("\n")
-//    }
-//    printf("=========================================================\n")
-//    printf("--------------------- Pipeline Input --------------------\n")
-//    printf("=========================================================\n")
-//    for(i <- 0 to 9){
-//      printf("Pipe%x: ",i.U)
-//      pipeInPrintf(pipeIn(i).valid,pipeIn(i).bits)
-//      printf("\n")
-//    }
-//    printf("=========================================================\n")
-//
-//  } //Core Performance Counter
+
   val CorePerfCntList = Map(
     "i0Issue"   -> (0x0, "perfCntI0Issue"      ),
     "i1Issue"   -> (0x1, "perfCntI1Issue"      ),
@@ -821,32 +751,19 @@ class Backend extends CoreModule with hasBypassConst {
     BypassPkt(9).decodePkt.rd  === "ha".U && regfile.io.writePorts(1).wen
   a0 := Mux(a0Wen0,pipeOut(8).bits.rd,Mux(a0Wen1,pipeOut(9).bits.rd,regfile.io.mem(10)))
 
-  when((pipeOut(8).bits.instr === 0x7b.U) &&  pipeOut(8).fire() && !pipeInvalid(10) ||
-    (pipeOut(9).bits.instr === 0x7b.U) &&  pipeOut(9).fire() && !pipeInvalid(11)){
-    printf("%c",a0.asUInt)
-  }
+  // when((pipeOut(8).bits.instr === 0x7b.U) &&  pipeOut(8).fire() && !pipeInvalid(10) ||
+  //   (pipeOut(9).bits.instr === 0x7b.U) &&  pipeOut(9).fire() && !pipeInvalid(11)){
+  //   printf("%c",a0.asUInt)
+  // }
 
-
-  //  CorePerfCntList.map { case (name, (addr, boringId)) =>
-  //    BoringUtils.addSink(perfCntCond(addr), boringId)}
-  //
-  //  if (WuKongConfig().EnablePerfCnt) {
-  //    when(RegNext(RegNext(coretrap))) {
-  //      printf("======== CorePerfCnt =========\n")
-  //      CorePerfCntList.map { case (name, (addr, boringId)) =>
-  //        printf("%d <- " + name + "\n", perfCnts(addr))
-  //      }
-  //      printf("=================================\n")
-  //    }
-  //  }
 
   /* ----- Difftest ----- */
   val cycle_cnt = RegInit(0.U(64.W))
   val instr_cnt = RegInit(0.U(64.W))
 
-   when(RegNext((pipeOut(8).bits.csrInst) || (pipeOut(9).bits.csrInst ))) {
-   printf("%d\n",cycle_cnt)
- }
+// when(RegNext((pipeOut(8).bits.csrInst) || (pipeOut(9).bits.csrInst ))) {
+//    printf("%d\n",cycle_cnt)
+//   }
 
   cycle_cnt := cycle_cnt + 1.U
   instr_cnt := instr_cnt + RegNext(pipeOut(8).fire() && !pipeInvalid(10)).asUInt + RegNext(pipeOut(9).fire() && !pipeInvalid(11)).asUInt

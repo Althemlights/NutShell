@@ -261,6 +261,9 @@ class BankedCacheStage1(implicit val cacheConfig: BankedCacheConfig)
 
   //when bankcoflict and not relese,stall core.
   BoringUtils.addSource(same_bank && req_valid0 && req_valid1 && !io.release_later,"real_bank_conflict")
+
+  Debug(io.in(0).valid && (io.in(0).bits.addr === 0x800152e0L.U) && io.in(0).bits.isWrite(), "store %x,data: %x\n",0x800152e0L.U, io.in(0).bits.wdata)
+  Debug(io.in(1).valid && (io.in(1).bits.addr === 0x800152e0L.U) && io.in(1).bits.isWrite(), "store %x,data: %x\n",0x800152e0L.U, io.in(1).bits.wdata)
 }
 
 // check
@@ -688,17 +691,19 @@ sealed class BankedCacheStage2(implicit val cacheConfig: BankedCacheConfig)
   io.in(1).ready := io.out(1).ready && (state === s_idle && !(miss.asUInt.orR()) || io.release_later)
 
   // stall when read req in s2 cant be responed or read req in s1 cant be send to s2( s1.in.ready === false.B)
-     val cacheStall = WireInit(false.B)
-     val s1NotReady = WireInit(false.B)
-     BoringUtils.addSource(cacheStall, "cacheStall")
+  val cacheStall = WireInit(false.B)
+  val s1NotReady = WireInit(false.B)
+  BoringUtils.addSource(cacheStall && (req(0).isWrite ), "cacheStoreStall")
+  BoringUtils.addSource(cacheStall && (!req(0).isWrite && !req(1).isWrite()), "cacheLoadStall")
+  cacheStall := ((miss(0) || miss(1))|| state =/= s_idle || s1NotReady) && !io.release_later
+
      BoringUtils.addSink(s1NotReady, "s1NotReady")
   val stateBusy = (miss(0) || miss(1))|| state =/= s_idle 
   BoringUtils.addSource(stateBusy, "stateBusy")
-     cacheStall := ((miss(0) || miss(1))|| state =/= s_idle || s1NotReady) && !io.release_later
-     BoringUtils.addSource(miss(0), "dcacheMissCycle")
-     BoringUtils.addSource((miss(0) & (!RegNext(miss(0)))), "dcacheMissCnt")
-     BoringUtils.addSource(s1NotReady & (!RegNext(s1NotReady)), "s1NotReadyCnt")
-     BoringUtils.addSource(cacheStall & (!RegNext(cacheStall)), "cacheStallCnt")
+  BoringUtils.addSource(miss(0), "dcacheMissCycle")
+  BoringUtils.addSource((miss(0) & (!RegNext(miss(0)))), "dcacheMissCnt")
+  BoringUtils.addSource(s1NotReady & (!RegNext(s1NotReady)), "s1NotReadyCnt")
+  BoringUtils.addSource(cacheStall & (!RegNext(cacheStall)), "cacheStallCnt")
 
 }
 
@@ -941,9 +946,9 @@ class DCache(implicit val cacheConfig: BankedCacheConfig)
       process_channel0 := false.B
     }
     val process_channel1 = RegInit(false.B)
-    when(s2.io.release_later){
+    when(s2.io.release_later && process_channel0){
       process_channel1 := true.B
-    }.elsewhen(s2.io.out(1).valid){
+    }.elsewhen(s2.io.out(1).valid && process_channel1){
       process_channel1 := false.B
     }
     BoringUtils.addSource(process_channel0,"process_channel0")

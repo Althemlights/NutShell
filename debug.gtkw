@@ -1,25 +1,28 @@
 [*]
 [*] GTKWave Analyzer v3.3.103 (w)1999-2019 BSI
-[*] Mon May 15 07:14:30 2023
+[*] Tue May 16 15:25:13 2023
 [*]
-[dumpfile] "/home/jpz/xs-env/NutShell/build/2023-05-15@15:12:55.vcd"
-[dumpfile_mtime] "Mon May 15 07:12:55 2023"
-[dumpfile_size] 6793734
+[dumpfile] "/home/jpz/xs-env/NutShell/build/2023-05-16@17:04:50.vcd"
+[dumpfile_mtime] "Tue May 16 09:04:52 2023"
+[dumpfile_size] 564893840
 [savefile] "/home/jpz/xs-env/NutShell/debug.gtkw"
-[timestart] 297
-[size] 1464 878
+[timestart] 46947
+[size] 2158 985
 [pos] -1 -1
-*-2.650614 318 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1
+*-1.733575 46961 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1
 [treeopen] TOP.
 [treeopen] TOP.SimTop.
 [treeopen] TOP.SimTop.wukong.
 [treeopen] TOP.SimTop.wukong.core.
 [treeopen] TOP.SimTop.wukong.core.Backend.
+[treeopen] TOP.SimTop.wukong.core.Backend.Bypass.DecodeIO2BypassPkt.
 [treeopen] TOP.SimTop.wukong.core.Backend.LSU.
-[sst_width] 312
-[signals_width] 313
+[treeopen] TOP.SimTop.wukong.core.Backend.LSU.loadPipe0.
+[treeopen] TOP.SimTop.wukong.core.DCache.
+[sst_width] 345
+[signals_width] 561
 [sst_expanded] 1
-[sst_vpaned_height] 241
+[sst_vpaned_height] 588
 @22
 TOP.SimTop.wukong.core.Backend.ALU0.io_cfIn_pc[38:0]
 TOP.SimTop.wukong.core.Backend.ALU1.io_cfIn_pc[38:0]
@@ -27,14 +30,54 @@ TOP.SimTop.wukong.core.Backend.ALU6.io_cfIn_pc[38:0]
 TOP.SimTop.wukong.core.Backend.ALU7.io_cfIn_pc[38:0]
 @200
 -
-@29
-TOP.SimTop.wukong.core.Backend.LSU.io_dmem_0_req_valid
 @28
+TOP.SimTop.wukong.core.Backend.LSU.io_dmem_0_req_valid
 TOP.SimTop.wukong.core.Backend.LSU.io_dmem_1_req_valid
 @200
 -
 @22
 TOP.SimTop.wukong.core.Backend.pipeStage2.io_right_bits_pc[38:0]
+@28
+TOP.SimTop.wukong.core.Backend.pipeStage2.io_right_valid
+@22
 TOP.SimTop.wukong.core.Backend.pipeStage3.io_right_bits_pc[38:0]
+@28
+TOP.SimTop.wukong.core.Backend.pipeStage3.io_right_valid
+@200
+-
+@28
+TOP.SimTop.wukong.core.Backend.LSU.memStage3_io_left_bits_isI0MMIOStore
+TOP.SimTop.wukong.core.Backend.LSU.memStage3_io_left_bits_isI1MMIOStore
+@200
+-
+@28
+TOP.SimTop.wukong.core.Backend.LSU.i0isLoad
+@22
+TOP.SimTop.wukong.core.Backend.LSU.loadPipe0.reqAddr[63:0]
+@29
+TOP.SimTop.wukong.core.Backend.LSU.i1isLoad
+@28
+TOP.SimTop.wukong.core.Backend.LSU.i0isStore
+TOP.SimTop.wukong.core.Backend.LSU.i1isStore
+@22
+TOP.SimTop.wukong.core.Backend.LSU.storeReqAddr[63:0]
+@200
+-
+@28
+TOP.SimTop.wukong.core.Backend.io_redirectOut_valid
+@22
+TOP.SimTop.wukong.core.Backend.io_redirectOut_target[38:0]
+@200
+-
+@28
+TOP.SimTop.wukong.core.Backend.LSU.io_out_0_valid
+@22
+TOP.SimTop.wukong.core.Backend.LSU.io_out_0_bits[63:0]
+@28
+TOP.SimTop.wukong.core.Backend.LSU.io_out_1_valid
+@22
+TOP.SimTop.wukong.core.Backend.LSU.io_out_1_bits[63:0]
+@200
+-
 [pattern_trace] 1
 [pattern_trace] 0

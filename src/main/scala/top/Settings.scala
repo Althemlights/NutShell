@@ -20,8 +20,8 @@ object DefaultSettings {
   def apply() = Map(
     "MemMapBase" -> 0x0000000000000000L,
     "MemMapRegionBits" -> 0,
-    "MMIOBase" -> 0x0000000010000000L,
-    "MMIOSize" -> 0x0000000070000000L,
+    "MMIOBase" -> 0x0000000040000000L,
+    "MMIOSize" -> 0x0000000040000000L,
     "ResetVector" -> 0x80000000L,
     "NrExtIntr" -> 1,
 
@@ -38,10 +38,11 @@ object DefaultSettings {
 
     "FPGAPlatform" -> false,
     "EnableILA" -> true,
-    "EnableDebug" -> false,
+    "EnableDebug" -> true,
     "EnableRVC" -> true,
     "SoCTest" -> false,
-    "CLINTBase" -> 0x0000000002000000L,
+    "CLINTBase" -> 0x02000000L,
+    "CLINTSize" -> 0x00010000L,
     "PLICBase" -> 0x000000002c000000L
   )
 }
