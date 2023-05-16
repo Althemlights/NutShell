@@ -110,7 +110,7 @@ class SRAMWriteBus[T <: Data](private val gen: T, val set: Int, val way: Int = 1
 }
 
 class SRAMTemplate[T <: Data](gen: T, set: Int, way: Int = 1,
-                              shouldReset: Boolean = false, holdRead: Boolean = false, singlePort: Boolean = false) extends Module {
+                              shouldReset: Boolean = false, holdRead: Boolean = false, singlePort: Boolean = false, isDcache: Boolean = false) extends Module {
   val io = IO(new Bundle {
     val r = Flipped(new SRAMReadBus(gen, set, way))
     val w = Flipped(new SRAMWriteBus(gen, set, way))
@@ -146,10 +146,10 @@ class SRAMTemplate[T <: Data](gen: T, set: Int, way: Int = 1,
   io.w.req.ready := true.B
 
   Debug(false) {
-    when (wen) {
+    when (wen && setIdx === 0x9c.U) {
       printf("%d: SRAMTemplate: write %x to idx = %d\n", GTimer(), wdata.asUInt, setIdx)
     }
-    when (RegNext(realRen)) {
+    when (RegNext(realRen) && setIdx === 0x9c.U) {
       printf("%d: SRAMTemplate: read %x at idx = %d\n", GTimer(), VecInit(rdata).asUInt, RegNext(io.r.req.bits.setIdx))
     }
   }
@@ -459,7 +459,7 @@ class DataSRAMTemplateWithArbiter[T <: Data](nRead: Int, gen: T, set: Int, way: 
   //  else Module(new MetaSRAMTemplate(gen, set, way, shouldReset, holdRead = false, singlePort = true))
   //  when(isData.asBool()) {
   //val ram = Module(new DataSRAMTemplate(gen, set, way, shouldReset, holdRead = false, singlePort = false))
-  val ram = Module(new SRAMTemplate(gen, set, way, shouldReset, holdRead = false, singlePort = false))
+  val ram = Module(new SRAMTemplate(gen, set, way, shouldReset, holdRead = false, singlePort = false, isDcache = true))
   //  }.otherwise {
   //    val ram = Module(new MetaSRAMTemplate(gen, set, way, shouldReset, holdRead = false, singlePort = true))
   //  }
@@ -486,7 +486,7 @@ class MetaSRAMTemplateWithArbiter[T <: Data](nRead: Int, gen: T, set: Int, way: 
   //  val ram = if (isData) Module(new DataSRAMTemplate(gen, set, way, shouldReset, holdRead = false, singlePort = true))
   //  else Module(new MetaSRAMTemplate(gen, set, way, shouldReset, holdRead = false, singlePort = true))
   //  when(isData.asBool()) {
-  val ram = Module(new SRAMTemplate(gen, set, way, shouldReset, holdRead = false, singlePort = false))
+  val ram = Module(new SRAMTemplate(gen, set, way, shouldReset, holdRead = false, singlePort = false, isDcache = false))
   //  }.otherwise {
   //    val ram = Module(new MetaSRAMTemplate(gen, set, way, shouldReset, holdRead = false, singlePort = true))
   //  }
