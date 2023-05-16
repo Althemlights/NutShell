@@ -199,7 +199,7 @@ sealed class DCacheStage1(implicit val p: Parameters) extends DCacheModule {
   io.in.ready := io.out.ready && io.metaReadBus.req.ready && dataReadBusReady && io.tagReadBus.req.ready && io.wayIdReadBus.req.ready
   io.out.bits.mmio := AddressSpace.isMMIO(io.in.bits.addr)
 
-  Debug(io.in.fire && io.in.bits.addr.asUInt === 0x80019380L.U, "[Dcache req] Addr: %x  Cmd: %x  Wdata: %x\n", io.in.bits.addr, io.in.bits.cmd, io.in.bits.wdata)
+  //Debug(io.in.fire && io.in.bits.addr.asTypeOf(addrBundle).index === 0x4e.U, "[Dcache req] Addr: %x  Cmd: %x  Wdata: %x\n", io.in.bits.addr, io.in.bits.cmd, io.in.bits.wdata)
 }
 
 sealed class ReleaseConcurrencyIO(implicit val p: Parameters) extends DCacheBundle {
@@ -445,6 +445,8 @@ sealed class DCacheStage2(edge: TLEdgeOut)(implicit val p: Parameters) extends D
   //for Release concurrency limit
   io.relConcurrency.addr := vicAddr
   io.relConcurrency.relValid := needRel && !isrelDone
+
+  //Debug(io.out.fire && io.in.bits.req.addr.asUInt === 0x80019380L.U, "[Dcache resp] Addr: %x Rdata: %x\n", io.in.bits.req.addr, io.out.bits.rdata)
 }
 
 class DCache()(implicit p: Parameters) extends LazyModule with HasNutCoreParameter with HasDCacheParameters with HasNutCoreParameters{

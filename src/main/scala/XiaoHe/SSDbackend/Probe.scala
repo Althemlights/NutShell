@@ -56,7 +56,8 @@ class Probe(edge: TLEdgeOut)(implicit val p: Parameters) extends DCacheModule {
   val coh = Mux(waymask.asUInt === 0.U, ClientMetadata.onReset, Mux1H(waymask, metaWay).coh.asTypeOf(new ClientMetadata))
   val (probe_has_dirty_data, probe_shrink_param, probe_new_coh) = coh.onProbe(reqReg.param)
   //needData Bits or probe_has_dirty_data
-  val needData = reqReg.data(0) || probe_has_dirty_data
+  //val needData = reqReg.data(0) || probe_has_dirty_data
+  val needData = true.B
 
   //refill_count代表c线上refill到第几个了，读应该比它早一拍，比如它在refill第n个时应该读第n+1个
   val (_, _, release_done, refill_count) = edge.count(io.mem_probeAck)
@@ -127,5 +128,5 @@ class Probe(edge: TLEdgeOut)(implicit val p: Parameters) extends DCacheModule {
     }
   }
 
-  //Debug(io.mem_probeAck.fire && addr.index === 0x3e.U, "[Probe] Addr: %x  Tag:%x  Data:%x\n", addr.asUInt, addr.tag, dataRead.asUInt)
+  //Debug(io.mem_probeAck.fire && addr.index === 0x4e.U, "[Probe] Addr: %x  Tag:%x  Data:%x\n", addr.asUInt, addr.tag, dataRead.asUInt)
 }
