@@ -402,6 +402,8 @@ class SSDCSR extends NutCoreModule with SSDHasCSRConst with SSDHasExceptionNO {
   mstatus_wire := mstatus
   mie_wire := mie
 
+  val mstatusStruct_wire = mstatus_wire.asTypeOf(new MstatusStruct)
+
 
   // CSR reg map
   val mapping = Map(
@@ -623,22 +625,36 @@ class SSDCSR extends NutCoreModule with SSDHasCSRConst with SSDHasExceptionNO {
   // but it is not stored in the CSR
   val seip = meip    // FIXME: PLIC should generate SEIP different from MEIP
   val mipRaiseIntr = WireInit(mip)
+  val mipRaiseIntr_wire = WireInit(mipWire)
   mipRaiseIntr.e.s := mip.e.s | seip
+
 
   val ideleg =  (mideleg & mipRaiseIntr.asUInt)
   def priviledgedEnableDetect(x: Bool): Bool = Mux(x, ((priviledgeMode === ModeS) && mstatusStruct.ie.s) || (priviledgeMode < ModeS),
     ((priviledgeMode === ModeM) && mstatusStruct.ie.m) || (priviledgeMode < ModeM))
-
   val intrVecEnable = Wire(Vec(12, Bool()))
   intrVecEnable.zip(ideleg.asBools).map{case(x,y) => x := priviledgedEnableDetect(y)}
-  val intrVec = mie(11,0) & mipRaiseIntr.asUInt & intrVecEnable.asUInt
-  BoringUtils.addSource(intrVec, "intrVecIDU")
+  val intrVec = mie_wire(11,0) & mipRaiseIntr.asUInt & intrVecEnable.asUInt
+
+  def priviledgedEnableDetect_wire(x: Bool): Bool = Mux(x, ((priviledgeMode === ModeS) && mstatusStruct_wire.ie.s) || (priviledgeMode < ModeS),
+    ((priviledgeMode === ModeM) && mstatusStruct_wire.ie.m) || (priviledgeMode < ModeM))
+  val intrVecEnable_wire = Wire(Vec(12, Bool()))
+  intrVecEnable_wire.zip(ideleg.asBools).map{case(x,y) => x := priviledgedEnableDetect_wire(y)}
+  val intrVec_wire = mie_wire(11,0) & mipRaiseIntr_wire.asUInt & intrVecEnable_wire.asUInt
+  // BoringUtils.addSource(intrVec, "intrVecIDU")
   // val intrNO = PriorityEncoder(intrVec)
 
-  val intrNO = IntPriority.foldRight(0.U)((i: Int, sum: UInt) => Mux(io.cfIn.intrVec(i), i.U, sum))
+  val intrNO = IntPriority.foldRight(0.U)((i: Int, sum: UInt) => Mux(intrVec(i), i.U, sum))
   // val intrNO = PriorityEncoder(io.cfIn.intrVec)
-  val raiseIntr = io.cfIn.intrVec.asUInt.orR
+  val raiseIntr = intrVec.asUInt.orR
 
+  val intrNO_wire = IntPriority.foldRight(0.U)((i: Int, sum: UInt) => Mux(intrVec_wire(i), i.U, sum))
+  val raiseIntr_wire = intrVec_wire.asUInt.orR
+
+  dontTouch(mstatusStruct_wire)
+  dontTouch(intrVecEnable_wire)
+  dontTouch(intrVec_wire)
+  dontTouch(intrNO_wire)
   // exceptions
 
   // TODO: merge iduExceptionVec, csrExceptionVec as raiseExceptionVec
@@ -964,10 +980,10 @@ class SSDCSR extends NutCoreModule with SSDHasCSRConst with SSDHasExceptionNO {
   io.CSRregfile.medeleg :=            medeleg
 
 
-  io.ArchEvent.intrNO :=        Mux(raiseIntr && io.instrValid && valid, intrNO, 0.U)
-  io.ArchEvent.exceptionPC :=   SignExt(io.cfIn.pc, XLEN)
-  io.ArchEvent.exceptionInst := io.cfIn.instr
-  io.ArchEvent.cause := 0.U
+  io.ArchEvent.intrNO        :=        Mux(raiseIntr_wire && (io.instrValid) && (valid), intrNO_wire, 0.U)
+  io.ArchEvent.exceptionPC   :=   (SignExt(io.cfIn.pc, XLEN))
+  io.ArchEvent.exceptionInst := (io.cfIn.instr)
+  io.ArchEvent.cause         := (Mux(raiseException && io.instrValid && valid, exceptionNO, 0.U)) 
 
 
   /*  if (!p.FPGAPlatform) {
