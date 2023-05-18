@@ -573,13 +573,6 @@ class Backend extends CoreModule with hasBypassConst {
   regfile.io.readPorts(2).addr := io.in(1).bits.ctrl.rfSrc1
   regfile.io.readPorts(3).addr := io.in(1).bits.ctrl.rfSrc2
 
-  // for debug
-  val lsuPC =WireInit(0.U(VAddrBits.W))
-  lsuPC := Mux(BypassPkt(3).decodePkt.load || BypassPkt(3).decodePkt.store, pipeOut(3).bits.pc, pipeOut(2).bits.pc)
-  BoringUtils.addSource(lsuPC,"lsuPC")
-
-  //moduleTest
-  //  val moduleTest = Module(new ModuleTest)
   //pipe connect
 
   val stallStageList = List(pipeRegStage0,pipeRegStage1,pipeRegStage6,pipeRegStage7)

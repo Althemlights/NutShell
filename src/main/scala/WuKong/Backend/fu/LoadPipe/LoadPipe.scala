@@ -25,7 +25,6 @@ class loadPipeEntry extends CoreBundle {
     val size = Output(UInt(2.W))
     val isMMIO = Output(Bool()) // load or store
     val func = Output(UInt(7.W))
-    val pc = Output(UInt(VAddrBits.W))
 }
 class StoreHitCtrl extends Bundle {
     val hit = Output(Bool())
@@ -53,8 +52,6 @@ class LoadPipeIO extends CoreBundle with HasStoreBufferConst {
     // invalid
     val invalid = Input(Bool())
     val stall = Input(Bool())
-    // debug
-    val pc = Input(UInt(VAddrBits.W))
     //s2 valid
     val loadS2Valid = Output(Bool())
     //load mmio
@@ -187,7 +184,7 @@ class LoadPipe (implicit val lname:String)extends CoreModule with HasStoreBuffer
 
     val loadS1In = Wire(Flipped(Decoupled(new loadPipeEntry)))
     val loadS2 = Wire(Flipped(Decoupled(new loadPipeEntry)))
-    loadS2.ready := !io.stall && io.dmem.req.ready
+    loadS2.ready := !io.stall 
 
     // store hit signal buffer
     val storeHitCtrl = Module(new stallPointConnect(new StoreHitCtrl))
@@ -217,7 +214,6 @@ class LoadPipe (implicit val lname:String)extends CoreModule with HasStoreBuffer
     loadS1In.bits.size := size
     loadS1In.bits.isMMIO := AddressSpace.isMMIO(reqAddr) 
     loadS1In.bits.func := io.in.bits.func
-    loadS1In.bits.pc := io.pc
 
     val lsuPipeStage1 =
         Module(new stallPointConnect(new loadPipeEntry)).suggestName("loadS1")

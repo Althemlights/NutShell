@@ -262,8 +262,8 @@ class BankedCacheStage1(implicit val cacheConfig: BankedCacheConfig)
   //when bankcoflict and not relese,stall core.
   BoringUtils.addSource(same_bank && req_valid0 && req_valid1 && !io.release_later,"real_bank_conflict")
 
-  Debug(io.in(0).valid && (io.in(0).bits.addr === 0x800152e0L.U) && io.in(0).bits.isWrite(), "store %x,data: %x\n",0x800152e0L.U, io.in(0).bits.wdata)
-  Debug(io.in(1).valid && (io.in(1).bits.addr === 0x800152e0L.U) && io.in(1).bits.isWrite(), "store %x,data: %x\n",0x800152e0L.U, io.in(1).bits.wdata)
+  // Debug(io.in(0).valid && (io.in(0).bits.addr === 0x8001db91L.U) && io.in(0).bits.isWrite(), "store %x,data: %x\n",0x8001db91L.U, io.in(0).bits.wdata)
+  // Debug(io.in(1).valid && (io.in(1).bits.addr === 0x8001db91L.U) && io.in(1).bits.isWrite(), "store %x,data: %x\n",0x8001db91L.U, io.in(1).bits.wdata)
 }
 
 // check
@@ -375,6 +375,7 @@ sealed class BankedCacheStage2(implicit val cacheConfig: BankedCacheConfig)
       .apply(tag = meta(0).tag, valid = true.B, dirty = true.B)
   )
 
+
   //    0           1               2                 3                 4               5             6           7                 8           9
   val s_idle :: s_memReadReq :: s_memReadResp :: s_memWriteReq :: s_memWriteResp :: s_mmio_wait :: s_mmioReq :: s_mmioResp :: s_wait_resp :: s_release :: Nil =
     Enum(10)
@@ -386,13 +387,17 @@ sealed class BankedCacheStage2(implicit val cacheConfig: BankedCacheConfig)
 
   val readBeatCnt = Counter(LineBeats)
   val writeBeatCnt = Counter(LineBeats)
-
+  //    0             1                 2
   val s2_idle :: s2_dataReadWait :: s2_dataOK :: Nil = Enum(3)
   val state2 = RegInit(s2_idle)
+  val both_miss = miss(0) && miss(1) 
+  val both_miss_refill_at_channel1 = RegInit(false.B)
+  val both_miss_and_index_conflict = both_miss_refill_at_channel1 && addr(0).index === addr(1).index
 
   io.dataReadBus(0).apply(
     valid = state === s_memWriteReq && state2 === s2_idle,
-    setIdx = Cat(Mux(miss(0),addr(0).index,addr(1).index), writeBeatCnt.value)
+    // setIdx = Cat(Mux(miss(0),addr(0).index,addr(1).index), writeBeatCnt.value),
+    setIdx = Cat(Mux(both_miss,Mux(both_miss_refill_at_channel1,addr(1).index,addr(0).index),Mux(miss(0),addr(0).index,addr(1).index)),writeBeatCnt.value),
   )
 
   io.dataReadBus(1).apply(
@@ -414,16 +419,15 @@ sealed class BankedCacheStage2(implicit val cacheConfig: BankedCacheConfig)
       state2 := s2_dataOK
     }
     is(s2_dataOK) {
-      when(io.mem.req.fire() || hitReadBurst(0) && io.out(0).ready) {
+      when(io.mem.req.fire() || hitReadBurst(0) && io.out(0).ready || both_miss_and_index_conflict) {
         state2 := s2_idle
       }
     }
   }
   val bank_conflict = io.in(0).bits.bank_conflict
         //double miss logic
-  val both_miss = miss(0) && miss(1)
+
   val later_miss_bank = addr(1).bankIndex
-  val both_miss_refill_at_channel1 = RegInit(false.B)
   when(both_miss && state === s_wait_resp && !both_miss_refill_at_channel1){
     both_miss_refill_at_channel1 := true.B
   }.elsewhen(both_miss_refill_at_channel1 && state === s_wait_resp){
@@ -460,11 +464,9 @@ sealed class BankedCacheStage2(implicit val cacheConfig: BankedCacheConfig)
     wmask = Fill(DataBytes, 1.U)
   )
 
-  val addrTag = Mux(state === s_memReadReq, raddr, waddr) === "h80022b40".U
-  //  dontTouch(addrTag)
 
   io.mem.resp.ready := true.B
-  io.mem.req.valid := (state === s_memReadReq) || ((state === s_memWriteReq) && (state2 === s2_dataOK))
+  io.mem.req.valid := (state === s_memReadReq) || ((state === s_memWriteReq && !both_miss_and_index_conflict) && (state2 === s2_dataOK))
 
   val afterFirstRead = RegInit(false.B)
   val readingFirst =
@@ -574,6 +576,9 @@ sealed class BankedCacheStage2(implicit val cacheConfig: BankedCacheConfig)
       when(io.mem.req.bits.isWriteLast() && io.mem.req.fire()) {
         state := s_memWriteResp
       }
+      when(both_miss_and_index_conflict){
+        state := s_memReadReq
+      }
     }
 
     is(s_memWriteResp) {
@@ -617,7 +622,8 @@ sealed class BankedCacheStage2(implicit val cacheConfig: BankedCacheConfig)
         .isReadLast(),
     data = Wire(new BankedMetaBundle)
       .apply(valid = true.B, tag = Mux(miss(0),addr(0).tag, addr(1).tag), dirty = Mux(miss(0),req(0).isWrite(), req(1).isWrite())),
-    setIdx = getMetaIdx(Mux(miss(0),req(0).addr,req(1).addr)),
+    // setIdx = getMetaIdx(Mux(miss(0),req(0).addr,req(1).addr)),
+    setIdx = getMetaIdx(Mux(both_miss,Mux(both_miss_refill_at_channel1,req(1).addr,req(0).addr),Mux(miss(0),req(0).addr,req(1).addr))),
     waymask = Mux(miss(0),waymask(0), waymask(1))
   )
 
@@ -628,7 +634,19 @@ sealed class BankedCacheStage2(implicit val cacheConfig: BankedCacheConfig)
   io.out(0).bits.user.zip(req(0).user).map { case (o, i) => o := i }
   io.out(0).bits.id.zip(req(0).id).map { case (o, i) => o := i }
   
-
+  // Debug(io.metaWriteBus.req.valid && (io.metaWriteBus.req.bits.setIdx === 0x2eL.U), "meta write %x,\n" +
+  //   "data1: tag: %x valid %x dirty %x\n" +
+  //   "data2: tag: %x valid %x dirty %x\n" +
+  //   "data3: tag: %x valid %x dirty %x\n" +
+  //   "data4: tag: %x valid %x dirty %x\n",
+  //   0x2eL.U, 
+  //   io.metaWriteBus.req.bits.data(0).tag,io.metaWriteBus.req.bits.data(0).valid,io.metaWriteBus.req.bits.data(0).dirty,
+  //   io.metaWriteBus.req.bits.data(1).tag,io.metaWriteBus.req.bits.data(1).valid,io.metaWriteBus.req.bits.data(1).dirty,
+  //   io.metaWriteBus.req.bits.data(2).tag,io.metaWriteBus.req.bits.data(2).valid,io.metaWriteBus.req.bits.data(2).dirty,
+  //   io.metaWriteBus.req.bits.data(3).tag,io.metaWriteBus.req.bits.data(3).valid,io.metaWriteBus.req.bits.data(3).dirty)
+    // Debug(io.dataWriteBus.req.valid && (io.dataWriteBus.req.bits.setIdx === 0x127L.U), "data write %x,\n" +
+    // "data1:%x \n",
+    // 0x2eL.U, io.dataWriteBus.req.bits.data(0).data)
   // out is valid when cacheline is refilled
   io.out(0).valid := io.in(0).valid && Mux(
     hit(0) || storeHit,
@@ -681,11 +699,6 @@ sealed class BankedCacheStage2(implicit val cacheConfig: BankedCacheConfig)
     Mux(io.in(1).bits.req.isWrite(), SimpleBusCmd.writeResp, DontCare)
   ) // DontCare, added by lemover
 
-
-  // With critical-word first, the pipeline registers between
-  // s2 and s3 can not be overwritten before a missing request
-  // is totally handled. We use io.isFinish to indicate when the
-  // request really ends.
 
   io.in(0).ready := io.out(0).ready && (state === s_idle && !(miss.asUInt.orR()) || io.release_later)
   io.in(1).ready := io.out(1).ready && (state === s_idle && !(miss.asUInt.orR()) || io.release_later)

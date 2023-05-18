@@ -10,6 +10,39 @@ import chisel3.util.experimental.BoringUtils
 import WuKong.Backend.fu.LoadPipe.LoadPipe
 import utils.stallPointConnect
 import WuKong.{CoreModule, AddressSpace}
+class LSArbiterIO[T <: Data](private val gen: T, val n: Int) extends Bundle {
+  // See github.com/freechipsproject/chisel3/issues/765 for why gen is a private val and proposed replacement APIs.
+
+  val in  = Flipped(Vec(n, Decoupled(gen)))
+  val out = Decoupled(gen)
+  val store = Input(Bool())
+  val chosen = Output(UInt(log2Ceil(n).W))
+}
+
+//only support two inputs!
+class LSArbiter[T <: Data](val gen: T, val n: Int) extends Module {
+  val io = IO(new LSArbiterIO(gen, n))
+
+  io.chosen := (n-1).asUInt
+  io.out.bits := io.in(n-1).bits
+  for (i <- n-2 to 0 by -1) {
+    when (io.in(i).valid && !io.store) {
+      io.chosen := i.asUInt
+      io.out.bits := io.in(i).bits
+    }.elsewhen(io.in(i).valid && io.store) {
+      io.chosen := i.asUInt +1.U
+      io.out.bits := io.in(i+1).bits
+    }
+  }
+
+  // val grant = ArbiterCtrl(io.in.map(_.valid))
+  val grantL = VecInit(true.B, false.B)
+  val grantS = VecInit(false.B, true.B)
+  val grant = Mux(io.store, grantS, grantL)
+  for ((in, g) <- io.in zip grant)
+    in.ready := g && io.out.ready
+  io.out.valid := io.in(0).valid || io.in(1).valid
+}
 
 object LSUOpType { //TODO: refactor LSU fuop
   def lb   = "b0000000".U
@@ -72,7 +105,6 @@ class storePipeEntry extends StoreBufferEntry{
   val isI0MMIOStore       = Output(Bool())
   val isI1MMIOStore       = Output(Bool())
   val func                = Output(UInt(7.W))
-  val pc                  = Output(UInt(VAddrBits.W))
   val offset              = Output(UInt(64.W))
   val rs1                 = Output(UInt(64.W))
   val mergeAddr           = Output(Bool())
@@ -182,21 +214,21 @@ class LSU extends  CoreModule with HasStoreBufferConst{
   BoringUtils.addSink(MMIOStorePkt.ready,"MMIOStorePktReady")
   BoringUtils.addSource(MMIOStorePending,"MMIOStorePending")
   BoringUtils.addSource(outBufferFire,"outBufferFire")
-
+  
+  val loads2valid0 = WireInit(false.B)
+  val loads2valid1 = WireInit(false.B)
+  loads2valid0 := loadPipe0.io.loadS2Valid
+  loads2valid1 := loadPipe1.io.loadS2Valid
   //stall signal
   val cacheStoreStall = WireInit(false.B)
   BoringUtils.addSink(cacheStoreStall,"cacheStoreStall")
   val cacheLoadStall = WireInit(false.B)
   BoringUtils.addSink(cacheLoadStall,"cacheLoadStall")
-  val  bufferFullStall = (storeBuffer.io.isAlmostFull && lsuPipeOut(1).valid && lsuPipeOut(1).valid) || storeBuffer.io.isFull  //when almost full, still can store one
+  // val bufferFullStall = (storeBuffer.io.isAlmostFull && (lsuPipeOut(1).valid || loads2valid0 || loads2valid1) ) || storeBuffer.io.isFull  //when almost full, still can store one
+  val bufferFullStall = storeBuffer.io.isAlmostFull || storeBuffer.io.isFull  //when almost full, still can store one
   BoringUtils.addSource(bufferFullStall,"bufferFullStall")
   
-  val pc = WireInit(0.U(VAddrBits.W))  //for LSU debug
-  BoringUtils.addSink(pc,"lsuPC")  
-  val loads2valid0 = WireInit(false.B)
-  val loads2valid1 = WireInit(false.B)
-  loads2valid0 := loadPipe0.io.loadS2Valid
-  loads2valid1 := loadPipe1.io.loadS2Valid
+
   
   val real_bank_conflict = WireInit(false.B)
   BoringUtils.addSink(real_bank_conflict,"real_bank_conflict")
@@ -215,7 +247,6 @@ class LSU extends  CoreModule with HasStoreBufferConst{
   lsuPipeIn(0).bits.mask := storeReqWmask
   lsuPipeIn(0).bits.func := storeFunc
   lsuPipeIn(0).bits.isCacheStore := cacheIn.fire() && cacheIn.bits(0).cmd === SimpleBusCmd.write
-  lsuPipeIn(0).bits.pc := pc
   lsuPipeIn(0).bits.isMMIOStore := isMMIOStore
   lsuPipeIn(0).bits.isI0MMIOStore := isMMIOStore && i0isStore
   lsuPipeIn(0).bits.isI1MMIOStore := isMMIOStore && i1isStore
@@ -240,7 +271,6 @@ class LSU extends  CoreModule with HasStoreBufferConst{
   loadPipe0.io.dmem.resp <> io.dmem(0).resp
   loadPipe0.io.invalid <> invalid(0)
   loadPipe0.io.stall := io.memStall
-  loadPipe0.io.pc := pc
 
   loadPipe1.io.in.bits.src1 := src1(1)
   loadPipe1.io.in.bits.offset := offset(1)
@@ -258,7 +288,6 @@ class LSU extends  CoreModule with HasStoreBufferConst{
   loadPipe1.io.dmem.resp <> io.dmem(1).resp
   loadPipe1.io.invalid <> invalid(0)
   loadPipe1.io.stall := io.memStall
-  loadPipe1.io.pc := pc
 
   io.out(0) <> loadPipe0.io.out
   io.out(1) <> loadPipe1.io.out
@@ -303,31 +332,24 @@ class LSU extends  CoreModule with HasStoreBufferConst{
 
   storeCacheIn.valid := storeBuffer.io.out.valid
   loadCacheIn.valid := (io.in(0).valid && i0isLoad) || (io.in(1).valid && i1isLoad)
-  storeBuffer.io.out.ready := storeCacheIn.ready
+  storeBuffer.io.out.ready := storeCacheIn.ready && (!loadCacheIn.valid || bufferFullStall)
 
-  val cacheInArbiter = Module(new Arbiter(Vec(2, new SimpleBusReqBundle),2))
-  val cacheInArbiter1 = Module(new Arbiter(Vec(2, new SimpleBusReqBundle),2))
+  val cacheInArbiter = Module(new LSArbiter(Vec(2, new SimpleBusReqBundle),2))
   
-  cacheInArbiter1.io.in(0) <> storeCacheIn
-  cacheInArbiter1.io.in(1) <> loadCacheIn
-
+  val storeEn = storeBuffer.io.isAlmostFull || storeBuffer.io.isFull || !loadCacheIn.valid
+  
+  
   cacheInArbiter.io.in(0) <> loadCacheIn
   cacheInArbiter.io.in(1) <> storeCacheIn
-
-
-  cacheInArbiter.io.out.ready := cacheIn.ready
-  cacheInArbiter1.io.out.ready := cacheIn.ready
-
-  val storeEn = storeBuffer.io.isAlmostFull || storeBuffer.io.isFull
-  cacheIn.bits :=  Mux(storeEn, cacheInArbiter1.io.out.bits,cacheInArbiter.io.out.bits)
-  cacheIn.valid :=  Mux(storeEn, cacheInArbiter1.io.out.valid,cacheInArbiter.io.out.valid)
+  cacheInArbiter.io.store := storeEn
+  cacheIn <> cacheInArbiter.io.out
 
 
   io.in(0).ready := lsuPipeIn(0).ready || loadCacheIn.ready
   io.in(1).ready := loadCacheIn.ready
 
-  io.isMMIO(0) := lsuPipeStage3.right.bits.isI0MMIOStore || loadPipe0.io.mmio
-  io.isMMIO(1) := lsuPipeStage3.right.bits.isI1MMIOStore || loadPipe1.io.mmio
+  io.isMMIO(0) := lsuPipeStage3.right.bits.isI0MMIOStore || loadPipe0.io.mmio && loads2valid0
+  io.isMMIO(1) := lsuPipeStage3.right.bits.isI1MMIOStore || loadPipe1.io.mmio && loads2valid1
   //store buffer snapshit
   storeBuffer.io.in.valid := lsuPipeStage4.io.right.valid && lsuPipeStage4.io.right.valid && !lsuPipeStage4.io.right.bits.isMMIOStore && !invalid(2)
   storeBuffer.io.in.bits.paddr := lsuPipeStage4.io.right.bits.paddr
