@@ -35,10 +35,10 @@ class TLTimer(address: Seq[AddressSet], sim: Boolean)(implicit p: Parameters) ex
     })
 
     val mtime = RegInit(0.U(64.W))  // unit: us
-    val mtimecmp = RegInit(200.U(64.W))
+    val mtimecmp = RegInit(2000000.U(64.W))
     val msip = RegInit(0.U(64.W))
 
-    val clk = (if (!sim) 40 /* 40MHz / 1000000 */ else 10000)
+    val clk = (if (!sim) 40 /* 40MHz / 1000000 */ else 5)
     val freq = RegInit(clk.U(64.W))
     val inc = RegInit(1.U(64.W))
 
