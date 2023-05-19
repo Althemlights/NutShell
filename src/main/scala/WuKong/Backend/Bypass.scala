@@ -663,7 +663,7 @@ class PipeCtl extends Module{
     val i0pipeStall = Input(Bool())
     val i1pipeStall = Input(Bool())
     val memStall = Input(Bool())
-    val flush = Input(Vec(4,Bool()))  //flushPoint(0,3) -> alu0,alu1,sub_alu0,sub_alu1
+    val flush = Input(Vec(6,Bool()))  //flushPoint(0,3) -> alu0,alu1,sub_alu0,sub_alu1
     val pipeCtl = new StallFlushIO
   })
 //  val pipeCtl = IO(new StallFlushIO)
@@ -688,6 +688,8 @@ class PipeCtl extends Module{
   val alu1InvalidList = List(0,1,2,3)
   val subalu0InvalidList = List(0,1,2,3,4,5,6,7,8,9,11)
   val subalu1InvalidList = List(0,1,2,3,4,5,6,7,8,9)
+  val csr0InvalidList = List(0,1,2,3,5)
+  val csr1InvalidList = List(0,1,2,3)
 
   // val alu0FlushList = List(0,1,2,3,5)
   // val alu1FlushList = List(0,1,2,3)
@@ -707,6 +709,8 @@ class PipeCtl extends Module{
   alu1InvalidList.foreach{ case i => when(io.flush(1) === true.B){allStageInvalidVec(i) := io.flush(1)}}
   subalu0InvalidList.foreach{ case i => when(io.flush(2) === true.B){allStageInvalidVec(i) := io.flush(2)}}
   subalu1InvalidList.foreach{ case i => when(io.flush(3) === true.B){allStageInvalidVec(i) := io.flush(3)}}
+  csr0InvalidList.foreach{ case i => when(io.flush(4) === true.B){allStageInvalidVec(i) := io.flush(4)}}
+  csr1InvalidList.foreach{ case i => when(io.flush(5) === true.B){allStageInvalidVec(i) := io.flush(5)}}
 
 
 
@@ -720,7 +724,7 @@ class Bypass extends Module{
     val in = Vec(2,Flipped(Decoupled(new DecodeIO)))
     val memStall = Input(Bool())
     val mduStall = Input(Bool())
-    val flush = Input(Vec(4,Bool()))
+    val flush = Input(Vec(6,Bool()))
     val issueStall = Output(Vec(2,Bool()))
     // val pipeFlush = Output(Vec(10,Bool()))
     val pipeInvalid = Output(Vec(12,Bool()))

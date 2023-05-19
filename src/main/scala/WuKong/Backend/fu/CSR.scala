@@ -110,7 +110,7 @@ trait HasCSRConst {
   val PmpaddrBase   = 0x3B0
 
   // Machine Counter/Timers
-  // Currently, core uses perfcnt csr set instead of standard Machine Counter/Timers
+  // Currently, Core uses perfcnt csr set instead of standard Machine Counter/Timers
   // 0xB80 - 0x89F are also used as perfcnt csr
 
   // Machine Counter Setup (not implemented)
@@ -405,6 +405,8 @@ class CSR extends CoreModule with HasCSRConst with HasExceptionNO {
   mstatus_wire := mstatus
   mie_wire := mie
 
+  // val mstatusStruct_wire = mstatus_wire.asTypeOf(new MstatusStruct)
+
 
   // CSR reg map
   val mapping = Map(
@@ -528,6 +530,85 @@ class CSR extends CoreModule with HasCSRConst with HasExceptionNO {
   val isSret = addr === privSret   && func === CSROpType.jmp && !io.isBackendException
   val isUret = addr === privUret   && func === CSROpType.jmp && !io.isBackendException
 
+//  Debug(wen, "csr write: pc %x addr %x rdata %x wdata %x func %x\n", io.cfIn.pc, addr, rdata, wdata, func)
+//  Debug(wen, "[MST] time %d pc %x mstatus %x mideleg %x medeleg %x mode %x\n", GTimer(), io.cfIn.pc, mstatus, mideleg , medeleg, priviledgeMode)
+
+  // MMU Permission Check
+
+  // def MMUPermissionCheck(ptev: Bool, pteu: Bool): Bool = ptev && !(priviledgeMode === ModeU && !pteu) && !(priviledgeMode === ModeS && pteu && mstatusStruct.sum.asBool)
+  // def MMUPermissionCheckLoad(ptev: Bool, pteu: Bool): Bool = ptev && !(priviledgeMode === ModeU && !pteu) && !(priviledgeMode === ModeS && pteu && mstatusStruct.sum.asBool) && (pter || (mstatusStruct.mxr && ptex))
+  // imem
+  // val imemPtev = true.B
+  // val imemPteu = true.B
+  // val imemPtex = true.B
+  // val imemReq = true.B
+  // val imemPermissionCheckPassed = MMUPermissionCheck(imemPtev, imemPteu)
+  // val hasInstrPageFault = imemReq && !(imemPermissionCheckPassed && imemPtex)
+  // assert(!hasInstrPageFault)
+
+  // dmem
+  // val dmemPtev = true.B
+  // val dmemPteu = true.B
+  // val dmemReq = true.B
+  // val dmemPermissionCheckPassed = MMUPermissionCheck(dmemPtev, dmemPteu)
+  // val dmemIsStore = true.B
+
+  // val hasLoadPageFault  = dmemReq && !dmemIsStore && !(dmemPermissionCheckPassed)
+  // val hasStorePageFault = dmemReq &&  dmemIsStore && !(dmemPermissionCheckPassed)
+  // assert(!hasLoadPageFault)
+  // assert(!hasStorePageFault)
+
+  //TODO: Havn't test if io.dmemMMU.priviledgeMode is correct yet
+//  io.imemMMU.priviledgeMode := priviledgeMode
+//  io.dmemMMU.priviledgeMode := Mux(mstatusStruct.mprv.asBool, mstatusStruct.mpp, priviledgeMode)
+//  io.imemMMU.status_sum := mstatusStruct.sum.asBool
+//  io.dmemMMU.status_sum := mstatusStruct.sum.asBool
+//  io.imemMMU.status_mxr := DontCare
+//  io.dmemMMU.status_mxr := mstatusStruct.mxr.asBool
+
+//  val hasInstrPageFault = Wire(Bool())
+//  val hasLoadPageFault = Wire(Bool())
+//  val hasStorePageFault = Wire(Bool())
+//  val hasStoreAddrMisaligned = Wire(Bool())
+//  val hasLoadAddrMisaligned = Wire(Bool())
+//
+//  val dmemPagefaultAddr = Wire(UInt(VAddrBits.W))
+//  val dmemAddrMisalignedAddr = Wire(UInt(VAddrBits.W))
+//  val lsuAddr = WireInit(0.U(64.W))
+//  BoringUtils.addSink(lsuAddr, "LSUADDR")
+//  if(EnableOutOfOrderExec){
+//    hasInstrPageFault      := valid && io.cfIn.exceptionVec(instrPageFault)
+//    hasLoadPageFault       := valid && io.cfIn.exceptionVec(loadPageFault)
+//    hasStorePageFault      := valid && io.cfIn.exceptionVec(storePageFault)
+//    hasStoreAddrMisaligned := valid && io.cfIn.exceptionVec(storeAddrMisaligned)
+//    hasLoadAddrMisaligned  := valid && io.cfIn.exceptionVec(loadAddrMisaligned)
+//    dmemPagefaultAddr := src1 // LSU -> wbresult -> prf -> beUop.data.src1
+//    dmemAddrMisalignedAddr := src1
+//  }else{
+//    hasInstrPageFault := io.cfIn.exceptionVec(instrPageFault) && valid
+//    hasLoadPageFault := io.dmemMMU.loadPF
+//    hasStorePageFault := io.dmemMMU.storePF
+//    hasStoreAddrMisaligned := io.cfIn.exceptionVec(storeAddrMisaligned)
+//    hasLoadAddrMisaligned := io.cfIn.exceptionVec(loadAddrMisaligned)
+//    dmemPagefaultAddr := io.dmemMMU.addr
+//    dmemAddrMisalignedAddr := lsuAddr
+//  }
+
+//  when(hasInstrPageFault || hasLoadPageFault || hasStorePageFault){
+//    val tval = Mux(hasInstrPageFault, Mux(io.cfIn.crossPageIPFFix, SignExt((io.cfIn.pc + 2.U)(VAddrBits-1,0), XLEN), SignExt(io.cfIn.pc(VAddrBits-1,0), XLEN)), SignExt(dmemPagefaultAddr, XLEN))
+//    when(priviledgeMode === ModeM){
+//      mtval := tval
+//    }.otherwise{
+//      stval := tval
+//    }
+//    Debug("[PF] %d: ipf %b tval %x := addr %x pc %x priviledgeMode %x\n", GTimer(), hasInstrPageFault, tval, SignExt(dmemPagefaultAddr, XLEN), io.cfIn.pc, priviledgeMode)
+//  }
+//
+//  when(hasLoadAddrMisaligned || hasStoreAddrMisaligned)
+//  {
+//    mtval := SignExt(dmemAddrMisalignedAddr, XLEN)
+//    Debug("[ML] %d: addr %x pc %x priviledgeMode %x\n", GTimer(), SignExt(dmemAddrMisalignedAddr, XLEN), io.cfIn.pc, priviledgeMode)
+//  }
 
   // Exception and Intr
 
@@ -547,21 +628,35 @@ class CSR extends CoreModule with HasCSRConst with HasExceptionNO {
   // but it is not stored in the CSR
   val seip = meip    // FIXME: PLIC should generate SEIP different from MEIP
   val mipRaiseIntr = WireInit(mip)
+  val mipRaiseIntr_wire = WireInit(mipWire)
   mipRaiseIntr.e.s := mip.e.s | seip
+
 
   val ideleg =  (mideleg & mipRaiseIntr.asUInt)
   def priviledgedEnableDetect(x: Bool): Bool = Mux(x, ((priviledgeMode === ModeS) && mstatusStruct.ie.s) || (priviledgeMode < ModeS),
     ((priviledgeMode === ModeM) && mstatusStruct.ie.m) || (priviledgeMode < ModeM))
-
   val intrVecEnable = Wire(Vec(12, Bool()))
   intrVecEnable.zip(ideleg.asBools).map{case(x,y) => x := priviledgedEnableDetect(y)}
-  val intrVec = mie(11,0) & mipRaiseIntr.asUInt & intrVecEnable.asUInt
-  //BoringUtils.addSource(intrVec, "intrVecIDU")
+  val intrVec = mie_wire(11,0) & mipRaiseIntr.asUInt & intrVecEnable.asUInt
+
+  def priviledgedEnableDetect_wire(x: Bool): Bool = Mux(x, ((priviledgeMode === ModeS) && mstatus_wire.asTypeOf(new MstatusStruct).ie.s) || (priviledgeMode < ModeS),
+    ((priviledgeMode === ModeM) && mstatus_wire.asTypeOf(new MstatusStruct).ie.m) || (priviledgeMode < ModeM))
+  val intrVecEnable_wire = Wire(Vec(12, Bool()))
+  intrVecEnable_wire.zip(ideleg.asBools).map{case(x,y) => x := priviledgedEnableDetect_wire(y)}
+  val intrVec_wire = mie_wire(11,0) & mipRaiseIntr_wire.asUInt & intrVecEnable_wire.asUInt
+  // BoringUtils.addSource(intrVec, "intrVecIDU")
   // val intrNO = PriorityEncoder(intrVec)
 
-  val intrNO = IntPriority.foldRight(0.U)((i: Int, sum: UInt) => Mux(io.cfIn.intrVec(i), i.U, sum))
-  // val intrNO = PriorityEncoder(io.cfIn.intrVec)
-  val raiseIntr = io.cfIn.intrVec.asUInt.orR
+  val intrNO = IntPriority.foldRight(0.U)((i: Int, sum: UInt) => Mux(intrVec(i), i.U, sum))
+  val intrNO_wire = IntPriority.foldRight(0.U)((i: Int, sum: UInt) => Mux(intrVec_wire(i), i.U, sum))
+  val raiseIntr = intrVec.asUInt.orR
+  val raiseIntr_wire = intrVec_wire.asUInt.orR
+
+  // dontTouch(mstatusStruct_wire)
+  dontTouch(intrVecEnable_wire)
+  dontTouch(intrVec_wire)
+  dontTouch(intrNO_wire)
+  dontTouch(mipRaiseIntr_wire)
 
   // exceptions
 
@@ -584,7 +679,8 @@ class CSR extends CoreModule with HasCSRConst with HasExceptionNO {
   val causeNO = (raiseIntr << (XLEN-1)) | Mux(raiseIntr, intrNO, exceptionNO)
   io.intrNO := Mux(raiseIntr, causeNO, 0.U)
 
-  val raiseExceptionIntr = (raiseException || raiseIntr) && io.instrValid
+  val raiseExceptionIntr = (raiseException || raiseIntr) && RegNext(io.instrValid)
+  val raiseExceptionIntr_wire = (raiseException || raiseIntr_wire) && io.instrValid  //dont support raise exception
   val retTarget = Wire(UInt(VAddrBits.W))
   val trapTarget = Wire(UInt(VAddrBits.W))
 //  io.redirect.valid := (valid && func === CSROpType.jmp) || raiseExceptionIntr || resetSatp
@@ -594,15 +690,19 @@ class CSR extends CoreModule with HasCSRConst with HasExceptionNO {
   io.redirect.rtype := 0.U
   io.redirect.target := Mux(resetSatp, io.cfIn.pc + 4.U, Mux(raiseExceptionIntr, trapTarget, retTarget))
   io.redirect.btbIsBranch := 0.U
-  io.redirect.pc := io.cfIn.pc
-
+  io.redirect.pc := RegNext(io.cfIn.pc)
+//  Debug(raiseExceptionIntr, "excin %b excgen %b", csrExceptionVec.asUInt(), iduExceptionVec.asUInt())
+//  Debug(raiseExceptionIntr, "int/exc: pc %x int (%d):%x exc: (%d):%x\n",io.cfIn.pc, intrNO, io.cfIn.intrVec.asUInt, exceptionNO, raiseExceptionVec.asUInt)
+//  Debug(raiseExceptionIntr, "[MST] time %d pc %x mstatus %x mideleg %x medeleg %x mode %x\n", GTimer(), io.cfIn.pc, mstatus, mideleg , medeleg, priviledgeMode)
+//  Debug(io.redirect.valid, "redirect to %x\n", io.redirect.target)
+//  Debug(resetSatp, "satp reset\n")
 
   // Branch control
 
   val deleg = Mux(raiseIntr, mideleg , medeleg)
   // val delegS = ((deleg & (1 << (causeNO & 0xf))) != 0) && (priviledgeMode < ModeM);
   val delegS = (deleg(causeNO(3,0))) && (priviledgeMode < ModeM)
-  val tvalWen = raiseIntr // in core-riscv64, no exception will come together with PF
+  val tvalWen = raiseIntr // in Core-riscv64, no exception will come together with PF
 
   ret := isMret || isSret || isUret
   trapTarget := Mux(delegS, stvec, mtvec)(VAddrBits-1, 0)
@@ -667,9 +767,9 @@ class CSR extends CoreModule with HasCSRConst with HasExceptionNO {
     }.otherwise {
       mcause := causeNO
       mcause_wire := causeNO
-      mepc := SignExt(io.cfIn.pc, XLEN)
-      mepc_wire := SignExt(io.cfIn.pc, XLEN)
-      mstatusNew.mpp := priviledgeMode
+      mepc := RegNext(SignExt(io.cfIn.pc, XLEN))
+      mepc_wire := RegNext(SignExt(io.cfIn.pc, XLEN))
+      mstatusNew.mpp := (priviledgeMode)
       mstatusNew.pie.m := mstatusOld.ie.m
       mstatusNew.ie.m := false.B
       priviledgeMode := ModeM
@@ -819,8 +919,8 @@ class CSR extends CoreModule with HasCSRConst with HasExceptionNO {
     }
   }}
 
-  val coretrap = WireInit(false.B)
-  BoringUtils.addSink(coretrap, "coretrap")
+  val Coretrap = WireInit(false.B)
+  BoringUtils.addSink(Coretrap, "Coretrap")
   def readWithScala(addr: Int): UInt = mapping(addr)._1
 
   val mtvec_wire = WireInit(UInt(XLEN.W),0.U)
@@ -884,10 +984,9 @@ class CSR extends CoreModule with HasCSRConst with HasExceptionNO {
   io.CSRregfile.medeleg :=            medeleg
 
 
-  io.ArchEvent.intrNO :=        Mux(raiseIntr && io.instrValid && valid, intrNO, 0.U)
-  io.ArchEvent.exceptionPC :=   SignExt(io.cfIn.pc, XLEN)
-  io.ArchEvent.exceptionInst := io.cfIn.instr
-  io.ArchEvent.cause := 0.U
-
+  io.ArchEvent.intrNO        :=        Mux(raiseIntr_wire && (io.instrValid) && (valid), intrNO_wire, 0.U)
+  io.ArchEvent.exceptionPC   :=   (SignExt(io.cfIn.pc, XLEN))
+  io.ArchEvent.exceptionInst := (io.cfIn.instr)
+  io.ArchEvent.cause         := (Mux(raiseException && io.instrValid && valid, exceptionNO, 0.U)) 
 
 }

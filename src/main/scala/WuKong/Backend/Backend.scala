@@ -62,10 +62,6 @@ class Backend extends CoreModule with hasBypassConst {
   val coupledPipeRegStage8 = Module(new normalPipeConnect(new FuPkt)).suggestName("coupledPipeStage8")
   val coupledPipeRegStage9 = Module(new normalPipeConnect(new FuPkt)).suggestName("coupledPipeStage9")
 
-  // pipeFlush := Bypass.io.pipeFlush
-  val test1 = Wire(Vec(12,Bool()))
-  test1 := Bypass.io.pipeInvalid
-
   
   for(i <- 0 to 3){
     pipeFire(2*i) := pipeOut(2*i).valid && pipeIn(2*i+2).ready
@@ -92,13 +88,7 @@ class Backend extends CoreModule with hasBypassConst {
   BypassPktValid := Bypass.io.BypassPktValid
 
 
-  for (i <- 0 to 11) {
-    pipeInvalid(i) := test1(i)
-  }
-  // for (i <- 0 to 7) {
-  //   pipeInvalid(i) := !(memStall || mduStall) && test1(i)
-  // }
-
+  pipeInvalid := Bypass.io.pipeInvalid
 
   Bypass.io.decodeBypassPkt(0).ready := pipeIn(0).ready
   Bypass.io.decodeBypassPkt(1).ready := pipeIn(1).ready
@@ -218,6 +208,8 @@ class Backend extends CoreModule with hasBypassConst {
   Bypass.io.flush(1) := (Redirect3.valid) && pipeOut(3).valid && !(memStall)
   Bypass.io.flush(2) := Redirect8.valid && pipeOut(8).valid
   Bypass.io.flush(3) := Redirect9.valid && pipeOut(9).valid
+  Bypass.io.flush(4) := RegNext(i0CSRValid) && CSR.io.redirect.valid
+  Bypass.io.flush(5) := RegNext(i1CSRValid) && CSR.io.redirect.valid
 
 
 
@@ -511,8 +503,14 @@ class Backend extends CoreModule with hasBypassConst {
   pipeIn(2).bits.CSRregfile.medeleg := medeleg_wire
   pipeIn(3).bits.CSRregfile.medeleg := medeleg_wire
 
-  pipeIn(2).bits.ArchEvent :=  Mux(RegNext(CSRValid),Mux(RegNext(i0CSRValid),CSR.io.ArchEvent,0.U.asTypeOf(new ArchEvent)),0.U.asTypeOf(new ArchEvent))
-  pipeIn(3).bits.ArchEvent :=  Mux(RegNext(CSRValid),Mux(RegNext(i1CSRValid),CSR.io.ArchEvent,0.U.asTypeOf(new ArchEvent)),0.U.asTypeOf(new ArchEvent))
+  pipeIn(2).bits.ArchEvent.intrNO        := Mux(i0CSRValid,CSR.io.ArchEvent.intrNO        ,0.U)
+  pipeIn(2).bits.ArchEvent.exceptionPC   := Mux(i0CSRValid,CSR.io.ArchEvent.exceptionPC   ,0.U)
+  pipeIn(2).bits.ArchEvent.exceptionInst := Mux(i0CSRValid,CSR.io.ArchEvent.exceptionInst ,0.U)
+  pipeIn(2).bits.ArchEvent.cause         := Mux(i0CSRValid,CSR.io.ArchEvent.cause         ,0.U)
+  pipeIn(3).bits.ArchEvent.intrNO        := Mux(i1CSRValid,CSR.io.ArchEvent.intrNO        ,0.U)
+  pipeIn(3).bits.ArchEvent.exceptionPC   := Mux(i1CSRValid,CSR.io.ArchEvent.exceptionPC   ,0.U)
+  pipeIn(3).bits.ArchEvent.exceptionInst := Mux(i1CSRValid,CSR.io.ArchEvent.exceptionInst ,0.U)
+  pipeIn(3).bits.ArchEvent.cause         := Mux(i1CSRValid,CSR.io.ArchEvent.cause         ,0.U)
   //e2
   pipeIn(4).bits.rs1 := BypassMux(ByPassEna(6), BypassPkt(2).BypassCtl.rs1bypasse2,BypassPortE2, pipeOut(2).bits.rs1)
   pipeIn(4).bits.rs2 := BypassMux(ByPassEna(7), BypassPkt(2).BypassCtl.rs2bypasse2,BypassPortE2, pipeOut(2).bits.rs2)
