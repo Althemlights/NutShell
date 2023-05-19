@@ -770,7 +770,7 @@ class CSR extends CoreModule with HasCSRConst with HasExceptionNO {
       mepc := RegNext(SignExt(io.cfIn.pc, XLEN))
       mepc_wire := RegNext(SignExt(io.cfIn.pc, XLEN))
       mstatusNew.mpp := (priviledgeMode)
-      mstatusNew.pie.m := mstatusOld.ie.m
+      mstatusNew.pie.m := mstatusOld.ie.m && !(RegNext(wdata).asTypeOf(new MstatusStruct).ie.m)
       mstatusNew.ie.m := false.B
       priviledgeMode := ModeM
       when(tvalWen){mtval := 0.U} // TODO: should not use =/=

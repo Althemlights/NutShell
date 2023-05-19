@@ -1,15 +1,15 @@
 [*]
 [*] GTKWave Analyzer v3.3.103 (w)1999-2019 BSI
-[*] Fri May 19 08:40:47 2023
+[*] Fri May 19 14:28:51 2023
 [*]
-[dumpfile] "/home/jpz/xs-env/NutShell/build/2023-05-19@16:02:39.vcd"
-[dumpfile_mtime] "Fri May 19 08:03:00 2023"
-[dumpfile_size] 5390243272
+[dumpfile] "/home/jpz/xs-env/NutShell/build/2023-05-19@22:28:06.vcd"
+[dumpfile_mtime] "Fri May 19 14:28:12 2023"
+[dumpfile_size] 469794927
 [savefile] "/home/jpz/xs-env/NutShell/debug.gtkw"
-[timestart] 325257
-[size] 1904 910
+[timestart] 525254
+[size] 1959 719
 [pos] -1 -1
-*-4.000000 325261 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1
+*-2.263141 525267 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1
 [treeopen] TOP.
 [treeopen] TOP.SimTop.
 [treeopen] TOP.SimTop.wukong.
@@ -18,9 +18,9 @@
 [treeopen] TOP.SimTop.wukong.core.Backend.LSU.
 [treeopen] TOP.SimTop.wukong.core.DCache.
 [sst_width] 367
-[signals_width] 550
+[signals_width] 539
 [sst_expanded] 1
-[sst_vpaned_height] 534
+[sst_vpaned_height] 390
 @22
 TOP.SimTop.wukong.clint.mtime[63:0]
 TOP.SimTop.wukong.clint.mtimecmp[63:0]
@@ -28,49 +28,22 @@ TOP.SimTop.wukong.clint.mtimecmp[63:0]
 TOP.SimTop.wukong.clint.io__extra_mtip
 @200
 -
+@22
+TOP.SimTop.wukong.core.Backend.CSR.mstatus_wire[63:0]
+TOP.SimTop.wukong.core.Backend.CSR.mstatus[63:0]
+@200
 -
 @28
 TOP.SimTop.wukong.core.Backend.CSR.io_in_valid
-TOP.SimTop.wukong.core.Backend.CSR.io_instrValid
-@22
-TOP.SimTop.wukong.core.Backend.CSR.io_cfIn_pc[38:0]
 @200
 -
-@22
-TOP.SimTop.dt_ae.io_exceptionPC[63:0]
-TOP.SimTop.dt_ae.io_exceptionInst[31:0]
-TOP.SimTop.dt_ae.io_coreid[7:0]
-TOP.SimTop.dt_ae.io_exceptionPC[63:0]
-TOP.SimTop.wukong.core.Backend.CSR.io_ArchEvent_intrNO[31:0]
-TOP.SimTop.wukong.core.Backend.CSR.io_ArchEvent_exceptionPC[63:0]
-TOP.SimTop.wukong.core.Backend.CSR.io_ArchEvent_cause[31:0]
-@200
--
-@28
-TOP.SimTop.dt_ic1.io_valid
-@22
-TOP.SimTop.dt_ic1.io_pc[63:0]
 @28
 TOP.SimTop.dt_ic0.io_valid
 @22
 TOP.SimTop.dt_ic0.io_pc[63:0]
-@200
--
-@22
-TOP.SimTop.dt_ae.io_intrNO[31:0]
-TOP.SimTop.dt_ae.io_cause[31:0]
-TOP.SimTop.dt_ae.io_exceptionInst[31:0]
-TOP.SimTop.dt_ae.io_exceptionPC[63:0]
-TOP.SimTop.dt_ic0.io_special[7:0]
-@200
--
-@22
-TOP.SimTop.wukong.core.Backend.pipeStage0.io_right_bits_pc[38:0]
-TOP.SimTop.wukong.core.Backend.pipeStage1.io_right_bits_pc[38:0]
+@28
+TOP.SimTop.dt_ic1.io_valid
+@23
+TOP.SimTop.dt_ic1.io_pc[63:0]
 [pattern_trace] 1
 [pattern_trace] 0
-!100000@@
-?"4060
-@23
-TOP.SimTop.wukong.core.Backend.LSU.storeReqAddr[63:0]
-!!

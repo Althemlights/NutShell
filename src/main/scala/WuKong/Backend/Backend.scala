@@ -482,26 +482,34 @@ class Backend extends CoreModule with hasBypassConst {
   BoringUtils.addSink(mideleg_wire,"mideleg_wire")
   BoringUtils.addSink(medeleg_wire,"medeleg_wire")
 
-  pipeIn(2).bits.CSRregfile :=  CSR.io.CSRregfile
-  pipeIn(3).bits.CSRregfile :=  CSR.io.CSRregfile
-  pipeIn(2).bits.CSRregfile.mtvec := mtvec_wire
-  pipeIn(3).bits.CSRregfile.mtvec := mtvec_wire
-  pipeIn(2).bits.CSRregfile.mcause := mcause_wire
-  pipeIn(3).bits.CSRregfile.mcause := mcause_wire
-  pipeIn(2).bits.CSRregfile.mepc := mepc_wire
-  pipeIn(3).bits.CSRregfile.mepc := mepc_wire
-  pipeIn(2).bits.CSRregfile.mstatus := mstatus_wire
-  pipeIn(3).bits.CSRregfile.mstatus := mstatus_wire
-  pipeIn(2).bits.CSRregfile.mie := mie_wire
-  pipeIn(3).bits.CSRregfile.mie := mie_wire
-  pipeIn(2).bits.CSRregfile.mtval := mtval_wire
-  pipeIn(3).bits.CSRregfile.mtval := mtval_wire
-  pipeIn(2).bits.CSRregfile.mscratch := mscratch_wire
-  pipeIn(3).bits.CSRregfile.mscratch := mscratch_wire
-  pipeIn(2).bits.CSRregfile.mideleg := mideleg_wire
-  pipeIn(3).bits.CSRregfile.mideleg := mideleg_wire
-  pipeIn(2).bits.CSRregfile.medeleg := medeleg_wire
-  pipeIn(3).bits.CSRregfile.medeleg := medeleg_wire
+  pipeIn(4).bits.CSRregfile :=  CSR.io.CSRregfile
+  pipeIn(5).bits.CSRregfile :=  CSR.io.CSRregfile
+  pipeIn(4).bits.CSRregfile.mcause := mcause_wire
+  pipeIn(5).bits.CSRregfile.mcause := mcause_wire
+  pipeIn(4).bits.CSRregfile.mepc := mepc_wire
+  pipeIn(5).bits.CSRregfile.mepc := mepc_wire
+  pipeIn(4).bits.CSRregfile.mstatus := mstatus_wire
+  pipeIn(5).bits.CSRregfile.mstatus := mstatus_wire
+  // pipeIn(2).bits.CSRregfile :=  CSR.io.CSRregfile
+  // pipeIn(3).bits.CSRregfile :=  CSR.io.CSRregfile
+  // pipeIn(2).bits.CSRregfile.mtvec := mtvec_wire
+  // pipeIn(3).bits.CSRregfile.mtvec := mtvec_wire
+  // pipeIn(2).bits.CSRregfile.mcause := mcause_wire
+  // pipeIn(3).bits.CSRregfile.mcause := mcause_wire
+  // pipeIn(2).bits.CSRregfile.mepc := mepc_wire
+  // pipeIn(3).bits.CSRregfile.mepc := mepc_wire
+  // pipeIn(2).bits.CSRregfile.mstatus := mstatus_wire
+  // pipeIn(3).bits.CSRregfile.mstatus := mstatus_wire
+  // pipeIn(2).bits.CSRregfile.mie := mie_wire
+  // pipeIn(3).bits.CSRregfile.mie := mie_wire
+  // pipeIn(2).bits.CSRregfile.mtval := mtval_wire
+  // pipeIn(3).bits.CSRregfile.mtval := mtval_wire
+  // pipeIn(2).bits.CSRregfile.mscratch := mscratch_wire
+  // pipeIn(3).bits.CSRregfile.mscratch := mscratch_wire
+  // pipeIn(2).bits.CSRregfile.mideleg := mideleg_wire
+  // pipeIn(3).bits.CSRregfile.mideleg := mideleg_wire
+  // pipeIn(2).bits.CSRregfile.medeleg := medeleg_wire
+  // pipeIn(3).bits.CSRregfile.medeleg := medeleg_wire
 
   pipeIn(2).bits.ArchEvent.intrNO        := Mux(i0CSRValid,CSR.io.ArchEvent.intrNO        ,0.U)
   pipeIn(2).bits.ArchEvent.exceptionPC   := Mux(i0CSRValid,CSR.io.ArchEvent.exceptionPC   ,0.U)
@@ -794,7 +802,7 @@ class Backend extends CoreModule with hasBypassConst {
     BoringUtils.addSource(RegNext(Mux(regP0 === regP1 && regfile.io.writePorts(0).wen && regfile.io.writePorts(1).wen ,false.B,regfile.io.writePorts(0).wen)), "dt_iw1_valid")
     BoringUtils.addSource(RegNext(Cat(0.U(3.W), regfile.io.writePorts(0).addr)), "dt_iw1_dest")
     BoringUtils.addSource(RegNext(regfile.io.writePorts(0).data), "dt_iw1_data")
-    BoringUtils.addSource(RegNext(Mux(pipeOut(9).bits.csrInst,pipeOut(9).bits.ArchEvent.intrNO,pipeOut(8).bits.ArchEvent.intrNO)), "dt_ae_intrNO")
+    BoringUtils.addSource(RegNext(Mux(pipeOut(9).bits.csrInst,pipeOut(9).bits.ArchEvent.intrNO & VecInit(Seq.fill(32)(pipeOut(9).valid)).asUInt,pipeOut(8).bits.ArchEvent.intrNO & VecInit(Seq.fill(32)(pipeOut(8).valid)).asUInt)), "dt_ae_intrNO")
     BoringUtils.addSource(RegNext(Mux(pipeOut(9).bits.csrInst,pipeOut(9).bits.ArchEvent.cause,pipeOut(8).bits.ArchEvent.cause)), "dt_ae_cause")
     BoringUtils.addSource(RegNext(Mux(pipeOut(9).bits.csrInst,pipeOut(9).bits.ArchEvent.exceptionPC,pipeOut(8).bits.ArchEvent.exceptionPC)), "dt_ae_exceptionPC")
     BoringUtils.addSource(RegNext(coretrap), "dt_te_valid")

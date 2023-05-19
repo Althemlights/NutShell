@@ -252,8 +252,8 @@ class BankedCacheStage1(implicit val cacheConfig: BankedCacheConfig)
   //because the bank_conflict signal is used in stage2.
   io.out(0).valid := io.in(0).valid && io.metaReadBus(0).req.ready && io.dataReadBus(0).req.ready 
   io.out(1).valid := io.in(1).valid && io.metaReadBus(1).req.ready && io.dataReadBus(1).req.ready && (!real_bank_conflict || io.release_later) 
-  io.in(0).ready := io.out(0).ready && io.metaReadBus(0).req.ready && io.dataReadBus(0).req.ready
-  io.in(1).ready := io.out(1).ready && io.metaReadBus(1).req.ready && io.dataReadBus(1).req.ready
+  io.in(0).ready := io.out(0).ready && io.metaReadBus(0).req.ready && io.dataReadBus(0).req.ready && io.out(1).ready && io.metaReadBus(1).req.ready && io.dataReadBus(1).req.ready
+  io.in(1).ready := io.in(0).ready
   // io.in(0).ready := io.out(0).ready
   // io.in(1).ready := io.out(1).ready
   io.out(0).bits.mmio := AddressSpace.isMMIO(io.in(0).bits.addr)
@@ -262,8 +262,8 @@ class BankedCacheStage1(implicit val cacheConfig: BankedCacheConfig)
   //when bankcoflict and not relese,stall core.
   BoringUtils.addSource(same_bank && req_valid0 && req_valid1 && !io.release_later,"real_bank_conflict")
 
-  // Debug(io.in(0).valid && (io.in(0).bits.addr === 0x8001db91L.U) && io.in(0).bits.isWrite(), "store %x,data: %x\n",0x8001db91L.U, io.in(0).bits.wdata)
-  // Debug(io.in(1).valid && (io.in(1).bits.addr === 0x8001db91L.U) && io.in(1).bits.isWrite(), "store %x,data: %x\n",0x8001db91L.U, io.in(1).bits.wdata)
+  Debug(io.in(0).valid && (io.in(0).bits.addr === 0x80026ef8L.U) && io.in(0).bits.isWrite(), "store %x,data: %x\n",0x80026ef8L.U, io.in(0).bits.wdata)
+  Debug(io.in(1).valid && (io.in(1).bits.addr === 0x80026ef8L.U) && io.in(1).bits.isWrite(), "store %x,data: %x\n",0x80026ef8L.U, io.in(1).bits.wdata)
 }
 
 // check

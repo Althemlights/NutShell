@@ -406,45 +406,41 @@ class BankedDataArrayWithArbiter[T <: Data](nRead: Int, gen: T, set: Int, way: I
 
   io.w.req.ready := ram.io.write.ready
   
-
-  // val readArb = Module(new Arbiter(chiselTypeOf(io.r(0).req.bits), 2))
-  // readArb.io.in <> VecInit(io.r(1).req,io.r(0).req)
-  val valid0 =  io.r(0)(0).req.valid || io.r(0)(1).req.valid 
-  val valid1 =  io.r(1)(0).req.valid || io.r(1)(1).req.valid 
-
   val req00 = io.r(0)(0).req.bits
   val req01 = io.r(0)(1).req.bits
   val req10 = io.r(1)(0).req.bits
   val req11 = io.r(1)(1).req.bits
 
-  val ramIn = Wire(Vec(2, chiselTypeOf(io.r(0)(0).req.bits)))
-  val ramInvalid = Wire(Vec(2, Bool()))
-  ramIn := Mux(valid0, VecInit(req00,req01 ), VecInit(req10,req11 ))
-  ramInvalid := Mux(valid0, VecInit(io.r(0)(0).req.valid,io.r(0)(1).req.valid), VecInit(io.r(1)(0).req.valid,io.r(1)(1).req.valid)) 
+  val readArb = Module(new Arbiter(Vec(2,chiselTypeOf(io.r(0)(0).req.bits)), 2))
+  val sadf = VecInit(req00, req01)
+  val arbIn0 = Wire(Decoupled(Vec(2,chiselTypeOf(req00))))
+  val arbIn1 = Wire(Decoupled(Vec(2,chiselTypeOf(req00))))
+  arbIn0.bits := VecInit(req00,req01)
+  arbIn1.bits := VecInit(req10,req11)
+  arbIn0.valid :=  io.r(0)(0).req.valid || io.r(0)(1).req.valid 
+  arbIn1.valid :=  io.r(1)(0).req.valid || io.r(1)(1).req.valid 
+  
+  readArb.io.in(0) <> arbIn1
+  readArb.io.in(1) <> arbIn0
 
+  val ramIn = Wire(Decoupled(Vec(2, chiselTypeOf(io.r(0)(0).req.bits))))
+  ramIn <> readArb.io.out
+  ramIn.ready := ram.io.read(1).ready && ram.io.read(0).ready 
 
   ram.io.read(0).bits.way_en := "b1111".U //?haha
-  ram.io.read(0).bits.addr := ramIn(0).setIdx
-  ram.io.read(0).valid := ramInvalid(0)
+  ram.io.read(0).bits.addr := ramIn.bits(0).setIdx
+  ram.io.read(0).valid := Mux(arbIn1.valid, io.r(1)(0).req.valid, io.r(0)(0).req.valid)
 
-  io.r(0)(0).req.ready := ram.io.read(0).ready
-  io.r(0)(1).req.ready := ram.io.read(1).ready
+  io.r(0)(0).req.ready := arbIn0.ready
+  io.r(0)(1).req.ready := arbIn0.ready
 
-  io.r(1)(0).req.ready := Mux(valid0, false.B, ram.io.read(0).ready)
-  io.r(1)(1).req.ready := Mux(valid0, false.B, ram.io.read(1).ready)
+  io.r(1)(0).req.ready := arbIn1.ready
+  io.r(1)(1).req.ready := arbIn1.ready
 
-
-  // when(io.r(0)(0).req.valid || io.r(0)(1).req.valid){
-  //   io.r(0)(0).req.ready := ram.io.read(0).ready
-  //   io.r(0)(1).req.ready := ram.io.read(1).ready
-  // }.otherwise{
-  //   io.r(1)(0).req.ready := ram.io.read(0).ready
-  //   io.r(1)(1).req.ready := ram.io.read(1).ready
-  // }
 
   ram.io.read(1).bits.way_en := "b1111".U //?haha
-  ram.io.read(1).bits.addr := ramIn(1).setIdx
-  ram.io.read(1).valid := ramInvalid(1)
+  ram.io.read(1).bits.addr := ramIn.bits(1).setIdx
+  ram.io.read(1).valid := Mux(arbIn1.valid, io.r(1)(1).req.valid, io.r(0)(1).req.valid)
 
     // latch read results
   io.r.map{ case r => {
