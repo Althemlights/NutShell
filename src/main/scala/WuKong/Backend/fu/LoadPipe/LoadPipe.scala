@@ -267,11 +267,8 @@ class LoadPipe (implicit val lname:String)extends CoreModule with HasStoreBuffer
     // LSU out
     val bufferFullStall = WireInit(false.B)
     BoringUtils.addSink(bufferFullStall, "bufferFullStall")
-    val dmemFireLatch = RegInit(false.B)
-    when(io.stall && io.dmem.resp.fire()) { dmemFireLatch := true.B }
-        .elsewhen(!bufferFullStall) { dmemFireLatch := false.B }
     val rdataValid =
-        (io.dmem.resp.fire() || dmemFireLatch || addrHitS2) && loadS2.valid
+        (io.dmem.resp.fire() || addrHitS2) && loadS2.valid
     val partialLoad = (loadS2.bits.func =/= LSUOpType.ld) && loadS2.valid
     val out = Mux(
       partialLoad,

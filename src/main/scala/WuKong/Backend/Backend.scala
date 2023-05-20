@@ -258,6 +258,7 @@ class Backend extends CoreModule with hasBypassConst {
   LSU.io.storeBypassCtrl <> Bypass.io.LSUBypassCtrl.storeBypassCtrlE2
   val i0LSUValid = BypassPktValid(2) && !ex4Flush && (BypassPkt(2).decodePkt.load || BypassPkt(2).decodePkt.store)
   val i1LSUValid = BypassPktValid(3) && !ex4Flush && !i0AluFlush && (BypassPkt(3).decodePkt.load || BypassPkt(3).decodePkt.store)
+  BoringUtils.addSource(ex4Flush, "ex4Flush")
   //LSU flush
 
     LSU.io.invalid(0) := ALU_6.io.redirect.valid || ALU_7.io.redirect.valid

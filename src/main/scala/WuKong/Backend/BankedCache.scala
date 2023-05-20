@@ -190,17 +190,24 @@ class BankedCacheStage1(implicit val cacheConfig: BankedCacheConfig)
   //stateBusy from stage2,represent state in stage2 is busy and not ready.
   val stateBusy = WireInit(false.B)
   BoringUtils.addSink(stateBusy, "stateBusy")
-
   val req_addr0 = io.in(0).bits.addr
   val req_addr1 = io.in(1).bits.addr
-  val req_valid0 = io.in(0).valid
-  val req_valid1 = io.in(1).valid
   val same_bank = isBankConflict(req_addr0, req_addr1)
+  val real_bank_conflict = same_bank && io.in(0).valid && io.in(1).valid 
+  val conflict_latch = RegInit(false.B)
+  // val req_valid0 = Mux(conflict_latch, true.B,io.in(0).valid)
+  // val req_valid1 = Mux(conflict_latch, true.B,io.in(1).valid)
+  val req_valid0 =io.in(0).valid
+  val req_valid1 =io.in(1).valid
+
+  when(real_bank_conflict && !io.release_later){
+    conflict_latch := true.B
+  }.elsewhen(io.release_later){
+    conflict_latch := false.B
+  }
   //when channel0 in stage2 is finish,allow channel0 and channel1 flow.
   val release_later = WireInit(false.B)
   release_later := io.release_later
-
-  val real_bank_conflict = same_bank && req_valid0 && req_valid1
 
   //2load situation from stage2
   val process_channel0 = WireInit(false.B)
@@ -250,9 +257,9 @@ class BankedCacheStage1(implicit val cacheConfig: BankedCacheConfig)
   //when bank is conflicting,channel0 is allowed to flow down the pipe and channel1 is forbidden.
   //But when release_later is high, also allow channel0 flow down the pipe.
   //because the bank_conflict signal is used in stage2.
-  io.out(0).valid := io.in(0).valid && io.metaReadBus(0).req.ready && io.dataReadBus(0).req.ready 
-  io.out(1).valid := io.in(1).valid && io.metaReadBus(1).req.ready && io.dataReadBus(1).req.ready && (!real_bank_conflict || io.release_later) 
-  io.in(0).ready := io.out(0).ready && io.metaReadBus(0).req.ready && io.dataReadBus(0).req.ready && io.out(1).ready && io.metaReadBus(1).req.ready && io.dataReadBus(1).req.ready
+  io.out(0).valid := req_valid0 && io.metaReadBus(0).req.ready && io.dataReadBus(0).req.ready 
+  io.out(1).valid := req_valid1 && io.metaReadBus(1).req.ready && io.dataReadBus(1).req.ready && (!real_bank_conflict || io.release_later) 
+  io.in(0).ready := io.out(0).ready && io.metaReadBus(0).req.ready && io.dataReadBus(0).req.ready && io.out(1).ready && io.metaReadBus(1).req.ready && io.dataReadBus(1).req.ready && !(real_bank_conflict && !io.release_later)
   io.in(1).ready := io.in(0).ready
   // io.in(0).ready := io.out(0).ready
   // io.in(1).ready := io.out(1).ready
@@ -260,10 +267,10 @@ class BankedCacheStage1(implicit val cacheConfig: BankedCacheConfig)
   io.out(1).bits.mmio := AddressSpace.isMMIO(io.in(1).bits.addr)
 
   //when bankcoflict and not relese,stall core.
-  BoringUtils.addSource(same_bank && req_valid0 && req_valid1 && !io.release_later,"real_bank_conflict")
+  BoringUtils.addSource((same_bank && req_valid0 && req_valid1 || conflict_latch) && !io.release_later,"real_bank_conflict")
 
-  Debug(io.in(0).valid && (io.in(0).bits.addr === 0x80026ef8L.U) && io.in(0).bits.isWrite(), "store %x,data: %x\n",0x80026ef8L.U, io.in(0).bits.wdata)
-  Debug(io.in(1).valid && (io.in(1).bits.addr === 0x80026ef8L.U) && io.in(1).bits.isWrite(), "store %x,data: %x\n",0x80026ef8L.U, io.in(1).bits.wdata)
+  // Debug(io.in(0).valid && (io.in(0).bits.addr === 0x80026ef8L.U) && io.in(0).bits.isWrite(), "store %x,data: %x\n",0x80026ef8L.U, io.in(0).bits.wdata)
+  // Debug(io.in(1).valid && (io.in(1).bits.addr === 0x80026ef8L.U) && io.in(1).bits.isWrite(), "store %x,data: %x\n",0x80026ef8L.U, io.in(1).bits.wdata)
 }
 
 // check
@@ -951,14 +958,18 @@ class DCache(implicit val cacheConfig: BankedCacheConfig)
     PipelineConnect(s1.io.out(1), s2.io.in(1), s2.io.out(1).fire() || s2.io.release_later, io.flush)
 
     s1.io.release_later := s2.io.release_later
-
+    val ex4Flush = WireInit(false.B)
+    BoringUtils.addSink(ex4Flush, "ex4Flush")
     val process_channel0 = RegInit(false.B)
-    when(s1.io.out(0).bits.bank_conflict && !s2.io.release_later && s1.io.metaReadBus(0).req.ready && s1.io.dataReadBus(0).req.ready){
+    val process_channel1 = RegInit(false.B)
+
+    when(s1.io.out(0).bits.bank_conflict && !s2.io.release_later && s1.io.metaReadBus(0).req.ready && s1.io.dataReadBus(0).req.ready && !ex4Flush){
       process_channel0 := true.B
-    }.elsewhen(s2.io.release_later){
+    }.elsewhen(s2.io.release_later && !ex4Flush){
+      process_channel0 := false.B
+    }.elsewhen(ex4Flush){
       process_channel0 := false.B
     }
-    val process_channel1 = RegInit(false.B)
     when(s2.io.release_later && process_channel0){
       process_channel1 := true.B
     }.elsewhen(s2.io.out(1).valid && process_channel1){

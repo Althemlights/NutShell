@@ -241,7 +241,7 @@ class LSU extends  CoreModule with HasStoreBufferConst{
   lsuPipeIn(0).bits.paddr := storeReqAddr(PAddrBits-1,0)
   lsuPipeIn(0).bits.offset := storeOffset
   lsuPipeIn(0).bits.rs1 := storeSrc1
-  lsuPipeIn(0).bits.mergeAddr := i0isStore && io.storeBypassCtrl.asUInt.orR
+  lsuPipeIn(0).bits.mergeAddr := (i0isStore || i1isStore) && io.storeBypassCtrl.asUInt.orR
   lsuPipeIn(0).bits.data := storeReqWdata
   lsuPipeIn(0).bits.size := size
   lsuPipeIn(0).bits.mask := storeReqWmask
@@ -363,7 +363,7 @@ class LSU extends  CoreModule with HasStoreBufferConst{
   // io.dmem(0).req.valid := Mux(storeCacheIn.fire(), storeBuffer.io.out.valid, io.in(0).valid && i0isLoad)
 
   io.dmem(0).req.valid := cacheIn.valid && Mux( storeEn ,true.B,  Mux(!(io.in(0).valid && i0isLoad) && !(io.in(1).valid && i1isLoad) , storeBuffer.io.out.valid, io.in(0).valid && i0isLoad))
-  cacheIn.ready := io.dmem(0).req.ready && io.dmem(1).req.ready
+  cacheIn.ready := io.dmem(0).req.ready && io.dmem(1).req.ready 
 
   io.dmem(1).req.bits <> cacheIn.bits(1)
   io.dmem(1).req.valid := cacheIn.valid && io.in(1).valid && i1isLoad

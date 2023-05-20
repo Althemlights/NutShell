@@ -37,7 +37,7 @@ class SimTop extends Module {
 
   lazy val config = WuKongConfig(FPGAPlatform = false)
   val wukong = Module(new WuKong()(config))
-  val mem = Module(new AXI4RAM(memByte = 128 * 1024 * 1024, useBlackBox = true))
+  val mem = Module(new AXI4RAM(memByte = 1024 * 1024 * 1024, useBlackBox = true))
   val memdelay = Module(new AXI4Delayer(0))
   val mmio = Module(new SimMMIO)
   wukong.io.slave <> mmio.io.dma
