@@ -44,7 +44,7 @@ case class DCacheParameters (
                          userBits: Int = 0,
                          idBits: Int = 0,
 
-                         totalSize: Int = 32, // Kbytes
+                         totalSize: Int = 16, // Kbytes
                          ways: Int = 4,
                          sramNum: Int = 4,
                          srcBits: Int = 1  
