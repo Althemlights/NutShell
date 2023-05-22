@@ -69,7 +69,7 @@ class NutShell()(implicit p: Parameters) extends LazyModule{
 
   //axi4ram slave node
   val device = new MemoryDevice
-  val memRange = AddressSet(0x00000000L, 0xfffffffffL).subtract(AddressSet(0x0L, 0x7fffffffL))
+  val memRange = AddressSet(0x00000000L, 0xffffffffL).subtract(AddressSet(0x0L, 0x7fffffffL))
   val memAXI4SlaveNode = AXI4SlaveNode(Seq(
     AXI4SlavePortParameters(
       slaves = Seq(
@@ -78,12 +78,15 @@ class NutShell()(implicit p: Parameters) extends LazyModule{
           regionType = RegionType.UNCACHED,
           executable = true,
           supportsRead = TransferSizes(1, 64),
+          //supportsRead = TransferSizes(1, 8),
           supportsWrite = TransferSizes(1, 64),
+          //supportsWrite = TransferSizes(1, 8),
           interleavedId = Some(0),
           resources = device.reg("mem")
         )
       ),
-      beatBytes = 32
+      //beatBytes = 32
+      beatBytes = 8
     )
   ))
 
@@ -126,7 +129,8 @@ class NutShell()(implicit p: Parameters) extends LazyModule{
     case (source, sink) =>  sink := source
   })
 
-  memAXI4SlaveNode := AXI4UserYanker() := AXI4Deinterleaver(64) := TLToAXI4() := TLCacheCork() := l3cacheOpt.node :=* l2_mem_tlxbar
+  //memAXI4SlaveNode := AXI4UserYanker() := AXI4Deinterleaver(64) := TLToAXI4() := TLCacheCork() := l3cacheOpt.node :=* l2_mem_tlxbar
+  memAXI4SlaveNode := AXI4UserYanker() := AXI4Deinterleaver(8) := TLToAXI4() := TLWidthWidget(32) := TLCacheCork() := l3cacheOpt.node :=* l2_mem_tlxbar
 
   val onChipPeripheralRange = AddressSet(0x38000000L, 0x07ffffffL)
   val uartRange = AddressSet(0x40600000L, 0xf)

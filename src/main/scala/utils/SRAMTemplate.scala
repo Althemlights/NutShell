@@ -145,6 +145,8 @@ class SRAMTemplate[T <: Data](gen: T, set: Int, way: Int = 1,
   io.r.req.ready := !resetState && (if (singlePort) !wen else true.B)
   io.w.req.ready := true.B
 
+  println("L1 + BTB len: %d, set: %d, way: %d\n", gen.getWidth.W, set, way)
+
   Debug(false) {
     when (wen && setIdx === 0x9c.U) {
       printf("%d: SRAMTemplate: write %x to idx = %d\n", GTimer(), wdata.asUInt, setIdx)
@@ -463,7 +465,7 @@ class DataSRAMTemplateWithArbiter[T <: Data](nRead: Int, gen: T, set: Int, way: 
   //  }.otherwise {
   //    val ram = Module(new MetaSRAMTemplate(gen, set, way, shouldReset, holdRead = false, singlePort = true))
   //  }
-  println("len: %d, set: %d, way: %d\n", gen.getWidth.W, set, way)
+  //println("len: %d, set: %d, way: %d\n", gen.getWidth.W, set, way)
   ram.io.w <> io.w
 
   val readArb = Module(new Arbiter(chiselTypeOf(io.r(0).req.bits), nRead))
@@ -490,7 +492,7 @@ class MetaSRAMTemplateWithArbiter[T <: Data](nRead: Int, gen: T, set: Int, way: 
   //  }.otherwise {
   //    val ram = Module(new MetaSRAMTemplate(gen, set, way, shouldReset, holdRead = false, singlePort = true))
   //  }
-  println("len: %d, set: %d, way: %d\n", gen.getWidth.W, set, way)
+  //println("len: %d, set: %d, way: %d\n", gen.getWidth.W, set, way)
   ram.io.w <> io.w
 
   val readArb = Module(new Arbiter(chiselTypeOf(io.r(0).req.bits), nRead))

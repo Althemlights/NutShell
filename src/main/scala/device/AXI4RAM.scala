@@ -90,7 +90,7 @@ class AXI4RAM1
 
     val split = beatBytes / 8
     val bankByte = memByte / split
-    val offsetBits = log2Up(memByte)
+    val offsetBits = log2Ceil(memByte)
 
     require(address.length >= 1)
     val baseAddress = address(0).base
@@ -104,13 +104,14 @@ class AXI4RAM1
     val wen = in.w.fire() && inRange(wIdx)
     require(beatBytes >= 8)
 
+    //println("split:%d log2Up(split): %d\n", split, log2Up(split))
     val rdata = if (useBlackBox) {
       val mems = (0 until split).map {_ => Module(new RAMHelper(bankByte))}
       mems.zipWithIndex map { case (mem, i) =>
         mem.io.clk   := clock
         mem.io.en    := !reset.asBool() && ((state === s_rdata) || (state === s_wdata))
-        mem.io.rIdx  := (rIdx << log2Up(split)) + i.U
-        mem.io.wIdx  := (wIdx << log2Up(split)) + i.U
+        mem.io.rIdx  := (rIdx << log2Ceil(split)) + i.U
+        mem.io.wIdx  := (wIdx << log2Ceil(split)) + i.U
         mem.io.wdata := in.w.bits.data((i + 1) * 64 - 1, i * 64)
         mem.io.wmask := MaskExpand(in.w.bits.strb((i + 1) * 8 - 1, i * 8))
         mem.io.wen   := wen
