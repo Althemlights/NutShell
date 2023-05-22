@@ -127,8 +127,10 @@ class SSDbackend extends NutCoreModule with hasBypassConst {
   val SSDCSR = Module(new SSDCSR)
   SSDCSR.io.out.ready := true.B
   SSDCSR.io.hartid := io.hartid
-  val i0CSRValid = BypassPktValid(0) && (BypassPkt(0).decodePkt.csr) && (BypassPkt(0).decodePkt.skip)
-  val i1CSRValid = BypassPktValid(1) && (BypassPkt(1).decodePkt.csr) && (BypassPkt(1).decodePkt.skip)
+  // val i0CSRValid = BypassPktValid(0) && (BypassPkt(0).decodePkt.csr) && (BypassPkt(0).decodePkt.skip)
+  // val i1CSRValid = BypassPktValid(1) && (BypassPkt(1).decodePkt.csr) && (BypassPkt(1).decodePkt.skip)
+  val i0CSRValid = (BypassPkt(0).decodePkt.csr) && (BypassPkt(0).decodePkt.skip)
+  val i1CSRValid = (BypassPkt(1).decodePkt.csr) && (BypassPkt(1).decodePkt.skip)
   val CSRValid = i0CSRValid || i1CSRValid
   val CSRfunc = Mux(i1CSRValid,pipeRegStage1.right.bits.fuOpType,pipeRegStage0.right.bits.fuOpType)
   val CSRsrc1 = Mux(i1CSRValid,pipeRegStage1.right.bits.rs1,pipeRegStage0.right.bits.rs1)
@@ -230,6 +232,8 @@ class SSDbackend extends NutCoreModule with hasBypassConst {
   Bypass.io.flush(1) := (Redirect3.valid) && pipeOut(3).valid 
   Bypass.io.flush(2) := Redirect8.valid && pipeOut(8).valid
   Bypass.io.flush(3) := Redirect9.valid && pipeOut(9).valid
+  Bypass.io.flush(4) := RegNext(i0CSRValid) && SSDCSR.io.redirect.valid
+  Bypass.io.flush(5) := RegNext(i1CSRValid) && SSDCSR.io.redirect.valid
 
 
 
@@ -511,8 +515,17 @@ class SSDbackend extends NutCoreModule with hasBypassConst {
   pipeIn(2).bits.CSRregfile.medeleg := medeleg_wire
   pipeIn(3).bits.CSRregfile.medeleg := medeleg_wire
 
-  pipeIn(2).bits.ArchEvent :=  Mux(RegNext(CSRValid),Mux(RegNext(i0CSRValid),SSDCSR.io.ArchEvent,0.U.asTypeOf(new ArchEvent)),0.U.asTypeOf(new ArchEvent))
-  pipeIn(3).bits.ArchEvent :=  Mux(RegNext(CSRValid),Mux(RegNext(i1CSRValid),SSDCSR.io.ArchEvent,0.U.asTypeOf(new ArchEvent)),0.U.asTypeOf(new ArchEvent))
+  // pipeIn(2).bits.ArchEvent :=  Mux(RegNext(CSRValid),Mux(RegNext(i0CSRValid),SSDCSR.io.ArchEvent,0.U.asTypeOf(new ArchEvent)),0.U.asTypeOf(new ArchEvent))
+  // pipeIn(3).bits.ArchEvent :=  Mux(RegNext(CSRValid),Mux(RegNext(i1CSRValid),SSDCSR.io.ArchEvent,0.U.asTypeOf(new ArchEvent)),0.U.asTypeOf(new ArchEvent))
+  pipeIn(2).bits.ArchEvent.intrNO        := Mux(i0CSRValid,SSDCSR.io.ArchEvent.intrNO        ,0.U)
+  pipeIn(2).bits.ArchEvent.exceptionPC   := Mux(i0CSRValid,SSDCSR.io.ArchEvent.exceptionPC   ,0.U)
+  pipeIn(2).bits.ArchEvent.exceptionInst := Mux(i0CSRValid,SSDCSR.io.ArchEvent.exceptionInst ,0.U)
+  pipeIn(2).bits.ArchEvent.cause         := Mux(i0CSRValid,SSDCSR.io.ArchEvent.cause         ,0.U)
+  pipeIn(3).bits.ArchEvent.intrNO        := Mux(i1CSRValid,SSDCSR.io.ArchEvent.intrNO        ,0.U)
+  pipeIn(3).bits.ArchEvent.exceptionPC   := Mux(i1CSRValid,SSDCSR.io.ArchEvent.exceptionPC   ,0.U)
+  pipeIn(3).bits.ArchEvent.exceptionInst := Mux(i1CSRValid,SSDCSR.io.ArchEvent.exceptionInst ,0.U)
+  pipeIn(3).bits.ArchEvent.cause         := Mux(i1CSRValid,SSDCSR.io.ArchEvent.cause         ,0.U)
+
   //e2
   pipeIn(4).bits.rs1 := BypassMux(ByPassEna(6), BypassPkt(2).BypassCtl.rs1bypasse2,BypassPortE2, pipeOut(2).bits.rs1)
   pipeIn(4).bits.rs2 := BypassMux(ByPassEna(7), BypassPkt(2).BypassCtl.rs2bypasse2,BypassPortE2, pipeOut(2).bits.rs2)
