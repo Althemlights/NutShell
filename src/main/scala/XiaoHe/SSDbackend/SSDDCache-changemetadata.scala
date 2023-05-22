@@ -168,7 +168,7 @@ sealed class DCacheStage1(implicit val p: Parameters) extends DCacheModule {
     val metaReadBus = CacheMetaArrayReadBus()
     val dataReadBus = Vec(sramNum, CacheDataArrayReadBus())
     val tagReadBus = CacheTagArrayReadBus()
-    val wayIdReadBus = CacheWayIdArrayReadBus()
+    //val wayIdReadBus = CacheWayIdArrayReadBus()
   }
   val io = IO(new SSDCacheStage1IO)
 
@@ -180,7 +180,7 @@ sealed class DCacheStage1(implicit val p: Parameters) extends DCacheModule {
   // read meta array, tag array and data array
   val readBusValid = io.in.fire
   io.metaReadBus.apply(valid = readBusValid, setIdx = getMetaIdx(io.in.bits.addr))
-  io.wayIdReadBus.apply(valid = readBusValid, setIdx = getMetaIdx(io.in.bits.addr))
+  //io.wayIdReadBus.apply(valid = readBusValid, setIdx = getMetaIdx(io.in.bits.addr))
   io.tagReadBus.apply(valid = readBusValid, setIdx = getMetaIdx(io.in.bits.addr))
   for (w <- 0 until sramNum) {
     io.dataReadBus(w).apply(valid = readBusValid && (w.U === getbankIdx(io.in.bits.addr)), setIdx = getDataIdx(io.in.bits.addr))
@@ -190,14 +190,14 @@ sealed class DCacheStage1(implicit val p: Parameters) extends DCacheModule {
   //s1 is not ready when metaArray is resetting or meta/dataArray is being written
   val dataReadBusReady = VecInit(io.dataReadBus.map(_.req.ready)).asUInt.andR
 
-  val s1NotReady = (!io.metaReadBus.req.ready || !dataReadBusReady || !io.wayIdReadBus.req.ready || !io.tagReadBus.req.ready) && io.in.valid
+  val s1NotReady = (!io.metaReadBus.req.ready || !dataReadBusReady || !io.tagReadBus.req.ready) && io.in.valid
   BoringUtils.addSource(s1NotReady,"s1NotReady")
 
   io.out.bits.req := io.in.bits
   io.out.bits.req.cmd := new_cmd
-  io.out.valid := io.in.valid && io.metaReadBus.req.ready && dataReadBusReady && io.tagReadBus.req.ready && io.wayIdReadBus.req.ready
-  io.in.ready := io.out.ready && io.metaReadBus.req.ready && dataReadBusReady && io.tagReadBus.req.ready && io.wayIdReadBus.req.ready
   io.out.bits.mmio := AddressSpace.isMMIO(io.in.bits.addr)
+  io.out.valid := io.in.valid && io.metaReadBus.req.ready && dataReadBusReady && io.tagReadBus.req.ready
+  io.in.ready := io.out.ready && io.metaReadBus.req.ready && dataReadBusReady && io.tagReadBus.req.ready
 
   //Debug(io.in.fire && io.in.bits.addr.asTypeOf(addrBundle).index === 0x4e.U, "[Dcache req] Addr: %x  Cmd: %x  Wdata: %x\n", io.in.bits.addr, io.in.bits.cmd, io.in.bits.wdata)
 }
@@ -217,13 +217,13 @@ sealed class DCacheStage2(edge: TLEdgeOut)(implicit val p: Parameters) extends D
     val metaReadResp = Flipped(Vec(Ways, new DMetaBundle))
     val tagReadResp = Flipped(Vec(Ways, new DTagBundle))
     val dataReadResp = Flipped(Vec(sramNum, Vec(Ways, new DDataBundle)))
-    val wayIdReadResp = Flipped(new DWayIdBundle)
+    //val wayIdReadResp = Flipped(new DWayIdBundle)
 
     val dataReadBus = Vec(sramNum, CacheDataArrayReadBus())
     val metaWriteBus = CacheMetaArrayWriteBus()
     val dataWriteBus = Vec(sramNum, CacheDataArrayWriteBus())
     val tagWriteBus = CacheTagArrayWriteBus()
-    val wayIdWriteBus = CacheWayIdArrayWriteBus()
+    //val wayIdWriteBus = CacheWayIdArrayWriteBus()
 
     val mem_getPutAcquire = DecoupledIO(new TLBundleA(edge.bundle))
     val mem_grantReleaseAck = Flipped(DecoupledIO(new TLBundleD(edge.bundle)))
@@ -236,9 +236,9 @@ sealed class DCacheStage2(edge: TLEdgeOut)(implicit val p: Parameters) extends D
   //hit miss check
   val metaWay = io.metaReadResp
   val tagWay = io.tagReadResp
-  val way_id = io.wayIdReadResp.way_id
+  /*val way_id = io.wayIdReadResp.way_id
   val way_id_vec = Wire(Vec(Ways, UInt(WayIdBits.W)))
-  way_id_vec.zipWithIndex map { case (id, i) => id := way_id((i + 1) * WayIdBits - 1, i * WayIdBits)}
+  way_id_vec.zipWithIndex map { case (id, i) => id := way_id((i + 1) * WayIdBits - 1, i * WayIdBits)}*/
   val req = io.in.bits.req
   val addr = req.addr.asTypeOf(addrBundle)
   val hitVec = VecInit((tagWay zip metaWay).map{case (t, m) => (m.coh.asTypeOf(new ClientMetadata).isValid() && (t.tag === addr.tag))}).asUInt
@@ -257,11 +257,12 @@ sealed class DCacheStage2(edge: TLEdgeOut)(implicit val p: Parameters) extends D
     //algorithm LRU
     //MRU  ....  ....  LRU
     //pos3 pos2  pos1  pos0
-  val pos0 = way_id_vec(0)   //choose LRU pos
+  /*val pos0 = way_id_vec(0)   //choose LRU pos
   val LRUposWayId = pos0
   //val victimWaymask = 3.U //Set 3 as default
   val victimWay = WireInit(0.U(WayIdBits.W))
-  val victimWaymask = 1.U << victimWay
+  val victimWaymask = 1.U << victimWay*/
+  val victimWaymask = 8.U
 
     //find invalid
   val invalidVec = VecInit(metaWay.map(m => m.coh === ClientStates.Nothing)).asUInt
@@ -290,7 +291,7 @@ sealed class DCacheStage2(edge: TLEdgeOut)(implicit val p: Parameters) extends D
     //id3 id2 id1 id0
     // ------------> (hit id1)
     //id1 id3 id2 id0
-  val hitWay = OHToUInt(hitVec)
+  /*val hitWay = OHToUInt(hitVec)
   val hitWayPosVec = way_id_vec.map(way_id => way_id === hitWay)
   val hitWayPos = OHToUInt(hitWayPosVec)        //the position of hit way
   val hit_write_way_id_vec = WireInit(VecInit(Seq.fill(Ways) {0.U(WayIdBits.W)}))
@@ -301,7 +302,7 @@ sealed class DCacheStage2(edge: TLEdgeOut)(implicit val p: Parameters) extends D
   for (i <- 0 until (Ways - 1)) {
     hit_write_way_id_vec(i) := Mux(i.U < hitWayPos, way_id_vec(i), way_id_vec(i + 1))
   }
-  hit_write_way_id_vec(hit_write_pos) := hitWay
+  hit_write_way_id_vec(hit_write_pos) := hitWay*/
 
     //cmd write: write data to cache
   val bankHitVec = BankHitVec(req.addr)
@@ -334,7 +335,7 @@ sealed class DCacheStage2(edge: TLEdgeOut)(implicit val p: Parameters) extends D
 
 
     //!!!!!in this situation, if way_id_vec has empty space, need to assign: first assign 3, then 2, 1, 0
-  val assignWayid = invalidWayNum - 1.U      //4way->3
+  /*val assignWayid = invalidWayNum - 1.U      //4way->3
   val selectPos = 4.U - invalidWayNum 
   val miss_not_full_write_way_id_vec = Wire(Vec(Ways, UInt(WayIdBits.W)))
   miss_not_full_write_way_id_vec := way_id_vec
@@ -378,7 +379,7 @@ sealed class DCacheStage2(edge: TLEdgeOut)(implicit val p: Parameters) extends D
   val wayIdWriteArb = Module(new Arbiter(CacheWayIdArrayWriteBus().req.bits, 2))
   wayIdWriteArb.io.in(0) <> MissWayIdWriteBus.req
   wayIdWriteArb.io.in(1) <> HitWayIdWriteBus.req
-  io.wayIdWriteBus.req <> wayIdWriteArb.io.out
+  io.wayIdWriteBus.req <> wayIdWriteArb.io.out*/
 
   val metaWriteArb = Module(new Arbiter(CacheMetaArrayWriteBus().req.bits, 2))
   val dataWriteArb = Seq.fill(sramNum)(Module(new Arbiter(CacheDataArrayWriteBus().req.bits, 2)))
@@ -483,7 +484,7 @@ class DCacheImp(outer: DCache) extends LazyModuleImp(outer) with HasDCacheIO wit
   //meta 
   val tagArray = Module(new MetaSRAMTemplateWithArbiter(nRead = 2, new DTagBundle, set = Sets, way = Ways, shouldReset = true))
   val metaArray = Module(new MetaSRAMTemplateWithArbiter(nRead = 2, new DMetaBundle, set = Sets, way = Ways, shouldReset = true))
-  val wayIdArray = Module(new MetaSRAMTemplateWithArbiter(nRead = 1, new DWayIdBundle, set = Sets, way = 1, shouldReset = true))
+  //val wayIdArray = Module(new MetaSRAMTemplateWithArbiter(nRead = 1, new DWayIdBundle, set = Sets, way = 1, shouldReset = true))
   //val dataArray = Module(new DataSRAMTemplateWithArbiter(nRead = 3, new DDataBundle, set = Sets * LineBeats, way = Ways))
 
   val dataArray = Array.fill(sramNum) {
@@ -527,9 +528,9 @@ class DCacheImp(outer: DCache) extends LazyModuleImp(outer) with HasDCacheIO wit
   tagArray.io.r(1) <> s1.io.tagReadBus
   tagArray.io.r(0) <> probe.io.tagReadBus
 
-  s1.io.wayIdReadBus <> wayIdArray.io.r(0)
-  s2.io.wayIdReadResp := s1.io.wayIdReadBus.resp.data(0)
-  s2.io.wayIdWriteBus.req <> wayIdArray.io.w.req
+  //s1.io.wayIdReadBus <> wayIdArray.io.r(0)
+  //s2.io.wayIdReadResp := s1.io.wayIdReadBus.resp.data(0)
+  //s2.io.wayIdWriteBus.req <> wayIdArray.io.w.req
 
   val metaWriteArb = Module(new Arbiter(CacheMetaArrayWriteBus().req.bits, 2))
   //val dataWriteArb = Module(new Arbiter(CacheDataArrayWriteBus().req.bits, 2))
