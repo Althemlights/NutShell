@@ -43,6 +43,28 @@ class S011HD1P_X32Y2D128_BW extends ExtModule with HasExtModuleResource {
   //  })
   addResource("/vsrc/S011HD1P_X32Y2D128_BW.v")
 }
+class S011HD1P_128_80 extends ExtModule with HasExtModuleResource {
+  //  val io = IO(new Bundle {
+  val Q =   IO(Output(UInt(80.W)))
+  val CLK = IO(Input(Clock()))
+  val CEN = IO(Input(Bool()))
+  val WEN = IO(Input(Bool()))
+  val A =   IO(Input(UInt(7.W)))
+  val D =   IO(Input(UInt(80.W)))
+  //  })
+  addResource("/vsrc/S011HD1P_128_80.v")
+}
+// class TS5N28HPCPLVTA128X80M2F extends ExtModule with HasExtModuleResource {
+//   //  val io = IO(new Bundle {
+//   val Q =   IO(Output(UInt(80.W)))
+//   val CLK = IO(Input(Clock()))
+//   val CEB = IO(Input(Bool()))
+//   val WEB = IO(Input(Bool()))
+//   val A =   IO(Input(UInt(7.W)))
+//   val D =   IO(Input(UInt(80.W)))
+//   //  })
+//   addResource("/vsrc/TS5N28HPCPLVTA128X80M2F.v")
+// }
 class SRAMBundleA(val set: Int) extends Bundle {
   val setIdx = Output(UInt(log2Up(set).W))
 
@@ -257,6 +279,59 @@ class ysyxSRAMTemplateWithArbiter[T <: Data](nRead: Int, gen: T, set: Int, way: 
   }}
 }
 
+// class BTBSRAMTemplate[T <: Data](gen: T, set: Int, way: Int = 1,
+//                                  shouldReset: Boolean = false, holdRead: Boolean = false, singlePort: Boolean = false) extends Module {
+//   val io = IO(new Bundle {
+//     val r = Flipped(new SRAMReadBus(gen, set, way))
+//     val w = Flipped(new SRAMWriteBus(gen, set, way))
+//   })
+
+//   require(holdRead)
+//   val wordType = UInt(gen.getWidth.W)
+//   // val array = SyncReadMem(set, Vec(way, wordType))
+//   val sram = Module(new S011HD1P_X32Y2D128())
+
+//   val (resetState, resetSet) = (WireInit(false.B), WireInit(0.U))
+
+//   if (shouldReset) {
+//     val _resetState = RegInit(true.B)
+//     val (_resetSet, resetFinish) = Counter(_resetState, set)
+//     when (resetFinish) { _resetState := false.B }
+
+//     resetState := _resetState
+//     resetSet := _resetSet
+//   }
+
+//   val (ren, wen) = (io.r.req.valid, io.w.req.valid || resetState)
+//   val realRen = (if (singlePort) ren && !wen else ren)
+
+//   val setIdx = Mux(resetState, resetSet, io.w.req.bits.setIdx)
+//   val wdataword = Mux(resetState, 0.U.asTypeOf(wordType), io.w.req.bits.data.asUInt)
+//   val waymask = Mux(resetState, Fill(way, "b1".U), io.w.req.bits.waymask.getOrElse("b1".U))
+//   val wdata = VecInit(Seq.fill(way)(wdataword))
+//   // when (wen) { array.write(setIdx, wdata, waymask.asBools) }
+
+//   sram.CLK := clock
+//   sram.A := Mux(wen, setIdx, io.r.req.bits.setIdx)
+//   sram.CEN := ~(wen || realRen)
+//   sram.WEN := ~wen
+//   sram.D := Cat(0.U((128-gen.getWidth).W), Cat(wdata))
+
+//   val rdata = HoldUnless(sram.Q, RegNext(realRen, false.B))
+//   io.r.resp.data := rdata(gen.getWidth-1, 0).asTypeOf(io.r.resp.data)
+
+//   io.r.req.ready := !resetState && (if (singlePort) !wen else true.B)
+//   io.w.req.ready := true.B
+
+//   Debug(false) {
+//     when (wen) {
+//       printf("%d: SRAMTemplate: write %x to idx = %d\n", GTimer(), wdata.asUInt, setIdx)
+//     }
+//     when (RegNext(realRen)) {
+//       printf("%d: SRAMTemplate: read %x at idx = %d\n", GTimer(), VecInit(rdata).asUInt, RegNext(io.r.req.bits.setIdx))
+//     }
+//   }
+// }
 class BTBSRAMTemplate[T <: Data](gen: T, set: Int, way: Int = 1,
                                  shouldReset: Boolean = false, holdRead: Boolean = false, singlePort: Boolean = false) extends Module {
   val io = IO(new Bundle {
@@ -267,7 +342,7 @@ class BTBSRAMTemplate[T <: Data](gen: T, set: Int, way: Int = 1,
   require(holdRead)
   val wordType = UInt(gen.getWidth.W)
   // val array = SyncReadMem(set, Vec(way, wordType))
-  val sram = Module(new S011HD1P_X32Y2D128())
+  val sram = Module(new S011HD1P_128_80())
 
   val (resetState, resetSet) = (WireInit(false.B), WireInit(0.U))
 
@@ -293,7 +368,7 @@ class BTBSRAMTemplate[T <: Data](gen: T, set: Int, way: Int = 1,
   sram.A := Mux(wen, setIdx, io.r.req.bits.setIdx)
   sram.CEN := ~(wen || realRen)
   sram.WEN := ~wen
-  sram.D := Cat(0.U((128-gen.getWidth).W), Cat(wdata))
+  sram.D := Cat(0.U((80-gen.getWidth).W), Cat(wdata))
 
   val rdata = HoldUnless(sram.Q, RegNext(realRen, false.B))
   io.r.resp.data := rdata(gen.getWidth-1, 0).asTypeOf(io.r.resp.data)
@@ -310,7 +385,6 @@ class BTBSRAMTemplate[T <: Data](gen: T, set: Int, way: Int = 1,
     }
   }
 }
-
 class MetaSRAMTemplate[T <: Data](gen: T, set: Int, way: Int = 1,
                                   shouldReset: Boolean = false, holdRead: Boolean = false, singlePort: Boolean = false) extends Module {
   val io = IO(new Bundle {
