@@ -47,7 +47,7 @@ SIM_TOP = SimTop
 SIM_TOP_V = $(BUILD_DIR)/$(SIM_TOP).v
 $(SIM_TOP_V): $(SCALA_FILE) $(TEST_FILE)
 	mkdir -p $(@D)
-	mill chiselModule.test.runMain $(SIMTOP) -td $(@D) --output-file $(@F) BOARD=sim CORE=$(CORE)
+	mill chiselModule.test.runMain $(SIMTOP) -td $(@D) --output-file $(@F) BOARD=$(BOARD) CORE=$(CORE)
 
 sim-verilog: $(SIM_TOP_V)
 

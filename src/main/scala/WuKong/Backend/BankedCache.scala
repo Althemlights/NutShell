@@ -480,7 +480,7 @@ sealed class BankedCacheStage2(implicit val cacheConfig: BankedCacheConfig)
     !afterFirstRead && io.mem.resp.fire() && (state === s_memReadResp)
 
   // mmio
-  io.mmio.req.bits := req(0)
+  // io.mmio.req.bits := Mux(req(0).mmio,req(0),req(1))  
   io.mmio.resp.ready := true.B
   io.mmio.req.valid := (state === s_mmioReq)
   val outBufferValid = WireInit(false.B)
@@ -513,7 +513,7 @@ sealed class BankedCacheStage2(implicit val cacheConfig: BankedCacheConfig)
 
   MMIOStorePkt.ready := io.mmio.req.fire() && (state === s_mmioReq)
 
-  io.mmio.req.bits := Mux(mmioStorePending, mmioStoreReqLatch, req(0))
+  io.mmio.req.bits := Mux(mmioStorePending, mmioStoreReqLatch, Mux(io.in(0).bits.mmio,req(0),req(1))  )
 
   // for inst in flash, the max fetch width is 32bit
   val FlashWidth = 4 // 4 Byte
@@ -528,13 +528,13 @@ sealed class BankedCacheStage2(implicit val cacheConfig: BankedCacheConfig)
     is(s_idle) {
       afterFirstRead := false.B
 
-      when(((miss(0) || miss(1)) && !storeHit || mmio(0)) && !io.flush || mmioStorePending) {
+      when(((miss(0) || miss(1)) && !storeHit || mmio(0) || mmio(1)) && !io.flush || mmioStorePending) {
         //        state := Mux(meta.dirty, s_memWriteReq, s_memReadReq)
         state := Mux(
           mmioStorePending,
           Mux(outBufferValid, s_mmioReq, s_mmio_wait),
           Mux(
-            mmio(0),
+            mmio(0) || mmio(1),
             s_mmioReq,
             Mux(miss(0) && meta(0).dirty || meta(1).dirty && miss(1), s_memWriteReq, s_memReadReq)
           )
@@ -555,7 +555,7 @@ sealed class BankedCacheStage2(implicit val cacheConfig: BankedCacheConfig)
     }
     is(s_mmioResp) {
       when(io.mmio.resp.fire()) {
-        state := Mux(mmio(0), s_wait_resp, s_idle)
+        state := Mux(mmio(0) || mmio(1), s_wait_resp, s_idle)
       }
     }
 

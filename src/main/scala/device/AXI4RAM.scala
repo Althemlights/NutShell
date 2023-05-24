@@ -41,6 +41,7 @@ class AXI4RAM[T <: AXI4Lite](_type: T = new AXI4, memByte: Int,
 
   val offsetBits = log2Up(memByte)
   val offsetMask = (1 << offsetBits) - 1
+  // def index(addr: UInt) = (addr & offsetMask.U) >> log2Ceil(DataBytes)
   def index(addr: UInt) = (addr & offsetMask.U) >> log2Ceil(DataBytes)
   def inRange(idx: UInt) = idx < (memByte / 8).U
 

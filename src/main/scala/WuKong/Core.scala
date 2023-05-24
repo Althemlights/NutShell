@@ -52,6 +52,7 @@ trait HasCoreParameter {
 
   val FetchBytes = 8
   val FetchSize = 2 //without compress instr
+
 }
 
 trait HasCoreConst extends HasCoreParameter {
@@ -75,7 +76,7 @@ object AddressSpace extends HasCoreParameter {
   // (start, size)
   // address out of MMIO will be considered as DRAM
   def mmio = List(
-    (0x00000000L, 0x40000000L),  // internal devices, such as CLINT and PLIC
+    (Settings.getLong("CLINTBase"), Settings.getLong("CLINTSize")),  // internal devices, such as CLINT and PLIC
     (Settings.getLong("MMIOBase"), Settings.getLong("MMIOSize")) // external devices
   )
 

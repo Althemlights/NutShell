@@ -86,8 +86,9 @@ class WuKong(implicit val p: WuKongConfig) extends Module with HasSoCParameter {
 
   val addrSpace = List(
     (Settings.getLong("MMIOBase"), Settings.getLong("MMIOSize")), // external devices
-    (Settings.getLong("CLINTBase"), 0x00010000L), // CLINT
-    (Settings.getLong("PLICBase"), 0x04000000L)  // PLIC
+    (Settings.getLong("CLINTBase"), Settings.getLong("CLINTSize")), // CLINT
+    // (Settings.getLong("PLICBase"), 0x04000000L)  // PLIC
+    (Settings.getLong("PLICBase"), 0x00000000L)  // PLIC
   )
   val mmioXbar = Module(new SimpleBusCrossbar1toN(addrSpace))
   mmioXbar.io.in <> core.io.mmio

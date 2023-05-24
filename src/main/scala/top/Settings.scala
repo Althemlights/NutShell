@@ -24,7 +24,6 @@ object DefaultSettings {
     "MMIOSize" -> 0x40000000L,
     "ResetVector" -> 0x80000000L,
     "NrExtIntr" -> 1,
-
     "HasL2cache" -> false,
     "HasPrefetch" -> false,
     "EnableMultiIssue" -> true,
@@ -35,15 +34,17 @@ object DefaultSettings {
     "HasIcache" -> true,
     "MmodeOnly" -> false,
     "IsRV32" -> false,
-
     "FPGAPlatform" -> false,
     "EnableILA" -> true,
     "EnableDebug" -> true,
     "EnableRVC" -> true,
     "SoCTest" -> false,
     "CLINTBase" -> 0x02000000L,
-    "CLINTSize" -> 0x00010000L,
-    "PLICBase" -> 0x000000003c000000L
+    "CLINTSize" -> 0x020010000L,
+    "PLICBase" -> 0x000000003c000000L,
+    "UARTBase" -> 0x40600000L, 
+    "UARTSize" -> 0x10L
+
   )
 }
 
@@ -83,27 +84,22 @@ object OOOSettings {
 object SoCTestSettings {
   def apply() = Map(
     "NrExtIntr" -> 1,
-    "EnableILA" -> false,
-    "SoCTest" -> true,
+    "EnableILA" -> true,
+    "SoCTest" -> false,
     "ResetVector" -> 0x30000000L,
-    "MMIOBase" -> 0x0000000010000000L,
-    "MMIOSize" -> 0x0000000070000000L,
-    "CLINTBase"-> 0x0000000002000000L,
-    "PLICBase" -> 0x0000000002010000L,
-    "EnableDebug" -> false,
+    "MMIOBase" -> 0x10000000L,
+    "MMIOSize" -> 0x07000000L,
+    "CLINTBase"-> 0x02000000L,
+    "CLINTSize"-> 0x00010000L,
+    "PLICBase" -> 0x00000000L,
+    "EnableDebug" -> true,
     "FPGAPlatform" -> false,
     "HasL2cache" -> false,
     "HasPrefetch" -> false,
 
     "MemMapBase" -> 0x0000000000000000L,
     "MemMapRegionBits" -> 0,
-//    "MMIOBase" -> 0x0000000040000000L,
-//    "MMIOSize" -> 0x0000000040000000L,
-//    "ResetVector" -> 0x80000000L,
-//    "NrExtIntr" -> 1,
-//
-//    "HasL2cache" -> false,
-//    "HasPrefetch" -> false,
+
     "EnableMultiIssue" -> true,
     "EnableOutOfOrderExec" -> true,
     "HasDTLB" -> true,
@@ -112,12 +108,10 @@ object SoCTestSettings {
     "HasIcache" -> true,
     "MmodeOnly" -> false,
     "IsRV32" -> false,
+    "EnableRVC" -> true,
 
-//    "FPGAPlatform" -> false,
-//    "EnableILA" -> true,
-    "EnableDebug" -> false,
-    "EnableRVC" -> true
-//    "SoCTest" -> false
+    "UARTBase" -> 0x10000000L,
+    "UARTSize" -> 0x00001000L,
   )
 }
 

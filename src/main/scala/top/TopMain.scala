@@ -128,7 +128,7 @@ object TopMain extends App {
     case (f, v) =>
       println(f + " = " + v)
   }
-  if (board == "sim") {
+  if (board == "sim" || board == "soctest") {
     (new chisel3.stage.ChiselStage).execute(args, Seq(
       chisel3.stage.ChiselGeneratorAnnotation(() =>new SimTop())
     ))

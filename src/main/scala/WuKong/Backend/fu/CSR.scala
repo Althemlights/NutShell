@@ -639,10 +639,11 @@ class CSR extends CoreModule with HasCSRConst with HasExceptionNO {
   intrVecEnable.zip(ideleg.asBools).map{case(x,y) => x := priviledgedEnableDetect(y)}
   val intrVec = mie_wire(11,0) & mipRaiseIntr.asUInt & intrVecEnable.asUInt
 
-  def priviledgedEnableDetect_wire(x: Bool): Bool = Mux(x, ((priviledgeMode === ModeS) && mstatus_wire.asTypeOf(new MstatusStruct).ie.s) || (priviledgeMode < ModeS),
-    ((priviledgeMode === ModeM) && mstatus_wire.asTypeOf(new MstatusStruct).ie.m) || (priviledgeMode < ModeM))
+  val write_mstatus_mie = addr === Mstatus.U && io.in.valid && mstatusUpdateSideEffect(wdata).asTypeOf(new MstatusStruct).ie.m
+  def priviledgedEnableDetect_wire(x: Bool,write: Bool): Bool = Mux(x, ((priviledgeMode === ModeS) && mstatus_wire.asTypeOf(new MstatusStruct).ie.s) || (priviledgeMode < ModeS),
+    ((priviledgeMode === ModeM) && mstatus_wire.asTypeOf(new MstatusStruct).ie.m) || write || (priviledgeMode < ModeM))
   val intrVecEnable_wire = Wire(Vec(12, Bool()))
-  intrVecEnable_wire.zip(ideleg.asBools).map{case(x,y) => x := priviledgedEnableDetect_wire(y)}
+  intrVecEnable_wire.zip(ideleg.asBools).map{case(x,y) => x := priviledgedEnableDetect_wire(y,write_mstatus_mie)}
   val intrVec_wire = mie_wire(11,0) & mipRaiseIntr_wire.asUInt & intrVecEnable_wire.asUInt
   // BoringUtils.addSource(intrVec, "intrVecIDU")
   // val intrNO = PriorityEncoder(intrVec)
@@ -678,6 +679,7 @@ class CSR extends CoreModule with HasCSRConst with HasExceptionNO {
 
   val causeNO = (raiseIntr << (XLEN-1)) | Mux(raiseIntr, intrNO, exceptionNO)
   io.intrNO := Mux(raiseIntr, causeNO, 0.U)
+  val causeNo_wire = (raiseIntr_wire << (XLEN-1)) | Mux(raiseIntr_wire, intrNO_wire, exceptionNO) //do not support
 
   val raiseExceptionIntr = (raiseException || raiseIntr) && RegNext(io.instrValid)
   val raiseExceptionIntr_wire = (raiseException || raiseIntr_wire) && io.instrValid  //dont support raise exception
@@ -686,9 +688,9 @@ class CSR extends CoreModule with HasCSRConst with HasExceptionNO {
 //  io.redirect.valid := (valid && func === CSROpType.jmp) || raiseExceptionIntr || resetSatp
 //  io.redirect.rtype := 0.U
 //  io.redirect.target := Mux(resetSatp, io.cfIn.pc + 4.U, Mux(raiseExceptionIntr, trapTarget, retTarget))
-  io.redirect.valid := (valid && func === CSROpType.jmp) || raiseExceptionIntr || resetSatp
+  io.redirect.valid := (valid && func === CSROpType.jmp) || valid && raiseExceptionIntr_wire /*raiseExceptionIntr*/ || resetSatp
   io.redirect.rtype := 0.U
-  io.redirect.target := Mux(resetSatp, io.cfIn.pc + 4.U, Mux(raiseExceptionIntr, trapTarget, retTarget))
+  io.redirect.target := Mux(resetSatp, io.cfIn.pc + 4.U, Mux(raiseExceptionIntr_wire, trapTarget, retTarget))
   io.redirect.btbIsBranch := 0.U
   io.redirect.pc := RegNext(io.cfIn.pc)
 //  Debug(raiseExceptionIntr, "excin %b excgen %b", csrExceptionVec.asUInt(), iduExceptionVec.asUInt())
@@ -750,7 +752,7 @@ class CSR extends CoreModule with HasCSRConst with HasExceptionNO {
     retTarget := uepc(VAddrBits-1, 0)
   }
 
-  when (raiseExceptionIntr) {
+  when (raiseExceptionIntr && addr === Mstatus.U && io.in.valid) {
     val mstatusOld = WireInit(mstatus.asTypeOf(new MstatusStruct))
     val mstatusNew = WireInit(mstatus.asTypeOf(new MstatusStruct))
 
@@ -765,15 +767,16 @@ class CSR extends CoreModule with HasCSRConst with HasExceptionNO {
       // printf("[*] mstatusNew.spp %x\n", mstatusNew.spp)
       // trapTarget := stvec(VAddrBits-1. 0)
     }.otherwise {
-      mcause := causeNO
-      mcause_wire := causeNO
-      mepc := RegNext(SignExt(io.cfIn.pc, XLEN))
-      mepc_wire := RegNext(SignExt(io.cfIn.pc, XLEN))
-      mstatusNew.mpp := (priviledgeMode)
-      mstatusNew.pie.m := mstatusOld.ie.m && !(RegNext(wdata).asTypeOf(new MstatusStruct).ie.m)
-      mstatusNew.ie.m := false.B
-      priviledgeMode := ModeM
-      when(tvalWen){mtval := 0.U} // TODO: should not use =/=
+        mcause := causeNO
+        mcause_wire := causeNO
+        mepc := RegNext(SignExt(io.cfIn.pc, XLEN))
+        mepc_wire := RegNext(SignExt(io.cfIn.pc, XLEN))
+        mstatusNew.mpp := (priviledgeMode)
+        mstatusNew.pie.m := mstatusOld.ie.m 
+        mstatusNew.ie.m := false.B
+        priviledgeMode := ModeM
+        when(tvalWen){mtval := 0.U}
+       // TODO: should not use =/=
       // trapTarget := mtvec(VAddrBits-1. 0)
     }
     // mstatusNew.pie.m := LookupTree(priviledgeMode, List(
@@ -783,6 +786,27 @@ class CSR extends CoreModule with HasCSRConst with HasExceptionNO {
     //   ModeU -> mstatusOld.ie.u
     // ))
 
+    mstatus := mstatusNew.asUInt
+    mstatus_wire := mstatusNew.asUInt
+  }.elsewhen(mtip && addr === Mstatus.U && io.in.valid && mstatusUpdateSideEffect(wdata).asTypeOf(new MstatusStruct).ie.m){
+    // val mstatusOld = WireInit(mstatus.asTypeOf(new MstatusStruct))
+    val mstatusNew = WireInit(mstatusUpdateSideEffect(wdata).asTypeOf(new MstatusStruct))
+  
+    mcause := causeNo_wire
+    mcause_wire := causeNo_wire
+    mepc := (SignExt(io.cfIn.pc, XLEN))
+    mepc_wire := (SignExt(io.cfIn.pc, XLEN))
+    mstatusNew.mpp := (priviledgeMode)
+    // mstatusNew.pie.m := mstatusUpdateSideEffect(wdata).ie.m && !(RegNext(wdata).asTypeOf(new MstatusStruct).ie.m)
+    mstatusNew.ie.m := false.B
+    mstatusNew.pie.m := (mstatus).asTypeOf(new MstatusStruct).ie.m 
+    priviledgeMode := ModeM
+    when(tvalWen){mtval := 0.U}
+
+    mstatus := mstatusNew.asUInt
+    mstatus_wire := mstatusNew.asUInt
+  }.elsewhen(addr === Mstatus.U && io.in.valid){
+    val mstatusNew = WireInit(mstatusUpdateSideEffect(wdata).asTypeOf(new MstatusStruct))
     mstatus := mstatusNew.asUInt
     mstatus_wire := mstatusNew.asUInt
   }
@@ -939,8 +963,6 @@ class CSR extends CoreModule with HasCSRConst with HasExceptionNO {
     mtvec_wire := wdata
   }.elsewhen(addr === Mepc.U && io.in.valid) {
     mepc_wire := wdata
-  }.elsewhen(addr === Mstatus.U && io.in.valid) {
-    mstatus_wire := mstatusUpdateSideEffect(wdata)
   }.elsewhen(addr === Mie.U && io.in.valid) {
     mie_wire := wdata
   }.elsewhen(addr === Mtval.U && io.in.valid){

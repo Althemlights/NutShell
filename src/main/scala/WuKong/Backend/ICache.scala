@@ -206,7 +206,7 @@ sealed class ICacheStage2(implicit val cacheConfig: ICacheConfig) extends ICache
     valid = hitWrite && !meta.dirty, setIdx = getMetaIdx(req.addr), waymask = waymask,
     data = Wire(new IMetaBundle).apply(tag = meta.tag, valid = true.B, dirty = true.B)
   )
-
+  //    0           1               2               3               4                   5             6             7
   val s_idle :: s_memReadReq :: s_memReadResp :: s_memWriteReq :: s_memWriteResp :: s_mmio_wait :: s_mmioReq :: s_mmioResp :: s_wait_resp :: s_release :: Nil = Enum(10)
   val state = RegInit(s_idle)
   val needFlush = RegInit(false.B)

@@ -489,8 +489,10 @@ class Backend extends CoreModule with hasBypassConst {
   pipeIn(5).bits.CSRregfile.mcause := mcause_wire
   pipeIn(4).bits.CSRregfile.mepc := mepc_wire
   pipeIn(5).bits.CSRregfile.mepc := mepc_wire
-  pipeIn(4).bits.CSRregfile.mstatus := mstatus_wire
-  pipeIn(5).bits.CSRregfile.mstatus := mstatus_wire
+  val ex1_hadintr_at_ex2 = pipeIn(4).bits.ArchEvent.intrNO.orR || pipeIn(5).bits.ArchEvent.intrNO.orR 
+
+  pipeIn(4).bits.CSRregfile.mstatus := Mux(ex1_hadintr_at_ex2,mstatus_wire,CSR.io.CSRregfile.mstatus)
+  pipeIn(5).bits.CSRregfile.mstatus := Mux(ex1_hadintr_at_ex2,mstatus_wire,CSR.io.CSRregfile.mstatus)
   // pipeIn(2).bits.CSRregfile :=  CSR.io.CSRregfile
   // pipeIn(3).bits.CSRregfile :=  CSR.io.CSRregfile
   // pipeIn(2).bits.CSRregfile.mtvec := mtvec_wire
@@ -751,10 +753,10 @@ class Backend extends CoreModule with hasBypassConst {
     BypassPkt(9).decodePkt.rd  === "ha".U && regfile.io.writePorts(1).wen
   a0 := Mux(a0Wen0,pipeOut(8).bits.rd,Mux(a0Wen1,pipeOut(9).bits.rd,regfile.io.mem(10)))
 
-  // when((pipeOut(8).bits.instr === 0x7b.U) &&  pipeOut(8).fire() && !pipeInvalid(10) ||
-  //   (pipeOut(9).bits.instr === 0x7b.U) &&  pipeOut(9).fire() && !pipeInvalid(11)){
-  //   printf("%c",a0.asUInt)
-  // }
+  when((pipeOut(8).bits.instr === 0x7b.U) &&  pipeOut(8).fire() && !pipeInvalid(10) ||
+    (pipeOut(9).bits.instr === 0x7b.U) &&  pipeOut(9).fire() && !pipeInvalid(11)){
+    printf("%c",a0.asUInt)
+  }
 
 
   /* ----- Difftest ----- */
