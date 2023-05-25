@@ -43,7 +43,7 @@ object DefaultSettings {
     "EnableDebug" -> true,
     "EnableRVC" -> true,
 
-    "CoreNums" -> 0x2,
+    "CoreNums" -> 0x1,
     "SoCTest" -> false,
     "CLINTBase" -> 0x02000000L,
     "CLINTSize" -> 0x00010000L,
