@@ -145,7 +145,7 @@ sealed class ICacheStage1(implicit val p: Parameters) extends ICacheModule {
   io.in.ready := io.out.ready && io.metaReadBus.req.ready && dataReadBusReady && io.tagReadBus.req.ready
   io.out.bits.mmio := AddressSpace.isMMIO(io.in.bits.addr)
 
-  //Debug(io.in.fire && io.in.bits.addr.asTypeOf(addrBundle).index === 0xC.U, "[Icache req] Addr: %x  Cmd: %x  Wdata: %x\n", io.in.bits.addr, io.in.bits.cmd, io.in.bits.wdata)
+  //Debug(io.in.fire && io.in.bits.addr.asTypeOf(addrBundle).index === 0x4.U, "[Icache req] Addr: %x  Cmd: %x  Wdata: %x\n", io.in.bits.addr, io.in.bits.cmd, io.in.bits.wdata)
 }
 
 sealed class ICacheStage2(edge: TLEdgeOut)(implicit val p: Parameters) extends ICacheModule {

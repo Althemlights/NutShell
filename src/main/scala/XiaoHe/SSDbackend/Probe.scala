@@ -62,13 +62,14 @@ class Probe(edge: TLEdgeOut)(implicit val p: Parameters) extends DCacheModule {
   //refill_count代表c线上refill到第几个了，读应该比它早一拍，比如它在refill第n个时应该读第n+1个
   val (_, _, release_done, refill_count) = edge.count(io.mem_probeAck)
   val count = WireInit(0.U((WordIndexBits - BankBits).W))
-  count := Mux(state === s_probePB, 0.U, refill_count + 1.U)
   //val probe_block = state === s_probePB && probe_has_dirty_data
   val probe_block = state === s_probePB && needData
+  val dataReadBusReady = VecInit(io.dataReadBus.map(_.req.ready)).asUInt.andR
+  val dataReadValid = RegNext((probe_block || state === s_probeAD) && dataReadBusReady)
+  count := Mux(state === s_probePB, 0.U, Mux(dataReadValid, refill_count + 1.U, refill_count))
   for (w <- 0 until sramNum) {
-    io.dataReadBus(w).apply(valid = probe_block || state === s_probeAD, setIdx = Cat(addr.index, count))
+    io.dataReadBus(w).apply(valid = (probe_block || state === s_probeAD) && dataReadBusReady, setIdx = Cat(addr.index, count))
   }
-
   val dataRead = Wire(Vec(sramNum, UInt(XLEN.W)))
   for (w <- 0 until sramNum) {
     dataRead(w) := Mux1H(waymask, io.dataReadBus(w).resp.data).data
@@ -86,7 +87,7 @@ class Probe(edge: TLEdgeOut)(implicit val p: Parameters) extends DCacheModule {
   val conLimit = io.mem_probe.valid && io.mem_probe.bits.address === io.relConcurrency.addr && io.relConcurrency.relValid 
 
   io.mem_probe.ready := Mux(state === s_idle && !conLimit, true.B, false.B) 
-  io.mem_probeAck.valid := Mux((state === s_probeA || state === s_probeAD) && !conLimit, true.B, false.B)
+  io.mem_probeAck.valid := Mux((state === s_probeA || (state === s_probeAD && dataReadValid)) && !conLimit, true.B, false.B)
 
   val probeResponse = edge.ProbeAck(
     fromSource = reqReg.source,
@@ -128,5 +129,5 @@ class Probe(edge: TLEdgeOut)(implicit val p: Parameters) extends DCacheModule {
     }
   }
 
-  //Debug(io.mem_probeAck.fire && addr.index === 0x4e.U, "[Probe] Addr: %x  Tag:%x  Data:%x\n", addr.asUInt, addr.tag, dataRead.asUInt)
+  Debug(io.mem_probeAck.fire && addr.index === 0x4.U, "[Probe] Addr: %x  Tag:%x  Data:%x\n", addr.asUInt, addr.tag, dataRead.asUInt)
 }

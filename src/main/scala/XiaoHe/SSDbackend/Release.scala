@@ -23,7 +23,6 @@ class Release(edge: TLEdgeOut)(implicit val p: Parameters) extends DCacheModule 
     val dataReadBus = Vec(sramNum, CacheDataArrayReadBus())
   })    
 
-  
   val req = io.req.bits
   val addr = req.addr.asTypeOf(addrBundle)
 
@@ -185,4 +184,6 @@ class IRelease(edge: TLEdgeOut)(implicit val p: Parameters) extends ICacheModule
   io.mem_release.bits := Mux(state === s_release, release, releaseData)
   io.mem_release.valid := state === s_release || state === s_releaseD
   io.mem_releaseAck.ready := state === s_releaseA
+  
+  Debug(io.mem_release.fire && addr.index === 0x4.U, "[Release] Addr:%x Tag:%x Data:%x\n", req.addr, addr.tag, io.mem_release.bits.data.asUInt)
 }
