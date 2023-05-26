@@ -145,7 +145,7 @@ sealed class ICacheStage1(implicit val p: Parameters) extends ICacheModule {
   io.in.ready := io.out.ready && io.metaReadBus.req.ready && dataReadBusReady && io.tagReadBus.req.ready
   io.out.bits.mmio := AddressSpace.isMMIO(io.in.bits.addr)
 
-  //Debug(io.in.fire && io.in.bits.addr.asTypeOf(addrBundle).index === 0x4.U, "[Icache req] Addr: %x  Cmd: %x  Wdata: %x\n", io.in.bits.addr, io.in.bits.cmd, io.in.bits.wdata)
+  //Debug(io.in.fire && io.in.bits.addr.asTypeOf(addrBundle).index === 0x36.U, "[Icache req] Addr: %x  Cmd: %x  Wdata: %x\n", io.in.bits.addr, io.in.bits.cmd, io.in.bits.wdata)
 }
 
 sealed class ICacheStage2(edge: TLEdgeOut)(implicit val p: Parameters) extends ICacheModule {
@@ -184,7 +184,8 @@ sealed class ICacheStage2(edge: TLEdgeOut)(implicit val p: Parameters) extends I
   val hit = hitTag && hitMeta && io.in.valid
     //miss need acquire and release(if not hitTag)
   val miss = !hit && io.in.valid
-  val victimWaymask = 8.U
+  //val victimWaymask = 8.U
+  val victimWaymask = 2.U
 
     //find invalid
   val invalidVec = VecInit(metaWay.map(m => m.coh === ClientStates.Nothing)).asUInt
@@ -425,6 +426,11 @@ class ICacheImp(outer: ICache) extends LazyModuleImp(outer) with HasICacheIO wit
   metaWriteArb.io.in(1) <> s2.io.metaWriteBus.req
   metaWriteArb.io.in(0) <> probe.io.metaWriteBus.req
   metaArray.io.w.req <> metaWriteArb.io.out
+
+  Debug(s1.io.metaReadBus.req.valid && probe.io.metaReadBus.req.valid, "[Icache meta read conflict]\n")
+  Debug(s1.io.tagReadBus.req.valid && probe.io.tagReadBus.req.valid, "[Icache tag read conflict]\n")
+  Debug((s1.io.metaReadBus.req.valid || probe.io.metaReadBus.req.valid) && metaWriteArb.io.out.valid, "[Icache meta read|write conflict]\n")
+  Debug((s1.io.tagReadBus.req.valid || probe.io.tagReadBus.req.valid) && s2.io.tagWriteBus.req.valid, "[Icache tag read|write conflict]\n")
   //metaArray.io.w <> s2.io.metaWriteBus
   //dataWriteArb.io.in(0) <> probe.io.dataWriteBus
   //dataWriteArb.io.in(1) <> s2.io.dataWriteBus

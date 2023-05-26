@@ -199,7 +199,7 @@ sealed class DCacheStage1(implicit val p: Parameters) extends DCacheModule {
   io.out.valid := io.in.valid && io.metaReadBus.req.ready && dataReadBusReady && io.tagReadBus.req.ready
   io.in.ready := io.out.ready && io.metaReadBus.req.ready && dataReadBusReady && io.tagReadBus.req.ready
 
-  //Debug(io.in.fire && io.in.bits.addr.asTypeOf(addrBundle).index === 0x4e.U, "[Dcache req] Addr: %x  Cmd: %x  Wdata: %x\n", io.in.bits.addr, io.in.bits.cmd, io.in.bits.wdata)
+  //Debug(io.in.fire && io.in.bits.addr.asTypeOf(addrBundle).index === 0x36.U, "[Dcache req] Addr: %x  Cmd: %x  Wdata: %x\n", io.in.bits.addr, io.in.bits.cmd, io.in.bits.wdata)
 }
 
 sealed class ReleaseConcurrencyIO(implicit val p: Parameters) extends DCacheBundle {
@@ -262,7 +262,8 @@ sealed class DCacheStage2(edge: TLEdgeOut)(implicit val p: Parameters) extends D
   //val victimWaymask = 3.U //Set 3 as default
   val victimWay = WireInit(0.U(WayIdBits.W))
   val victimWaymask = 1.U << victimWay*/
-  val victimWaymask = 8.U
+  //val victimWaymask = 8.U
+  val victimWaymask = 4.U
 
     //find invalid
   val invalidVec = VecInit(metaWay.map(m => m.coh === ClientStates.Nothing)).asUInt
@@ -539,7 +540,9 @@ class DCacheImp(outer: DCache) extends LazyModuleImp(outer) with HasDCacheIO wit
   metaArray.io.w.req <> metaWriteArb.io.out
 
   Debug(s1.io.metaReadBus.req.valid && probe.io.metaReadBus.req.valid, "[Dcache meta read conflict]\n")
+  Debug(s1.io.tagReadBus.req.valid && probe.io.tagReadBus.req.valid, "[Dcache tag read conflict]\n")
   Debug((s1.io.metaReadBus.req.valid || probe.io.metaReadBus.req.valid) && metaWriteArb.io.out.valid, "[Dcache meta read|write conflict]\n")
+  Debug((s1.io.tagReadBus.req.valid || probe.io.tagReadBus.req.valid) && s2.io.tagWriteBus.req.valid, "[Dcache tag read|write conflict]\n")
   //metaArray.io.w <> s2.io.metaWriteBus
   //dataWriteArb.io.in(0) <> probe.io.dataWriteBus
   //dataWriteArb.io.in(1) <> s2.io.dataWriteBus
