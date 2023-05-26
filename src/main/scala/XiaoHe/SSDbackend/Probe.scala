@@ -113,10 +113,12 @@ class Probe(edge: TLEdgeOut)(implicit val p: Parameters) extends DCacheModule {
     is(s_idle) {
       when(io.mem_probe.fire && metaReady) {
         state := s_probePB
-        probe_fire := true.B
       }
       when(probe_fire && metaReady) {
         state := s_probePB
+      }
+      when(io.mem_probe.fire) {
+        probe_fire := true.B
       }
     }
     is (s_probePB) {
@@ -136,5 +138,5 @@ class Probe(edge: TLEdgeOut)(implicit val p: Parameters) extends DCacheModule {
     }
   }
 
-  //Debug(io.mem_probeAck.fire && addr.index === 0x4.U, "[Probe] Addr: %x  Tag:%x  Data:%x\n", addr.asUInt, addr.tag, dataRead.asUInt)
+  //Debug(io.mem_probeAck.fire && addr.index === 0x36.U, "[Probe] Addr: %x  Tag:%x  Data:%x\n", addr.asUInt, addr.tag, dataRead.asUInt)
 }

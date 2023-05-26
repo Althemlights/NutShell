@@ -96,7 +96,7 @@ class Release(edge: TLEdgeOut)(implicit val p: Parameters) extends DCacheModule 
   io.mem_release.valid := state === s_release || state === s_releaseD
   io.mem_releaseAck.ready := state === s_releaseA
 
-  //Debug(io.mem_release.fire && addr.index === 0x4e.U, "[Release] Addr:%x Tag:%x Data:%x\n", req.addr, addr.tag, io.mem_release.bits.data.asUInt)
+  //Debug(io.mem_release.fire && addr.index === 0x36.U, "[Release] Addr:%x Tag:%x Data:%x\n", req.addr, addr.tag, io.mem_release.bits.data.asUInt)
 }
 
 
@@ -185,5 +185,5 @@ class IRelease(edge: TLEdgeOut)(implicit val p: Parameters) extends ICacheModule
   io.mem_release.valid := state === s_release || state === s_releaseD
   io.mem_releaseAck.ready := state === s_releaseA
   
-  //Debug(io.mem_release.fire && addr.index === 0x4.U, "[Release] Addr:%x Tag:%x Data:%x\n", req.addr, addr.tag, io.mem_release.bits.data.asUInt)
+  //Debug(io.mem_release.fire && addr.index === 0x36.U, "[Release] Addr:%x Tag:%x Data:%x\n", req.addr, addr.tag, io.mem_release.bits.data.asUInt)
 }
