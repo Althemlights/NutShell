@@ -43,8 +43,10 @@ class Probe(edge: TLEdgeOut)(implicit val p: Parameters) extends DCacheModule {
 
   val state = RegInit(s_idle)
 
-  io.metaReadBus.apply(io.mem_probe.fire && state === s_idle, setIdx = getMetaIdx(req.address))
-  io.tagReadBus.apply(io.mem_probe.fire && state === s_idle, setIdx = getMetaIdx(req.address))
+  val probe_fire = RegInit(false.B)
+  val metaReady = io.metaReadBus.req.ready && io.tagReadBus.req.ready
+  io.metaReadBus.apply((io.mem_probe.fire || probe_fire) && state === s_idle && metaReady, setIdx = getMetaIdx(req.address))
+  io.tagReadBus.apply((io.mem_probe.fire || probe_fire) && state === s_idle && metaReady, setIdx = getMetaIdx(req.address))
 
   val metaWay = io.metaReadBus.resp.data 
   val tagWay = io.tagReadBus.resp.data
@@ -109,7 +111,11 @@ class Probe(edge: TLEdgeOut)(implicit val p: Parameters) extends DCacheModule {
   switch(state) {
     //request for meta and data(id needdata)
     is(s_idle) {
-      when(io.mem_probe.fire) {
+      when(io.mem_probe.fire && metaReady) {
+        state := s_probePB
+        probe_fire := true.B
+      }
+      when(probe_fire && metaReady) {
         state := s_probePB
       }
     }
@@ -125,9 +131,10 @@ class Probe(edge: TLEdgeOut)(implicit val p: Parameters) extends DCacheModule {
     is (s_probeAD) {
       when(release_done) {
         state := s_idle
+        probe_fire := false.B
       }
     }
   }
 
-  Debug(io.mem_probeAck.fire && addr.index === 0x4.U, "[Probe] Addr: %x  Tag:%x  Data:%x\n", addr.asUInt, addr.tag, dataRead.asUInt)
+  //Debug(io.mem_probeAck.fire && addr.index === 0x4.U, "[Probe] Addr: %x  Tag:%x  Data:%x\n", addr.asUInt, addr.tag, dataRead.asUInt)
 }

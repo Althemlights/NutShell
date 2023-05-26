@@ -537,6 +537,9 @@ class DCacheImp(outer: DCache) extends LazyModuleImp(outer) with HasDCacheIO wit
   metaWriteArb.io.in(1) <> s2.io.metaWriteBus.req
   metaWriteArb.io.in(0) <> probe.io.metaWriteBus.req
   metaArray.io.w.req <> metaWriteArb.io.out
+
+  Debug(s1.io.metaReadBus.req.valid && probe.io.metaReadBus.req.valid, "[Dcache meta read conflict]\n")
+  Debug((s1.io.metaReadBus.req.valid || probe.io.metaReadBus.req.valid) && metaWriteArb.io.out.valid, "[Dcache meta read|write conflict]\n")
   //metaArray.io.w <> s2.io.metaWriteBus
   //dataWriteArb.io.in(0) <> probe.io.dataWriteBus
   //dataWriteArb.io.in(1) <> s2.io.dataWriteBus
