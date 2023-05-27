@@ -31,6 +31,29 @@ class S011HD1P_128_64 extends ExtModule with HasExtModuleResource {
   addResource("/vsrc/S011HD1P_128_64.v")
 }
 
+class S011HD1P_64_20 extends ExtModule with HasExtModuleResource {
+  //  val io = IO(new Bundle {
+  val Q =   IO(Output(UInt(20.W)))
+  val CLK = IO(Input(Clock()))
+  val CEN = IO(Input(Bool()))
+  val WEN = IO(Input(Bool()))
+  val A =   IO(Input(UInt(6.W)))
+  val D =   IO(Input(UInt(20.W)))
+  //  })
+  addResource("/vsrc/S011HD1P_64_20.v")
+}
+
+class S011HD1P_64_2 extends ExtModule with HasExtModuleResource {
+  //  val io = IO(new Bundle {
+  val Q =   IO(Output(UInt(2.W)))
+  val CLK = IO(Input(Clock()))
+  val CEN = IO(Input(Bool()))
+  val WEN = IO(Input(Bool()))
+  val A =   IO(Input(UInt(6.W)))
+  val D =   IO(Input(UInt(2.W)))
+  //  })
+  addResource("/vsrc/S011HD1P_64_2.v")
+}
 
 class S011HD1P_128_80 extends ExtModule with HasExtModuleResource {
   //  val io = IO(new Bundle {
@@ -277,6 +300,118 @@ class DataSRAMTemplate[T <: Data](gen: T, set: Int, way: Int = 1,
   }
 }
 
+class MetaSRAMTemplate[T <: Data](gen: T, set: Int, way: Int = 1,
+                                  shouldReset: Boolean = false, holdRead: Boolean = false, singlePort: Boolean = false) extends Module {
+  val io = IO(new Bundle {
+    val r = Flipped(new SRAMReadBus(gen, set, way))
+    val w = Flipped(new SRAMWriteBus(gen, set, way))
+  })
+
+  require(!holdRead)
+  val wordType = UInt(gen.getWidth.W)
+  val sram = Seq.fill(way)(Module(new S011HD1P_64_2()))
+  val (resetState, resetSet) = (WireInit(false.B), WireInit(0.U))
+
+  if (shouldReset) {
+    val _resetState = RegInit(true.B)
+    val (_resetSet, resetFinish) = Counter(_resetState, set)
+    when (resetFinish) { _resetState := false.B }
+
+    resetState := _resetState
+    resetSet := _resetSet
+  }
+
+  val (ren, wen) = (io.r.req.valid, io.w.req.valid || resetState)
+  val realRen = (if (singlePort) ren && !wen else ren)
+
+  val setIdx = Mux(resetState, resetSet, io.w.req.bits.setIdx)
+  val wdataword = Mux(resetState, 0.U.asTypeOf(wordType), io.w.req.bits.data.asUInt)
+  val waymask = Mux(resetState, Fill(way, "b1".U), io.w.req.bits.waymask.getOrElse("b1".U))
+  val wdata = VecInit(Seq.fill(way)(wdataword))
+  // when (wen) { array.write(setIdx, wdata, waymask.asBools) }
+
+  sram.map(_.CLK := clock)
+  sram.map(_.A := Mux(wen, setIdx, io.r.req.bits.setIdx))
+  sram.zipWithIndex.map{
+    case (s, i) => s.CEN := ~(wen || realRen)
+  }
+  sram.zipWithIndex.map{
+    case (s, i) => s.WEN := ~(wen && OHToUInt(io.w.req.bits.waymask.getOrElse("b0".U)) === i.U)
+  }
+  sram.map(_.D := wdataword)
+
+  val rdata = VecInit(sram.map(_.Q)).map(_.asTypeOf(gen))
+  io.r.resp.data := VecInit(rdata)
+
+  io.r.req.ready := !resetState && (if (singlePort) !wen else true.B)
+  io.w.req.ready := true.B
+
+  Debug(false) {
+    when (wen) {
+      printf("%d: SRAMTemplate: write %x to idx = %d\n", GTimer(), wdata.asUInt, setIdx)
+    }
+    when (RegNext(realRen)) {
+      printf("%d: SRAMTemplate: read %x at idx = %d\n", GTimer(), VecInit(rdata).asUInt, RegNext(io.r.req.bits.setIdx))
+    }
+  }
+}
+
+class TagSRAMTemplate[T <: Data](gen: T, set: Int, way: Int = 1,
+                                  shouldReset: Boolean = false, holdRead: Boolean = false, singlePort: Boolean = false) extends Module {
+  val io = IO(new Bundle {
+    val r = Flipped(new SRAMReadBus(gen, set, way))
+    val w = Flipped(new SRAMWriteBus(gen, set, way))
+  })
+
+  require(!holdRead)
+  val wordType = UInt(gen.getWidth.W)
+  val sram = Seq.fill(way)(Module(new S011HD1P_64_20()))
+  val (resetState, resetSet) = (WireInit(false.B), WireInit(0.U))
+
+  if (shouldReset) {
+    val _resetState = RegInit(true.B)
+    val (_resetSet, resetFinish) = Counter(_resetState, set)
+    when (resetFinish) { _resetState := false.B }
+
+    resetState := _resetState
+    resetSet := _resetSet
+  }
+
+  val (ren, wen) = (io.r.req.valid, io.w.req.valid || resetState)
+  val realRen = (if (singlePort) ren && !wen else ren)
+
+  val setIdx = Mux(resetState, resetSet, io.w.req.bits.setIdx)
+  val wdataword = Mux(resetState, 0.U.asTypeOf(wordType), io.w.req.bits.data.asUInt)
+  val waymask = Mux(resetState, Fill(way, "b1".U), io.w.req.bits.waymask.getOrElse("b1".U))
+  val wdata = VecInit(Seq.fill(way)(wdataword))
+  // when (wen) { array.write(setIdx, wdata, waymask.asBools) }
+
+  sram.map(_.CLK := clock)
+  sram.map(_.A := Mux(wen, setIdx, io.r.req.bits.setIdx))
+  sram.zipWithIndex.map{
+    case (s, i) => s.CEN := ~(wen || realRen)
+  }
+  sram.zipWithIndex.map{
+    case (s, i) => s.WEN := ~(wen && OHToUInt(io.w.req.bits.waymask.getOrElse("b0".U)) === i.U)
+  }
+  sram.map(_.D := wdataword)
+
+  val rdata = VecInit(sram.map(_.Q)).map(_.asTypeOf(gen))
+  io.r.resp.data := VecInit(rdata)
+
+  io.r.req.ready := !resetState && (if (singlePort) !wen else true.B)
+  io.w.req.ready := true.B
+
+  Debug(false) {
+    when (wen) {
+      printf("%d: SRAMTemplate: write %x to idx = %d\n", GTimer(), wdata.asUInt, setIdx)
+    }
+    when (RegNext(realRen)) {
+      printf("%d: SRAMTemplate: read %x at idx = %d\n", GTimer(), VecInit(rdata).asUInt, RegNext(io.r.req.bits.setIdx))
+    }
+  }
+}
+
 //class SRAMTemplateWithArbiter[T <: Data](nRead: Int, gen: T, set: Int, way: Int = 1,
 //                                         shouldReset: Boolean = false, isData: Boolean = false) extends Module {
 //  val io = IO(new Bundle {
@@ -342,7 +477,34 @@ class MetaSRAMTemplateWithArbiter[T <: Data](nRead: Int, gen: T, set: Int, way: 
   //  val ram = if (isData) Module(new DataSRAMTemplate(gen, set, way, shouldReset, holdRead = false, singlePort = true))
   //  else Module(new MetaSRAMTemplate(gen, set, way, shouldReset, holdRead = false, singlePort = true))
   //  when(isData.asBool()) {
-  val ram = Module(new SRAMTemplate(gen, set, way, shouldReset, holdRead = false, singlePort = true, isDcache = false))
+  val ram = Module(new MetaSRAMTemplate(gen, set, way, shouldReset, holdRead = false, singlePort = true))
+  //  }.otherwise {
+  //    val ram = Module(new MetaSRAMTemplate(gen, set, way, shouldReset, holdRead = false, singlePort = true))
+  //  }
+  //println("len: %d, set: %d, way: %d\n", gen.getWidth.W, set, way)
+  ram.io.w <> io.w
+
+  val readArb = Module(new Arbiter(chiselTypeOf(io.r(0).req.bits), nRead))
+  readArb.io.in <> io.r.map(_.req)
+  ram.io.r.req <> readArb.io.out
+
+  // latch read results
+  io.r.map{ case r => {
+    r.resp.data := HoldUnless(ram.io.r.resp.data, RegNext(r.req.fire))
+  }}
+}
+
+class TagSRAMTemplateWithArbiter[T <: Data](nRead: Int, gen: T, set: Int, way: Int = 1,
+                                             shouldReset: Boolean = false) extends Module {
+  val io = IO(new Bundle {
+    val r = Flipped(Vec(nRead, new SRAMReadBus(gen, set, way)))
+    val w = Flipped(new SRAMWriteBus(gen, set, way))
+  })
+
+  //  val ram = if (isData) Module(new DataSRAMTemplate(gen, set, way, shouldReset, holdRead = false, singlePort = true))
+  //  else Module(new MetaSRAMTemplate(gen, set, way, shouldReset, holdRead = false, singlePort = true))
+  //  when(isData.asBool()) {
+  val ram = Module(new TagSRAMTemplate(gen, set, way, shouldReset, holdRead = false, singlePort = true))
   //  }.otherwise {
   //    val ram = Module(new MetaSRAMTemplate(gen, set, way, shouldReset, holdRead = false, singlePort = true))
   //  }
