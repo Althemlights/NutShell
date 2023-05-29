@@ -60,7 +60,7 @@ abstract class BaseMSHRIO[T_RESULT <: BaseDirResult, T_DIR_W <: BaseDirWrite, T_
   val tasks:     MSHRTasks[T_DIR_W, T_TAG_W] //= new MSHRTasks
   val dirResult: Valid[T_RESULT] // = Flipped(ValidIO(new DirResult))
   val resps = Flipped(new MSHRResps)
-  val nestedwb = Input(new NestedWriteback)
+  val nestedwb = Input(new NestedWriteback)   //abc_mshr: from bc_mshr.status/c_mshr.status  bc_mshr: from c_mshr.status
   val ecc = Valid(new EccInfo)
 }
 

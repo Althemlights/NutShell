@@ -84,7 +84,7 @@ class MSHR()(implicit p: Parameters) extends BaseMSHR[DirResult, SelfDirWrite, S
   val gotDirty = RegInit(false.B)
   val a_do_release = RegInit(false.B)
   val a_do_probe = RegInit(false.B)
-  val meta_no_clients = Cat(self_meta.clientStates.map(_ === INVALID)).andR()
+  val meta_no_clients = Cat(self_meta.clientStates.map(_ === INVALID)).andR()  //自己的元数据无效（没有存client数据）
   val req_promoteT = req_acquire && Mux(
     self_meta.hit,
     meta_no_clients && self_meta.state === TIP,
@@ -93,9 +93,9 @@ class MSHR()(implicit p: Parameters) extends BaseMSHR[DirResult, SelfDirWrite, S
   val probe_dirty = RegInit(false.B) // probe a block that is dirty
   val probes_done = RegInit(0.U(clientBits.W))
   val client_shrink_perm =
-    isToN(req.param) && clients_meta(iam).state =/= INVALID || isToB(req.param) && isT(clients_meta(iam).state)
-  val clients_hit = VecInit(clients_meta.map(_.hit)).asUInt.orR
-  val other_clients_hit = VecInit(clients_meta.zipWithIndex.map {
+    isToN(req.param) && clients_meta(iam).state =/= INVALID || isToB(req.param) && isT(clients_meta(iam).state)   //client降权了
+  val clients_hit = VecInit(clients_meta.map(_.hit)).asUInt.orR       //has client hit
+  val other_clients_hit = VecInit(clients_meta.zipWithIndex.map {     //other client hit, not request one
     case (meta, i) => i.U =/= iam && meta.hit
   }).asUInt.orR
   val clients_have_T = VecInit(clients_meta.map {
@@ -204,17 +204,20 @@ class MSHR()(implicit p: Parameters) extends BaseMSHR[DirResult, SelfDirWrite, S
       )
   })
 
+  //self meta在被probe后的值  
   def probe_next_state(state: UInt, param: UInt): UInt = Mux(
     isT(state) && param === toT,
     state,
     Mux(state =/= INVALID && param =/= toN, BRANCH, INVALID)
   )
 
+  //probeAck后client_meta根据para给的值
   def shrink_next_state(param: UInt): UInt = {
     assert(param =/= TtoT, "ProbeAck toT is not allowed in current design")
     Mux(param === TtoB || param === BtoB, BRANCH, INVALID)
   }
 
+  //被probe后是否需要重写自己的meta data
   def probe_shrink_perm(state: UInt, perm: UInt): Bool = {
     perm === toN || isT(state) && perm === toB
   }
@@ -223,6 +226,7 @@ class MSHR()(implicit p: Parameters) extends BaseMSHR[DirResult, SelfDirWrite, S
     state === BRANCH && perm === toB
   }
 
+  //处理原子指令
   def onXReq(): Unit = {
     new_self_meta.dirty := false.B
     new_self_meta.state := Mux(req.param === 1.U,
@@ -241,6 +245,7 @@ class MSHR()(implicit p: Parameters) extends BaseMSHR[DirResult, SelfDirWrite, S
     }
   }
 
+  // 处理Release / ReleaseData
   def onCReq(): Unit = {
     // Release / ReleaseData
     new_self_meta.dirty := self_meta.hit && self_meta.dirty || req.dirty && isParamFromT(req.param)
@@ -274,6 +279,7 @@ class MSHR()(implicit p: Parameters) extends BaseMSHR[DirResult, SelfDirWrite, S
     }
   }
 
+  //处理probe请求
   def onBReq(): Unit = {
     /*
       if this request is from probe helper, the req param must be toN,

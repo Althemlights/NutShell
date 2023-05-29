@@ -14,6 +14,16 @@ class STD_CLKGT_func extends BlackBox with HasBlackBoxResource {
 
   addResource("/STD_CLKGT_func.v")
 }
+/*class CKLNQD12BWP40P140LVT extends BlackBox with HasBlackBoxResource {
+  val io = IO(new Bundle {
+    val TE = Input(Bool())
+    val E  = Input(Bool())
+    val CK = Input(Clock())
+    val Q  = Output(Clock())
+  })
+
+  addResource("/CKLNQD12BWP40P140LVT.v")
+}*/
 
 class SRAMWrapper[T <: Data]
 (
@@ -37,11 +47,15 @@ class SRAMWrapper[T <: Data]
   val banks = (0 until n).map{ i =>
     val ren = if(n == 1) true.B else i.U === r_sel
     val wen = if(n == 1) true.B else i.U === w_sel
-    val sram = Module(new SRAMTemplate[T](
+    /*val sram = Module(new SRAMTemplate[T](
+      gen, innerSet, 1, singlePort = true, input_clk_div_by_2 = clk_div_by_2
+    ))*/
+    val sram = Module(new DataSRAMTemplate[T](
       gen, innerSet, 1, singlePort = true, input_clk_div_by_2 = clk_div_by_2
     ))
 
     val clkGate = Module(new STD_CLKGT_func)
+    //val clkGate = Module(new CKLNQD12BWP40P140LVT)
     val clk_en = RegInit(false.B)
     clk_en := ~clk_en
     clkGate.io.TE := false.B

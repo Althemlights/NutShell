@@ -103,9 +103,11 @@ class SubDirectory[T <: Data](
   val clk_div_by_2 = p(HCCacheParamsKey).sramClkDivBy2
   val resetFinish = RegInit(false.B)
   val resetIdx = RegInit((sets - 1).U)
-  val metaArray = Module(new SRAMTemplate(chiselTypeOf(dir_init), sets, ways, singlePort = true, input_clk_div_by_2 = clk_div_by_2))
+  //val metaArray = Module(new SRAMTemplate(chiselTypeOf(dir_init), sets, ways, singlePort = true, input_clk_div_by_2 = clk_div_by_2))
+  val metaArray = Module(new MetaSRAMTemplate(chiselTypeOf(dir_init), sets, ways, singlePort = true, input_clk_div_by_2 = clk_div_by_2))
 
   val clkGate = Module(new STD_CLKGT_func)
+  //val clkGate = Module(new CKLNQD12BWP40P140LVT)
   val clk_en = RegInit(false.B)
   clk_en := ~clk_en
   clkGate.io.TE := false.B
@@ -127,9 +129,11 @@ class SubDirectory[T <: Data](
   println(s"Tag ECC bits:$eccBits")
   val tagRead = Wire(Vec(ways, UInt(tagBits.W)))
   val eccRead = Wire(Vec(ways, UInt(eccBits.W)))
-  val tagArray = Module(new SRAMTemplate(UInt(tagBits.W), sets, ways, singlePort = true, input_clk_div_by_2 = clk_div_by_2))
+  //val tagArray = Module(new SRAMTemplate(UInt(tagBits.W), sets, ways, singlePort = true, input_clk_div_by_2 = clk_div_by_2))
+  val tagArray = Module(new TagSRAMTemplate(UInt(tagBits.W), sets, ways, singlePort = true, input_clk_div_by_2 = clk_div_by_2))
   if(eccBits > 0){
-    val eccArray = Module(new SRAMTemplate(UInt(eccBits.W), sets, ways, singlePort = true, input_clk_div_by_2 = clk_div_by_2))
+    //val eccArray = Module(new SRAMTemplate(UInt(eccBits.W), sets, ways, singlePort = true, input_clk_div_by_2 = clk_div_by_2))
+    val eccArray = Module(new EccSRAMTemplate(UInt(eccBits.W), sets, ways, singlePort = true, input_clk_div_by_2 = clk_div_by_2))
     eccArray.io.w(
       io.tag_w.fire(),
       tagCode.encode(io.tag_w.bits.tag).head(eccBits),
@@ -175,7 +179,8 @@ class SubDirectory[T <: Data](
     }
     0.U
   } else {
-    val replacer_sram = Module(new SRAMTemplate(UInt(repl.nBits.W), sets, singlePort = true, shouldReset = true))
+    //val replacer_sram = Module(new SRAMTemplate(UInt(repl.nBits.W), sets, singlePort = true, shouldReset = true))
+    val replacer_sram = Module(new ReplaceSRAMTemplate(UInt(repl.nBits.W), sets, singlePort = true, shouldReset = true))
     val repl_sram_r = replacer_sram.io.r(io.read.fire(), io.read.bits.set).resp.data(0)
     val repl_state_hold = WireInit(0.U(repl.nBits.W))
     repl_state_hold := HoldUnless(repl_sram_r, RegNext(io.read.fire(), false.B))
