@@ -176,3 +176,119 @@ Tag ECC bits:0
 ,<3>,128,1)
         0 <= L2
         1 <= L2
+
+
+====== Non-inclusive L2 (32.0KB * 1-bank) prefetch: None ======
+bankBits: 0
+sets:128 ways:4 blockBytes:64
+[client] size:16.0KB
+[client] sets:64 ways:4 blockBytes:64
+blockGranularityBits: 6
+clientBits: 2
+Data ECC bits:0
+(L2 + L3 Data len: %d, set: %d, way: %d
+,<64>,512,1)
+(L2 + L3 Data len: %d, set: %d, way: %d
+,<64>,512,1)
+(L2 + L3 Data len: %d, set: %d, way: %d
+,<64>,512,1)
+(L2 + L3 Data len: %d, set: %d, way: %d
+,<64>,512,1)
+(L2 + L3 Data len: %d, set: %d, way: %d
+,<64>,512,1)
+(L2 + L3 Data len: %d, set: %d, way: %d
+,<64>,512,1)
+(L2 + L3 Data len: %d, set: %d, way: %d
+,<64>,512,1)
+(L2 + L3 Data len: %d, set: %d, way: %d
+,<64>,512,1)
+(L2 + L3 Meta len: %d, set: %d, way: %d
+,<4>,64,4)
+Tag ECC bits:0
+(L2 + L3 Tag len: %d, set: %d, way: %d
+,<20>,64,4)
+(L2 + L3 Meta len: %d, set: %d, way: %d
+,<7>,128,4)
+Tag ECC bits:0
+(L2 + L3 Tag len: %d, set: %d, way: %d
+,<19>,128,4)
+(L2 + L3 Replace len: %d, set: %d, way: %d
+,<3>,128,1)
+        0 <= dcache
+        1 <= icache
+====== Non-inclusive L2 (32.0KB * 1-bank) prefetch: None ======
+bankBits: 0
+sets:128 ways:4 blockBytes:64
+[client] size:16.0KB
+[client] sets:64 ways:4 blockBytes:64
+blockGranularityBits: 6
+clientBits: 2
+Data ECC bits:0
+(L2 + L3 Data len: %d, set: %d, way: %d
+,<64>,512,1)
+(L2 + L3 Data len: %d, set: %d, way: %d
+,<64>,512,1)
+(L2 + L3 Data len: %d, set: %d, way: %d
+,<64>,512,1)
+(L2 + L3 Data len: %d, set: %d, way: %d
+,<64>,512,1)
+(L2 + L3 Data len: %d, set: %d, way: %d
+,<64>,512,1)
+(L2 + L3 Data len: %d, set: %d, way: %d
+,<64>,512,1)
+(L2 + L3 Data len: %d, set: %d, way: %d
+,<64>,512,1)
+(L2 + L3 Data len: %d, set: %d, way: %d
+,<64>,512,1)
+(L2 + L3 Meta len: %d, set: %d, way: %d
+,<4>,64,4)
+Tag ECC bits:0
+(L2 + L3 Tag len: %d, set: %d, way: %d
+,<20>,64,4)
+(L2 + L3 Meta len: %d, set: %d, way: %d
+,<7>,128,4)
+Tag ECC bits:0
+(L2 + L3 Tag len: %d, set: %d, way: %d
+,<19>,128,4)
+(L2 + L3 Replace len: %d, set: %d, way: %d
+,<3>,128,1)
+        0 <= dcache
+        1 <= icache
+====== Non-inclusive L3 (32.0KB * 1-bank) prefetch: None ======
+bankBits: 0
+sets:128 ways:4 blockBytes:64
+[client] size:32.0KB
+[client] sets:128 ways:4 blockBytes:64
+blockGranularityBits: 7
+clientBits: 2
+Data ECC bits:0
+(L2 + L3 Data len: %d, set: %d, way: %d
+,<64>,512,1)
+(L2 + L3 Data len: %d, set: %d, way: %d
+,<64>,512,1)
+(L2 + L3 Data len: %d, set: %d, way: %d
+,<64>,512,1)
+(L2 + L3 Data len: %d, set: %d, way: %d
+,<64>,512,1)
+(L2 + L3 Data len: %d, set: %d, way: %d
+,<64>,512,1)
+(L2 + L3 Data len: %d, set: %d, way: %d
+,<64>,512,1)
+(L2 + L3 Data len: %d, set: %d, way: %d
+,<64>,512,1)
+(L2 + L3 Data len: %d, set: %d, way: %d
+,<64>,512,1)
+(L2 + L3 Meta len: %d, set: %d, way: %d
+,<4>,128,4)
+Tag ECC bits:0
+(L2 + L3 Tag len: %d, set: %d, way: %d
+,<19>,128,4)
+(L2 + L3 Meta len: %d, set: %d, way: %d
+,<7>,128,4)
+Tag ECC bits:0
+(L2 + L3 Tag len: %d, set: %d, way: %d
+,<19>,128,4)
+(L2 + L3 Replace len: %d, set: %d, way: %d
+,<3>,128,1)
+        0 <= L2
+        1 <= L2
