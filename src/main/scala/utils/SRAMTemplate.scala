@@ -23,8 +23,8 @@ class S011HD1P_128_64 extends ExtModule with HasExtModuleResource {
   //  val io = IO(new Bundle {
   val Q =   IO(Output(UInt(64.W)))
   val CLK = IO(Input(Clock()))
-  val CEN = IO(Input(Bool()))
-  val WEN = IO(Input(Bool()))
+  val CEB = IO(Input(Bool()))
+  val WEB = IO(Input(Bool()))
   val A =   IO(Input(UInt(7.W)))
   val D =   IO(Input(UInt(64.W)))
   //  })
@@ -35,8 +35,8 @@ class S011HD1P_64_20 extends ExtModule with HasExtModuleResource {
   //  val io = IO(new Bundle {
   val Q =   IO(Output(UInt(20.W)))
   val CLK = IO(Input(Clock()))
-  val CEN = IO(Input(Bool()))
-  val WEN = IO(Input(Bool()))
+  val CEB = IO(Input(Bool()))
+  val WEB = IO(Input(Bool()))
   val A =   IO(Input(UInt(6.W)))
   val D =   IO(Input(UInt(20.W)))
   //  })
@@ -47,8 +47,8 @@ class S011HD1P_64_2 extends ExtModule with HasExtModuleResource {
   //  val io = IO(new Bundle {
   val Q =   IO(Output(UInt(2.W)))
   val CLK = IO(Input(Clock()))
-  val CEN = IO(Input(Bool()))
-  val WEN = IO(Input(Bool()))
+  val CEB = IO(Input(Bool()))
+  val WEB = IO(Input(Bool()))
   val A =   IO(Input(UInt(6.W)))
   val D =   IO(Input(UInt(2.W)))
   //  })
@@ -59,8 +59,8 @@ class S011HD1P_128_80 extends ExtModule with HasExtModuleResource {
   //  val io = IO(new Bundle {
   val Q =   IO(Output(UInt(80.W)))
   val CLK = IO(Input(Clock()))
-  val CEN = IO(Input(Bool()))
-  val WEN = IO(Input(Bool()))
+  val CEB = IO(Input(Bool()))
+  val WEB = IO(Input(Bool()))
   val A =   IO(Input(UInt(7.W)))
   val D =   IO(Input(UInt(80.W)))
   //  })
@@ -224,8 +224,8 @@ class BTBSRAMTemplate[T <: Data](gen: T, set: Int, way: Int = 1,
 
   sram.CLK := clock
   sram.A := Mux(wen, setIdx, io.r.req.bits.setIdx)
-  sram.CEN := ~(wen || realRen)
-  sram.WEN := ~wen
+  sram.CEB := ~(wen || realRen)
+  sram.WEB := ~wen
   sram.D := Cat(0.U((80-gen.getWidth).W), Cat(wdata))
 
   val rdata = HoldUnless(sram.Q, RegNext(realRen, false.B))
@@ -277,10 +277,10 @@ class DataSRAMTemplate[T <: Data](gen: T, set: Int, way: Int = 1,
   sram.map(_.CLK := clock)
   sram.map(_.A := Mux(wen, setIdx, io.r.req.bits.setIdx))
   sram.zipWithIndex.map{
-    case (s, i) => s.CEN := ~(wen || realRen)
+    case (s, i) => s.CEB := ~(wen || realRen)
   }
   sram.zipWithIndex.map{
-    case (s, i) => s.WEN := ~(wen && OHToUInt(io.w.req.bits.waymask.getOrElse("b0".U)) === i.U)
+    case (s, i) => s.WEB := ~(wen && OHToUInt(io.w.req.bits.waymask.getOrElse("b0".U)) === i.U)
   }
   sram.map(_.D := wdataword)
 
@@ -333,10 +333,10 @@ class MetaSRAMTemplate[T <: Data](gen: T, set: Int, way: Int = 1,
   sram.map(_.CLK := clock)
   sram.map(_.A := Mux(wen, setIdx, io.r.req.bits.setIdx))
   sram.zipWithIndex.map{
-    case (s, i) => s.CEN := ~(wen || realRen)
+    case (s, i) => s.CEB := ~(wen || realRen)
   }
   sram.zipWithIndex.map{
-    case (s, i) => s.WEN := ~(wen && OHToUInt(io.w.req.bits.waymask.getOrElse("b0".U)) === i.U)
+    case (s, i) => s.WEB := ~(wen && OHToUInt(io.w.req.bits.waymask.getOrElse("b0".U)) === i.U)
   }
   sram.map(_.D := wdataword)
 
@@ -389,10 +389,10 @@ class TagSRAMTemplate[T <: Data](gen: T, set: Int, way: Int = 1,
   sram.map(_.CLK := clock)
   sram.map(_.A := Mux(wen, setIdx, io.r.req.bits.setIdx))
   sram.zipWithIndex.map{
-    case (s, i) => s.CEN := ~(wen || realRen)
+    case (s, i) => s.CEB := ~(wen || realRen)
   }
   sram.zipWithIndex.map{
-    case (s, i) => s.WEN := ~(wen && OHToUInt(io.w.req.bits.waymask.getOrElse("b0".U)) === i.U)
+    case (s, i) => s.WEB := ~(wen && OHToUInt(io.w.req.bits.waymask.getOrElse("b0".U)) === i.U)
   }
   sram.map(_.D := wdataword)
 
