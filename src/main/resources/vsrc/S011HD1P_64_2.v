@@ -1,9 +1,9 @@
-module S011HD1P_128_80(
+module S011HD1P_64_2(
     Q, CLK, CEB, WEB, A, D
 );
-parameter Bits = 80;
-parameter Word_Depth = 128;
-parameter Add_Width = 7;
+parameter Bits = 2;
+parameter Word_Depth = 64;
+parameter Add_Width = 6;
 
 output  reg [Bits-1:0]      Q;
 input                   CLK;
