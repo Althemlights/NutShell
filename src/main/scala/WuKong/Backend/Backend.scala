@@ -204,8 +204,8 @@ class Backend extends CoreModule with hasBypassConst {
   (ALURedirectList zip pipeOut2Redirect).foreach{ case(a,b) => a := b.bits.redirect}
   (bpuUpdateReqList zip ALUList).foreach{ case(a,b) => a := b.io.bpuUpdateReq}
   (alu2pmuList zip ALUList).foreach{ case(a,b) => a := b.io.alu2pmu}
-  Bypass.io.flush(0) := (Redirect2.valid) && pipeOut(2).valid && !(memStall)
-  Bypass.io.flush(1) := (Redirect3.valid) && pipeOut(3).valid && !(memStall)
+  Bypass.io.flush(0) := (Redirect2.valid) && pipeOut(2).valid && !(memStall || mduStall)
+  Bypass.io.flush(1) := (Redirect3.valid) && pipeOut(3).valid && !(memStall || mduStall)
   Bypass.io.flush(2) := Redirect8.valid && pipeOut(8).valid
   Bypass.io.flush(3) := Redirect9.valid && pipeOut(9).valid
   Bypass.io.flush(4) := RegNext(i0CSRValid) && CSR.io.redirect.valid
