@@ -1,7 +1,7 @@
 module S011HD1P_128_7(
     Q, CLK, CEB, WEB, A, D
 );
-parameter Bits = 7;
+parameter Bits = 8;
 parameter Word_Depth = 128;
 parameter Add_Width = 7;
 
