@@ -53,12 +53,13 @@ class Top()(implicit p: Parameters) extends LazyModule {
     val memory = IO(nutshell.memory.cloneType)
     memory <> nutshell.memory
 
-    val vga = Module(new AXI4VGA)
-    nutshell.io := DontCare
-    vga.io := DontCare
+    // val vga = Module(new AXI4VGA)
+    nutshell.io.clock := clock.asBool
+    nutshell.io.reset := reset.asAsyncReset
+    // vga.io := DontCare
     nutshell.peripheral := DontCare
     dontTouch(nutshell.io)
-    dontTouch(vga.io)
+    // dontTouch(vga.io)
   }
 }
 
