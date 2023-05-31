@@ -106,13 +106,13 @@ class SubDirectory[T <: Data](
   //val metaArray = Module(new SRAMTemplate(chiselTypeOf(dir_init), sets, ways, singlePort = true, input_clk_div_by_2 = clk_div_by_2))
   val metaArray = Module(new MetaSRAMTemplate(chiselTypeOf(dir_init), sets, ways, singlePort = true, input_clk_div_by_2 = clk_div_by_2))
 
-  val clkGate = Module(new STD_CLKGT_func)
+  val clkGate = Module(new CKLNQD12BWP40P140LVT)
   //val clkGate = Module(new CKLNQD12BWP40P140LVT)
   val clk_en = RegInit(false.B)
   clk_en := ~clk_en
   clkGate.io.TE := false.B
   clkGate.io.E := clk_en
-  clkGate.io.CK := clock
+  clkGate.io.CP := clock
   val masked_clock = clkGate.io.Q
 
   val tag_wen = io.tag_w.valid

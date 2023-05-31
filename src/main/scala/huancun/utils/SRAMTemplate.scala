@@ -25,35 +25,35 @@ import chisel3.util._
 import chisel3.experimental.ExtModule
 import freechips.rocketchip.tilelink.LFSR64
 
-class S011HD1P_512_64 extends ExtModule with HasExtModuleResource {
+class TS5N28HPCPLVTA512X64M4F extends ExtModule with HasExtModuleResource {
   //  val io = IO(new Bundle {
   val Q =   IO(Output(UInt(64.W)))
   val CLK = IO(Input(Clock()))
-  val CEN = IO(Input(Bool()))
-  val WEN = IO(Input(Bool()))
+  val CEB = IO(Input(Bool()))
+  val WEB = IO(Input(Bool()))
   val A =   IO(Input(UInt(9.W)))
   val D =   IO(Input(UInt(64.W)))
   //  })
-  addResource("/S011HD1P_512_64.v")
+  addResource("/TS5N28HPCPLVTA512X64M4F.v")
 }
 
-class S011HD1P_128_3 extends ExtModule with HasExtModuleResource {
+class TS5N28HPCPLVTA128X8M2F extends ExtModule with HasExtModuleResource {
   //  val io = IO(new Bundle {
-  val Q =   IO(Output(UInt(3.W)))
+  val Q =   IO(Output(UInt(8.W)))
   val CLK = IO(Input(Clock()))
-  val CEN = IO(Input(Bool()))
-  val WEN = IO(Input(Bool()))
+  val CEB = IO(Input(Bool()))
+  val WEB = IO(Input(Bool()))
   val A =   IO(Input(UInt(7.W)))
-  val D =   IO(Input(UInt(3.W)))
+  val D =   IO(Input(UInt(8.W)))
   //  })
-  addResource("/S011HD1P_128_3.v")
+  addResource("/TS5N28HPCPLVTA128X8M2F.v")
 }
 
 class S011HD1P extends ExtModule with HasExtModuleResource {
   val Q = IO(Output(UInt()))
   val CLK = IO(Input(Clock()))
-  val CEN = IO(Input(Bool()))
-  val WEN = IO(Input(Bool()))
+  val CEB = IO(Input(Bool()))
+  val WEB = IO(Input(Bool()))
   val A = IO(Input(UInt()))
   val D = IO(Input(UInt()))
 }
@@ -62,8 +62,8 @@ class S011HD1P extends ExtModule with HasExtModuleResource {
   //  val io = IO(new Bundle {
   val Q =   IO(Output(UInt(20.W)))
   val CLK = IO(Input(Clock()))
-  val CEN = IO(Input(Bool()))
-  val WEN = IO(Input(Bool()))
+  val CEB = IO(Input(Bool()))
+  val WEB = IO(Input(Bool()))
   val A =   IO(Input(UInt(6.W)))
   val D =   IO(Input(UInt(20.W)))
   //  })
@@ -72,9 +72,9 @@ class S011HD1P extends ExtModule with HasExtModuleResource {
 
 class S011HD1P_64_20_1 extends S011HD1P {
   //  val io = IO(new Bundle {
-  override val Q = IO(Output(UInt(20.W)))
+  override val Q = IO(Output(UInt(32.W)))
   override val A = IO(Input(UInt(6.W)))
-  override val D = IO(Input(UInt(20.W)))
+  override val D = IO(Input(UInt(32.W)))
   //  })
   addResource("/S011HD1P_64_20_1.v")
 }
@@ -88,36 +88,36 @@ class S011HD1P_128_19 extends S011HD1P {
   addResource("/S011HD1P_128_19.v")
 }
 
-class S011HD1P_128_20 extends ExtModule with HasExtModuleResource {
+class TS5N28HPCPLVTA128X32M2F extends ExtModule with HasExtModuleResource {
   //  val io = IO(new Bundle {
-  val Q =   IO(Output(UInt(20.W)))
+  val Q =   IO(Output(UInt(32.W)))
   val CLK = IO(Input(Clock()))
-  val CEN = IO(Input(Bool()))
-  val WEN = IO(Input(Bool()))
+  val CEB = IO(Input(Bool()))
+  val WEB = IO(Input(Bool()))
   val A =   IO(Input(UInt(7.W)))
-  val D =   IO(Input(UInt(20.W)))
+  val D =   IO(Input(UInt(32.W)))
   //  })
-  addResource("/S011HD1P_128_20.v")
+  addResource("/TS5N28HPCPLVTA128X32M2F.v")
 }
 
-class S011HD1P_128_7 extends ExtModule with HasExtModuleResource {
-  //  val io = IO(new Bundle {
-  val Q =   IO(Output(UInt(20.W)))
-  val CLK = IO(Input(Clock()))
-  val CEN = IO(Input(Bool()))
-  val WEN = IO(Input(Bool()))
-  val A =   IO(Input(UInt(7.W)))
-  val D =   IO(Input(UInt(20.W)))
-  //  })
-  addResource("/S011HD1P_128_7.v")
-}
+// class S011HD1P_128_7 extends ExtModule with HasExtModuleResource {
+//   //  val io = IO(new Bundle {
+//   val Q =   IO(Output(UInt(8.W)))
+//   val CLK = IO(Input(Clock()))
+//   val CEB = IO(Input(Bool()))
+//   val WEB = IO(Input(Bool()))
+//   val A =   IO(Input(UInt(7.W)))
+//   val D =   IO(Input(UInt(8.W)))
+//   //  })
+//   addResource("/S011HD1P_128_7.v")
+// }
 
 /*class S011HD1P_128_19 extends ExtModule with HasExtModuleResource {
   //  val io = IO(new Bundle {
   val Q =   IO(Output(UInt(19.W)))
   val CLK = IO(Input(Clock()))
-  val CEN = IO(Input(Bool()))
-  val WEN = IO(Input(Bool()))
+  val CEB = IO(Input(Bool()))
+  val WEB = IO(Input(Bool()))
   val A =   IO(Input(UInt(7.W)))
   val D =   IO(Input(UInt(19.W)))
   //  })
@@ -293,7 +293,7 @@ class ReplaceSRAMTemplate[T <: Data]
   override def desiredName: String = if (input_clk_div_by_2) s"ClkDiv2SRAMTemplate" else super.desiredName
   val wordType = UInt(gen.getWidth.W)
   //val array = SyncReadMem(set, Vec(way, wordType))
-  val sram = Seq.fill(way)(Module(new S011HD1P_128_3()))
+  val sram = Seq.fill(way)(Module(new TS5N28HPCPLVTA128X8M2F()))
   val (resetState, resetSet) = (WireInit(false.B), WireInit(0.U))
 
   if (shouldReset) {
@@ -318,10 +318,10 @@ class ReplaceSRAMTemplate[T <: Data]
   sram.map(_.CLK := clock)
   sram.map(_.A := Mux(wen, setIdx, io.r.req.bits.setIdx))
   sram.zipWithIndex.map{
-    case (s, i) => s.CEN := ~(wen || realRen)
+    case (s, i) => s.CEB := ~(wen || realRen)
   }
   sram.zipWithIndex.map{
-    case (s, i) => s.WEN := ~(wen && OHToUInt(io.w.req.bits.waymask.getOrElse("b0".U)) === i.U)
+    case (s, i) => s.WEB := ~(wen && OHToUInt(io.w.req.bits.waymask.getOrElse("b0".U)) === i.U)
   }
   sram.map(_.D := wdataword)
   //val raw_rdata = array.read(io.r.req.bits.setIdx, realRen)
@@ -385,7 +385,7 @@ class DataSRAMTemplate[T <: Data]
   override def desiredName: String = if (input_clk_div_by_2) s"ClkDiv2SRAMTemplate" else super.desiredName
   val wordType = UInt(gen.getWidth.W)
   //val array = SyncReadMem(set, Vec(way, wordType))
-  val sram = Seq.fill(way)(Module(new S011HD1P_512_64()))
+  val sram = Seq.fill(way)(Module(new TS5N28HPCPLVTA512X64M4F()))
   val (resetState, resetSet) = (WireInit(false.B), WireInit(0.U))
 
   if (shouldReset) {
@@ -410,10 +410,10 @@ class DataSRAMTemplate[T <: Data]
   sram.map(_.CLK := clock)
   sram.map(_.A := Mux(wen, setIdx, io.r.req.bits.setIdx))
   sram.zipWithIndex.map{
-    case (s, i) => s.CEN := ~(wen || realRen)
+    case (s, i) => s.CEB := ~(wen || realRen)
   }
   sram.zipWithIndex.map{
-    case (s, i) => s.WEN := ~(wen && OHToUInt(io.w.req.bits.waymask.getOrElse("b0".U)) === i.U)
+    case (s, i) => s.WEB := ~(wen && OHToUInt(io.w.req.bits.waymask.getOrElse("b0".U)) === i.U)
   }
   sram.map(_.D := wdataword)
   //val raw_rdata = array.read(io.r.req.bits.setIdx, realRen)
@@ -477,7 +477,7 @@ class MetaSRAMTemplate[T <: Data]
   override def desiredName: String = if (input_clk_div_by_2) s"ClkDiv2SRAMTemplate" else super.desiredName
   val wordType = UInt(gen.getWidth.W)
   //val array = SyncReadMem(set, Vec(way, wordType))
-  val sram = Seq.fill(way)(Module(new S011HD1P_128_7()))
+  val sram = Seq.fill(way)(Module(new TS5N28HPCPLVTA128X8M2F()))
 
   val (resetState, resetSet) = (WireInit(false.B), WireInit(0.U))
 
@@ -503,10 +503,10 @@ class MetaSRAMTemplate[T <: Data]
   sram.map(_.CLK := clock)
   sram.map(_.A := Mux(wen, setIdx, io.r.req.bits.setIdx))
   sram.zipWithIndex.map{
-    case (s, i) => s.CEN := ~(wen || realRen)
+    case (s, i) => s.CEB := ~(wen || realRen)
   }
   sram.zipWithIndex.map{
-    case (s, i) => s.WEN := ~(wen && OHToUInt(io.w.req.bits.waymask.getOrElse("b0".U)) === i.U)
+    case (s, i) => s.WEB := ~(wen && OHToUInt(io.w.req.bits.waymask.getOrElse("b0".U)) === i.U)
   }
   sram.map(_.D := wdataword)
   //val raw_rdata = array.read(io.r.req.bits.setIdx, realRen)
@@ -570,7 +570,7 @@ class TagSRAMTemplate[T <: Data]
   override def desiredName: String = if (input_clk_div_by_2) s"ClkDiv2SRAMTemplate" else super.desiredName
   val wordType = UInt(gen.getWidth.W)
   //val array = SyncReadMem(set, Vec(way, wordType))
-  val sram = Seq.fill(way)(Module(new S011HD1P_128_20()))
+  val sram = Seq.fill(way)(Module(new TS5N28HPCPLVTA128X32M2F()))
 
   val (resetState, resetSet) = (WireInit(false.B), WireInit(0.U))
 
@@ -596,10 +596,10 @@ class TagSRAMTemplate[T <: Data]
   sram.map(_.CLK := clock)
   sram.map(_.A := Mux(wen, setIdx, io.r.req.bits.setIdx))
   sram.zipWithIndex.map{
-    case (s, i) => s.CEN := ~(wen || realRen)
+    case (s, i) => s.CEB := ~(wen || realRen)
   }
   sram.zipWithIndex.map{
-    case (s, i) => s.WEN := ~(wen && OHToUInt(io.w.req.bits.waymask.getOrElse("b0".U)) === i.U)
+    case (s, i) => s.WEB := ~(wen && OHToUInt(io.w.req.bits.waymask.getOrElse("b0".U)) === i.U)
   }
   sram.map(_.D := wdataword)
   //val raw_rdata = array.read(io.r.req.bits.setIdx, realRen)
