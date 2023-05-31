@@ -19,7 +19,7 @@ package utils
 import chisel3._
 import chisel3.experimental.ExtModule
 import chisel3.util._
-class S011HD1P_128_64 extends ExtModule with HasExtModuleResource {
+class TS5N28HPCPLVTA128X64M2F extends ExtModule with HasExtModuleResource {
   //  val io = IO(new Bundle {
   val Q =   IO(Output(UInt(64.W)))
   val CLK = IO(Input(Clock()))
@@ -28,34 +28,34 @@ class S011HD1P_128_64 extends ExtModule with HasExtModuleResource {
   val A =   IO(Input(UInt(7.W)))
   val D =   IO(Input(UInt(64.W)))
   //  })
-  addResource("/vsrc/S011HD1P_128_64.v")
+  addResource("/vsrc/TS5N28HPCPLVTA128X64M2F.v")
 }
 
-class S011HD1P_64_20 extends ExtModule with HasExtModuleResource {
+class TS5N28HPCPLVTA64X32M2F extends ExtModule with HasExtModuleResource {
   //  val io = IO(new Bundle {
-  val Q =   IO(Output(UInt(20.W)))
+  val Q =   IO(Output(UInt(32.W)))
   val CLK = IO(Input(Clock()))
   val CEB = IO(Input(Bool()))
   val WEB = IO(Input(Bool()))
   val A =   IO(Input(UInt(6.W)))
-  val D =   IO(Input(UInt(20.W)))
+  val D =   IO(Input(UInt(32.W)))
   //  })
-  addResource("/vsrc/S011HD1P_64_20.v")
+  addResource("/vsrc/TS5N28HPCPLVTA64X32M2F.v")
 }
 
-class S011HD1P_64_2 extends ExtModule with HasExtModuleResource {
+class TS5N28HPCPLVTA64X8M2F extends ExtModule with HasExtModuleResource {
   //  val io = IO(new Bundle {
-  val Q =   IO(Output(UInt(2.W)))
+  val Q =   IO(Output(UInt(8.W)))
   val CLK = IO(Input(Clock()))
   val CEB = IO(Input(Bool()))
   val WEB = IO(Input(Bool()))
   val A =   IO(Input(UInt(6.W)))
-  val D =   IO(Input(UInt(2.W)))
+  val D =   IO(Input(UInt(8.W)))
   //  })
-  addResource("/vsrc/S011HD1P_64_2.v")
+  addResource("/vsrc/TS5N28HPCPLVTA64X8M2F.v")
 }
 
-class S011HD1P_128_80 extends ExtModule with HasExtModuleResource {
+class TS5N28HPCPLVTA128X80M2F extends ExtModule with HasExtModuleResource {
   //  val io = IO(new Bundle {
   val Q =   IO(Output(UInt(80.W)))
   val CLK = IO(Input(Clock()))
@@ -64,7 +64,7 @@ class S011HD1P_128_80 extends ExtModule with HasExtModuleResource {
   val A =   IO(Input(UInt(7.W)))
   val D =   IO(Input(UInt(80.W)))
   //  })
-  addResource("/vsrc/S011HD1P_128_80.v")
+  addResource("/vsrc/TS5N28HPCPLVTA128X80M2F.v")
 }
 
 class SRAMBundleA(val set: Int) extends Bundle {
@@ -200,7 +200,7 @@ class BTBSRAMTemplate[T <: Data](gen: T, set: Int, way: Int = 1,
   require(holdRead)
   val wordType = UInt(gen.getWidth.W)
   // val array = SyncReadMem(set, Vec(way, wordType))
-  val sram = Module(new S011HD1P_128_80())
+  val sram = Module(new TS5N28HPCPLVTA128X80M2F())
 
   val (resetState, resetSet) = (WireInit(false.B), WireInit(0.U))
 
@@ -253,7 +253,7 @@ class DataSRAMTemplate[T <: Data](gen: T, set: Int, way: Int = 1,
 
   require(!holdRead)
   val wordType = UInt(gen.getWidth.W)
-  val sram = Seq.fill(way)(Module(new S011HD1P_128_64()))
+  val sram = Seq.fill(way)(Module(new TS5N28HPCPLVTA128X64M2F()))
   val (resetState, resetSet) = (WireInit(false.B), WireInit(0.U))
 
   if (shouldReset) {
@@ -309,7 +309,7 @@ class MetaSRAMTemplate[T <: Data](gen: T, set: Int, way: Int = 1,
 
   require(!holdRead)
   val wordType = UInt(gen.getWidth.W)
-  val sram = Seq.fill(way)(Module(new S011HD1P_64_2()))
+  val sram = Seq.fill(way)(Module(new TS5N28HPCPLVTA64X8M2F()))
   val (resetState, resetSet) = (WireInit(false.B), WireInit(0.U))
 
   if (shouldReset) {
@@ -365,7 +365,7 @@ class TagSRAMTemplate[T <: Data](gen: T, set: Int, way: Int = 1,
 
   require(!holdRead)
   val wordType = UInt(gen.getWidth.W)
-  val sram = Seq.fill(way)(Module(new S011HD1P_64_20()))
+  val sram = Seq.fill(way)(Module(new TS5N28HPCPLVTA64X32M2F()))
   val (resetState, resetSet) = (WireInit(false.B), WireInit(0.U))
 
   if (shouldReset) {
