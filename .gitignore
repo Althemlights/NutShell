@@ -358,3 +358,6 @@ tmp.scala
 *.json
 *.fir
 metal*
+
+# timing report
+*.rpt
