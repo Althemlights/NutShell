@@ -445,7 +445,7 @@ sealed class DCacheStage2(edge: TLEdgeOut)(implicit val p: Parameters) extends D
   BoringUtils.addSource(cacheStall,"cacheStall")
 
   //for Release concurrency limit
-  io.relConcurrency.addr := vicAddr
+  io.relConcurrency.addr := RegNext(vicAddr)
   io.relConcurrency.relValid := needRel && !isrelDone
 
   //Debug(io.out.fire && io.in.bits.req.addr.asUInt === 0x80019380L.U, "[Dcache resp] Addr: %x Rdata: %x\n", io.in.bits.req.addr, io.out.bits.rdata)

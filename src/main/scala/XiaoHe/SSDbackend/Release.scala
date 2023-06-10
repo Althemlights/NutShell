@@ -21,6 +21,7 @@ class Release(edge: TLEdgeOut)(implicit val p: Parameters) extends DCacheModule 
     val victimCoh = Input(new ClientMetadata)
     val waymask = Input(UInt(Ways.W))
     val dataReadBus = Vec(sramNum, CacheDataArrayReadBus())
+    //val relConAddr = Output(UInt(PAddrBits.W))
   })    
 
   val req = io.req.bits

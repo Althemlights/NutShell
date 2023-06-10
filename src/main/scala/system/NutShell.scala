@@ -93,7 +93,7 @@ class NutShell()(implicit p: Parameters) extends LazyModule{
   val l2_mem_tlxbar = TLXbar()
   val peripheralXbar = TLXbar()
   for (i <- 0 until corenum) {
-    l2_mem_tlxbar := core_with_l2(i).memory_port
+    l2_mem_tlxbar := TLBuffer() := core_with_l2(i).memory_port
     peripheralXbar := core_with_l2(i).mmio_port
   }
 
@@ -130,7 +130,7 @@ class NutShell()(implicit p: Parameters) extends LazyModule{
   })
 
   //memAXI4SlaveNode := AXI4UserYanker() := AXI4Deinterleaver(64) := TLToAXI4() := TLCacheCork() := l3cacheOpt.node :=* l2_mem_tlxbar
-  memAXI4SlaveNode := AXI4UserYanker() := AXI4Deinterleaver(8) := TLToAXI4() := TLWidthWidget(32) := TLCacheCork() := l3cacheOpt.node :=* l2_mem_tlxbar
+  memAXI4SlaveNode := AXI4UserYanker() := AXI4Deinterleaver(8) := TLToAXI4() := TLWidthWidget(32) := TLBuffer() := TLCacheCork() := l3cacheOpt.node :=* l2_mem_tlxbar
 
   val onChipPeripheralRange = AddressSet(0x38000000L, 0x07ffffffL)
   val uartRange = AddressSet(0x40600000L, 0xf)
@@ -155,10 +155,11 @@ class NutShell()(implicit p: Parameters) extends LazyModule{
     //AXI4Buffer() :=
     //AXI4Buffer() :=
     //AXI4Buffer() :=
-    //AXI4Buffer() :=
+    AXI4Buffer() :=
     AXI4UserYanker() :=
     AXI4Deinterleaver(8) :=
     TLToAXI4() :=
+    TLBuffer() :=
     //TLBuffer.chainNode(3) :=
     peripheralXbar
 

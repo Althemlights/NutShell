@@ -1,0 +1,10 @@
+axi4deint
+22:  Startpoint: l_nutshell/axi4deint_1/deq/value_1_reg   Endpoint: l_nutshell/tl2axi4_1/count_1_reg   slack (VIOLATED)  -0.0298
+
+axi4yank
+14:  Startpoint: l_nutshell/axi4yank/QueueCompatibility_46/ram_tl_state_size_reg_0__1_   Endpoint: l_nutshell/tl2axi4/count_31_reg   slack (VIOLATED)   -0.0465
+
+buffer_2
+1:  Startpoint: l_nutshell/buffer_2/bundleOut_0_a_q/value_1_reg   Endpoint: l_nutshell/axi4yank/QueueCompatibility_9/maybe_full_reg   slack (VIOLATED)
+
+NutShell.scala : AXI4Deinterleaver(8) <-> TLToAXI4() 中间加AXI4Buffer

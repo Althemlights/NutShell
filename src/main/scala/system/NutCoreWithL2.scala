@@ -62,8 +62,8 @@ class NutcoreWithL2()(implicit p: Parameters) extends LazyModule{
   })))
 
   val tlBus = TLXbar()
-  tlBus := nutcore.dcache.clientNode
-  tlBus := nutcore.icache.clientNode
+  tlBus := TLBuffer() := nutcore.dcache.clientNode
+  tlBus := TLBuffer() := nutcore.icache.clientNode
   val memory_port = TLTempNode()
   memory_port := TLBuffer() := l2cache.node :=* tlBus
 
