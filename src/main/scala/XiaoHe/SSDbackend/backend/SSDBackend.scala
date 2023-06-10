@@ -33,6 +33,12 @@ class SSDbackend extends NutCoreModule with hasBypassConst {
   val Bypass = Module(new Bypass)
   val regfile = Module(new SSDRF)
   val PMU = Module(new PMU)
+  PMU.io.in0 := DontCare
+  PMU.io.coreTrap := DontCare
+  PMU.io.in1 := DontCare
+  PMU.io.in2Issue  := DontCare
+  PMU.io.in2Commit := DontCare
+  PMU.io.cycleCnt := DontCare
   val SSDcoretrap = WireInit(false.B)
 
   //pipeline interface
@@ -117,8 +123,9 @@ class SSDbackend extends NutCoreModule with hasBypassConst {
   BypassPktE0(0).ready := pipeIn(0).ready
   BypassPktE0(1).ready := pipeIn(1).ready
   //PMU
-  PMU.io.in0 <> Bypass.io.pmuio
-  PMU.io.coreTrap := SSDcoretrap
+  // PMU.io.in0 <> Bypass.io.pmuio
+  // PMU.io.coreTrap := SSDcoretrap
+
 
 //  val Redirect2_csr = Wire(new RedirectIO)
 //  val Redirect3_csr = Wire(new RedirectIO)
@@ -661,7 +668,8 @@ class SSDbackend extends NutCoreModule with hasBypassConst {
   // io.backendRetire := backendRetretire
 
   val perfCntIO = Wire(new PMUIO1)
-  PMU.io.in1 <> perfCntIO
+  // PMU.io.in1 <> perfCntIO
+
 
   perfCntIO.branchRight := ( pipeOut(8).fire && !pipeInvalid(10) && pipeOut(8).bits.alu2pmu.branchRight).asUInt + ( pipeOut(9).fire && !pipeInvalid(11) && pipeOut(9).bits.alu2pmu.branchRight).asUInt
   perfCntIO.branchWrong := ( pipeOut(8).fire && !pipeInvalid(10) && pipeOut(8).bits.alu2pmu.branchWrong).asUInt + ( pipeOut(9).fire && !pipeInvalid(11) && pipeOut(9).bits.alu2pmu.branchWrong).asUInt
@@ -676,8 +684,9 @@ class SSDbackend extends NutCoreModule with hasBypassConst {
   //PMU instCnt signal
   val instIssueCntIO = Wire(new PMUIO2)
   val instCommitCntIO = Wire(new PMUIO2)
-  PMU.io.in2Issue <> instIssueCntIO
-  PMU.io.in2Commit <> instCommitCntIO
+  // PMU.io.in2Issue <> instIssueCntIO
+  // PMU.io.in2Commit <> instCommitCntIO
+
   instIssueCntIO.branchInst := (pipeOut(0).fire && pipeOut(0).bits.isBranch && ALUOpType.isBranch(pipeOut(0).bits.fuOpType)).asUInt +
     (pipeOut(1).fire && pipeOut(1).bits.isBranch && ALUOpType.isBranch(pipeOut(1).bits.fuOpType)).asUInt
   instIssueCntIO.jalInst := (pipeOut(0).fire && pipeOut(0).bits.isBranch && (ALUOpType.jal === pipeOut(0).bits.fuOpType || ALUOpType.call === pipeOut(0).bits.fuOpType)).asUInt +
@@ -854,7 +863,8 @@ class SSDbackend extends NutCoreModule with hasBypassConst {
 
   cycle_cnt := cycle_cnt + 1.U
   instr_cnt := instr_cnt + RegNext(pipeOut(8).fire && !pipeInvalid(10)).asUInt + RegNext(pipeOut(9).fire && !pipeInvalid(11)).asUInt
-  PMU.io.cycleCnt := cycle_cnt
+  // PMU.io.cycleCnt := cycle_cnt
+
 
   val rf_a0 = WireInit(0.U(64.W))
   BoringUtils.addSink(rf_a0, "rf_a0")
