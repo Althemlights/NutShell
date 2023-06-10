@@ -7,4 +7,39 @@ axi4yank
 buffer_2
 1:  Startpoint: l_nutshell/buffer_2/bundleOut_0_a_q/value_1_reg   Endpoint: l_nutshell/axi4yank/QueueCompatibility_9/maybe_full_reg   slack (VIOLATED)
 
-NutShell.scala : AXI4Deinterleaver(8) <-> TLToAXI4() 中间加AXI4Buffer
+NutShell.scala : AXI4Deinterleaver(8) <-> TLToAXI4() 中间加AXI4Buffer (OK)
+
+icache
+228:  Startpoint: l_nutshell/core_with_l2/nutcore/icache/tagArray/ram/sram_1   
+Endpoint: l_nutshell/core_with_l2/nutcore/frontend/ifu/nlp/phtTaken_3_r_reg   slack (VIOLATED)    -0.2452
+27529:  Startpoint: l_nutshell/core_with_l2/nutcore/SSDbackend/Bypass/pipeStage1/io_right_bits_rdecodePkt_skip_reg   
+Endpoint: l_nutshell/core_with_l2/nutcore/icache/s2_io_in_bits_rreq_user_reg_43_   slack (VIOLATED)     -0.1235
+28757:  Startpoint: l_nutshell/core_with_l2_1/nutcore/frontend/ifu/pc_reg_6_   
+Endpoint: l_nutshell/core_with_l2_1/nutcore/icache/s2_io_in_bits_rreq_user_reg_43_   slack (VIOLATED)      -0.1020
+29170:  Startpoint: l_nutshell/core_with_l2/nutcore/icache/tagArray/ram/sram_1   
+Endpoint: l_nutshell/core_with_l2/nutcore/icache/metaArray/ram/sram_0   slack (VIOLATED)      -0.0991
+30614:  Startpoint: l_nutshell/core_with_l2_1/nutcore/icache/tagArray/ram/sram_1   
+Endpoint: l_nutshell/core_with_l2_1/nutcore/icache/DataSRAMTemplateWithArbiter_3/ram/sram_0   slack (VIOLATED)    -0.0884
+36885:  Startpoint: l_nutshell/core_with_l2_1/nutcore/frontend/ifu/nlp/btb_0/sram   
+Endpoint: l_nutshell/core_with_l2_1/nutcore/icache/s2_io_in_bits_rreq_user_reg_50_   slack (VIOLATED)    -0.0576
+39207:  Startpoint: l_nutshell/core_with_l2_1/nutcore/icache/tagArray/ram/sram_3   
+Endpoint: l_nutshell/core_with_l2_1/buffer_1/bundleOut_0_c_q/ram_data_reg_1__172_   slack (VIOLATED)    -0.0457
+
+228\29170\39207\5655: cache.s2 io.relConcurrency.relValid := RegNext(needRel && !isrelDone) （ok）
+27529: Bypass -> SSDCSR -> IFU处理
+28757\36885：IFU处理
+30614: 额外AcquireAccess waymask用reg存
+
+dcache
+8:  Startpoint: l_nutshell/core_with_l2_1/nutcore/dcache/tagArray/ram/sram_2   
+Endpoint: l_nutshell/core_with_l2_1/nutcore/SSDbackend/pipeStage0/io_right_bits_rrs1_reg_59_   slack (VIOLATED)    -0.2406
+2633:  Startpoint: l_nutshell/core_with_l2_1/nutcore/dcache/tagArray/ram/sram_2   
+Endpoint: l_nutshell/core_with_l2_1/nutcore/dcache/DataSRAMTemplateWithArbiter/ram/sram_2   slack (VIOLATED)    -0.0928
+5563:  Startpoint: l_nutshell/core_with_l2/nutcore/dcache/tagArray/ram/sram_1   
+Endpoint: l_nutshell/core_with_l2/nutcore/dcache/metaArray/ram/sram_0   slack (VIOLATED)  
+5655:  Startpoint: l_nutshell/core_with_l2_1/nutcore/dcache/tagArray/ram/sram_3   
+Endpoint: l_nutshell/core_with_l2_1/buffer/bundleOut_0_c_q/ram_data_reg_1__241_   slack (VIOLATED)     -0.0451
+
+8: cache专门分一级存sram的值（大概-0.3），需要LSU配合（-0.2）
+2633\30614: cache专门分一级存sram的值（大概-0.3）
+5563: 额外AcquireAccess hitTag用reg存

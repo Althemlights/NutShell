@@ -317,7 +317,7 @@ sealed class ICacheStage2(edge: TLEdgeOut)(implicit val p: Parameters) extends I
   
     //for Release concurrency limit
   io.relConcurrency.addr := RegNext(vicAddr)
-  io.relConcurrency.relValid := needRel && !isrelDone
+  io.relConcurrency.relValid := RegNext(needRel && !isrelDone)
   
   //Debug((io.in.fire || (io.in.valid && isMiss)) && io.in.bits.req.addr(7, 0) === "hc0".U, "[Icache] addr = 0x%x hit %x needrelease %x\n", io.in.bits.req.addr, hit, waymask)
 }

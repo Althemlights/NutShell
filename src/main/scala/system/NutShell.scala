@@ -130,7 +130,7 @@ class NutShell()(implicit p: Parameters) extends LazyModule{
   })
 
   //memAXI4SlaveNode := AXI4UserYanker() := AXI4Deinterleaver(64) := TLToAXI4() := TLCacheCork() := l3cacheOpt.node :=* l2_mem_tlxbar
-  memAXI4SlaveNode := AXI4UserYanker() := AXI4Deinterleaver(8) := TLToAXI4() := TLWidthWidget(32) := TLBuffer() := TLCacheCork() := l3cacheOpt.node :=* l2_mem_tlxbar
+  memAXI4SlaveNode := AXI4UserYanker() := AXI4Deinterleaver(8) := AXI4Buffer():= TLToAXI4() := TLWidthWidget(32) := TLBuffer() := TLCacheCork() := l3cacheOpt.node :=* l2_mem_tlxbar
 
   val onChipPeripheralRange = AddressSet(0x38000000L, 0x07ffffffL)
   val uartRange = AddressSet(0x40600000L, 0xf)
