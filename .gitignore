@@ -360,4 +360,5 @@ tmp.scala
 metal*
 
 # timing report
+time/
 *.rpt
