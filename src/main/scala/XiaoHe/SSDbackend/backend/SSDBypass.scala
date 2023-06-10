@@ -373,7 +373,7 @@ class DecodeIO2BypassPkt extends Module {
                 (i1NotAlu && i1rs2Class.muldiv && (i1rs2MatchE1 || i1rs2MatchE2))
 
 
-  BoringUtils.addSource(mduNotReady1,"mduNotReady1")
+  // BoringUtils.addSource(mduNotReady1,"mduNotReady1")
   i1Dependi0 := i1Hiti0Rs1 || i1Hiti0Rs2
 
   i1Load2Block := (i1decodePkt.load || i1decodePkt.store) && (i0decodePkt.load || i0decodePkt.store)
@@ -407,30 +407,30 @@ class DecodeIO2BypassPkt extends Module {
     io.issueStall(0) ||
     i1decodePkt.alu && ( i1rs1MatchE3 && i1rs1Class.subalu || i1rs2MatchE3 && i1rs2Class.subalu)
 
-  BoringUtils.addSource(i1LoadBlock, "i1LoadBlock")
-  BoringUtils.addSource(i1MulBlock, "i1MulBlock")
-  BoringUtils.addSource(i1Dependi0 && !noneBlockCase, "i1Dependi0_noneBlockCase")
-  BoringUtils.addSource(i1LoadBlock, "i1SecondaryBlock")
+  // BoringUtils.addSource(i1LoadBlock, "i1LoadBlock")
+  // BoringUtils.addSource(i1MulBlock, "i1MulBlock")
+  // BoringUtils.addSource(i1Dependi0 && !noneBlockCase, "i1Dependi0_noneBlockCase")
+  // BoringUtils.addSource(i1LoadBlock, "i1SecondaryBlock")
 
   // BoringUtils.addSource(fasheng, "whhh")
 
   val cond = i1Dependi0 && !noneBlockCase
-  BoringUtils.addSource(cond && i1decodePkt.load && i0decodePkt.alu && !i0Subalu, "i1LoadDependi0ALu")
-  BoringUtils.addSource(i1Hiti0Rs2 && i1decodePkt.store && i0decodePkt.alu && !i0Subalu, "i1rs2StoreDependi0ALu")
-  BoringUtils.addSource(cond && i1decodePkt.alu && i0decodePkt.alu && !i0Subalu, "i1AluDependi0ALu")
+  // BoringUtils.addSource(cond && i1decodePkt.load && i0decodePkt.alu && !i0Subalu, "i1LoadDependi0ALu")
+  // BoringUtils.addSource(i1Hiti0Rs2 && i1decodePkt.store && i0decodePkt.alu && !i0Subalu, "i1rs2StoreDependi0ALu")
+  // BoringUtils.addSource(cond && i1decodePkt.alu && i0decodePkt.alu && !i0Subalu, "i1AluDependi0ALu")
   // BoringUtils.addSource(cond && i1decodePkt.load && i0decodePkt.alu, "i1LoadDependi0ALu")
 
 
-  BoringUtils.addSource(io.issueStall(0), "issueStalli0Cycle")
-  BoringUtils.addSource(io.issueStall(0)&(!RegNext(io.issueStall(0))), "issueStalli0Cnt")
-  BoringUtils.addSource(io.issueStall(1), "issueStalli1Cycle")
-  BoringUtils.addSource(io.issueStall(1)&(!RegNext(io.issueStall(1))), "issueStalli1Cnt")
+  // BoringUtils.addSource(io.issueStall(0), "issueStalli0Cycle")
+  // BoringUtils.addSource(io.issueStall(0)&(!RegNext(io.issueStall(0))), "issueStalli0Cnt")
+  // BoringUtils.addSource(io.issueStall(1), "issueStalli1Cycle")
+  // BoringUtils.addSource(io.issueStall(1)&(!RegNext(io.issueStall(1))), "issueStalli1Cnt")
 
-  BoringUtils.addSource(mduNotReady0, "mduNotReady0")
-  BoringUtils.addSource(i1Load2Block, "i0i1LSBlock")
-  BoringUtils.addSource(i0decodePkt.load && i1decodePkt.load && i1Hiti0Rs1, "i0i1LoadBlockLoadtouse")
-  BoringUtils.addSource(i0decodePkt.store && i1decodePkt.store, "i0i1StoreBlock")
-  BoringUtils.addSource((i0decodePkt.load && i1decodePkt.store) || (i0decodePkt.store && i1decodePkt.load), "i0i1AlternaingBlock")
+  // BoringUtils.addSource(mduNotReady0, "mduNotReady0")
+  // BoringUtils.addSource(i1Load2Block, "i0i1LSBlock")
+  // BoringUtils.addSource(i0decodePkt.load && i1decodePkt.load && i1Hiti0Rs1, "i0i1LoadBlockLoadtouse")
+  // BoringUtils.addSource(i0decodePkt.store && i1decodePkt.store, "i0i1StoreBlock")
+  // BoringUtils.addSource((i0decodePkt.load && i1decodePkt.store) || (i0decodePkt.store && i1decodePkt.load), "i0i1AlternaingBlock")
   
 
   mou.io.flush := !(io.issueStall(1))
