@@ -27,7 +27,8 @@ Endpoint: l_nutshell/core_with_l2_1/buffer_1/bundleOut_0_c_q/ram_data_reg_1__172
 
 228\29170\39207\5655: cache.s2 io.relConcurrency.relValid := RegNext(needRel && !isrelDone) （ok）
 27529: Bypass -> SSDCSR -> IFU处理
-28757\36885：IFU处理
+28757: IFU user逻辑
+36885：IFU btb sram延迟
 30614: 额外AcquireAccess waymask用reg存(ok)
 
 dcache
@@ -42,7 +43,7 @@ Endpoint: l_nutshell/core_with_l2_1/buffer/bundleOut_0_c_q/ram_data_reg_1__241_ 
 
 8: cache专门分一级存sram的值（大概-0.3），需要LSU配合（-0.2）
 2633\30614: cache专门分一级存sram的值（大概-0.3）
-5563: 额外AcquireAccess hitTag用reg存(ok)
+5563: 额外AcquireAccess hitTag用reg存 (ok)
 
-l2cache | l3cache: 先配置半频
+l2cache | l3cache: 先配置半频 (ok)
 目前coremark: 7.31

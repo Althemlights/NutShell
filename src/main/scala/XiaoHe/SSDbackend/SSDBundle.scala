@@ -21,7 +21,7 @@ class decodePkt extends  NutCoreBundle{
   val subalu = Output(Bool())
   val branch = Output(Bool())
   val csr = Output(Bool())
-  val skip = Output(Bool())
+  // val skip = Output(Bool())
   val mou  = Output(Bool())
 }
 trait hasBypassConst{
