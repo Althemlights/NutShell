@@ -109,6 +109,7 @@ class NutShell()(implicit p: Parameters) extends LazyModule{
         numCores = corenum
       )),
       //prefetch = Some(huancun.prefetch.BOPParameters()),
+      sramClkDivBy2 = true,
       reqField = Seq(),
       echoField = Seq()
       //enableDebug = true

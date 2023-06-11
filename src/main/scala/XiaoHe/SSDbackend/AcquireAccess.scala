@@ -37,7 +37,8 @@ sealed class AcquireAccess(edge: TLEdgeOut)(implicit val p: Parameters) extends 
   val req = io.req.bits
   val addr = req.addr.asTypeOf(addrBundle)
   val cohOld = io.cohOld
-  val hitTag = io.hitTag
+  val hitTag = RegNext(io.hitTag)
+  val waymask = RegNext(io.waymask)
 
   //miss calculate acquire.param | newCoh
     //acquire block
@@ -53,7 +54,7 @@ sealed class AcquireAccess(edge: TLEdgeOut)(implicit val p: Parameters) extends 
   val newCoh = Mux(hitTag, newPCoh, newBCoh)
   val metaWrValid = (state === s_grant || (state === s_grantD && grant_first)) && isGrant && io.mem_grantAck.fire
   val metaWriteBus = Wire(CacheMetaArrayWriteBus()).apply(
-    valid = metaWrValid , setIdx = addr.index, waymask = io.waymask,
+    valid = metaWrValid , setIdx = addr.index, waymask = waymask,
     data = Wire(new DMetaBundle).apply(coh = newCoh)
   )
   io.metaWriteBus.req <> metaWriteBus.req
@@ -73,7 +74,7 @@ sealed class AcquireAccess(edge: TLEdgeOut)(implicit val p: Parameters) extends 
   for (w <- 0 until sramNum) {
     io.dataWriteBus(w).apply(
       data = Wire(new DDataBundle).apply(wdata(w)),
-      valid = isFullData || (isOneData && addr.bankIndex === w.U), setIdx = Cat(addr.index, wordIndex), waymask = io.waymask)
+      valid = isFullData || (isOneData && addr.bankIndex === w.U), setIdx = Cat(addr.index, wordIndex), waymask = waymask)
   }
   /*val dataWriteBus = Wire(CacheDataArrayWriteBus()).apply(
     data = Wire(new DDataBundle).apply(wdata),
@@ -82,7 +83,7 @@ sealed class AcquireAccess(edge: TLEdgeOut)(implicit val p: Parameters) extends 
 
   val tagWrValid = state === s_grantD && isGrant && grant_first && io.mem_grantAck.fire
   val tagWriteBus = Wire(CacheTagArrayWriteBus()).apply(
-    valid = tagWrValid, setIdx = addr.index, waymask = io.waymask,
+    valid = tagWrValid, setIdx = addr.index, waymask = waymask,
     data = Wire(new DTagBundle).apply(tag = addr.tag)
   )
   io.tagWriteBus.req <> tagWriteBus.req
@@ -166,7 +167,7 @@ sealed class AcquireAccess(edge: TLEdgeOut)(implicit val p: Parameters) extends 
   switch (state) {
     is (s_idle) {
       when (acquire) {
-        state := Mux(hitTag, s_acqP, s_acqB)
+        state := Mux(io.hitTag, s_acqP, s_acqB)
       }
     }
     is (s_acqP) {
@@ -244,7 +245,8 @@ sealed class IAcquireAccess(edge: TLEdgeOut)(implicit val p: Parameters) extends
   val req = io.req.bits
   val addr = req.addr.asTypeOf(addrBundle)
   val cohOld = io.cohOld
-  val hitTag = io.hitTag
+  val hitTag = RegNext(io.hitTag)
+  val waymask = RegNext(io.waymask)
 
   //miss calculate acquire.param | newCoh
     //acquire block
@@ -260,7 +262,7 @@ sealed class IAcquireAccess(edge: TLEdgeOut)(implicit val p: Parameters) extends
   val newCoh = Mux(hitTag, newPCoh, newBCoh)
   val metaWrValid = (state === s_grant || (state === s_grantD && grant_first)) && isGrant && io.mem_grantAck.fire
   val metaWriteBus = Wire(CacheMetaArrayWriteBus()).apply(
-    valid = metaWrValid , setIdx = addr.index, waymask = io.waymask,
+    valid = metaWrValid , setIdx = addr.index, waymask = waymask,
     data = Wire(new DMetaBundle).apply(coh = newCoh)
   )
   io.metaWriteBus.req <> metaWriteBus.req
@@ -280,16 +282,12 @@ sealed class IAcquireAccess(edge: TLEdgeOut)(implicit val p: Parameters) extends
   for (w <- 0 until sramNum) {
     io.dataWriteBus(w).apply(
       data = Wire(new DDataBundle).apply(wdata(w)),
-      valid = isFullData || (isOneData && addr.bankIndex === w.U), setIdx = Cat(addr.index, wordIndex), waymask = io.waymask)
+      valid = isFullData || (isOneData && addr.bankIndex === w.U), setIdx = Cat(addr.index, wordIndex), waymask = waymask)
   }
-  /*val dataWriteBus = Wire(CacheDataArrayWriteBus()).apply(
-    data = Wire(new DDataBundle).apply(wdata),
-    valid = dataWrValid, setIdx = Cat(addr.index, wordIndex), waymask = io.waymask)*/
-  //io.dataWriteBus.req <> dataWriteBus.req
 
   val tagWrValid = state === s_grantD && isGrant && grant_first && io.mem_grantAck.fire
   val tagWriteBus = Wire(CacheTagArrayWriteBus()).apply(
-    valid = tagWrValid, setIdx = addr.index, waymask = io.waymask,
+    valid = tagWrValid, setIdx = addr.index, waymask = waymask,
     data = Wire(new DTagBundle).apply(tag = addr.tag)
   )
   io.tagWriteBus.req <> tagWriteBus.req
@@ -374,7 +372,7 @@ sealed class IAcquireAccess(edge: TLEdgeOut)(implicit val p: Parameters) extends
         state := Mux(req.isRead(), s_get, s_put)
       }
       when (acquire) {
-        state := Mux(hitTag, s_acqP, s_acqB)
+        state := Mux(io.hitTag, s_acqP, s_acqB)
       }
     }
     is (s_put) {
