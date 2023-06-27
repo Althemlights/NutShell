@@ -52,10 +52,8 @@ class WuKong(implicit val p: WuKongConfig) extends Module with HasSoCParameter {
   })
 
   val core = Module(new Core)
-//  val cohMg = Module(new CoherenceManager)
+
   val xbar = Module(new SimpleBusCrossbarNto1(2))
-//  cohMg.io.in <> core.io.imem.mem
-//  core.io.dmem.coh <> cohMg.io.out.coh
   xbar.io.in(0) <> core.io.imem.mem //cohMg.io.out.mem
   xbar.io.in(1) <> core.io.dmem.mem
 

@@ -3,7 +3,7 @@ package top
 import chisel3._
 
 case class WuKongConfig(
-                          EnableDifftest : Boolean = true,
+                          EnableDifftest : Boolean = false,
                           EnablePMU : Boolean = true,
                           EnablePipestageDebug : Boolean = false,
                           EnableLSUDebug : Boolean = false,

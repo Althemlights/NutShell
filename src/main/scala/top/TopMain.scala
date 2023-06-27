@@ -133,12 +133,14 @@ object TopMain extends App {
       chisel3.stage.ChiselGeneratorAnnotation(() =>new SimTop())
     ))
   } else {
-    // Driver.execute(args, () => new Top)
     (new chisel3.stage.ChiselStage).execute(args, Seq(
-      chisel3.stage.ChiselGeneratorAnnotation(() =>new ysyx()),
-      firrtl.stage.RunFirrtlTransformAnnotation(new AddModulePrefix()),
-      ModulePrefixAnnotation("ysyx_229999_")
+      chisel3.stage.ChiselGeneratorAnnotation(() =>new Top())
     ))
+    // (new chisel3.stage.ChiselStage).execute(args, Seq(
+    //   chisel3.stage.ChiselGeneratorAnnotation(() =>new ysyx()),
+    //   firrtl.stage.RunFirrtlTransformAnnotation(new AddModulePrefix()),
+    //   ModulePrefixAnnotation("ysyx_229999_")
+    // ))
   }
 }
 

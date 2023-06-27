@@ -36,7 +36,7 @@ object DefaultSettings {
     "IsRV32" -> false,
     "FPGAPlatform" -> false,
     "EnableILA" -> true,
-    "EnableDebug" -> true,
+    "EnableDebug" -> false,
     "EnableRVC" -> true,
     "SoCTest" -> false,
     "CLINTBase" -> 0x02000000L,
