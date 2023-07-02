@@ -23,7 +23,7 @@ import chisel3.util._
 import utils._
 import WuKong._
 import WuKong.Backend._
-import core.PipelineVector2Connect
+import utils.PipelineVector2Connect
 import top.WuKongConfig
 class FrontendIO(implicit val p: WuKongConfig) extends Bundle with HasCoreConst {
   val imem = new SimpleBusUC(userBits = ICacheUserBundleWidth, addrBits = VAddrBits)

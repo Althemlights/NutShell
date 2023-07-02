@@ -30,7 +30,7 @@ import WuKong._
 import WuKong.Backend._
 import WuKong.Backend.fu.StoreBufferEntry
 import WuKong.Frontend._
-import core.PipelineVector2Connect
+import utils.PipelineVector2Connect
 import WuKong.{HasCoreParameter, HasCoreLog, AddressSpace}
 
 case class BankedCacheConfig(
