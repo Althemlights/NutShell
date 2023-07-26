@@ -357,8 +357,12 @@ tmp.scala
 *.f
 *.json
 *.fir
+<<<<<<< HEAD
 metal*
 
 # timing report
 time/
 *.rpt
+=======
+metal*
+>>>>>>> 14a3ebd5d197353c79e46957b3b075603ab65f8e
