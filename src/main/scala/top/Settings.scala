@@ -26,6 +26,10 @@ object DefaultSettings {
     "UnCacheSize" -> 0x0000000060000000L,
     "ResetVector" -> 0x80000000L,
     "NrExtIntr" -> 1,
+    "ITCMBase"  -> 0x0000000000000000L,
+    "ITCMSize"  -> 0x0000000000000000L,
+    "DTCMBase"  -> 0x0000000000000000L,
+    "DTCMSize"  -> 0x0000000000000000L,
 
     "HasL2cache" -> false,
     "HasPrefetch" -> false,

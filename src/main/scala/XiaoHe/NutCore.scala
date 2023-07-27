@@ -136,6 +136,7 @@ class NutCoreImp(outer: NutCore) extends LazyModuleImp(outer) with HasNutCorePar
 
   // Frontend
   val frontend =  Module(new Frontend_ooo)
+  val dtcm = Module(new DTCM)
 
   // Backend
   val BoolTmp0 = WireInit(false.B)
@@ -158,13 +159,20 @@ class NutCoreImp(outer: NutCore) extends LazyModuleImp(outer) with HasNutCorePar
   val s2NotReady = WireInit(false.B)
   //io.imem <> SSDCache(in = frontend.io.imem, mmio = mmioXbar.io.in(0), flush = (frontend.io.flushVec(0) | frontend.io.bpFlush))(SSDCacheConfig(ro = true, name = "icache", userBits = ICacheUserBundleWidth))
   //io.dmem <> SSDCache(in = SSDbackend.io.dmem, mmio = mmioXbar.io.in(1), flush = false.B)(SSDCacheConfig(ro = true, name = "dcache"))
-  
+  // val imemaddrSpace = List(
+  //   (Settings.getLong("ResetVector"), 0x80000000L),          //icache
+  //   (Settings.getLong("ITCMBase"), Settings.getLong("ITCMSize"))     //dtcm
+  // )
+  // val imemxbar = Module(new DmemSimpleBusCrossbar1toN(imemaddrSpace))
+  // imemxbar.io.in <> frontend.io.imem
+  // icache.io.in <> imemxbar.io.out(0)
   icache.io.in <> frontend.io.imem
   icache.io.flush := frontend.io.flushVec(0) | frontend.io.bpFlush
 
   val addrSpace = List(
     (Settings.getLong("ResetVector"), 0x80000000L),          //dcache
-    (Settings.getLong("UnCacheBase"), Settings.getLong("UnCacheSize"))    //uncache
+    (Settings.getLong("UnCacheBase"), Settings.getLong("UnCacheSize")),    //uncache
+    (Settings.getLong("DTCMBase"), Settings.getLong("DTCMSize"))     //dtcm
   )
   val dmemxbar = Module(new DmemSimpleBusCrossbar1toN(addrSpace))
   dmemxbar.io.in <> SSDbackend.io.dmem
@@ -174,6 +182,8 @@ class NutCoreImp(outer: NutCore) extends LazyModuleImp(outer) with HasNutCorePar
   //dcache.io.mmio <> mmioXbar.io.in(1)
   dcache.io.flush := false.B
   uncache.io.in <> dmemxbar.io.out(1)
+  dtcm.io.in <> dmemxbar.io.out(2)
+  dtcm.io.flush := false.B
   //uncache.io.in <> DontCare
   //uncache.io.in <> SSDbackend.io.mmio
   // DMA?
