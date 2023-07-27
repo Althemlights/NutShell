@@ -145,7 +145,7 @@ sealed class ICacheStage1(implicit val p: Parameters) extends ICacheModule {
   io.in.ready := io.out.ready && io.metaReadBus.req.ready && dataReadBusReady && io.tagReadBus.req.ready
   io.out.bits.mmio := AddressSpace.isMMIO(io.in.bits.addr)
 
-  //Debug(io.in.fire && io.in.bits.addr.asTypeOf(addrBundle).index === 0x36.U, "[Icache req] Addr: %x  Cmd: %x  Wdata: %x\n", io.in.bits.addr, io.in.bits.cmd, io.in.bits.wdata)
+  //Debug(io.in.fire && io.in.bits.addr.asTypeOf(addrBundle).index === 0x20.U, "[Icache req] Addr: %x  Cmd: %x  Wdata: %x\n", io.in.bits.addr, io.in.bits.cmd, io.in.bits.wdata)
 }
 
 sealed class ICacheStage2(edge: TLEdgeOut)(implicit val p: Parameters) extends ICacheModule {
@@ -366,15 +366,17 @@ class ICacheImp(outer: ICache) extends LazyModuleImp(outer) with HasICacheIO wit
   val probe = Module(new Probe(edge))
 
   //meta 
-  val tagArray = Module(new TagSRAMTemplateWithArbiter(nRead = 2, new DTagBundle, set = Sets, way = Ways, shouldReset = true))
-  val metaArray = Module(new MetaSRAMTemplateWithArbiter(nRead = 2, new DMetaBundle, set = Sets, way = Ways, shouldReset = true))
-  //val dataArray = Module(new DataSRAMTemplateWithArbiter(nRead = 3, new DDataBundle, set = Sets * LineBeats, way = Ways))
+  //val tagArray = Module(new TagSRAMTemplateWithArbiter(nRead = 2, new DTagBundle, set = Sets, way = Ways, shouldReset = true))
+  val tagArray = Module(new SRAMTemplateWithArbiter(nRead = 2, new DTagBundle, set = Sets, way = Ways, shouldReset = true))
+  //val metaArray = Module(new MetaSRAMTemplateWithArbiter(nRead = 2, new DMetaBundle, set = Sets, way = Ways, shouldReset = true))
+  val metaArray = Module(new SRAMTemplateWithArbiter(nRead = 2, new DMetaBundle, set = Sets, way = Ways, shouldReset = true))
 
   metaArray.reset := reset.asAsyncReset
   tagArray.reset := reset.asAsyncReset
 
   val dataArray = Array.fill(sramNum) {
-    Module(new DataSRAMTemplateWithArbiter(
+    //Module(new DataSRAMTemplateWithArbiter(
+      Module(new SRAMTemplateWithArbiter(
       nRead = 3,
       new DDataBundle,
       set = Sets * LineBeats / sramNum,

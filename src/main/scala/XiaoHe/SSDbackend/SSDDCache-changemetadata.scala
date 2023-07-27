@@ -483,13 +483,14 @@ class DCacheImp(outer: DCache) extends LazyModuleImp(outer) with HasDCacheIO wit
   val probe = Module(new Probe(edge))
 
   //meta 
-  val tagArray = Module(new TagSRAMTemplateWithArbiter(nRead = 2, new DTagBundle, set = Sets, way = Ways, shouldReset = true))
-  val metaArray = Module(new MetaSRAMTemplateWithArbiter(nRead = 2, new DMetaBundle, set = Sets, way = Ways, shouldReset = true))
-  //val wayIdArray = Module(new MetaSRAMTemplateWithArbiter(nRead = 1, new DWayIdBundle, set = Sets, way = 1, shouldReset = true))
-  //val dataArray = Module(new DataSRAMTemplateWithArbiter(nRead = 3, new DDataBundle, set = Sets * LineBeats, way = Ways))
+  //val tagArray = Module(new TagSRAMTemplateWithArbiter(nRead = 2, new DTagBundle, set = Sets, way = Ways, shouldReset = true))
+  val tagArray = Module(new SRAMTemplateWithArbiter(nRead = 2, new DTagBundle, set = Sets, way = Ways, shouldReset = true))
+  //val metaArray = Module(new MetaSRAMTemplateWithArbiter(nRead = 2, new DMetaBundle, set = Sets, way = Ways, shouldReset = true))
+  val metaArray = Module(new SRAMTemplateWithArbiter(nRead = 2, new DMetaBundle, set = Sets, way = Ways, shouldReset = true))
 
   val dataArray = Array.fill(sramNum) {
-    Module(new DataSRAMTemplateWithArbiter(
+    //Module(new DataSRAMTemplateWithArbiter(
+      Module(new SRAMTemplateWithArbiter(
       nRead = 3,
       new DDataBundle,
       set = Sets * LineBeats / sramNum,

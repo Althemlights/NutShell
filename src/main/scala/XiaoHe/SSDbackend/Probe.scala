@@ -88,7 +88,7 @@ class Probe(edge: TLEdgeOut)(implicit val p: Parameters) extends DCacheModule {
   */
   val conLimit = io.mem_probe.valid && io.mem_probe.bits.address === io.relConcurrency.addr && io.relConcurrency.relValid 
 
-  io.mem_probe.ready := Mux(state === s_idle && !conLimit, true.B, false.B) 
+  io.mem_probe.ready := Mux(state === s_idle && !conLimit && metaReady, true.B, false.B) 
   io.mem_probeAck.valid := Mux((state === s_probeA || (state === s_probeAD && dataReadValid)) && !conLimit, true.B, false.B)
 
   val probeResponse = edge.ProbeAck(
@@ -138,5 +138,5 @@ class Probe(edge: TLEdgeOut)(implicit val p: Parameters) extends DCacheModule {
     }
   }
 
-  //Debug(io.mem_probeAck.fire && addr.index === 0x36.U, "[Probe] Addr: %x  Tag:%x  Data:%x\n", addr.asUInt, addr.tag, dataRead.asUInt)
+  //Debug(io.mem_probeAck.fire && addr.index === 0x20.U, "[Probe] Addr: %x  Tag:%x  Data:%x\n", addr.asUInt, addr.tag, dataRead.asUInt)
 }

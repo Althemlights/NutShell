@@ -43,7 +43,7 @@ class NutcoreWithL2()(implicit p: Parameters) extends LazyModule{
   
   val nutcore = LazyModule(new NutCore())
 
-  val l2cache = LazyModule(new HuanCun()(new Config((_, _, _) => {
+  /*val l2cache = LazyModule(new HuanCun()(new Config((_, _, _) => {
     case HCCacheParamsKey => HCCacheParameters(
       name = s"L2",
       level = 2,
@@ -55,18 +55,19 @@ class NutcoreWithL2()(implicit p: Parameters) extends LazyModule{
         CacheParameters(sets = 64, ways = 4, blockGranularity = 6, name = "dcache")
       ),
       //prefetch = Some(huancun.prefetch.BOPParameters()),
-      sramClkDivBy2 = true,
+      sramClkDivBy2 = false,
       reqField = Seq(),
       echoField = Seq()
       //enableDebug = true
     )
-  })))
+  })))*/
 
   val tlBus = TLXbar()
   tlBus := TLBuffer() := nutcore.dcache.clientNode
   tlBus := TLBuffer() := nutcore.icache.clientNode
   val memory_port = TLTempNode()
-  memory_port := TLBuffer() := l2cache.node :=* tlBus
+  //memory_port := TLBuffer() := l2cache.node :=* tlBus
+  memory_port := TLBuffer() :=* tlBus
 
   //mmio_port: peripheralXbar
   val mmio_port = TLTempNode()

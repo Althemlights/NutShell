@@ -103,13 +103,16 @@ class NutShell()(implicit p: Parameters) extends LazyModule{
       name = s"L3",
       level = 3,
       inclusive = false,
-      clientCaches = Seq(CacheParameters(sets = 128, ways = 4, blockGranularity = 7, name = "L2")),
+      clientCaches = Seq(
+        CacheParameters(sets = 64, ways = 4, blockGranularity = 6, name = "icache"),
+        CacheParameters(sets = 64, ways = 4, blockGranularity = 6, name = "dcache"),
+      ),
       ctrl = Some(CacheCtrl(
         address = 0x39000000,
         numCores = corenum
       )),
       //prefetch = Some(huancun.prefetch.BOPParameters()),
-      sramClkDivBy2 = true,
+      sramClkDivBy2 = false,
       reqField = Seq(),
       echoField = Seq()
       //enableDebug = true
