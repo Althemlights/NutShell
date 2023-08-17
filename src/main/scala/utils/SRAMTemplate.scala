@@ -19,7 +19,8 @@ package utils
 import chisel3._
 import chisel3.experimental.ExtModule
 import chisel3.util._
-class TS5N28HPCPLVTA128X64M2F extends ExtModule with HasExtModuleResource {
+
+/*class TS5N28HPCPLVTA128X64M2F extends ExtModule with HasExtModuleResource {
   //  val io = IO(new Bundle {
   val Q =   IO(Output(UInt(64.W)))
   val CLK = IO(Input(Clock()))
@@ -29,6 +30,18 @@ class TS5N28HPCPLVTA128X64M2F extends ExtModule with HasExtModuleResource {
   val D =   IO(Input(UInt(64.W)))
   //  })
   addResource("/vsrc/TS5N28HPCPLVTA128X64M2F.v")
+}*/
+
+class TS5N28HPCPLVTA128X32M2F extends ExtModule with HasExtModuleResource {
+  //  val io = IO(new Bundle {
+  val Q =   IO(Output(UInt(32.W)))
+  val CLK = IO(Input(Clock()))
+  val CEB = IO(Input(Bool()))
+  val WEB = IO(Input(Bool()))
+  val A =   IO(Input(UInt(7.W)))
+  val D =   IO(Input(UInt(32.W)))
+  //  })
+  addResource("/vsrc/TS5N28HPCPLVTA128X32M2F.v")
 }
 
 class TS5N28HPCPLVTA64X32M2F extends ExtModule with HasExtModuleResource {
@@ -41,6 +54,18 @@ class TS5N28HPCPLVTA64X32M2F extends ExtModule with HasExtModuleResource {
   val D =   IO(Input(UInt(32.W)))
   //  })
   addResource("/vsrc/TS5N28HPCPLVTA64X32M2F.v")
+}
+
+class TS5N28HPCPLVTA32X64M2F extends ExtModule with HasExtModuleResource {
+  //  val io = IO(new Bundle {
+  val Q =   IO(Output(UInt(64.W)))
+  val CLK = IO(Input(Clock()))
+  val CEB = IO(Input(Bool()))
+  val WEB = IO(Input(Bool()))
+  val A =   IO(Input(UInt(5.W)))
+  val D =   IO(Input(UInt(64.W)))
+  //  })
+  addResource("/vsrc/TS5N28HPCPLVTA32X64M2F.v")
 }
 
 class TS5N28HPCPLVTA64X8M2F extends ExtModule with HasExtModuleResource {
@@ -65,6 +90,63 @@ class TS5N28HPCPLVTA128X80M2F extends ExtModule with HasExtModuleResource {
   val D =   IO(Input(UInt(80.W)))
   //  })
   addResource("/vsrc/TS5N28HPCPLVTA128X80M2F.v")
+}
+
+/*class TS5N28HPCPLVTA128X64M2F extends Module {
+  val Q =   IO(Output(UInt(64.W)))
+  val CLK = IO(Input(Clock()))
+  val CEB = IO(Input(Bool()))
+  val WEB = IO(Input(Bool()))
+  val A =   IO(Input(UInt(7.W)))
+  val D =   IO(Input(UInt(64.W)))
+  
+  val sram = Seq.fill(2)(Module(new TS5N28HPCPLVTA128X32M2F()))
+  sram.map(_.CLK := CLK)
+  sram.zipWithIndex.map{
+    case (s, i) => s.CEB := CEB
+  }
+  sram.zipWithIndex.map{
+    case (s, i) => s.WEB := WEB
+  }
+  sram.zipWithIndex.map{
+    case (s, i) => s.A := A
+  }
+
+  sram(0).D := D(31, 0)
+  sram(1).D := D(63, 32)
+
+  Q := Cat(sram(1).Q, sram(0).Q)
+}*/
+
+class TS5N28HPCPLVTA128X64M2F extends Module {
+  val Q =   IO(Output(UInt(64.W)))
+  val CLK = IO(Input(Clock()))
+  val CEB = IO(Input(Bool()))
+  val WEB = IO(Input(Bool()))
+  val A =   IO(Input(UInt(7.W)))
+  val D =   IO(Input(UInt(64.W)))
+  
+  val sram = Seq.fill(4)(Module(new TS5N28HPCPLVTA32X64M2F()))
+  sram.map(_.CLK := CLK)
+  sram.zipWithIndex.map{
+    case (s, i) => s.CEB := CEB || ~(i.asUInt === A(6, 5))
+  }
+  sram.zipWithIndex.map{
+    case (s, i) => s.WEB := WEB || ~(i.asUInt === A(6, 5))
+  }
+  sram.zipWithIndex.map{
+    case (s, i) => s.A := A(4, 0)
+  }
+  
+  sram.map(_.D := D)
+
+  val sel = RegNext(A(6, 5))
+  Q := MuxLookup(sel.asUInt, 0.U(64.W), Array(
+      0.U -> sram(0).Q,
+      1.U -> sram(1).Q,
+      2.U -> sram(2).Q,
+      3.U -> sram(3).Q)
+  ) 
 }
 
 class SRAMBundleA(val set: Int) extends Bundle {
