@@ -29,11 +29,12 @@ class ClintIO extends Bundle {
 }
 
 class AXI4CLINT(sim: Boolean = false) extends AXI4SlaveModule(new AXI4Lite, new ClintIO) {
-  val mtime = RegInit(0.U(64.W))  // unit: us
-  val mtimecmp = RegInit(0.U(64.W))
+  val mtime = RegInit(0.U(64.W)) // unit: us
+  val mtimecmp = RegInit(2000000.U(64.W))
   val msip = RegInit(0.U(64.W))
 
-  val clk = (if (!sim) 40 /* 40MHz / 1000000 */ else 10000)
+  val clk = (if (!sim) 40 /* 40MHz / 1000000 */
+  else 3)
   val freq = RegInit(clk.U(16.W))
   val inc = RegInit(1.U(16.W))
 
@@ -41,12 +42,16 @@ class AXI4CLINT(sim: Boolean = false) extends AXI4SlaveModule(new AXI4Lite, new 
   val nextCnt = cnt + 1.U
   cnt := Mux(nextCnt < freq, nextCnt, 0.U)
   val tick = (nextCnt === freq)
-  when (tick) { mtime := mtime + inc }
+  when(tick) {
+    mtime := mtime + inc
+  }
 
   if (sim) {
     val isWFI = WireInit(false.B)
     BoringUtils.addSink(isWFI, "isWFI")
-    when (isWFI) { mtime := mtime + 100000.U }
+    when(isWFI) {
+      mtime := mtime + 100000.U
+    }
   }
 
   val mapping = Map(
@@ -56,10 +61,11 @@ class AXI4CLINT(sim: Boolean = false) extends AXI4SlaveModule(new AXI4Lite, new 
     RegMap(0x8008, inc),
     RegMap(0xbff8, mtime)
   )
-  def getOffset(addr: UInt) = addr(15,0)
+
+  def getOffset(addr: UInt) = addr(15, 0)
 
   RegMap.generate(mapping, getOffset(raddr), in.r.bits.data,
-    getOffset(waddr), in.w.fire, in.w.bits.data, MaskExpand(in.w.bits.strb))
+    getOffset(waddr), in.w.fire(), in.w.bits.data, MaskExpand(in.w.bits.strb))
 
   io.extra.get.mtip := RegNext(mtime >= mtimecmp)
   io.extra.get.msip := RegNext(msip =/= 0.U)

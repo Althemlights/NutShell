@@ -16,7 +16,7 @@
 
 package XiaoHe.SSDbackend.fu
 
-import chisel3._
+import chisel3.{UInt, _}
 import chisel3.util._
 import chisel3.util.experimental.BoringUtils
 import top.Settings
@@ -197,6 +197,7 @@ class SSDCSR extends NutCoreModule with SSDHasCSRConst with SSDHasExceptionNO {
   val io = IO(new SSDCSRIO)
 
   val (valid, src1, src2, func) = (io.in.valid, io.in.bits.src1, io.in.bits.src2, io.in.bits.func)
+
   def access(valid: Bool, src1: UInt, src2: UInt, func: UInt): UInt = {
     this.valid := valid
     this.src1 := src1
@@ -220,9 +221,9 @@ class SSDCSR extends NutCoreModule with SSDHasCSRConst with SSDHasExceptionNO {
     val sd = Output(UInt(1.W))
 
     val pad1 = if (XLEN == 64) Output(UInt(27.W)) else null
-    val sxl  = if (XLEN == 64) Output(UInt(2.W))  else null
-    val uxl  = if (XLEN == 64) Output(UInt(2.W))  else null
-    val pad0 = if (XLEN == 64) Output(UInt(9.W))  else Output(UInt(8.W))
+    val sxl = if (XLEN == 64) Output(UInt(2.W)) else null
+    val uxl = if (XLEN == 64) Output(UInt(2.W)) else null
+    val pad0 = if (XLEN == 64) Output(UInt(9.W)) else Output(UInt(8.W))
 
     val tsr = Output(UInt(1.W))
     val tw = Output(UInt(1.W))
@@ -242,7 +243,7 @@ class SSDCSR extends NutCoreModule with SSDHasCSRConst with SSDHasExceptionNO {
   class SatpStruct extends Bundle {
     val mode = UInt(4.W)
     val asid = UInt(16.W)
-    val ppn  = UInt(44.W)
+    val ppn = UInt(44.W)
   }
 
   class Interrupt extends Bundle {
@@ -264,7 +265,7 @@ class SSDCSR extends NutCoreModule with SSDHasCSRConst with SSDHasExceptionNO {
   val mie = RegInit(0.U(XLEN.W))
   val mipWire = WireInit(0.U.asTypeOf(new Interrupt))
   //val mipReg  = RegInit(0.U.asTypeOf(new Interrupt).asUInt)
-  val mipReg  = RegInit(0.U(XLEN.W))
+  val mipReg = RegInit(0.U(XLEN.W))
   val mipFixMask = "h77f".U
   val mip = (mipWire.asUInt | mipReg).asTypeOf(new Interrupt)
 
@@ -276,10 +277,16 @@ class SSDCSR extends NutCoreModule with SSDHasCSRConst with SSDHasExceptionNO {
   val misaInitVal = getMisaMxl(2) | extList.foldLeft(0.U)((sum, i) => sum | getMisaExt(i)) //"h8000000000141105".U
   val misa = RegInit(UInt(XLEN.W), misaInitVal.asUInt)*/
   def getMisaMxl(mxl: BigInt): BigInt = mxl << (XLEN - 2)
+
   def getMisaExt(ext: Char): Long = 1 << (ext.toInt - 'a'.toInt)
+
   var extList = List('a', 's', 'i', 'u')
-  if (HasMExtension) { extList = extList :+ 'm' }
-  if (HasCExtension) { extList = extList :+ 'c' }
+  if (HasMExtension) {
+    extList = extList :+ 'm'
+  }
+  if (HasCExtension) {
+    extList = extList :+ 'c'
+  }
   val misaInitVal = getMisaMxl(2) | extList.foldLeft(0L)((sum, i) => sum | getMisaExt(i)) //"h8000000000141105".U
   val misa = RegInit(UInt(XLEN.W), misaInitVal.U)
   // MXL = 2          | 0 | EXT = b 00 0000 0100 0001 0001 0000 0101
@@ -289,7 +296,7 @@ class SSDCSR extends NutCoreModule with SSDHasCSRConst with SSDHasExceptionNO {
   val marchid = RegInit(UInt(XLEN.W), 0.U) // return 0 to indicate the field is not implemented
   val mimpid = RegInit(UInt(XLEN.W), 0.U) // provides a unique encoding of the version of the processor implementation
   val mhartid = Reg(UInt(XLEN.W)) // the hardware thread running the code
-  when (RegNext(RegNext(reset.asBool) && !reset.asBool)) {
+  when(RegNext(RegNext(reset.asBool) && !reset.asBool)) {
     mhartid := io.hartid
   }
   val mstatus = RegInit(UInt(XLEN.W), 0.U)
@@ -314,9 +321,10 @@ class SSDCSR extends NutCoreModule with SSDHasCSRConst with SSDHasExceptionNO {
   // | pie  | 0000 |
   // | ie   | 0000 | uie hardlinked to 0, as N ext is not implemented
   val mstatusStruct = mstatus.asTypeOf(new MstatusStruct)
+
   def mstatusUpdateSideEffect(mstatus: UInt): UInt = {
     val mstatusOld = WireInit(mstatus.asTypeOf(new MstatusStruct))
-    val mstatusNew = Cat(mstatusOld.fs === "b11".U, mstatus(XLEN-2, 0))
+    val mstatusNew = Cat(mstatusOld.fs === "b11".U, mstatus(XLEN - 2, 0))
     mstatusNew
   }
 
@@ -348,7 +356,7 @@ class SSDCSR extends NutCoreModule with SSDHasCSRConst with SSDHasExceptionNO {
   val stvec = RegInit(UInt(XLEN.W), 0.U)
   // val sie = RegInit(0.U(XLEN.W))
   val sieMask = "h222".U & mideleg
-  val sipMask  = "h222".U & mideleg
+  val sipMask = "h222".U & mideleg
   // val satp = RegInit(UInt(XLEN.W), "h8000000000087fbe".U)
   val satp = RegInit(UInt(XLEN.W), 0.U)
   val sepc = RegInit(UInt(XLEN.W), 0.U)
@@ -376,7 +384,7 @@ class SSDCSR extends NutCoreModule with SSDHasCSRConst with SSDHasExceptionNO {
   //BoringUtils.addSource(lr, "lr")
   //BoringUtils.addSource(lrAddr, "lr_addr")
 
-  when(setLr){
+  when(setLr) {
     lr := setLrVal
     lrAddr := setLrAddr
   }
@@ -393,12 +401,12 @@ class SSDCSR extends NutCoreModule with SSDHasCSRConst with SSDHasExceptionNO {
 
 
   //for difftest
-  val mcause_wire = WireInit(UInt(XLEN.W),0.U)
-  val mepc_wire = WireInit(UInt(XLEN.W),0.U)
-  val mstatus_wire = WireInit(UInt(XLEN.W),0.U)
-  val mie_wire = WireInit(UInt(XLEN.W),0.U)
+  val mcause_wire = WireInit(UInt(XLEN.W), 0.U)
+  val mepc_wire = WireInit(UInt(XLEN.W), 0.U)
+  val mstatus_wire = WireInit(UInt(XLEN.W), 0.U)
+  val mie_wire = WireInit(UInt(XLEN.W), 0.U)
   mcause_wire := mcause
-  mepc_wire   := mepc
+  mepc_wire := mepc
   mstatus_wire := mstatus
   mie_wire := mie
 
@@ -486,12 +494,12 @@ class SSDCSR extends NutCoreModule with SSDHasCSRConst with SSDHasExceptionNO {
 
   val addr = src2(11, 0)
   val rdata = Wire(UInt(XLEN.W))
-  val csri = ZeroExt(io.cfIn.instr(19,15), XLEN) //unsigned imm for csri. [TODO]
+  val csri = ZeroExt(io.cfIn.instr(19, 15), XLEN) //unsigned imm for csri. [TODO]
   val wdata = LookupTree(func, List(
-    SSDCSROpType.wrt  -> src1,
-    SSDCSROpType.set  -> (rdata | src1),
-    SSDCSROpType.clr  -> (rdata & ~src1),
-    SSDCSROpType.wrti -> csri,//TODO: csri --> src2
+    SSDCSROpType.wrt -> src1,
+    SSDCSROpType.set -> (rdata | src1),
+    SSDCSROpType.clr -> (rdata & ~src1),
+    SSDCSROpType.wrti -> csri, //TODO: csri --> src2
     SSDCSROpType.seti -> (rdata | csri),
     SSDCSROpType.clri -> (rdata & ~csri)
   ))
@@ -501,9 +509,9 @@ class SSDCSR extends NutCoreModule with SSDHasCSRConst with SSDHasExceptionNO {
 
   // General CSR wen check
   val wen = (valid && func =/= SSDCSROpType.jmp) && (addr =/= Satp.U || satpLegalMode) && !io.isBackendException
-  val isIllegalMode  = priviledgeMode < addr(9, 8)
-  val justRead = (func === SSDCSROpType.set || func === SSDCSROpType.seti) && src1 === 0.U  // csrrs and csrrsi are exceptions when their src1 is zero
-  val isIllegalWrite = wen && (addr(11, 10) === "b11".U) && !justRead  // Write a read-only CSR register
+  val isIllegalMode = priviledgeMode < addr(9, 8)
+  val justRead = (func === SSDCSROpType.set || func === SSDCSROpType.seti) && src1 === 0.U // csrrs and csrrsi are exceptions when their src1 is zero
+  val isIllegalWrite = wen && (addr(11, 10) === "b11".U) && !justRead // Write a read-only CSR register
   val isIllegalAccess = isIllegalMode || isIllegalWrite
 
   MaskedRegMap.generate(mapping, addr, rdata, wen && !isIllegalAccess, wdata)
@@ -523,12 +531,12 @@ class SSDCSR extends NutCoreModule with SSDHasCSRConst with SSDHasExceptionNO {
   val ret = Wire(Bool())
   val isEbreak = addr === privEbreak && func === SSDCSROpType.jmp && !io.isBackendException
   val isEcall = addr === privEcall && func === SSDCSROpType.jmp && !io.isBackendException
-  val isMret = addr === privMret   && func === SSDCSROpType.jmp && !io.isBackendException
-  val isSret = addr === privSret   && func === SSDCSROpType.jmp && !io.isBackendException
-  val isUret = addr === privUret   && func === SSDCSROpType.jmp && !io.isBackendException
+  val isMret = addr === privMret && func === SSDCSROpType.jmp && !io.isBackendException
+  val isSret = addr === privSret && func === SSDCSROpType.jmp && !io.isBackendException
+  val isUret = addr === privUret && func === SSDCSROpType.jmp && !io.isBackendException
 
-//  Debug(wen, "csr write: pc %x addr %x rdata %x wdata %x func %x\n", io.cfIn.pc, addr, rdata, wdata, func)
-//  Debug(wen, "[MST] time %d pc %x mstatus %x mideleg %x medeleg %x mode %x\n", GTimer(), io.cfIn.pc, mstatus, mideleg , medeleg, priviledgeMode)
+  //  Debug(wen, "csr write: pc %x addr %x rdata %x wdata %x func %x\n", io.cfIn.pc, addr, rdata, wdata, func)
+  //  Debug(wen, "[MST] time %d pc %x mstatus %x mideleg %x medeleg %x mode %x\n", GTimer(), io.cfIn.pc, mstatus, mideleg , medeleg, priviledgeMode)
 
   // MMU Permission Check
 
@@ -556,56 +564,56 @@ class SSDCSR extends NutCoreModule with SSDHasCSRConst with SSDHasExceptionNO {
   // assert(!hasStorePageFault)
 
   //TODO: Havn't test if io.dmemMMU.priviledgeMode is correct yet
-//  io.imemMMU.priviledgeMode := priviledgeMode
-//  io.dmemMMU.priviledgeMode := Mux(mstatusStruct.mprv.asBool, mstatusStruct.mpp, priviledgeMode)
-//  io.imemMMU.status_sum := mstatusStruct.sum.asBool
-//  io.dmemMMU.status_sum := mstatusStruct.sum.asBool
-//  io.imemMMU.status_mxr := DontCare
-//  io.dmemMMU.status_mxr := mstatusStruct.mxr.asBool
+  //  io.imemMMU.priviledgeMode := priviledgeMode
+  //  io.dmemMMU.priviledgeMode := Mux(mstatusStruct.mprv.asBool, mstatusStruct.mpp, priviledgeMode)
+  //  io.imemMMU.status_sum := mstatusStruct.sum.asBool
+  //  io.dmemMMU.status_sum := mstatusStruct.sum.asBool
+  //  io.imemMMU.status_mxr := DontCare
+  //  io.dmemMMU.status_mxr := mstatusStruct.mxr.asBool
 
-//  val hasInstrPageFault = Wire(Bool())
-//  val hasLoadPageFault = Wire(Bool())
-//  val hasStorePageFault = Wire(Bool())
-//  val hasStoreAddrMisaligned = Wire(Bool())
-//  val hasLoadAddrMisaligned = Wire(Bool())
-//
-//  val dmemPagefaultAddr = Wire(UInt(VAddrBits.W))
-//  val dmemAddrMisalignedAddr = Wire(UInt(VAddrBits.W))
-//  val lsuAddr = WireInit(0.U(64.W))
-//  BoringUtils.addSink(lsuAddr, "LSUADDR")
-//  if(EnableOutOfOrderExec){
-//    hasInstrPageFault      := valid && io.cfIn.exceptionVec(instrPageFault)
-//    hasLoadPageFault       := valid && io.cfIn.exceptionVec(loadPageFault)
-//    hasStorePageFault      := valid && io.cfIn.exceptionVec(storePageFault)
-//    hasStoreAddrMisaligned := valid && io.cfIn.exceptionVec(storeAddrMisaligned)
-//    hasLoadAddrMisaligned  := valid && io.cfIn.exceptionVec(loadAddrMisaligned)
-//    dmemPagefaultAddr := src1 // LSU -> wbresult -> prf -> beUop.data.src1
-//    dmemAddrMisalignedAddr := src1
-//  }else{
-//    hasInstrPageFault := io.cfIn.exceptionVec(instrPageFault) && valid
-//    hasLoadPageFault := io.dmemMMU.loadPF
-//    hasStorePageFault := io.dmemMMU.storePF
-//    hasStoreAddrMisaligned := io.cfIn.exceptionVec(storeAddrMisaligned)
-//    hasLoadAddrMisaligned := io.cfIn.exceptionVec(loadAddrMisaligned)
-//    dmemPagefaultAddr := io.dmemMMU.addr
-//    dmemAddrMisalignedAddr := lsuAddr
-//  }
+  //  val hasInstrPageFault = Wire(Bool())
+  //  val hasLoadPageFault = Wire(Bool())
+  //  val hasStorePageFault = Wire(Bool())
+  //  val hasStoreAddrMisaligned = Wire(Bool())
+  //  val hasLoadAddrMisaligned = Wire(Bool())
+  //
+  //  val dmemPagefaultAddr = Wire(UInt(VAddrBits.W))
+  //  val dmemAddrMisalignedAddr = Wire(UInt(VAddrBits.W))
+  //  val lsuAddr = WireInit(0.U(64.W))
+  //  BoringUtils.addSink(lsuAddr, "LSUADDR")
+  //  if(EnableOutOfOrderExec){
+  //    hasInstrPageFault      := valid && io.cfIn.exceptionVec(instrPageFault)
+  //    hasLoadPageFault       := valid && io.cfIn.exceptionVec(loadPageFault)
+  //    hasStorePageFault      := valid && io.cfIn.exceptionVec(storePageFault)
+  //    hasStoreAddrMisaligned := valid && io.cfIn.exceptionVec(storeAddrMisaligned)
+  //    hasLoadAddrMisaligned  := valid && io.cfIn.exceptionVec(loadAddrMisaligned)
+  //    dmemPagefaultAddr := src1 // LSU -> wbresult -> prf -> beUop.data.src1
+  //    dmemAddrMisalignedAddr := src1
+  //  }else{
+  //    hasInstrPageFault := io.cfIn.exceptionVec(instrPageFault) && valid
+  //    hasLoadPageFault := io.dmemMMU.loadPF
+  //    hasStorePageFault := io.dmemMMU.storePF
+  //    hasStoreAddrMisaligned := io.cfIn.exceptionVec(storeAddrMisaligned)
+  //    hasLoadAddrMisaligned := io.cfIn.exceptionVec(loadAddrMisaligned)
+  //    dmemPagefaultAddr := io.dmemMMU.addr
+  //    dmemAddrMisalignedAddr := lsuAddr
+  //  }
 
-//  when(hasInstrPageFault || hasLoadPageFault || hasStorePageFault){
-//    val tval = Mux(hasInstrPageFault, Mux(io.cfIn.crossPageIPFFix, SignExt((io.cfIn.pc + 2.U)(VAddrBits-1,0), XLEN), SignExt(io.cfIn.pc(VAddrBits-1,0), XLEN)), SignExt(dmemPagefaultAddr, XLEN))
-//    when(priviledgeMode === ModeM){
-//      mtval := tval
-//    }.otherwise{
-//      stval := tval
-//    }
-//    Debug("[PF] %d: ipf %b tval %x := addr %x pc %x priviledgeMode %x\n", GTimer(), hasInstrPageFault, tval, SignExt(dmemPagefaultAddr, XLEN), io.cfIn.pc, priviledgeMode)
-//  }
-//
-//  when(hasLoadAddrMisaligned || hasStoreAddrMisaligned)
-//  {
-//    mtval := SignExt(dmemAddrMisalignedAddr, XLEN)
-//    Debug("[ML] %d: addr %x pc %x priviledgeMode %x\n", GTimer(), SignExt(dmemAddrMisalignedAddr, XLEN), io.cfIn.pc, priviledgeMode)
-//  }
+  //  when(hasInstrPageFault || hasLoadPageFault || hasStorePageFault){
+  //    val tval = Mux(hasInstrPageFault, Mux(io.cfIn.crossPageIPFFix, SignExt((io.cfIn.pc + 2.U)(VAddrBits-1,0), XLEN), SignExt(io.cfIn.pc(VAddrBits-1,0), XLEN)), SignExt(dmemPagefaultAddr, XLEN))
+  //    when(priviledgeMode === ModeM){
+  //      mtval := tval
+  //    }.otherwise{
+  //      stval := tval
+  //    }
+  //    Debug("[PF] %d: ipf %b tval %x := addr %x pc %x priviledgeMode %x\n", GTimer(), hasInstrPageFault, tval, SignExt(dmemPagefaultAddr, XLEN), io.cfIn.pc, priviledgeMode)
+  //  }
+  //
+  //  when(hasLoadAddrMisaligned || hasStoreAddrMisaligned)
+  //  {
+  //    mtval := SignExt(dmemAddrMisalignedAddr, XLEN)
+  //    Debug("[ML] %d: addr %x pc %x priviledgeMode %x\n", GTimer(), SignExt(dmemAddrMisalignedAddr, XLEN), io.cfIn.pc, priviledgeMode)
+  //  }
 
   // Exception and Intr
 
@@ -623,38 +631,43 @@ class SSDCSR extends NutCoreModule with SSDHasCSRConst with SSDHasExceptionNO {
 
   // SEIP from PLIC is only used to raise interrupt,
   // but it is not stored in the CSR
-  val seip = meip    // FIXME: PLIC should generate SEIP different from MEIP
+  val seip = meip // FIXME: PLIC should generate SEIP different from MEIP
   val mipRaiseIntr = WireInit(mip)
   val mipRaiseIntr_wire = WireInit(mipWire)
   mipRaiseIntr.e.s := mip.e.s | seip
 
 
-  val ideleg =  (mideleg & mipRaiseIntr.asUInt)
+  val ideleg = (mideleg & mipRaiseIntr.asUInt)
+
   def priviledgedEnableDetect(x: Bool): Bool = Mux(x, ((priviledgeMode === ModeS) && mstatusStruct.ie.s) || (priviledgeMode < ModeS),
     ((priviledgeMode === ModeM) && mstatusStruct.ie.m) || (priviledgeMode < ModeM))
-  val intrVecEnable = Wire(Vec(12, Bool()))
-  intrVecEnable.zip(ideleg.asBools).map{case(x,y) => x := priviledgedEnableDetect(y)}
-  val intrVec = mie_wire(11,0) & mipRaiseIntr.asUInt & intrVecEnable.asUInt
 
-  def priviledgedEnableDetect_wire(x: Bool): Bool = Mux(x, ((priviledgeMode === ModeS) && mstatus_wire.asTypeOf(new MstatusStruct).ie.s) || (priviledgeMode < ModeS),
-    ((priviledgeMode === ModeM) && mstatus_wire.asTypeOf(new MstatusStruct).ie.m) || (priviledgeMode < ModeM))
+  val intrVecEnable = Wire(Vec(12, Bool()))
+  intrVecEnable.zip(ideleg.asBools).map { case (x, y) => x := priviledgedEnableDetect(y) }
+  val intrVec = mie_wire(11, 0) & mipRaiseIntr.asUInt & intrVecEnable.asUInt
+
+  val write_mstatus_mie = addr === Mstatus.U && io.in.valid && mstatusUpdateSideEffect(wdata).asTypeOf(new MstatusStruct).ie.m
+
+  def priviledgedEnableDetect_wire(x: Bool, write: Bool): Bool = Mux(x, ((priviledgeMode === ModeS) && mstatus_wire.asTypeOf(new MstatusStruct).ie.s) || (priviledgeMode < ModeS),
+    ((priviledgeMode === ModeM) && mstatus_wire.asTypeOf(new MstatusStruct).ie.m) || write || (priviledgeMode < ModeM))
+
   val intrVecEnable_wire = Wire(Vec(12, Bool()))
-  intrVecEnable_wire.zip(ideleg.asBools).map{case(x,y) => x := priviledgedEnableDetect_wire(y)}
-  val intrVec_wire = mie_wire(11,0) & mipRaiseIntr_wire.asUInt & intrVecEnable_wire.asUInt
+  intrVecEnable_wire.zip(ideleg.asBools).map { case (x, y) => x := priviledgedEnableDetect_wire(y, write_mstatus_mie) }
+  val intrVec_wire = mie_wire(11, 0) & mipRaiseIntr_wire.asUInt & intrVecEnable_wire.asUInt
   // BoringUtils.addSource(intrVec, "intrVecIDU")
   // val intrNO = PriorityEncoder(intrVec)
 
   val intrNO = IntPriority.foldRight(0.U)((i: Int, sum: UInt) => Mux(intrVec(i), i.U, sum))
-  // val intrNO = PriorityEncoder(io.cfIn.intrVec)
-  val raiseIntr = intrVec.asUInt.orR
-
   val intrNO_wire = IntPriority.foldRight(0.U)((i: Int, sum: UInt) => Mux(intrVec_wire(i), i.U, sum))
+  val raiseIntr = intrVec.asUInt.orR
   val raiseIntr_wire = intrVec_wire.asUInt.orR
 
   // dontTouch(mstatusStruct_wire)
   dontTouch(intrVecEnable_wire)
   dontTouch(intrVec_wire)
   dontTouch(intrNO_wire)
+  dontTouch(mipRaiseIntr_wire)
+
   // exceptions
 
   // TODO: merge iduExceptionVec, csrExceptionVec as raiseExceptionVec
@@ -673,40 +686,42 @@ class SSDCSR extends NutCoreModule with SSDHasCSRConst with SSDHasExceptionNO {
   val exceptionNO = ExcPriority.foldRight(0.U)((i: Int, sum: UInt) => Mux(raiseExceptionVec(i), i.U, sum))
   io.wenFix := raiseException
 
-  val causeNO = (raiseIntr << (XLEN-1)) | Mux(raiseIntr, intrNO, exceptionNO)
+  val causeNO = (raiseIntr << (XLEN - 1)) | Mux(raiseIntr, intrNO, exceptionNO)
   io.intrNO := Mux(raiseIntr, causeNO, 0.U)
+  val causeNo_wire = (raiseIntr_wire << (XLEN - 1)) | Mux(raiseIntr_wire, intrNO_wire, exceptionNO) //do not support
 
   val raiseExceptionIntr = (raiseException || raiseIntr) && RegNext(io.instrValid)
+  val raiseExceptionIntr_wire = (raiseException || raiseIntr_wire) && io.instrValid //dont support raise exception
   val retTarget = Wire(UInt(VAddrBits.W))
   val trapTarget = Wire(UInt(VAddrBits.W))
-//  io.redirect.valid := (valid && func === SSDCSROpType.jmp) || raiseExceptionIntr || resetSatp
-//  io.redirect.rtype := 0.U
-//  io.redirect.target := Mux(resetSatp, io.cfIn.pc + 4.U, Mux(raiseExceptionIntr, trapTarget, retTarget))
-  io.redirect.valid := (valid && func === SSDCSROpType.jmp) || raiseExceptionIntr || resetSatp
+  //  io.redirect.valid := (valid && func === CSROpType.jmp) || raiseExceptionIntr || resetSatp
+  //  io.redirect.rtype := 0.U
+  //  io.redirect.target := Mux(resetSatp, io.cfIn.pc + 4.U, Mux(raiseExceptionIntr, trapTarget, retTarget))
+  io.redirect.valid := (valid && func === SSDCSROpType.jmp) || valid && raiseExceptionIntr_wire /*raiseExceptionIntr*/ || resetSatp
   io.redirect.rtype := 0.U
-  io.redirect.target := Mux(resetSatp, io.cfIn.pc + 4.U, Mux(raiseExceptionIntr, trapTarget, retTarget))
+  io.redirect.target := Mux(resetSatp, io.cfIn.pc + 4.U, Mux(raiseExceptionIntr_wire, trapTarget, retTarget))
   io.redirect.btbIsBranch := 0.U
   io.redirect.pc := RegNext(io.cfIn.pc)
-//  Debug(raiseExceptionIntr, "excin %b excgen %b", csrExceptionVec.asUInt(), iduExceptionVec.asUInt())
-//  Debug(raiseExceptionIntr, "int/exc: pc %x int (%d):%x exc: (%d):%x\n",io.cfIn.pc, intrNO, io.cfIn.intrVec.asUInt, exceptionNO, raiseExceptionVec.asUInt)
-//  Debug(raiseExceptionIntr, "[MST] time %d pc %x mstatus %x mideleg %x medeleg %x mode %x\n", GTimer(), io.cfIn.pc, mstatus, mideleg , medeleg, priviledgeMode)
-//  Debug(io.redirect.valid, "redirect to %x\n", io.redirect.target)
-//  Debug(resetSatp, "satp reset\n")
+  //  Debug(raiseExceptionIntr, "excin %b excgen %b", csrExceptionVec.asUInt(), iduExceptionVec.asUInt())
+  //  Debug(raiseExceptionIntr, "int/exc: pc %x int (%d):%x exc: (%d):%x\n",io.cfIn.pc, intrNO, io.cfIn.intrVec.asUInt, exceptionNO, raiseExceptionVec.asUInt)
+  //  Debug(raiseExceptionIntr, "[MST] time %d pc %x mstatus %x mideleg %x medeleg %x mode %x\n", GTimer(), io.cfIn.pc, mstatus, mideleg , medeleg, priviledgeMode)
+  //  Debug(io.redirect.valid, "redirect to %x\n", io.redirect.target)
+  //  Debug(resetSatp, "satp reset\n")
 
   // Branch control
 
-  val deleg = Mux(raiseIntr, mideleg , medeleg)
+  val deleg = Mux(raiseIntr, mideleg, medeleg)
   // val delegS = ((deleg & (1 << (causeNO & 0xf))) != 0) && (priviledgeMode < ModeM);
-  val delegS = (deleg(causeNO(3,0))) && (priviledgeMode < ModeM)
-  val tvalWen = raiseIntr // in nutcore-riscv64, no exception will come together with PF
+  val delegS = (deleg(causeNO(3, 0))) && (priviledgeMode < ModeM)
+  val tvalWen = raiseIntr // in Core-riscv64, no exception will come together with PF
 
   ret := isMret || isSret || isUret
-  trapTarget := Mux(delegS, stvec, mtvec)(VAddrBits-1, 0)
+  trapTarget := Mux(delegS, stvec, mtvec)(VAddrBits - 1, 0)
   retTarget := DontCare
   // TODO redirect target
   // val illegalEret = TODO
 
-  when (valid && isMret) {
+  when(valid && isMret) {
     val mstatusOld = WireInit(mstatus.asTypeOf(new MstatusStruct))
     val mstatusNew = WireInit(mstatus.asTypeOf(new MstatusStruct))
     // mstatusNew.mpp.m := ModeU //TODO: add mode U
@@ -717,10 +732,10 @@ class SSDCSR extends NutCoreModule with SSDHasCSRConst with SSDHasExceptionNO {
     mstatus := mstatusNew.asUInt
     mstatus_wire := mstatusNew.asUInt
     lr := false.B
-    retTarget := mepc(VAddrBits-1, 0)
+    retTarget := mepc(VAddrBits - 1, 0)
   }
 
-  when (valid && isSret) {
+  when(valid && isSret) {
     val mstatusOld = WireInit(mstatus.asTypeOf(new MstatusStruct))
     val mstatusNew = WireInit(mstatus.asTypeOf(new MstatusStruct))
     // mstatusNew.mpp.m := ModeU //TODO: add mode U
@@ -731,10 +746,10 @@ class SSDCSR extends NutCoreModule with SSDHasCSRConst with SSDHasExceptionNO {
     mstatus := mstatusNew.asUInt
     mstatus_wire := mstatusNew.asUInt
     lr := false.B
-    retTarget := sepc(VAddrBits-1, 0)
+    retTarget := sepc(VAddrBits - 1, 0)
   }
 
-  when (valid && isUret) {
+  when(valid && isUret) {
     val mstatusOld = WireInit(mstatus.asTypeOf(new MstatusStruct))
     val mstatusNew = WireInit(mstatus.asTypeOf(new MstatusStruct))
     // mstatusNew.mpp.m := ModeU //TODO: add mode U
@@ -743,21 +758,23 @@ class SSDCSR extends NutCoreModule with SSDHasCSRConst with SSDHasExceptionNO {
     mstatusNew.pie.u := true.B
     mstatus := mstatusNew.asUInt
     mstatus_wire := mstatusNew.asUInt
-    retTarget := uepc(VAddrBits-1, 0)
+    retTarget := uepc(VAddrBits - 1, 0)
   }
 
-  when (raiseExceptionIntr) {
+  when(raiseExceptionIntr && addr === Mstatus.U && io.in.valid) {
     val mstatusOld = WireInit(mstatus.asTypeOf(new MstatusStruct))
     val mstatusNew = WireInit(mstatus.asTypeOf(new MstatusStruct))
 
-    when (delegS) {
+    when(delegS) {
       scause := causeNO
       sepc := SignExt(io.cfIn.pc, XLEN)
       mstatusNew.spp := priviledgeMode
       mstatusNew.pie.s := mstatusOld.ie.s
       mstatusNew.ie.s := false.B
       priviledgeMode := ModeS
-      when(tvalWen){stval := 0.U} // TODO: should not use =/=
+      when(tvalWen) {
+        stval := 0.U
+      } // TODO: should not use =/=
       // printf("[*] mstatusNew.spp %x\n", mstatusNew.spp)
       // trapTarget := stvec(VAddrBits-1. 0)
     }.otherwise {
@@ -769,7 +786,10 @@ class SSDCSR extends NutCoreModule with SSDHasCSRConst with SSDHasExceptionNO {
       mstatusNew.pie.m := mstatusOld.ie.m
       mstatusNew.ie.m := false.B
       priviledgeMode := ModeM
-      when(tvalWen){mtval := 0.U} // TODO: should not use =/=
+      when(tvalWen) {
+        mtval := 0.U
+      }
+      // TODO: should not use =/=
       // trapTarget := mtvec(VAddrBits-1. 0)
     }
     // mstatusNew.pie.m := LookupTree(priviledgeMode, List(
@@ -781,6 +801,29 @@ class SSDCSR extends NutCoreModule with SSDHasCSRConst with SSDHasExceptionNO {
 
     mstatus := mstatusNew.asUInt
     mstatus_wire := mstatusNew.asUInt
+  }.elsewhen(mtip && addr === Mstatus.U && io.in.valid && mstatusUpdateSideEffect(wdata).asTypeOf(new MstatusStruct).ie.m) {
+    // val mstatusOld = WireInit(mstatus.asTypeOf(new MstatusStruct))
+    val mstatusNew = WireInit(mstatusUpdateSideEffect(wdata).asTypeOf(new MstatusStruct))
+
+    mcause := causeNo_wire
+    mcause_wire := causeNo_wire
+    mepc := (SignExt(io.cfIn.pc, XLEN))
+    mepc_wire := (SignExt(io.cfIn.pc, XLEN))
+    mstatusNew.mpp := (priviledgeMode)
+    // mstatusNew.pie.m := mstatusUpdateSideEffect(wdata).ie.m && !(RegNext(wdata).asTypeOf(new MstatusStruct).ie.m)
+    mstatusNew.ie.m := false.B
+    mstatusNew.pie.m := (mstatus).asTypeOf(new MstatusStruct).ie.m
+    priviledgeMode := ModeM
+    when(tvalWen) {
+      mtval := 0.U
+    }
+
+    mstatus := mstatusNew.asUInt
+    mstatus_wire := mstatusNew.asUInt
+  }.elsewhen(addr === Mstatus.U && io.in.valid) {
+    val mstatusNew = WireInit(mstatusUpdateSideEffect(wdata).asTypeOf(new MstatusStruct))
+    mstatus := mstatusNew.asUInt
+    mstatus_wire := mstatusNew.asUInt
   }
 
   io.in.ready := true.B
@@ -789,107 +832,112 @@ class SSDCSR extends NutCoreModule with SSDHasCSRConst with SSDHasExceptionNO {
   // perfcnt
 
   val generalPerfCntList = Map(
-    "Mcycle"      -> (0xb00, "perfCntCondMcycle"     ),
-    "Minstret"    -> (0xb02, "perfCntCondMinstret"   ),
+    "Mcycle" -> (0xb00, "perfCntCondMcycle"),
+    "Minstret" -> (0xb02, "perfCntCondMinstret"),
     "MultiCommit" -> (0xb03, "perfCntCondMultiCommit"),
-    "MimemStall"  -> (0xb04, "perfCntCondMimemStall" ),
-    "MaluInstr"   -> (0xb05, "perfCntCondMaluInstr"  ),
-    "MbruInstr"   -> (0xb06, "perfCntCondMbruInstr"  ),
-    "MlsuInstr"   -> (0xb07, "perfCntCondMlsuInstr"  ),
-    "MmduInstr"   -> (0xb08, "perfCntCondMmduInstr"  ),
-    "McsrInstr"   -> (0xb09, "perfCntCondMcsrInstr"  ),
-    "MloadInstr"  -> (0xb0a, "perfCntCondMloadInstr" ),
-    "MmmioInstr"  -> (0xb0b, "perfCntCondMmmioInstr" ),
-    "MicacheHit"  -> (0xb0c, "perfCntCondMicacheHit" ),
-    "MdcacheHit"  -> (0xb0d, "perfCntCondMdcacheHit" ),
-    "MmulInstr"   -> (0xb0e, "perfCntCondMmulInstr"  ),
-    "MifuFlush"   -> (0xb0f, "perfCntCondMifuFlush"  ),
-    "MbpBRight"   -> (0xb10, "MbpBRight"             ),
-    "MbpBWrong"   -> (0xb11, "MbpBWrong"             ),
-    "MbpJRight"   -> (0xb12, "MbpJRight"             ),
-    "MbpJWrong"   -> (0xb13, "MbpJWrong"             ),
-    "MbpIRight"   -> (0xb14, "MbpIRight"             ),
-    "MbpIWrong"   -> (0xb15, "MbpIWrong"             ),
-    "MbpRRight"   -> (0xb16, "MbpRRight"             ),
-    "MbpRWrong"   -> (0xb17, "MbpRWrong"             ),
+    "MimemStall" -> (0xb04, "perfCntCondMimemStall"),
+    "MaluInstr" -> (0xb05, "perfCntCondMaluInstr"),
+    "MbruInstr" -> (0xb06, "perfCntCondMbruInstr"),
+    "MlsuInstr" -> (0xb07, "perfCntCondMlsuInstr"),
+    "MmduInstr" -> (0xb08, "perfCntCondMmduInstr"),
+    "McsrInstr" -> (0xb09, "perfCntCondMcsrInstr"),
+    "MloadInstr" -> (0xb0a, "perfCntCondMloadInstr"),
+    "MmmioInstr" -> (0xb0b, "perfCntCondMmmioInstr"),
+    "MicacheHit" -> (0xb0c, "perfCntCondMicacheHit"),
+    "MdcacheHit" -> (0xb0d, "perfCntCondMdcacheHit"),
+    "MmulInstr" -> (0xb0e, "perfCntCondMmulInstr"),
+    "MifuFlush" -> (0xb0f, "perfCntCondMifuFlush"),
+    "MbpBRight" -> (0xb10, "MbpBRight"),
+    "MbpBWrong" -> (0xb11, "MbpBWrong"),
+    "MbpJRight" -> (0xb12, "MbpJRight"),
+    "MbpJWrong" -> (0xb13, "MbpJWrong"),
+    "MbpIRight" -> (0xb14, "MbpIRight"),
+    "MbpIWrong" -> (0xb15, "MbpIWrong"),
+    "MbpRRight" -> (0xb16, "MbpRRight"),
+    "MbpRWrong" -> (0xb17, "MbpRWrong"),
     "Ml2cacheHit" -> (0xb18, "perfCntCondMl2cacheHit"),
-    "Custom1"     -> (0xb19, "Custom1"               ),
-    "Custom2"     -> (0xb1a, "Custom2"               ),
-    "Custom3"     -> (0xb1b, "Custom3"               ),
-    "Custom4"     -> (0xb1c, "Custom4"               ),
-    "Custom5"     -> (0xb1d, "Custom5"               ),
-    "Custom6"     -> (0xb1e, "Custom6"               ),
-    "Custom7"     -> (0xb1f, "Custom7"               ),
-    "Custom8"     -> (0xb20, "Custom8"               )
+    "Custom1" -> (0xb19, "Custom1"),
+    "Custom2" -> (0xb1a, "Custom2"),
+    "Custom3" -> (0xb1b, "Custom3"),
+    "Custom4" -> (0xb1c, "Custom4"),
+    "Custom5" -> (0xb1d, "Custom5"),
+    "Custom6" -> (0xb1e, "Custom6"),
+    "Custom7" -> (0xb1f, "Custom7"),
+    "Custom8" -> (0xb20, "Custom8")
   )
 
   val sequentialPerfCntList = Map(
-    "MrawStall"   -> (0xb31, "perfCntCondMrawStall"    ),
-    "MexuBusy"    -> (0xb32, "perfCntCondMexuBusy"     ),
-    "MloadStall"  -> (0xb33, "perfCntCondMloadStall"   ),
-    "MstoreStall" -> (0xb34, "perfCntCondMstoreStall"  ),
-    "ISUIssue"    -> (0xb35, "perfCntCondISUIssue"     )
+    "MrawStall" -> (0xb31, "perfCntCondMrawStall"),
+    "MexuBusy" -> (0xb32, "perfCntCondMexuBusy"),
+    "MloadStall" -> (0xb33, "perfCntCondMloadStall"),
+    "MstoreStall" -> (0xb34, "perfCntCondMstoreStall"),
+    "ISUIssue" -> (0xb35, "perfCntCondISUIssue")
   )
 
   val outOfOrderPerfCntList = Map(
-    "MrobFull"    -> (0xb31, "perfCntCondMrobFull"     ),
-    "Malu1rsFull" -> (0xb32, "perfCntCondMalu1rsFull"  ),
-    "Malu2rsFull" -> (0xb33, "perfCntCondMalu2rsFull"  ),
-    "MbrursFull"  -> (0xb34, "perfCntCondMbrursFull"   ),
-    "MlsursFull"  -> (0xb35, "perfCntCondMlsursFull"   ),
-    "MmdursFull"  -> (0xb36, "perfCntCondMmdursFull"   ),
-    "MmemqFull"   -> (0xb37, "perfCntCondMmemqFull"    ),
-    "MrobEmpty"   -> (0xb38, "perfCntCondMrobEmpty"    ),
-    "MstqFull"    -> (0xb39, "perfCntCondMstqFull"     ),
-    "McmtCnt0"    -> (0xb40, "perfCntCondMcmtCnt0"     ),
-    "McmtCnt1"    -> (0xb41, "perfCntCondMcmtCnt1"     ),
-    "McmtCnt2"    -> (0xb42, "perfCntCondMcmtCnt2"     ),
-    "McmtStrHaz1" -> (0xb43, "perfCntCondMcmtStrHaz1"  ),
-    "McmtStrHaz2" -> (0xb44, "perfCntCondMcmtStrHaz2"  ),
-    "MaluInstr2"  -> (0xb45, "perfCntCondMaluInstr2"   ),
-    "Mdispatch0"  -> (0xb46, "perfCntCondMdispatch0"   ),
-    "Mdispatch1"  -> (0xb47, "perfCntCondMdispatch1"   ),
-    "Mdispatch2"  -> (0xb48, "perfCntCondMdispatch2"   ),
-    "MlsuIssue"   -> (0xb49, "perfCntCondMlsuIssue"    ),
-    "MmduIssue"   -> (0xb4a, "perfCntCondMmduIssue"    ),
-    "MbruCmt"     -> (0xb4b, "perfCntCondMbruCmt"       ),
-    "MbruCmtWrong"-> (0xb4c, "perfCntCondMbruCmtWrong"  ),
-    "MicacheLoss" -> (0xb4d, "perfCntCondMicacheLoss"   ),
-    "MdcacheLoss" -> (0xb4e, "perfCntCondMdcacheLoss"   ),
-    "Ml2cacheLoss"-> (0xb4f, "perfCntCondMl2cacheLoss"  ),
-    "MbrInROB_0"  -> (0xb50, "perfCntCondMbrInROB_0"   ),
-    "MbrInROB_1"  -> (0xb51, "perfCntCondMbrInROB_1"   ),
-    "MbrInROB_2"  -> (0xb52, "perfCntCondMbrInROB_2"   ),
-    "MbrInROB_3"  -> (0xb53, "perfCntCondMbrInROB_3"   ),
-    "MbrInROB_4"  -> (0xb54, "perfCntCondMbrInROB_4"   ),
-    "Mdp1StBlk"   -> (0xb55, "perfCntCondMdp1StBlk"   ),
-    "Mdp1StRSf"   -> (0xb56, "perfCntCondMdp1StRSf"   ),
-    "Mdp1StROBf"  -> (0xb57, "perfCntCondMdp1StROBf"   ),
-    "Mdp1StConf"  -> (0xb58, "perfCntCondMdp1StConf"   ),
-    "Mdp1StCnt"   -> (0xb59, "perfCntCondMdp1StCnt"   ),
-    "Mdp2StBlk"   -> (0xb5a, "perfCntCondMdp2StBlk"   ),
-    "Mdp2StRSf"   -> (0xb5b, "perfCntCondMdp2StRSf"   ),
-    "Mdp2StROBf"  -> (0xb5c, "perfCntCondMdp2StROBf"   ),
-    "Mdp2StConf"  -> (0xb5d, "perfCntCondMdp2StConf"   ),
-    "Mdp2StSeq"   -> (0xb5e, "perfCntCondMdp2StSeq"   ),
-    "Mdp2StCnt"   -> (0xb5f, "perfCntCondMdp2StCnt"   ),
-    "MloadCnt"    -> (0xb60, "perfCntCondMloadCnt"   ),
-    "MstoreCnt"   -> (0xb61, "perfCntCondMstoreCnt"   ),
-    "MmemSBL"     -> (0xb62, "perfCntCondMmemSBL"   ),
-    "MpendingLS  "-> (0xb63, "perfCntCondMpendingLS"   ),     //Maunally updated
-    "MpendingSCmt"-> (0xb64, "perfCntCondMpendingSCmt"   ), //Maunally updated
-    "MpendingSReq"-> (0xb65, "perfCntCondMpendingSReq"   ), //Maunally updated
-    "MicacheReq"  -> (0xb66, "perfCntCondMicacheReq"   ),
-    "MdcacheReq"  -> (0xb67, "perfCntCondMdcacheReq"   ),
-    "Ml2cacheReq" -> (0xb68, "perfCntCondMl2cacheReq"   ),
-    "MdpNoInst"   -> (0xb69, "perfCntCondMdpNoInst"   )
+    "MrobFull" -> (0xb31, "perfCntCondMrobFull"),
+    "Malu1rsFull" -> (0xb32, "perfCntCondMalu1rsFull"),
+    "Malu2rsFull" -> (0xb33, "perfCntCondMalu2rsFull"),
+    "MbrursFull" -> (0xb34, "perfCntCondMbrursFull"),
+    "MlsursFull" -> (0xb35, "perfCntCondMlsursFull"),
+    "MmdursFull" -> (0xb36, "perfCntCondMmdursFull"),
+    "MmemqFull" -> (0xb37, "perfCntCondMmemqFull"),
+    "MrobEmpty" -> (0xb38, "perfCntCondMrobEmpty"),
+    "MstqFull" -> (0xb39, "perfCntCondMstqFull"),
+    "McmtCnt0" -> (0xb40, "perfCntCondMcmtCnt0"),
+    "McmtCnt1" -> (0xb41, "perfCntCondMcmtCnt1"),
+    "McmtCnt2" -> (0xb42, "perfCntCondMcmtCnt2"),
+    "McmtStrHaz1" -> (0xb43, "perfCntCondMcmtStrHaz1"),
+    "McmtStrHaz2" -> (0xb44, "perfCntCondMcmtStrHaz2"),
+    "MaluInstr2" -> (0xb45, "perfCntCondMaluInstr2"),
+    "Mdispatch0" -> (0xb46, "perfCntCondMdispatch0"),
+    "Mdispatch1" -> (0xb47, "perfCntCondMdispatch1"),
+    "Mdispatch2" -> (0xb48, "perfCntCondMdispatch2"),
+    "MlsuIssue" -> (0xb49, "perfCntCondMlsuIssue"),
+    "MmduIssue" -> (0xb4a, "perfCntCondMmduIssue"),
+    "MbruCmt" -> (0xb4b, "perfCntCondMbruCmt"),
+    "MbruCmtWrong" -> (0xb4c, "perfCntCondMbruCmtWrong"),
+    "MicacheLoss" -> (0xb4d, "perfCntCondMicacheLoss"),
+    "MdcacheLoss" -> (0xb4e, "perfCntCondMdcacheLoss"),
+    "Ml2cacheLoss" -> (0xb4f, "perfCntCondMl2cacheLoss"),
+    "MbrInROB_0" -> (0xb50, "perfCntCondMbrInROB_0"),
+    "MbrInROB_1" -> (0xb51, "perfCntCondMbrInROB_1"),
+    "MbrInROB_2" -> (0xb52, "perfCntCondMbrInROB_2"),
+    "MbrInROB_3" -> (0xb53, "perfCntCondMbrInROB_3"),
+    "MbrInROB_4" -> (0xb54, "perfCntCondMbrInROB_4"),
+    "Mdp1StBlk" -> (0xb55, "perfCntCondMdp1StBlk"),
+    "Mdp1StRSf" -> (0xb56, "perfCntCondMdp1StRSf"),
+    "Mdp1StROBf" -> (0xb57, "perfCntCondMdp1StROBf"),
+    "Mdp1StConf" -> (0xb58, "perfCntCondMdp1StConf"),
+    "Mdp1StCnt" -> (0xb59, "perfCntCondMdp1StCnt"),
+    "Mdp2StBlk" -> (0xb5a, "perfCntCondMdp2StBlk"),
+    "Mdp2StRSf" -> (0xb5b, "perfCntCondMdp2StRSf"),
+    "Mdp2StROBf" -> (0xb5c, "perfCntCondMdp2StROBf"),
+    "Mdp2StConf" -> (0xb5d, "perfCntCondMdp2StConf"),
+    "Mdp2StSeq" -> (0xb5e, "perfCntCondMdp2StSeq"),
+    "Mdp2StCnt" -> (0xb5f, "perfCntCondMdp2StCnt"),
+    "MloadCnt" -> (0xb60, "perfCntCondMloadCnt"),
+    "MstoreCnt" -> (0xb61, "perfCntCondMstoreCnt"),
+    "MmemSBL" -> (0xb62, "perfCntCondMmemSBL"),
+    "MpendingLS  " -> (0xb63, "perfCntCondMpendingLS"), //Maunally updated
+    "MpendingSCmt" -> (0xb64, "perfCntCondMpendingSCmt"), //Maunally updated
+    "MpendingSReq" -> (0xb65, "perfCntCondMpendingSReq"), //Maunally updated
+    "MicacheReq" -> (0xb66, "perfCntCondMicacheReq"),
+    "MdcacheReq" -> (0xb67, "perfCntCondMdcacheReq"),
+    "Ml2cacheReq" -> (0xb68, "perfCntCondMl2cacheReq"),
+    "MdpNoInst" -> (0xb69, "perfCntCondMdpNoInst")
     // "MmemLBS"  -> (0xb6a, "perfCntCondMmemLBS"   ),//TODO
   )
 
-  val perfCntList = generalPerfCntList ++  (if (EnableOutOfOrderExec) outOfOrderPerfCntList else sequentialPerfCntList)
+  val perfCntList = generalPerfCntList ++ (if (EnableOutOfOrderExec) outOfOrderPerfCntList else sequentialPerfCntList)
 
   val perfCntCond = List.fill(0x80)(WireInit(false.B))
-  (perfCnts zip perfCntCond).map { case (c, e) => { when (e) { c := c + 1.U } } }
+  (perfCnts zip perfCntCond).map { case (c, e) => {
+    when(e) {
+      c := c + 1.U
+    }
+  }
+  }
   // Manually update perf counter
   val pendingLS = WireInit(0.U(5.W))
   val pendingSCmt = WireInit(0.U(5.W))
@@ -897,11 +945,19 @@ class SSDCSR extends NutCoreModule with SSDHasCSRConst with SSDHasExceptionNO {
   BoringUtils.addSink(pendingLS, "perfCntSrcMpendingLS")
   BoringUtils.addSink(pendingSCmt, "perfCntSrcMpendingSCmt")
   BoringUtils.addSink(pendingSReq, "perfCntSrcMpendingSReq")
-  when(perfCntCond(0xb03 & 0x7f)) { perfCnts(0xb02 & 0x7f) := perfCnts(0xb02 & 0x7f) + 2.U } // Minstret += 2 when MultiCommit
+  when(perfCntCond(0xb03 & 0x7f)) {
+    perfCnts(0xb02 & 0x7f) := perfCnts(0xb02 & 0x7f) + 2.U
+  } // Minstret += 2 when MultiCommit
   if (hasPerfCnt) {
-    when(true.B) { perfCnts(0xb63 & 0x7f) := perfCnts(0xb63 & 0x7f) + pendingLS }
-    when(true.B) { perfCnts(0xb64 & 0x7f) := perfCnts(0xb64 & 0x7f) + pendingSCmt }
-    when(true.B) { perfCnts(0xb65 & 0x7f) := perfCnts(0xb66 & 0x7f) + pendingSReq }
+    when(true.B) {
+      perfCnts(0xb63 & 0x7f) := perfCnts(0xb63 & 0x7f) + pendingLS
+    }
+    when(true.B) {
+      perfCnts(0xb64 & 0x7f) := perfCnts(0xb64 & 0x7f) + pendingSCmt
+    }
+    when(true.B) {
+      perfCnts(0xb65 & 0x7f) := perfCnts(0xb66 & 0x7f) + pendingSReq
+    }
   }
 
   BoringUtils.addSource(WireInit(true.B), "perfCntCondMcycle")
@@ -913,17 +969,19 @@ class SSDCSR extends NutCoreModule with SSDHasCSRConst with SSDHasExceptionNO {
         perfCntCond(addr & 0x7f) := false.B
       }
     }
-  }}
+  }
+  }
 
-  val nutcoretrap = WireInit(false.B)
-  BoringUtils.addSink(nutcoretrap, "nutcoretrap")
+  val Coretrap = WireInit(false.B)
+  BoringUtils.addSink(Coretrap, "Coretrap")
+
   def readWithScala(addr: Int): UInt = mapping(addr)._1
 
-  val mtvec_wire = WireInit(UInt(XLEN.W),0.U)
-  val mtval_wire = WireInit(UInt(XLEN.W),0.U)
-  val mscratch_wire = WireInit(UInt(XLEN.W),0.U)
-  val mideleg_wire = WireInit(UInt(XLEN.W),0.U)
-  val medeleg_wire = WireInit(UInt(XLEN.W),0.U)
+  val mtvec_wire = WireInit(UInt(XLEN.W), 0.U)
+  val mtval_wire = WireInit(UInt(XLEN.W), 0.U)
+  val mscratch_wire = WireInit(UInt(XLEN.W), 0.U)
+  val mideleg_wire = WireInit(UInt(XLEN.W), 0.U)
+  val medeleg_wire = WireInit(UInt(XLEN.W), 0.U)
 
   mtvec_wire := mtvec
   mtval_wire := mtval
@@ -931,122 +989,57 @@ class SSDCSR extends NutCoreModule with SSDHasCSRConst with SSDHasExceptionNO {
   mideleg_wire := mideleg
   medeleg_wire := medeleg
 
-  when(addr === Mtvec.U && io.in.valid){
+  when(addr === Mtvec.U && io.in.valid) {
     mtvec_wire := wdata
   }.elsewhen(addr === Mepc.U && io.in.valid) {
     mepc_wire := wdata
-  }.elsewhen(addr === Mstatus.U && io.in.valid) {
-    mstatus_wire := mstatusUpdateSideEffect(wdata)
   }.elsewhen(addr === Mie.U && io.in.valid) {
     mie_wire := wdata
-  }.elsewhen(addr === Mtval.U && io.in.valid){
+  }.elsewhen(addr === Mtval.U && io.in.valid) {
     mtval_wire := wdata
-  }.elsewhen(addr === Mideleg.U && io.in.valid){
+  }.elsewhen(addr === Mideleg.U && io.in.valid) {
     mideleg_wire := wdata
-  }.elsewhen(addr === Medeleg.U && io.in.valid){
+  }.elsewhen(addr === Medeleg.U && io.in.valid) {
     medeleg_wire := wdata
-  }.elsewhen(addr === Mscratch.U && io.in.valid){
+  }.elsewhen(addr === Mscratch.U && io.in.valid) {
     mscratch_wire := wdata
   }
 
-  BoringUtils.addSource(mtvec_wire,"mtvec_wire")
-  BoringUtils.addSource(mcause_wire,"mcause_wire")
-  BoringUtils.addSource(mepc_wire,"mepc_wire")
-  BoringUtils.addSource(mstatus_wire,"mstatus_wire")
-  BoringUtils.addSource(mie_wire,"mie_wire")
-  BoringUtils.addSource(mtval_wire,"mtval_wire")
-  BoringUtils.addSource(mscratch_wire,"mscratch_wire")
-  BoringUtils.addSource(medeleg_wire,"medeleg_wire")
-  BoringUtils.addSource(mideleg_wire,"mideleg_wire")
+  BoringUtils.addSource(mtvec_wire, "mtvec_wire")
+  BoringUtils.addSource(mcause_wire, "mcause_wire")
+  BoringUtils.addSource(mepc_wire, "mepc_wire")
+  BoringUtils.addSource(mstatus_wire, "mstatus_wire")
+  BoringUtils.addSource(mie_wire, "mie_wire")
+  BoringUtils.addSource(mtval_wire, "mtval_wire")
+  BoringUtils.addSource(mscratch_wire, "mscratch_wire")
+  BoringUtils.addSource(medeleg_wire, "medeleg_wire")
+  BoringUtils.addSource(mideleg_wire, "mideleg_wire")
 
 
-  io.CSRregfile.priviledgeMode :=     priviledgeMode
-  io.CSRregfile.mstatus :=            mstatus //wrong
-  io.CSRregfile.sstatus :=            mstatus_wire & sstatusRmask //modify
-  io.CSRregfile.mepc     :=           mepc
-  io.CSRregfile.sepc     :=           sepc
-  io.CSRregfile.mtval    :=           mtval
-  io.CSRregfile.stval    :=           stval
-  io.CSRregfile.mtvec    :=           mtvec
-  io.CSRregfile.stvec    :=           stvec
-  io.CSRregfile.mcause   :=           mcause
-  io.CSRregfile.scause   :=           scause
-  io.CSRregfile.satp     :=           satp
-  io.CSRregfile.mip      :=           mipReg
-  io.CSRregfile.mie     :=            mie
-  io.CSRregfile.mscratch :=           mscratch
-  io.CSRregfile.sscratch :=           sscratch
-  io.CSRregfile.mideleg :=            mideleg
-  io.CSRregfile.medeleg :=            medeleg
+  io.CSRregfile.priviledgeMode := priviledgeMode
+  io.CSRregfile.mstatus := mstatus //wrong
+  io.CSRregfile.sstatus := mstatus_wire & sstatusRmask //modify
+  io.CSRregfile.mepc := mepc
+  io.CSRregfile.sepc := sepc
+  io.CSRregfile.mtval := mtval
+  io.CSRregfile.stval := stval
+  io.CSRregfile.mtvec := mtvec
+  io.CSRregfile.stvec := stvec
+  io.CSRregfile.mcause := mcause
+  io.CSRregfile.scause := scause
+  io.CSRregfile.satp := satp
+  io.CSRregfile.mip := mipReg
+  io.CSRregfile.mie := mie
+  io.CSRregfile.mscratch := mscratch
+  io.CSRregfile.sscratch := sscratch
+  io.CSRregfile.mideleg := mideleg
+  io.CSRregfile.medeleg := medeleg
 
 
-  io.ArchEvent.intrNO        :=        Mux(raiseIntr_wire && (io.instrValid) && (valid), intrNO_wire, 0.U)
-  io.ArchEvent.exceptionPC   :=   (SignExt(io.cfIn.pc, XLEN))
+  io.ArchEvent.intrNO := Mux(raiseIntr_wire && (io.instrValid) && (valid), intrNO_wire, 0.U)
+  io.ArchEvent.exceptionPC := (SignExt(io.cfIn.pc, XLEN))
   io.ArchEvent.exceptionInst := (io.cfIn.instr)
-  io.ArchEvent.cause         := (Mux(raiseException && io.instrValid && valid, exceptionNO, 0.U)) 
+  io.ArchEvent.cause := (Mux(raiseException && io.instrValid && valid, exceptionNO, 0.U))
 
-
-  /*  if (!p.FPGAPlatform) {
-      // to monitor
-      BoringUtils.addSource(readWithScala(perfCntList("Mcycle")._1), "simCycleCnt")
-      BoringUtils.addSource(readWithScala(perfCntList("Minstret")._1), "simInstrCnt")
-
-      if (hasPerfCnt) {
-        // display all perfcnt when nutcoretrap is executed
-        val PrintPerfCntToCSV = true
-        when (nutcoretrap) {
-          printf("======== PerfCnt =========\n")
-          perfCntList.toSeq.sortBy(_._2._1).map { case (name, (addr, boringId)) =>
-            printf("%d <- " + name + "\n", readWithScala(addr)) }
-          if(PrintPerfCntToCSV){
-          printf("======== PerfCntCSV =========\n\n")
-          perfCntList.toSeq.sortBy(_._2._1).map { case (name, (addr, boringId)) =>
-            printf(name + ", ")}
-          printf("\n\n\n")
-          perfCntList.toSeq.sortBy(_._2._1).map { case (name, (addr, boringId)) =>
-            printf("%d, ", readWithScala(addr)) }
-          printf("\n\n\n")
-          }
-        }
-      }
-
-      // for differential testing
-      val difftest = Module(new DifftestCSRState)
-      difftest.io.clock := clock
-      difftest.io.coreid := 0.U // TODO
-      difftest.io.priviledgeMode := RegNext(priviledgeMode)
-      difftest.io.mstatus := RegNext(mstatus)
-      difftest.io.sstatus := RegNext(mstatus & sstatusRmask)
-      difftest.io.mepc := RegNext(mepc)
-      difftest.io.sepc := RegNext(sepc)
-      difftest.io.mtval:= RegNext(mtval)
-      difftest.io.stval:= RegNext(stval)
-      difftest.io.mtvec := RegNext(mtvec)
-      difftest.io.stvec := RegNext(stvec)
-      difftest.io.mcause := RegNext(mcause)
-      difftest.io.scause := RegNext(scause)
-      difftest.io.satp := RegNext(satp)
-      difftest.io.mip := RegNext(mipReg)
-      difftest.io.mie := RegNext(mie)
-      difftest.io.mscratch := RegNext(mscratch)
-      difftest.io.sscratch := RegNext(sscratch)
-      difftest.io.mideleg := RegNext(mideleg)
-      difftest.io.medeleg := RegNext(medeleg)
-
-      val difftestArchEvent = Module(new DifftestArchEvent)
-      difftestArchEvent.io.clock := clock
-      difftestArchEvent.io.coreid := 0.U // TODO
-      difftestArchEvent.io.intrNO := RegNext(Mux(raiseIntr && io.instrValid && valid, intrNO, 0.U))
-      difftestArchEvent.io.cause := RegNext(Mux(raiseException && io.instrValid && valid, exceptionNO, 0.U))
-      difftestArchEvent.io.exceptionPC := RegNext(SignExt(io.cfIn.pc, XLEN))
-      difftestArchEvent.io.exceptionInst := RegNext(io.cfIn.instr)
-
-    } else {
-      if (!p.FPGAPlatform) {
-        BoringUtils.addSource(readWithScala(perfCntList("Mcycle")._1), "simCycleCnt")
-        BoringUtils.addSource(readWithScala(perfCntList("Minstret")._1), "simInstrCnt")
-      } else {
-        BoringUtils.addSource(readWithScala(perfCntList("Minstret")._1), "ilaInstrCnt")
-      }
-    }*/
 }
+
