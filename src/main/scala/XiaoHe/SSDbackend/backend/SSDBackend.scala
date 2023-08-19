@@ -139,8 +139,8 @@ class SSDbackend extends NutCoreModule with hasBypassConst {
   // val i1CSRValid = BypassPktValid(1) && (BypassPkt(1).decodePkt.csr) && (BypassPkt(1).decodePkt.skip)
   // val i0CSRValid = (BypassPkt(0).decodePkt.csr) && (BypassPkt(0).decodePkt.skip)
   // val i1CSRValid = (BypassPkt(1).decodePkt.csr) && (BypassPkt(1).decodePkt.skip)
-  val i0CSRValid = BypassPktValid(0) && (BypassPkt(0).decodePkt.csr)
-  val i1CSRValid = BypassPktValid(1) && (BypassPkt(1).decodePkt.csr)
+  val i0CSRValid = BypassPktValid(0) && (BypassPkt(0).decodePkt.csr) && (BypassPkt(0).decodePkt.skip)
+  val i1CSRValid = BypassPktValid(1) && (BypassPkt(1).decodePkt.csr) && (BypassPkt(1).decodePkt.skip)
   val CSRValid = i0CSRValid || i1CSRValid
   val CSRfunc = Mux(i1CSRValid,pipeRegStage1.right.bits.fuOpType,pipeRegStage0.right.bits.fuOpType)
   val CSRsrc1 = Mux(i1CSRValid,pipeRegStage1.right.bits.rs1,pipeRegStage0.right.bits.rs1)
