@@ -199,7 +199,7 @@ sealed class DCacheStage1(implicit val p: Parameters) extends DCacheModule {
   io.out.valid := io.in.valid && io.metaReadBus.req.ready && dataReadBusReady && io.tagReadBus.req.ready
   io.in.ready := io.out.ready && io.metaReadBus.req.ready && dataReadBusReady && io.tagReadBus.req.ready
 
-  //Debug(io.in.fire && io.in.bits.addr.asTypeOf(addrBundle).index === 0x36.U, "[Dcache req] Addr: %x  Cmd: %x  Wdata: %x\n", io.in.bits.addr, io.in.bits.cmd, io.in.bits.wdata)
+  //Debug(io.in.fire && io.in.bits.addr.asTypeOf(addrBundle).index === 0x17.U, "[Dcache req] Addr: %x  Cmd: %x  Wdata: %x\n", io.in.bits.addr, io.in.bits.cmd, io.in.bits.wdata)
 }
 
 sealed class ReleaseConcurrencyIO(implicit val p: Parameters) extends DCacheBundle {

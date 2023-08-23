@@ -186,5 +186,5 @@ class IRelease(edge: TLEdgeOut)(implicit val p: Parameters) extends ICacheModule
   io.mem_release.valid := state === s_release || state === s_releaseD
   io.mem_releaseAck.ready := state === s_releaseA
   
-  //Debug(io.mem_release.fire && addr.index === 0x27.U, "[Release] Addr:%x Tag:%x Data:%x\n", req.addr, addr.tag, io.mem_release.bits.data.asUInt)
+  //Debug(io.mem_release.fire && addr.index === 0x17.U, "[Release] Addr:%x Tag:%x Data:%x\n", req.addr, addr.tag, io.mem_release.bits.data.asUInt)
 }

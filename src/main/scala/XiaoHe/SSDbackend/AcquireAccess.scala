@@ -215,7 +215,7 @@ sealed class AcquireAccess(edge: TLEdgeOut)(implicit val p: Parameters) extends 
   io.resp.bits.cmd := SimpleBusCmd.readBurst
   io.resp.bits.user.zip(io.req.bits.user).map { case (o, i) => o := i }
 
-  //Debug(io.mem_grantAck.fire && addr.index === 0x36.U, "[DCache Miss] Addr:%x Tag:%x AcquireBlock:%x Data:%x\n", addr.asUInt, addr.tag, state === s_grantD, io.mem_grantAck.bits.data.asUInt)
+  //Debug(io.mem_grantAck.fire && addr.index === 0x17.U, "[DCache Miss] Addr:%x Tag:%x AcquireBlock:%x Data:%x\n", addr.asUInt, addr.tag, state === s_grantD, io.mem_grantAck.bits.data.asUInt)
 }
 
 sealed class IAcquireAccess(edge: TLEdgeOut)(implicit val p: Parameters) extends ICacheModule{

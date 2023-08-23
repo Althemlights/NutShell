@@ -1,0 +1,12 @@
+Emu compiled at Aug 22 2023, 14:01:55
+The image is ./ready-to-run/cachetest/cache-flush-riscv64-nutshell.bin
+Using simulated 256MB RAM
+--diff is not given, try to use $(NEMU_HOME)/build/riscv64-wukong-interpreter-so by default
+NemuProxy using /nfs/home/fuwenyi/main-xiaohe/NutShell/../../xiaohe/BNEMU/build/riscv64-wukong-interpreter-so
+The first instruction of core 0 has commited. Difftest enabled. 
+Core 0: [33mSOME SIGNAL STOPS THE PROGRAM at pc = 0x80000144
+[0m[35mtotal guest instructions = 245,869
+[0m[35minstrCnt = 245,869, cycleCnt = 679,663, IPC = 0.361751
+[0m[34mSeed=0 Guest cycle spent: 679,667 (this will be different from cycleCnt if emu loads a snapshot)
+[0m[34mHost time spent: 10,898ms
+[0m

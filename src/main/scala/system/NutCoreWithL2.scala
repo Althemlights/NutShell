@@ -63,8 +63,8 @@ class NutcoreWithL2()(implicit p: Parameters) extends LazyModule{
   })))*/
 
   val tlBus = TLXbar()
-  tlBus := TLBuffer() := nutcore.dcache.clientNode
-  tlBus := TLBuffer() := nutcore.icache.clientNode
+  tlBus := TLCacheCork() := TLBuffer() := nutcore.dcache.clientNode
+  tlBus := TLCacheCork() := TLBuffer() := nutcore.icache.clientNode
   val memory_port = TLTempNode()
   //memory_port := TLBuffer() := l2cache.node :=* tlBus
   memory_port := TLBuffer() :=* tlBus
@@ -74,8 +74,7 @@ class NutcoreWithL2()(implicit p: Parameters) extends LazyModule{
   //mmio_port :*= nutcore.uncache.clientNode
   mmio_port := nutcore.mmioxbar
 
-  //val core_reset_sink = BundleBridgeSink(Some(() => Reset()))
-  val core_reset_sink = BundleBridgeSink(Some(() => Bool()))
+  //val core_reset_sink = BundleBridgeSink(Some(() => Bool()))
 
   lazy val module = new NutcoreWithL2Imp(this)
 }
@@ -90,8 +89,8 @@ class NutcoreWithL2Imp(outer: NutcoreWithL2) extends LazyModuleImp(outer) with H
   })
 
   val nutcore = outer.nutcore.module
-  val core_reset_sink = outer.core_reset_sink
-  val core_soft_rst = outer.core_reset_sink.in.head._1
+  //val core_reset_sink = outer.core_reset_sink
+  //val core_soft_rst = outer.core_reset_sink.in.head._1
 
   nutcore.io.hartid := io.hartId
   io.diff <> nutcore.io.diff
@@ -109,7 +108,8 @@ class NutcoreWithL2Imp(outer: NutcoreWithL2) extends LazyModuleImp(outer) with H
 
   when (io.hartId > 0.U) {
     withClockAndReset(clock, reset) {
-      nutcore.reset := core_soft_rst.asAsyncReset
+      //nutcore.reset := core_soft_rst.asAsyncReset
+      nutcore.reset := false.B.asAsyncReset
       //ResetGen(resetChain, core_soft_rst.asAsyncReset, !FPGAPlatform)
     }
   }
