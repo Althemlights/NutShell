@@ -20,6 +20,7 @@ import XiaoHe.SSDbackend._
 import XiaoHe._
 import chisel3._
 import chisel3.util._
+import chisel3.util.experimental.BoringUtils
 import utils._
 object MDUOpType {
   def mul    = "b0000".U
@@ -35,7 +36,7 @@ object MDUOpType {
   def divw   = "b1100".U
   def divuw  = "b1101".U
   def remw   = "b1110".U
-  def remuw  = "b1111".U
+  def remuw  = "b1111".                                                       U
 
   def isDiv(op: UInt) = op(2)
   def isDivSign(op: UInt) = isDiv(op) && !op(0)
@@ -67,6 +68,8 @@ class Multiplier(len: Int) extends NutCoreModule {
 class Divider(len: Int = 64) extends NutCoreModule {
   val io = IO(new MulDivIO(len))
 
+  val divflush = WireInit(Bool(), false.B)
+  BoringUtils.addSink(divflush, "divflush")
   def abs(a: UInt, sign: Bool): (Bool, UInt) = {
     val s = a(len - 1) && sign
     (s, Mux(s, -a, a))
@@ -98,23 +101,19 @@ class Divider(len: Int = 64) extends NutCoreModule {
   val aValx2Reg = RegEnable(Cat(aVal, "b0".U), newReq || anotherReq)
 
   val cnt = Counter(len)
-//  dontTouch(cnt.value)
   when (newReq) {
     state := s_log2
   } .elsewhen (state === s_log2) {
-    // `canSkipShift` is calculated as following:
-    //   bEffectiveBit = Log2(bVal, XLEN) + 1.U
-    //   aLeadingZero = 64.U - aEffectiveBit = 64.U - (Log2(aVal, XLEN) + 1.U)
-    //   canSkipShift = aLeadingZero + bEffectiveBit
-    //     = 64.U - (Log2(aVal, XLEN) + 1.U) + Log2(bVal, XLEN) + 1.U
-    //     = 64.U + Log2(bVal, XLEN) - Log2(aVal, XLEN)
-    //     = (64.U | Log2(bVal, XLEN)) - Log2(aVal, XLEN)  // since Log2(bVal, XLEN) < 64.U
     val canSkipShift = (len.U | Log2(bReg)) - Log2(aValx2Reg)
-    // When divide by 0, the quotient should be all 1's.
-    // Therefore we can not shift in 0s here.
-    // We do not skip any shift to avoid this.
     cnt.value := Mux(divBy0, 0.U, Mux(canSkipShift >= (len-1).U, (len-1).U, canSkipShift))
-    state := s_shift
+    when(divflush) {
+      state := s_idle
+      shiftReg := 0.U
+      cnt.value := 0.U
+    } .elsewhen (!divflush) {
+      state := s_shift
+    }
+
   } .elsewhen (state === s_shift) {
     shiftReg := aValx2Reg << cnt.value
     state := s_compute
@@ -123,6 +122,11 @@ class Divider(len: Int = 64) extends NutCoreModule {
     shiftReg := Cat(Mux(enough, hi - bReg, hi)(len - 1, 0), lo, enough)
     cnt.inc()
     when (cnt.value === (len-1).U) { state := s_finish }
+    when (divflush) {
+      state := s_idle
+      shiftReg := 0.U
+      cnt.value := 0.U
+    }
   } .elsewhen (state === s_finish && io.out.ready && !io.in.fire) {
     state := s_idle
   }.elsewhen (anotherReq ) {
