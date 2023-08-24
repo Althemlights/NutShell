@@ -20,7 +20,9 @@ import XiaoHe.SSDbackend._
 import XiaoHe._
 import chisel3._
 import chisel3.util._
+import chisel3.util.experimental.BoringUtils
 import utils._
+
 object MDUOpType {
   def mul    = "b0000".U
   def mulh   = "b0001".U
@@ -66,6 +68,9 @@ class Multiplier(len: Int) extends NutCoreModule {
 
 class Divider(len: Int = 64) extends NutCoreModule {
   val io = IO(new MulDivIO(len))
+
+  val divflush = WireInit(Bool(), false.B)
+  BoringUtils.addSink(divflush, "divflush")
 
   def abs(a: UInt, sign: Bool): (Bool, UInt) = {
     val s = a(len - 1) && sign
@@ -114,7 +119,13 @@ class Divider(len: Int = 64) extends NutCoreModule {
     // Therefore we can not shift in 0s here.
     // We do not skip any shift to avoid this.
     cnt.value := Mux(divBy0, 0.U, Mux(canSkipShift >= (len-1).U, (len-1).U, canSkipShift))
-    state := s_shift
+    when(divflush) {
+      state := s_idle
+      shiftReg := 0.U
+      cnt.value := 0.U
+    } .elsewhen (!divflush) {
+      state := s_shift
+    }
   } .elsewhen (state === s_shift) {
     shiftReg := aValx2Reg << cnt.value
     state := s_compute
@@ -123,6 +134,11 @@ class Divider(len: Int = 64) extends NutCoreModule {
     shiftReg := Cat(Mux(enough, hi - bReg, hi)(len - 1, 0), lo, enough)
     cnt.inc()
     when (cnt.value === (len-1).U) { state := s_finish }
+    when (divflush) {
+      state := s_idle
+      shiftReg := 0.U
+      cnt.value := 0.U
+    }
   } .elsewhen (state === s_finish && io.out.ready && !io.in.fire) {
     state := s_idle
   }.elsewhen (anotherReq ) {
