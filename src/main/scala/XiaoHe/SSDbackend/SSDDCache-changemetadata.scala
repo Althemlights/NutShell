@@ -431,7 +431,10 @@ sealed class DCacheStage2(edge: TLEdgeOut)(implicit val p: Parameters) extends D
 
   io.out <> acquireAccess.io.resp
   io.out.valid := io.in.valid && (hit || (miss && acquireAccess.io.resp.valid && relOK)) 
-  io.out.bits.rdata := Mux(hit, dataRead, acquireAccess.io.resp.bits.rdata)
+  //io.out.bits.rdata := Mux(hit, dataRead, acquireAccess.io.resp.bits.rdata)
+  val rdata = Mux(hit, dataRead, acquireAccess.io.resp.bits.rdata)
+  val rdataR = RegEnable(rdata, io.out.fire && io.in.bits.req.cmd === M_XRD)
+  io.out.bits.rdata := Mux(io.out.fire, rdata, rdataR)
   //io.out.bits.rdata := Mux(!miss, dataRead, acquireAccess.io.resp.bits.rdata)
   
   val acquireReady = Mux(miss, acquireAccess.io.req.ready, true.B)

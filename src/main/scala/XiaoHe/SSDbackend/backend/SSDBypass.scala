@@ -25,7 +25,7 @@ import chisel3.{Flipped, Module, _}
 class DecodeIO2BypassPkt extends Module {
   val io = IO(new Bundle {
     val in = Vec(2, Flipped(Decoupled(new DecodeIO)))
-    val BypassPktTable = Input(Vec(10, new BypassPkt))
+    val BypassPktTable = Input(Vec(10, new BypassPkt))        // 10个位置的数据包
     val BypassPktValid = Input(Vec(10, Bool()))
     val issueStall = Output(Vec(2, Bool()))
     val memStall = Input(Bool())
@@ -121,6 +121,8 @@ class DecodeIO2BypassPkt extends Module {
   //
   //   }
   // }
+  //
+  // Decode | EX0 旁路网路
   i0rs1HitSel := VecInit(io.in(0).bits.ctrl.rfSrc1 === io.BypassPktTable(1).decodePkt.rd && io.BypassPktValid(1) && i0rs1valid,
   io.in(0).bits.ctrl.rfSrc1 === io.BypassPktTable(0).decodePkt.rd && io.BypassPktValid(0) && i0rs1valid,
   io.in(0).bits.ctrl.rfSrc1 === io.BypassPktTable(3).decodePkt.rd && io.BypassPktValid(3) && i0rs1valid,
@@ -175,7 +177,7 @@ class DecodeIO2BypassPkt extends Module {
 
 
 
-
+  // 副 ALU
   io.out0.bits.decodePkt.subalu := (
     (i0decodePkt.alu && i0rs1hitStage === 0.U && (io.BypassPktTable(1).decodePkt.muldiv || io.BypassPktTable(1).decodePkt.load )) ||
     (i0decodePkt.alu && i0rs1hitStage === 1.U && (io.BypassPktTable(0).decodePkt.muldiv || io.BypassPktTable(0).decodePkt.load )) ||
@@ -236,22 +238,24 @@ class DecodeIO2BypassPkt extends Module {
   val instInPipe =  Valid(0) || Valid(1) || Valid(2) || Valid(3) || Valid(4) ||
     Valid(5) || Valid(6) || Valid(7) || Valid(8) || Valid(9)
 
+  // fence.i
   val mouvalid = ((io.in(0).bits.ctrl.fuType === "b100".U) && io.in(0).valid) || ((io.in(1).bits.ctrl.fuType === "b100".U) && io.in(1).valid)
-//  dontTouch(mouvalid)
+  //  dontTouch(mouvalid)
   val mou = Module(new SSDMOU)
   mou.io.pipelinevalid := instInPipe
   mou.io.in.valid := i1decodePkt.mou && io.in(1).valid
   mou.io.in.bits.func := 0.U
   mou.io.out.ready := true.B
   mou.io.flush := !mou.io.in.valid
+  
   //for mdu not ready
   val mduNotReady0 = i0decodePkt.muldiv && ((FuType(0).muldiv && Valid(0)) || (FuType(1).muldiv && Valid(1)) ||
     (FuType(2).muldiv && Valid(2)) || (FuType(3).muldiv && Valid(3)))
   val mduNotReady1 = i1decodePkt.muldiv && ((FuType(0).muldiv && Valid(0)) || (FuType(1).muldiv && Valid(1)) ||
     (FuType(2).muldiv && Valid(2)) || (FuType(3).muldiv && Valid(3)))
 
-    val i1rs1BypassE0 = io.out1.bits.BypassCtl.rs1bypasse0
-    val i1rs2BypassE0 = io.out1.bits.BypassCtl.rs2bypasse0
+  val i1rs1BypassE0 = io.out1.bits.BypassCtl.rs1bypasse0
+  val i1rs2BypassE0 = io.out1.bits.BypassCtl.rs2bypasse0
 
   val i0rs1MatchE1 = WireInit(false.B)
   val i0rs1MatchE2 = WireInit(false.B)
@@ -294,6 +298,7 @@ class DecodeIO2BypassPkt extends Module {
   val i1rs1Class = Wire(new decodePkt)
   val i1rs2Class = Wire(new decodePkt)
 
+  // pipe 互换
   i0rs1Class := Mux(i0rs1hitStage === 10.U, 0.U.asTypeOf(new decodePkt), FuType(Mux(i0rs1hitStage(0) === 0.U, i0rs1hitStage + 1.U,i0rs1hitStage - 1.U )) )
   i0rs2Class := Mux(i0rs2hitStage === 10.U, 0.U.asTypeOf(new decodePkt), FuType(Mux(i0rs2hitStage(0) === 0.U, i0rs2hitStage + 1.U,i0rs2hitStage - 1.U )) )
   i1rs1Class := Mux(i1rs1hitStage === 10.U, 0.U.asTypeOf(new decodePkt), FuType(Mux(i1rs1hitStage(0) === 0.U, i1rs1hitStage + 1.U,i1rs1hitStage - 1.U )) )
@@ -301,10 +306,10 @@ class DecodeIO2BypassPkt extends Module {
 
 
 
-  val i0LoadBlock = WireInit(false.B)
-  val i0MulBlock = WireInit(false.B)
-  val i0SecondaryBlock = WireInit(false.B)
-  val i0SecondaryStall = WireInit(false.B)
+  val i0LoadBlock = WireInit(false.B)         // load 源操作数未准备好
+  val i0MulBlock = WireInit(false.B)          // mdu 源操作数
+  val i0SecondaryBlock = WireInit(false.B)        // 副 alu 源操作数未准备 
+  val i0SecondaryStall = WireInit(false.B)        // 主动阻塞， 让它在主 alu 执行
   //  assign i0_load_block_d = (i0_not_alu_eff & i0_rs1_class_d.load & i0_rs1_match_e1) |
   //                           (i0_not_alu_eff & i0_rs1_class_d.load & i0_rs1_match_e2 & ~i0_dp.load & ~i0_dp.store & ~i0_dp.mul) | // can bypass load to address of load/store
   //                           (i0_not_alu_eff & i0_rs2_class_d.load & i0_rs2_match_e1 & ~i0_dp.store) |
@@ -351,6 +356,11 @@ class DecodeIO2BypassPkt extends Module {
     // i1_mul2_block_d |
     // i1_load_stall_d |  // prior stores
     // i1_secondary_block_d |
+
+  // EX0(Pipe0)
+  //-------------------------------------------------------------------------------------------------------------------------------------------------
+  //-------------------------------------------------------------------------------------------------------------------------------------------------
+  // EX0(Pipe1)
 
   val i1LoadBlock = WireInit(false.B)
   val i1MulBlock = WireInit(false.B)
@@ -479,7 +489,7 @@ class DecodeIO2BypassPkt extends Module {
   io.pmuio.divRsNotreadyi0 := i0decodePkt.muldiv && MDUOpType.isDiv(io.in(0).bits.ctrl.fuOpType) && io.in(0).valid && io.issueStall(0) && !io.pmuio.laterStageStalli0 && !ruleStall
 
 
-
+  // 判断前递数据： Pipe0
 
     //BypassPkt out0
   i1Hiti0Rs1 := io.in(1).bits.ctrl.rfSrc1 === i0decodePkt.rd && i1rs1valid && i0decodePkt.rdvalid
@@ -488,7 +498,7 @@ class DecodeIO2BypassPkt extends Module {
   val i1Hiti0Rs1NotSec = WireInit(false.B)
   val i1Hiti0Rs2NotSec = WireInit(false.B)
 
-
+  // EX0 前递网络
   io.out0.bits.BypassCtl.rs1bypasse0 := VecInit(
       i0rs1hitStage === 0.U && (FuType(1).alu && !FuType(1).subalu || FuType(1).csr),
       i0rs1hitStage === 1.U && (FuType(0).alu && !FuType(0).subalu || FuType(0).csr),
@@ -514,6 +524,8 @@ class DecodeIO2BypassPkt extends Module {
       i0rs2hitStage === 8.U,
       i0rs2hitStage === 9.U
     )
+
+  // EX2 前递网络
   io.out0.bits.BypassCtl.rs1bypasse2 := VecInit(
       i0rs1hitStage === 4.U && FuType(5).subalu,
       i0rs1hitStage === 5.U && FuType(4).subalu
@@ -522,6 +534,8 @@ class DecodeIO2BypassPkt extends Module {
       i0rs2hitStage === 4.U && FuType(5).subalu,
       i0rs2hitStage === 5.U && FuType(4).subalu
     )
+
+  // EX3 前递网络
   io.out0.bits.BypassCtl.rs1bypasse3 := VecInit(
       false.B,
       i0rs1hitStage === 0.U && (FuType(1).subalu || FuType(1).load || FuType(1).muldiv),
@@ -537,7 +551,7 @@ class DecodeIO2BypassPkt extends Module {
       i0rs2hitStage === 3.U && (FuType(2).subalu || FuType(2).load || FuType(2).muldiv)
     )
 
-
+  // 判断前递数据： Pipe1
   io.out1.bits.BypassCtl.rs1bypasse0 := VecInit(
       i1rs1hitStage === 0.U && (FuType(1).alu && !FuType(1).subalu || FuType(1).csr) && !i1Hiti0Rs1,
       i1rs1hitStage === 1.U && (FuType(0).alu && !FuType(0).subalu || FuType(0).csr) && !i1Hiti0Rs1,
@@ -712,15 +726,15 @@ class PipeCtl extends Module{
 class Bypass extends Module{
   val io = IO(new Bundle {
     val in = Vec(2,Flipped(Decoupled(new DecodeIO)))
-    val memStall = Input(Bool())
-    val mduStall = Input(Bool())
+    val memStall = Input(Bool())            // 与 issuestall 相关 
+    val mduStall = Input(Bool())            // 与 issuestall 相关
     val flush = Input(Vec(6,Bool()))
-    val issueStall = Output(Vec(2,Bool()))
+    val issueStall = Output(Vec(2,Bool()))                    // * decode 级 issuestall
     // val pipeFlush = Output(Vec(10,Bool()))
-    val pipeInvalid = Output(Vec(12,Bool()))
-    val decodeBypassPkt = Vec(2, Decoupled(new BypassPkt))
-    val BypassPkt = Vec(10, new BypassPkt)
-    val BypassPktValid = Output(Vec(10,Bool()))
+    val pipeInvalid = Output(Vec(12,Bool()))                    
+    val decodeBypassPkt = Vec(2, Decoupled(new BypassPkt))        // stage 0 1
+    val BypassPkt = Vec(10, new BypassPkt)          // 10个位置
+    val BypassPktValid = Output(Vec(10,Bool()))       
     val pmuio = new PMUIO0
     val LSUBypassCtrl = new LSUBypassCtrl
   })
@@ -801,6 +815,9 @@ class Bypass extends Module{
     // a.io.isFlush <> PipelineCtl.io.pipeCtl.flush(b)
     a.io.inValid <> PipelineCtl.io.pipeCtl.invalid(b)
   }
+
+  // 0|1 stall point : 通过Bypass判断decode级即可阻塞
+  // 6|7 stall point : mem miss || 乘除法指令阻塞
   pipeStage0.io.isStall := DecodeIO2BypassPkt.io.issueStall(0)
   pipeStage1.io.isStall := DecodeIO2BypassPkt.io.issueStall(1)
   pipeStage6.io.isStall := io.memStall || io.mduStall
