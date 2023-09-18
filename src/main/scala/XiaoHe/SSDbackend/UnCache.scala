@@ -154,6 +154,6 @@ class UncacheImp(outer: UnCache)extends LazyModuleImp(outer) with HasDCacheIO wi
   }
 
   val mmioStall = WireInit(false.B)
-  mmioStall := state =/= s_invalid 
+  mmioStall := state =/= s_invalid
   BoringUtils.addSource(mmioStall,"mmioStall")
 }

@@ -181,6 +181,7 @@ class SSDLSU extends  NutCoreModule with HasStoreBufferConst{
   //io.memStall := cacheStall && (isLoad || lsuPipeStage3.right.valid && !lsuPipeStage3.right.bits.isStore) || bufferFullStall
   //io.memStall := (cacheStall || memXbarStall) && (isLoad || lsuPipeStage3.right.valid && !lsuPipeStage3.right.bits.isStore) || bufferFullStall
   io.memStall := (cacheStall || memXbarStall || mmioStall) && (isLoad || lsuPipeStage3.right.valid && !lsuPipeStage3.right.bits.isStore) || bufferFullStall
+  val memStallforCache = (mmioStall) && (isLoad || lsuPipeStage3.right.valid && !lsuPipeStage3.right.bits.isStore) || bufferFullStall
 
   lsuPipeIn(0).valid := isStore  || loadCacheIn.valid
   lsuPipeIn(0).bits.isStore := isStore
@@ -247,7 +248,8 @@ class SSDLSU extends  NutCoreModule with HasStoreBufferConst{
     wmask = reqWmask, // for partical check
     cmd = SimpleBusCmd.read
   )
-  loadCacheIn.valid :=  valid && !isStore
+  //loadCacheIn.valid :=  valid && !isStore
+  loadCacheIn.valid :=  valid && !isStore && !memStallforCache
 
   val cacheInArbiter0 = Module(new Arbiter((new SimpleBusReqBundle),2)) //store has higher priority,and store ready is driven by arbiter0, load ready is driven by arbiter1
   val cacheInArbiter1 = Module(new Arbiter((new SimpleBusReqBundle),2))
