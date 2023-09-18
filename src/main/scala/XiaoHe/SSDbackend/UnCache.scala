@@ -157,3 +157,106 @@ class UncacheImp(outer: UnCache)extends LazyModuleImp(outer) with HasDCacheIO wi
   mmioStall := state =/= s_invalid
   BoringUtils.addSource(mmioStall,"mmioStall")
 }
+
+class IUnCache()(implicit p: Parameters) extends LazyModule with HasNutCoreParameter with HasICacheParameters with HasNutCoreParameters {
+
+  val clientParameters = TLMasterPortParameters.v1(
+    clients = Seq(TLMasterParameters.v1(
+      "Iuncache",
+      sourceId = IdRange(0, 1 << srcBits)
+    ))
+  )
+  val clientNode = TLClientNode(Seq(clientParameters))
+
+  lazy val module = new IUncacheImp(this)
+}
+
+class IUncacheImp(outer: IUnCache)extends LazyModuleImp(outer) with HasICacheIO with HasNutCoreParameter with HasICacheParameters{
+  
+  val (bus, edge) = outer.clientNode.out.head
+
+  val s_invalid :: s_refill_req :: s_refill_resp :: s_send_resp :: Nil = Enum(4)
+  val state = RegInit(s_invalid)
+
+  val req = Wire(Flipped(Decoupled(new SimpleBusReqBundle(userBits = userBits, idBits = idBits))))
+  req := io.in.req
+  val resp = io.in.resp
+  val mem_acquire = bus.a
+  val mem_grant   = bus.d
+
+  //  Assign default values to output signals.
+  req.ready := false.B
+  io.in.req.ready := false.B
+  resp.valid := false.B
+  resp.bits := DontCare
+
+  mem_acquire.valid := false.B
+  mem_acquire.bits := DontCare
+  mem_grant.ready := false.B
+
+  //  ================================================
+  //  FSM state description:
+  //  s_invalid     : Entry is invalid.
+  //  s_refill_req  : Send Acquire request.
+  //  s_refill_resp : Wait for Grant response.
+  //  s_send_resp   : Send Uncache response.
+
+  val req_reg = Reg(new SimpleBusReqBundle(userBits = userBits, idBits = idBits))
+  val resp_data = Reg(UInt(DataBits.W))
+
+  def storeReq = req_reg.cmd === SimpleBusCmd.write
+  
+  val load = edge.Get(
+    fromSource      = 3.U,
+    toAddress       = req_reg.addr,
+    lgSize          = req_reg.size
+  )._2
+
+  val store = edge.Put(
+    fromSource      = 3.U,
+    toAddress       = req_reg.addr,
+    lgSize          = req_reg.size,
+    data            = req_reg.wdata,
+    mask            = req_reg.wmask
+  )._2
+
+  val (_, _, refill_done, _) = edge.addr_inc(mem_grant)
+
+  switch (state) {
+    is (s_invalid) {
+      //req.ready := true.B
+      io.in.req.ready := true.B
+      req.ready := true.B
+      
+      when (req.fire) {
+        req_reg := req.bits
+        state := s_refill_req
+      }
+    }
+    is (s_refill_req) {
+      mem_acquire.valid := true.B
+      mem_acquire.bits := Mux(storeReq, store, load)
+
+      when (mem_acquire.fire) {
+        state := s_refill_resp
+      }
+    }
+    is (s_refill_resp) {
+      mem_grant.ready := true.B
+
+      when (mem_grant.fire) {
+        resp_data := mem_grant.bits.data
+        state := Mux(storeReq, s_invalid, s_send_resp)
+      }
+    }
+    is (s_send_resp) {
+      resp.valid := true.B
+      resp.bits.rdata   := resp_data
+
+      when (resp.fire()) {
+        state := s_invalid
+      }
+    }
+  }
+
+}

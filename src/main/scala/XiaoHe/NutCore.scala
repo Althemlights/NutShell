@@ -104,11 +104,13 @@ class NutCore()(implicit p: Parameters) extends LazyModule with HasNutCoreParame
 
   val dcache = LazyModule(new DCache())
   val icache = LazyModule(new ICache())
-  val uncache = LazyModule(new UnCache())
+  val dUncache = LazyModule(new UnCache())
+  val iUncache = LazyModule(new IUnCache())
   val clintSpace = Seq(AddressSet(Settings.getLong("CLINTBase"), Settings.getLong("CLINTSize") - 0x1L)) // CLINT
   val timer = LazyModule(new TLTimer(clintSpace, sim = true))
   val mmioxbar = TLXbar()
-  mmioxbar := uncache.clientNode
+  mmioxbar := dUncache.clientNode
+  mmioxbar := iUncache.clientNode
   timer.node := mmioxbar
   //Debug() {printf("%d", FPGAPlatform)}
   lazy val module = new NutCoreImp(this)
@@ -118,7 +120,8 @@ class NutCoreImp(outer: NutCore) extends LazyModuleImp(outer) with HasNutCorePar
   
   val dcache = outer.dcache.module
   val icache = outer.icache.module
-  val uncache = outer.uncache.module
+  val dUncache = outer.dUncache.module
+  val iUncache = outer.iUncache.module
   val timer = outer.timer.module
 
   BoringUtils.addSource(timer.io.mtip, "mtip")
@@ -149,50 +152,32 @@ class NutCoreImp(outer: NutCore) extends LazyModuleImp(outer) with HasNutCorePar
   frontend.io.bpuUpdateReq := SSDbackend.io.bpuUpdateReq
   frontend.io.redirect <> SSDbackend.io.redirectOut
   frontend.io.ipf := false.B
-  // add pipestage
-//  PipelineVector2Connect(new DecodeIO, frontend.io.out(0), frontend.io.out(1), SSDbackend.io.in(0), SSDbackend.io.in(1), frontend.io.flushVec(1), 16)
-//  PipelineVector2Connect(new DecodeIO, frontend.io.out(2), frontend.io.out(3), SSDbackend.io.in(2), SSDbackend.io.in(3), frontend.io.flushVec(1), 16)
-  for(i <- 0 to 3){frontend.io.out(i) <> SSDbackend.io.in(i)}
-  //val mmioXbar = Module(new SimpleBusCrossbarNto1(1))
-  //mmioXbar.io.in(0) := DontCare
-  val s2NotReady = WireInit(false.B)
-  //io.imem <> SSDCache(in = frontend.io.imem, mmio = mmioXbar.io.in(0), flush = (frontend.io.flushVec(0) | frontend.io.bpFlush))(SSDCacheConfig(ro = true, name = "icache", userBits = ICacheUserBundleWidth))
-  //io.dmem <> SSDCache(in = SSDbackend.io.dmem, mmio = mmioXbar.io.in(1), flush = false.B)(SSDCacheConfig(ro = true, name = "dcache"))
-  
-  icache.io.in <> frontend.io.imem
-  icache.io.flush := frontend.io.flushVec(0) | frontend.io.bpFlush
 
+  for(i <- 0 to 3){frontend.io.out(i) <> SSDbackend.io.in(i)}
+
+  val s2NotReady = WireInit(false.B)
+  
   val addrSpace = List(
-    (Settings.getLong("ResetVector"), 0x80000000L),          //dcache
+    (Settings.getLong("ResetVector"), 0x80000000L),          //cache
     (Settings.getLong("UnCacheBase"), Settings.getLong("UnCacheSize"))    //uncache
   )
+  //icache.io.in <> frontend.io.imem
+  val imemxbar = Module(new ImemSimpleBusCrossbar1toN(addrSpace))
+  imemxbar.io.in <> frontend.io.imem
+  icache.io.in <> imemxbar.io.out(0)
+  iUncache.io.in <> imemxbar.io.out(1)
+  icache.io.flush := frontend.io.flushVec(0) | frontend.io.bpFlush
+
   val dmemxbar = Module(new DmemSimpleBusCrossbar1toN(addrSpace))
   dmemxbar.io.in <> SSDbackend.io.dmem
 
   dcache.io.in <> dmemxbar.io.out(0)
-  //dcache.io.in <> SSDbackend.io.dmem
-  //dcache.io.mmio <> mmioXbar.io.in(1)
   dcache.io.flush := false.B
-  uncache.io.in <> dmemxbar.io.out(1)
-  //uncache.io.in <> DontCare
-  //uncache.io.in <> SSDbackend.io.mmio
+  dUncache.io.in <> dmemxbar.io.out(1)
+
   // DMA?
   io.frontend.resp.bits := DontCare
   io.frontend.req.ready := false.B
   io.frontend.resp.valid := false.B
-
-  //io.mmio <> mmioXbar.io.out
-
-//  val mmioXbar = Module(new SimpleBusCrossbarNto1(2))
-//  val s2NotReady = WireInit(false.B)
-//  io.imem <> Cache(in = frontend.io.imem, mmio = mmioXbar.io.in.take(1), flush = Fill(2, frontend.io.flushVec(0) | frontend.io.bpFlush), empty = BoolTmp0, enable = HasIcache)(CacheConfig(ro = true, name = "icache", userBits = ICacheUserBundleWidth))
-//  io.dmem <> Cache(in = SSDbackend.io.dmem, mmio = mmioXbar.io.in.drop(1), flush = "b00".U, empty = BoolTmp1, enable = HasDcache)(CacheConfig(ro = true, name = "dcache"))
-//
-//  // DMA?
-//  io.frontend.resp.bits := DontCare
-//  io.frontend.req.ready := false.B
-//  io.frontend.resp.valid := false.B
-//
-//  io.mmio <> DontCare
 
 }
