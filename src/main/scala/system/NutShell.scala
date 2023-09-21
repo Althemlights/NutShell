@@ -20,7 +20,7 @@ import XiaoHe._
 import XiaoHe.mem.{Cache, CacheConfig}
 import bus.axi4.{AXI4, AXI4Lite}
 import bus.simplebus._
-import device.{AXI4CLINT, AXI4PLIC}
+import device.{DebugModule, AXI4CLINT, AXI4PLIC}
 import top._
 
 import huancun.debug.TLLogger
@@ -37,6 +37,7 @@ import utils._
 import huancun._
 import chipsalliance.rocketchip.config._
 import freechips.rocketchip.interrupts._
+import freechips.rocketchip.jtag.JTAGIO
 //import freechips.rocketchip.diplomacy.{AddressSet, LazyModule, LazyModuleImp}
 
 import chisel3._
@@ -59,13 +60,9 @@ class ILABundle extends NutCoreBundle {
 }
 
 class NutShell()(implicit p: Parameters) extends LazyModule{
-  //val nutcore = LazyModule(new NutCore())
   val corenum = Settings.getInt("CoreNums")
   val extIntr = Settings.getInt("NrExtIntr")
   val core_with_l2 = Array.fill(corenum){LazyModule(new NutcoreWithL2())}
-  //val imem = LazyModule(new SB2AXI4MasterNode(true))
-  //val dmemory_port = TLIdentityNode()
-  //dmemory_port := l2cache.node := nutcore.dcache.clientNode
 
   //axi4ram slave node
   val device = new MemoryDevice
@@ -90,9 +87,15 @@ class NutShell()(implicit p: Parameters) extends LazyModule{
     )
   ))
 
-  val l2_mem_tlxbar = TLXbar()
   val peripheralXbar = TLXbar()
+  
+  // jtag Debug Module
+  val debugModule = LazyModule(new DebugModule(corenum)(p))
+  debugModule.debug.node := peripheralXbar        // debug mmio 0x38020000 +：10000
+
+  val l2_mem_tlxbar = TLXbar()
   for (i <- 0 until corenum) {
+    core_with_l2(i).debug_int_sink := debugModule.debug.dmOuter.dmOuter.intnode
     l2_mem_tlxbar := TLBuffer() := core_with_l2(i).memory_port
     peripheralXbar := core_with_l2(i).mmio_port
   }
@@ -144,24 +147,28 @@ class NutShellImp(outer: NutShell) extends LazyRawModuleImp(outer) with HasNutCo
     val meip = Input(UInt(Settings.getInt("NrExtIntr").W))
     val ila = if (FPGAPlatform && EnableILA) Some(Output(new ILABundle)) else None
     val diff = Flipped(Vec(corenum, new DIFFTESTIO))
+    val systemjtag = new Bundle {
+      val jtag = Flipped(new JTAGIO(hasTRSTn = false))
+      val reset = Input(AsyncReset()) // No reset allowed on top
+      val mfr_id = Input(UInt(11.W))
+      val part_number = Input(UInt(16.W))
+      val version = Input(UInt(4.W))
+    }
+    val debug_reset = Output(Bool())   // jtag debug reset
   })
 
   val memory = outer.memAXI4SlaveNode.makeIOs()
   val peripheral = outer.peripheralNode.makeIOs()
   val nutcore_withl2 = outer.core_with_l2.map(_.module)
   (io.diff zip nutcore_withl2) map {case (i, o) => i <> o.io.diff} 
-  //val core_rst_nodes = outer.core_rst_nodes
-
-  /*if(l3cacheOpt.rst_nodes.isEmpty){
-    // tie off core soft reset
-    for(node <- core_rst_nodes){
-      node.out.head._1 := false.B.asAsyncReset()
-    }
-  }*/
 
   for (i <- 0 until corenum) {
     outer.core_with_l2(i).module.io.hartId := i.U
   }
+
+  // jtag debug module ndreset(reset for All except Debug Module)
+  val debug_module_io = outer.debugModule.module.io
+  io.debug_reset := debug_module_io.debugIO.ndreset
 
   val reset_sync = withClockAndReset(io.clock.asClock, io.reset) { ResetGen() }
 

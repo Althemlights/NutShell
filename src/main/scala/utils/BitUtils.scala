@@ -47,3 +47,15 @@ object ZeroExt {
     if (aLen >= len) a(len-1,0) else Cat(0.U((len - aLen).W), a)
   }
 }
+
+// copy from XiangShan
+object GenMask {
+  // generate w/r mask
+  def apply(high: Int, low: Int) = {
+    require(high > low)
+    (VecInit(List.fill(high+1)(true.B)).asUInt >> low << low).asUInt()
+  }
+  def apply(pos: Int) = {
+    (1.U << pos).asUInt()
+  }
+}

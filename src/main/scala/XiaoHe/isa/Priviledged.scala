@@ -28,6 +28,7 @@ object Priviledged extends HasInstrType {
   def EBREAK  = BitPat("b000000000001_00000_000_00000_1110011")
   def MRET    = BitPat("b001100000010_00000_000_00000_1110011")
   def SRET    = BitPat("b000100000010_00000_000_00000_1110011")
+  def DRET    = BitPat("b011110110010_00000_000_00000_1110011")
   def SFANCE_VMA = BitPat("b0001001_?????_?????_000_00000_1110011")
   def FENCE   = BitPat("b????????????_?????_000_?????_0001111")
   def WFI     = BitPat("b0001000_00101_00000_000_00000_1110011") 
@@ -41,6 +42,7 @@ object Priviledged extends HasInstrType {
     ECALL          -> List(InstrI, FuType.csr, SSDCSROpType.jmp),
     EBREAK         -> List(InstrI, FuType.csr, SSDCSROpType.jmp),
     MRET           -> List(InstrI, FuType.csr, SSDCSROpType.jmp),
+    DRET           -> List(InstrI, FuType.csr, SSDCSROpType.jmp),
     FENCE          -> List(InstrS, FuType.mou, MOUOpType.fence), // nop    InstrS -> !wen
     WFI            -> List(InstrI, FuType.alu, ALUOpType.add) // nop
     // FENCE          -> List(InstrB, FuType.mou, MOUOpType.fencei)

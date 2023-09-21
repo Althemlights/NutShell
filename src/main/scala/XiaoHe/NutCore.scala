@@ -34,6 +34,7 @@ import device.TLTimer
 import freechips.rocketchip.tilelink._ 
 
 import freechips.rocketchip.diplomacy.{LazyModule, LazyModuleImp, AddressSet}
+import freechips.rocketchip.interrupts.{IntSinkNode, IntSinkPortSimple}
 
 trait HasNutCoreParameter {
   // General Parameter for NutShell
@@ -112,7 +113,8 @@ class NutCore()(implicit p: Parameters) extends LazyModule with HasNutCoreParame
   mmioxbar := dUncache.clientNode
   mmioxbar := iUncache.clientNode
   timer.node := mmioxbar
-  //Debug() {printf("%d", FPGAPlatform)}
+  
+  val debug_int_sink = IntSinkNode(IntSinkPortSimple(1, 1))
   lazy val module = new NutCoreImp(this)
 }
 
@@ -123,6 +125,7 @@ class NutCoreImp(outer: NutCore) extends LazyModuleImp(outer) with HasNutCorePar
   val dUncache = outer.dUncache.module
   val iUncache = outer.iUncache.module
   val timer = outer.timer.module
+  val debugInt = outer.debug_int_sink.in.head._1(0)
 
   BoringUtils.addSource(timer.io.mtip, "mtip")
   BoringUtils.addSource(timer.io.msip, "msip")
@@ -148,6 +151,7 @@ class NutCoreImp(outer: NutCore) extends LazyModuleImp(outer) with HasNutCorePar
   SSDbackend.io.in <> frontend.io.out
   SSDbackend.io.hartid <> io.hartid
   io.diff <> SSDbackend.io.diff
+  SSDbackend.io.debugInt := debugInt
   frontend.io.pipelineEmpty := SSDbackend.io.pipelineEmpty
   frontend.io.bpuUpdateReq := SSDbackend.io.bpuUpdateReq
   frontend.io.redirect <> SSDbackend.io.redirectOut
@@ -179,5 +183,8 @@ class NutCoreImp(outer: NutCore) extends LazyModuleImp(outer) with HasNutCorePar
   io.frontend.resp.bits := DontCare
   io.frontend.req.ready := false.B
   io.frontend.resp.valid := false.B
+
+  // TODO: Debug Interrupt into CSR
+  // := debugInt
 
 }

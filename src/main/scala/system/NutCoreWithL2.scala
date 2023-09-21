@@ -33,6 +33,7 @@ import freechips.rocketchip.diplomacy._
 import utils._
 import huancun._
 import chipsalliance.rocketchip.config._
+import freechips.rocketchip.interrupts._
 //import freechips.rocketchip.diplomacy.{AddressSet, LazyModule, LazyModuleImp}
 
 import chisel3._
@@ -74,7 +75,9 @@ class NutcoreWithL2()(implicit p: Parameters) extends LazyModule{
   //mmio_port :*= nutcore.uncache.clientNode
   mmio_port :=* nutcore.mmioxbar
 
-  //val core_reset_sink = BundleBridgeSink(Some(() => Bool()))
+  // debug Interrupt
+  val debug_int_sink = IntIdentityNode()
+  nutcore.debug_int_sink :*= debug_int_sink
 
   lazy val module = new NutcoreWithL2Imp(this)
 }

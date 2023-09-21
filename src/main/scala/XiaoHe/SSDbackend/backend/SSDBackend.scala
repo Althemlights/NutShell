@@ -23,6 +23,7 @@ class SSDbackend extends NutCoreModule with hasBypassConst {
     val pipelineEmpty = Output(Bool())
     val bpuUpdateReq = new BPUUpdateReq
     val diff = Flipped(new DIFFTESTIO)
+    val debugInt = Input(Bool())        // debug Interrupt
     //val mmio = new SimpleBusUC
   })
   def BypassMux(sel:Bool,BypassCtl:Vec[Bool],BypassDataPort:Vec[UInt],rdata:UInt):UInt ={
@@ -149,6 +150,7 @@ class SSDbackend extends NutCoreModule with hasBypassConst {
   SSDCSR.io.cfIn := 0.U.asTypeOf(new CtrlFlowIO)
   SSDCSR.io.isBackendException := false.B
   SSDCSR.io.instrValid := CSRValid
+  SSDCSR.io.debugInt := io.debugInt
   when(i0CSRValid) {
     SSDCSR.io.cfIn.pc                   := pipeOut(0).bits.pc
     SSDCSR.io.cfIn.pnpc                 := pipeOut(0).bits.pnpc
@@ -958,6 +960,7 @@ class SSDbackend extends NutCoreModule with hasBypassConst {
     io.diff.dt_ic1.wen    := RegNext(regfile.io.writePorts(0).wen)
     io.diff.dt_ic1.wpdest := RegNext(regfile.io.writePorts(0).addr)
     io.diff.dt_ic1.wdest  := RegNext(regfile.io.writePorts(0).addr)
+    Debug(io.diff.dt_ic1.instr === 0x30200073L.U && io.diff.dt_ic1.valid, "IC1: Mret!\n")
 
     io.diff.dt_ic0.clock   := clock
     io.diff.dt_ic0.coreid  := hartid
@@ -973,7 +976,7 @@ class SSDbackend extends NutCoreModule with hasBypassConst {
     io.diff.dt_ic0.wen    := RegNext(regfile.io.writePorts(1).wen)
     io.diff.dt_ic0.wpdest := RegNext(regfile.io.writePorts(1).addr)
     io.diff.dt_ic0.wdest  := RegNext(regfile.io.writePorts(1).addr)
-
+    Debug(io.diff.dt_ic0.instr === 0x30200073L.U && io.diff.dt_ic0.valid, "IC0: Mret!\n")
 
     io.diff.dt_iw0.clock := clock
     io.diff.dt_iw0.coreid := hartid

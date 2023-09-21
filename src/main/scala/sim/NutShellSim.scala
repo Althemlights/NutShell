@@ -32,7 +32,7 @@ import freechips.rocketchip.tilelink._
 import freechips.rocketchip.diplomacy.{AddressSet, LazyModule, LazyModuleImp}
 import top.DefaultConfig
 import chipsalliance.rocketchip.config.Parameters
-import device.AXI4MemorySlave
+import device.{AXI4MemorySlave, SimJTAG}
 import top.Settings
 
 class SimTop(implicit p: Parameters) extends Module {
@@ -45,28 +45,23 @@ class SimTop(implicit p: Parameters) extends Module {
   val soc = Module(l_soc.module)
   //val core_with_l2 = Array.fill(Settings.getLong("CoreNums")){LazyModule(new NutShell())}
   
-  //AXI4RAM
+  // AXI4RAM
   val l_simAXIMem = AXI4MemorySlave(
     l_soc.memAXI4SlaveNode,
     128 * 1024 * 1024,
     useBlackBox = true,
     dynamicLatency = false
   )
-  //val simAXIMem = Module(l_simAXIMem.module)
-  //l_simAXIMem.io_axi4 <> soc.memory
     
   soc.io.clock := clock.asBool
-  soc.io.reset := reset.asAsyncReset
-  //soc.io.reset := reset.asBool
+  //soc.io.reset := reset.asAsyncReset
+  // include global reset and jtag debug reset
+  soc.io.reset := (reset.asBool || soc.io.debug_reset).asAsyncReset     
 
-  //val mmio = Module(new SimMMIO)
   val l_mmio = LazyModule(new SimMMIO(l_soc.peripheralNode.in.head._2))
   val mmio = Module(l_mmio.module)
   l_mmio.io_axi4 <> soc.peripheral
-  //l_mmio.node := l_soc.
-  //val soc = l_soc.module
 
-  //soc.io.frontend <> mmio.io.dma
   val simAXIMem = Module(l_simAXIMem.module)
   l_simAXIMem.io_axi4 <> soc.memory
 
@@ -89,6 +84,7 @@ class SimTop(implicit p: Parameters) extends Module {
 
   io.uart <> mmio.io.uart
 
+  //difftest
   val corenum = Settings.getInt("CoreNums")
   val dt_ld1 = Seq.fill(corenum)(Module(new DifftestLoadEvent))
   val dt_ld0 = Seq.fill(corenum)(Module(new DifftestLoadEvent))
@@ -125,4 +121,13 @@ class SimTop(implicit p: Parameters) extends Module {
 
   val dt_irs = Seq.fill(corenum)(Module(new DifftestArchIntRegState))
   (dt_irs zip soc.io.diff) map { case (i,o) => i.io <> o.dt_irs }
+
+  //uart
+  val success = Wire(Bool())
+  val jtag = Module(new SimJTAG(tickDelay=3)(p))
+  jtag.connect(soc.io.systemjtag.jtag, clock, reset.asBool, !reset.asBool, success)
+  soc.io.systemjtag.reset := reset.asAsyncReset
+  soc.io.systemjtag.mfr_id := 0.U(11.W)
+  soc.io.systemjtag.part_number := 0.U(16.W)
+  soc.io.systemjtag.version := 0.U(4.W)
 }
