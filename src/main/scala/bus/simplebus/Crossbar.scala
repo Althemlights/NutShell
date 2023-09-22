@@ -95,6 +95,11 @@ class DmemSimpleBusCrossbar1toN(addressSpace: List[(Long, Long)]) extends Module
   BoringUtils.addSource(memXbarStall,"memXbarStall")
   //memXbarStall := state === s_resp && outSelIdxResp =/= outSelIdx && io.in.req.valid
   memXbarStall := state === s_resp && outSelIdxResp =/= outSelIdx && io.in.req.valid
+  val mxbarflush = WireInit(false.B)
+  BoringUtils.addSink(mxbarflush, "mxbarflush")
+  when (mxbarflush) {
+    state := s_idle
+  }
   /*Debug() {
     /*when (state === s_idle && io.in.req.valid) {
       printf(p"${GTimer()}: xbar: in.req: ${io.in.req.bits}\n")

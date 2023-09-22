@@ -91,13 +91,13 @@ class NutShell()(implicit p: Parameters) extends LazyModule{
   
   // jtag Debug Module
   val debugModule = LazyModule(new DebugModule(corenum)(p))
-  debugModule.debug.node := peripheralXbar        // debug mmio 0x38020000 +：10000
+  debugModule.debug.node :=* peripheralXbar        // debug mmio 0x38020000 +：10000
 
   val l2_mem_tlxbar = TLXbar()
   for (i <- 0 until corenum) {
     core_with_l2(i).debug_int_sink := debugModule.debug.dmOuter.dmOuter.intnode
     l2_mem_tlxbar := TLBuffer() := core_with_l2(i).memory_port
-    peripheralXbar := core_with_l2(i).mmio_port
+    peripheralXbar :=* core_with_l2(i).mmio_port
   }
 
   //memAXI4SlaveNode := AXI4UserYanker() := AXI4Deinterleaver(8) := AXI4Buffer():= TLToAXI4() := TLWidthWidget(32) := TLBuffer() := TLCacheCork() :=* l2_mem_tlxbar
@@ -130,7 +130,7 @@ class NutShell()(implicit p: Parameters) extends LazyModule{
     AXI4UserYanker() :=
     AXI4Deinterleaver(8) :=
     TLToAXI4() :=
-    TLBuffer() :=
+    TLBuffer() :=*
     //TLBuffer.chainNode(3) :=
     peripheralXbar
 

@@ -156,6 +156,12 @@ class UncacheImp(outer: UnCache)extends LazyModuleImp(outer) with HasDCacheIO wi
   val mmioStall = WireInit(false.B)
   mmioStall := state =/= s_invalid
   BoringUtils.addSource(mmioStall,"mmioStall")
+
+  val mmioflush = WireInit(false.B)
+  BoringUtils.addSink(mmioflush, "mmioflush")
+  when (mmioflush) {
+    state := s_invalid
+  }
 }
 
 class IUnCache()(implicit p: Parameters) extends LazyModule with HasNutCoreParameter with HasICacheParameters with HasNutCoreParameters {

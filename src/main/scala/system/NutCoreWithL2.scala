@@ -73,7 +73,7 @@ class NutcoreWithL2()(implicit p: Parameters) extends LazyModule{
   //mmio_port: peripheralXbar
   val mmio_port = TLTempNode()
   //mmio_port :*= nutcore.uncache.clientNode
-  mmio_port :=* nutcore.mmioxbar
+  mmio_port := nutcore.mmioxbar
 
   // debug Interrupt
   val debug_int_sink = IntIdentityNode()

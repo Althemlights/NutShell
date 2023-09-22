@@ -45,7 +45,7 @@ object DefaultSettings {
 
     "CoreNums" -> 0x1,
     "SoCTest" -> false,
-    "CLINTBase" -> 0x02000000L,
+    "CLINTBase" -> 0x38000000L,
     "CLINTSize" -> 0x00010000L,
     "PLICBase" -> 0x000000003c000000L
   )
