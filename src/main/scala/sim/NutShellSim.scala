@@ -34,6 +34,7 @@ import top.DefaultConfig
 import chipsalliance.rocketchip.config.Parameters
 import device.{AXI4MemorySlave, SimJTAG}
 import top.Settings
+import utils._
 
 class SimTop(implicit p: Parameters) extends Module {
   val io = IO(new Bundle{
@@ -52,7 +53,8 @@ class SimTop(implicit p: Parameters) extends Module {
     useBlackBox = true,
     dynamicLatency = false
   )
-    
+
+  Debug(reset.asBool, "SimTop reset\n")
   soc.io.clock := clock.asBool
   //soc.io.reset := reset.asAsyncReset
   // include global reset and jtag debug reset
