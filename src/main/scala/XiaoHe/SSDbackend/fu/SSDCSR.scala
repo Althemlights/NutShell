@@ -239,7 +239,7 @@ class SSDCSRIO extends FunctionUnitIO {
   val cfIn = Flipped(new CtrlFlowIO)
   val redirect = new RedirectIO
   // for exception check
-  val instrValid = Input(Bool())
+  val instrValid = Input(Bool())      // same with io.in.valid
   val isBackendException = Input(Bool())
   // for differential testing
   val intrNO = Output(UInt(XLEN.W))
@@ -250,12 +250,15 @@ class SSDCSRIO extends FunctionUnitIO {
   val ArchEvent = new ArchEvent
   val hartid = Input(UInt(XLEN.W))
   val debugInt = Input(Bool())      // debug Interrupt
+  val hasI01Valid = Input(Bool())
 }
 
 class SSDCSR extends NutCoreModule with SSDHasCSRConst with SSDHasExceptionNO with DebugCSR{
   val io = IO(new SSDCSRIO)
 
   val (valid, src1, src2, func) = (io.in.valid, io.in.bits.src1, io.in.bits.src2, io.in.bits.func)
+  // indicates pipe0 or pipe1 has valid instructions, so the exception/intrruption can be attached to this instruction
+  val hasValidInst = io.hasI01Valid
 
   def access(valid: Bool, src1: UInt, src2: UInt, func: UInt): UInt = {
     this.valid := valid
@@ -738,10 +741,12 @@ class SSDCSR extends NutCoreModule with SSDHasCSRConst with SSDHasExceptionNO wi
   intrVecEnable.zip(ideleg.asBools).map { case (x, y) => x := priviledgedEnableDetect(y) }
   val intrVec = Cat(debugIntr && !debugMode, (mie_wire(11, 0) & mipRaiseIntr.asUInt & intrVecEnable.asUInt))
 
+  // 能够感知写 mstatus 会导致 mie 拉高
   val write_mstatus_mie = addr === Mstatus.U && io.in.valid && mstatusUpdateSideEffect(wdata).asTypeOf(new MstatusStruct).ie.m
 
-  def priviledgedEnableDetect_wire(x: Bool, write: Bool): Bool = Mux(x, ((priviledgeMode === ModeS) && mstatus_wire.asTypeOf(new MstatusStruct).ie.s) || (priviledgeMode < ModeS),
-    ((priviledgeMode === ModeM) && mstatus_wire.asTypeOf(new MstatusStruct).ie.m) || write || (priviledgeMode < ModeM))
+  // 本身就支持 enable interrupt 或者当拍对 mstatus 的写导致 mie 的拉高
+  def priviledgedEnableDetect_wire(x: Bool, write: Bool): Bool = Mux(x, ((priviledgeMode === ModeS) && mstatus.asTypeOf(new MstatusStruct).ie.s) || (priviledgeMode < ModeS),
+    ((priviledgeMode === ModeM) && mstatus.asTypeOf(new MstatusStruct).ie.m) || write || (priviledgeMode < ModeM))
 
   val intrVecEnable_wire = Wire(Vec(12, Bool()))
   intrVecEnable_wire.zip(ideleg.asBools).map { case (x, y) => x := priviledgedEnableDetect_wire(y, write_mstatus_mie) }
@@ -792,7 +797,8 @@ class SSDCSR extends NutCoreModule with SSDHasCSRConst with SSDHasExceptionNO wi
   val causeNo_wire = (raiseIntr_wire << (XLEN - 1)) | Mux(raiseIntr_wire, intrNO_wire, exceptionNO) //do not support
 
   val raiseExceptionIntr = (raiseException || raiseIntr) && RegNext(io.instrValid)
-  val raiseExceptionIntr_wire = (raiseException || raiseIntr_wire) && io.instrValid //dont support raise exception
+  //val raiseExceptionIntr_wire = (raiseException || raiseIntr_wire) && io.instrValid //dont support raise exception
+  val raiseExceptionIntr_wire = (raiseException || raiseIntr_wire) && hasValidInst
   val retTarget = Wire(UInt(VAddrBits.W))
   val trapTarget = Wire(UInt(VAddrBits.W))
 
@@ -802,7 +808,8 @@ class SSDCSR extends NutCoreModule with SSDHasCSRConst with SSDHasExceptionNO wi
   //  io.redirect.valid := (valid && func === CSROpType.jmp) || raiseExceptionIntr || resetSatp
   //  io.redirect.rtype := 0.U
   //  io.redirect.target := Mux(resetSatp, io.cfIn.pc + 4.U, Mux(raiseExceptionIntr, trapTarget, retTarget))
-  io.redirect.valid := (valid && func === SSDCSROpType.jmp) || valid && raiseExceptionIntr_wire /*raiseExceptionIntr*/ || resetSatp
+  //io.redirect.valid := (valid && func === SSDCSROpType.jmp) || valid && raiseExceptionIntr_wire /*raiseExceptionIntr*/ || resetSatp
+  io.redirect.valid := (valid && func === SSDCSROpType.jmp) || hasValidInst && raiseExceptionIntr_wire /*raiseExceptionIntr*/ || resetSatp
   io.redirect.rtype := 0.U
   io.redirect.target := Mux(resetSatp, io.cfIn.pc + 4.U, Mux(raiseExceptionIntr_wire, trapTarget, retTarget))
   io.redirect.btbIsBranch := 0.U
@@ -921,9 +928,11 @@ class SSDCSR extends NutCoreModule with SSDHasCSRConst with SSDHasExceptionNO wi
 
     mstatus := mstatusNew.asUInt
     mstatus_wire := mstatusNew.asUInt
-  }.elsewhen(mtip && addr === Mstatus.U && io.in.valid && mstatusUpdateSideEffect(wdata).asTypeOf(new MstatusStruct).ie.m) {
+  }.elsewhen(raiseExceptionIntr_wire) {
     // val mstatusOld = WireInit(mstatus.asTypeOf(new MstatusStruct))
-    val mstatusNew = WireInit(mstatusUpdateSideEffect(wdata).asTypeOf(new MstatusStruct))
+    val mstatusNew1 = mstatusUpdateSideEffect(wdata).asTypeOf(new MstatusStruct)
+    val mstatusNew2 = mstatus.asTypeOf(new MstatusStruct)
+    val mstatusNew = WireInit(Mux(addr === Mstatus.U && io.in.valid, mstatusNew1, mstatusNew2))
 
     mcause := causeNo_wire
     mcause_wire := causeNo_wire
@@ -947,7 +956,7 @@ class SSDCSR extends NutCoreModule with SSDHasCSRConst with SSDHasExceptionNO wi
   }
 
   // jtag Debug Mode
-  when (hasDebugTrap && io.in.valid) {
+  when (hasDebugTrap && hasValidInst) {
     val dcsrNew = WireInit(dcsr.asTypeOf(new DcsrStruct))
     val debugModeNew = WireInit(debugMode)
     when (!debugMode) {
@@ -1162,9 +1171,10 @@ class SSDCSR extends NutCoreModule with SSDHasCSRConst with SSDHasExceptionNO wi
   BoringUtils.addSource(mideleg_wire, "mideleg_wire")
 
 
-  io.CSRregfile.priviledgeMode := priviledgeMode
+  /*io.CSRregfile.priviledgeMode := priviledgeMode
   io.CSRregfile.mstatus := mstatus //wrong
-  io.CSRregfile.sstatus := mstatus_wire & sstatusRmask //modify
+  //io.CSRregfile.sstatus := mstatus_wire & sstatusRmask //modify
+  io.CSRregfile.sstatus := mstatus & sstatusRmask
   io.CSRregfile.mepc := mepc
   io.CSRregfile.sepc := sepc
   io.CSRregfile.mtval := mtval
@@ -1179,10 +1189,29 @@ class SSDCSR extends NutCoreModule with SSDHasCSRConst with SSDHasExceptionNO wi
   io.CSRregfile.mscratch := mscratch
   io.CSRregfile.sscratch := sscratch
   io.CSRregfile.mideleg := mideleg
-  io.CSRregfile.medeleg := medeleg
+  io.CSRregfile.medeleg := medeleg*/
+  io.CSRregfile.priviledgeMode := priviledgeMode
+  io.CSRregfile.mstatus := mstatus_wire //wrong
+  //io.CSRregfile.sstatus := mstatus_wire & sstatusRmask //modify
+  io.CSRregfile.sstatus := mstatus_wire & sstatusRmask
+  io.CSRregfile.mepc := mepc_wire
+  io.CSRregfile.sepc := sepc
+  io.CSRregfile.mtval := mtval_wire
+  io.CSRregfile.stval := stval
+  io.CSRregfile.mtvec := mtvec_wire
+  io.CSRregfile.stvec := stvec
+  io.CSRregfile.mcause := mcause_wire
+  io.CSRregfile.scause := scause
+  io.CSRregfile.satp := satp
+  io.CSRregfile.mip := mipReg
+  io.CSRregfile.mie := mie_wire
+  io.CSRregfile.mscratch := mscratch_wire
+  io.CSRregfile.sscratch := sscratch
+  io.CSRregfile.mideleg := mideleg_wire
+  io.CSRregfile.medeleg := medeleg_wire
 
 
-  io.ArchEvent.intrNO := Mux(raiseIntr_wire && (io.instrValid) && (valid), intrNO_wire, 0.U)
+  io.ArchEvent.intrNO := Mux(raiseIntr_wire && hasValidInst, intrNO_wire, 0.U)
   io.ArchEvent.exceptionPC := (SignExt(io.cfIn.pc, XLEN))
   io.ArchEvent.exceptionInst := (io.cfIn.instr)
   io.ArchEvent.cause := (Mux(raiseException && io.instrValid && valid, exceptionNO, 0.U))
