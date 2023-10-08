@@ -168,7 +168,24 @@ class NutShellImp(outer: NutShell) extends LazyRawModuleImp(outer) with HasNutCo
 
   // jtag debug module ndreset(reset for All except Debug Module)
   val debug_module_io = outer.debugModule.module.io
+  val jtag_reset_sync = withClockAndReset(io.systemjtag.jtag.TCK, io.systemjtag.reset) { ResetGen() }
+
   io.debug_reset := debug_module_io.debugIO.ndreset
+  debug_module_io.resetCtrl.hartIsInReset := outer.core_with_l2.map(_.module.reset.asBool)
+  debug_module_io.clock := io.clock
+  debug_module_io.reset := io.reset
+
+  debug_module_io.debugIO.reset := io.reset
+  debug_module_io.debugIO.clock := io.clock.asClock
+  debug_module_io.debugIO.dmactiveAck := debug_module_io.debugIO.dmactive
+  // jtag connector
+  debug_module_io.debugIO.systemjtag.foreach { x =>
+    x.jtag        <> io.systemjtag.jtag
+    x.reset       := jtag_reset_sync
+    x.mfr_id      := io.systemjtag.mfr_id
+    x.part_number := io.systemjtag.part_number
+    x.version     := io.systemjtag.version
+  }
 
   val reset_sync = withClockAndReset(io.clock.asClock, io.reset) { ResetGen() }
 

@@ -151,9 +151,9 @@ class SSDbackend extends NutCoreModule with hasBypassConst {
   SSDCSR.io.isBackendException := false.B
   SSDCSR.io.instrValid := CSRValid
   SSDCSR.io.debugInt := io.debugInt
-  // hasI01Valid indicates pipe0 or pipe1 has valid instructions, so the exception/intrruption can be attached to this instruction 
-  val i0Valid = BypassPktValid(0) && (BypassPkt(0).decodePkt.skip)
-  val i1Valid = BypassPktValid(1) && (BypassPkt(1).decodePkt.skip)
+  // hasI01Valid indicates pipe0 or pipe1 has valid instructions, so the exception/intrruption can be attached to this instruction, should care that 
+  val i0Valid = BypassPktValid(0) && (BypassPkt(0).decodePkt.skip) && !pipeInvalid(2)
+  val i1Valid = BypassPktValid(1) && (BypassPkt(1).decodePkt.skip) && !pipeInvalid(3)
   val hasI01Valid = i0Valid || i1Valid
   SSDCSR.io.hasI01Valid := hasI01Valid
   SSDCSR.io.cfIn.pc := Mux(BypassPktValid(0), pipeOut(0).bits.pc, pipeOut(1).bits.pc)
@@ -606,10 +606,11 @@ class SSDbackend extends NutCoreModule with hasBypassConst {
   //e5 write back
   //e5 write back
   //regfile
-  regfile.io.writePorts(0).wen := BypassPktValid(8) && BypassPkt(8).decodePkt.rdvalid && !pipeInvalid(10)
+  // if this instruction has Interrupt, dont do it
+  regfile.io.writePorts(0).wen := BypassPktValid(8) && BypassPkt(8).decodePkt.rdvalid && !pipeInvalid(10) && (pipeOut(8).bits.ArchEvent.intrNO === 0.U)
   regfile.io.writePorts(0).addr := BypassPkt(8).decodePkt.rd
   regfile.io.writePorts(0).data := pipeOut(8).bits.rd
-  regfile.io.writePorts(1).wen := BypassPktValid(9) && BypassPkt(9).decodePkt.rdvalid && !pipeInvalid(11)
+  regfile.io.writePorts(1).wen := BypassPktValid(9) && BypassPkt(9).decodePkt.rdvalid && !pipeInvalid(11) && (pipeOut(9).bits.ArchEvent.intrNO === 0.U)
   regfile.io.writePorts(1).addr := BypassPkt(9).decodePkt.rd
   regfile.io.writePorts(1).data := pipeOut(9).bits.rd
 

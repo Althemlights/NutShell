@@ -758,7 +758,7 @@ class SSDCSR extends NutCoreModule with SSDHasCSRConst with SSDHasExceptionNO wi
   val intrNO_wire = IntPriority.foldRight(0.U)((i: Int, sum: UInt) => Mux(intrVec_wire(i), i.U, sum))
   val raiseIntr = intrVec.asUInt.orR
   val raiseIntr_wire = intrVec_wire.asUInt.orR
-  val hasDebugIntr = intrNO === IRQ_DEBUG.U
+  val hasDebugIntr = intrNO_wire === IRQ_DEBUG.U
 
   // dontTouch(mstatusStruct_wire)
   dontTouch(intrVecEnable_wire)

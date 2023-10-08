@@ -1,5 +1,5 @@
 
-/nfs/home/fuwenyi/xiaohe/nexus-am/apps/jtag/build/jtag-riscv64-nutshell.elf:     file format elf64-littleriscv
+/nfs/home/fuwenyi/xiaohe/nexus-am/apps/jtag/build/jtag-riscv64-nutshell.elf：     文件格式 elf64-littleriscv
 
 
 Disassembly of section .text:
@@ -30,7 +30,7 @@ Disassembly of section .text.startup:
     80000038:	00000413          	li	s0,0
     8000003c:	00002917          	auipc	s2,0x2
     80000040:	8a490913          	add	s2,s2,-1884 # 800018e0 <printf_+0x54>
-    80000044:	02800493          	li	s1,40
+    80000044:	0c800493          	li	s1,200
     80000048:	00040593          	mv	a1,s0
     8000004c:	00090513          	mv	a0,s2
     80000050:	0014041b          	addw	s0,s0,1

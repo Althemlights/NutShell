@@ -41,6 +41,7 @@ class SimTop(implicit p: Parameters) extends Module {
     val logCtrl = new LogCtrlIO
     val perfInfo = new PerfInfoIO
     val uart = new UARTIO
+    //val test = Input(Bool())
   })
   val l_soc = LazyModule(new NutShell())
   val soc = Module(l_soc.module)
@@ -54,7 +55,8 @@ class SimTop(implicit p: Parameters) extends Module {
     dynamicLatency = false
   )
 
-  Debug(reset.asBool, "SimTop reset\n")
+  //Debug(reset.asBool, "SimTop reset\n")
+  //Debug(clock.asBool, "SimTop clock\n")
   soc.io.clock := clock.asBool
   //soc.io.reset := reset.asAsyncReset
   // include global reset and jtag debug reset
