@@ -442,6 +442,7 @@ class SSDbackend extends NutCoreModule with hasBypassConst {
     pipeIn(i).bits.redirect := 0.U.asTypeOf(new RedirectIO)
     //for sub ALU
     pipeIn(i).bits.isSubALU := Bypass.io.decodeBypassPkt(i).bits.decodePkt.subalu
+    pipeIn(i).bits.isCsrWrite := Bypass.io.decodeBypassPkt(i).bits.decodePkt.csr &&  io.in(i).bits.ctrl.rdValid
     //for MMIO
     pipeIn(i).bits.isMMIO := DontCare
     //for Debug
@@ -578,7 +579,7 @@ class SSDbackend extends NutCoreModule with hasBypassConst {
   pipeIn(8).bits.alu2pmu := Mux(bpuUpdataReq6.valid && pipeOut(6).valid, alu2pmu6, pipeOut(6).bits.alu2pmu)
   pipeIn(9).bits.alu2pmu := Mux(bpuUpdataReq7.valid && pipeOut(7).valid, alu2pmu7, pipeOut(7).bits.alu2pmu)
 
-  coupledPipeIn(2).bits.rd := Mux(coupledPipeOut(0).bits.isSubALU,ALU_6.io.out.bits,pipeOut(6).bits.rd)
+  coupledPipeIn(2).bits.rd := Mux(coupledPipeOut(0).bits.isCsrWrite,SSDCSR.io.out.bits,Mux(coupledPipeOut(0).bits.isSubALU,ALU_6.io.out.bits,pipeOut(6).bits.rd))
   coupledPipeIn(3).bits.rd := Mux(coupledPipeOut(1).bits.isSubALU,ALU_7.io.out.bits,pipeOut(7).bits.rd)
 
   //e5 write back

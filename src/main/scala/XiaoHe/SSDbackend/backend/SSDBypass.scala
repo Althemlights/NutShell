@@ -189,20 +189,19 @@ class DecodeIO2BypassPkt extends Module {
     (i0decodePkt.alu && i0rs2hitStage === 2.U && (io.BypassPktTable(3).decodePkt.muldiv || io.BypassPktTable(3).decodePkt.load )) ||
     (i0decodePkt.alu && i0rs2hitStage === 3.U && (io.BypassPktTable(2).decodePkt.muldiv || io.BypassPktTable(2).decodePkt.load )) 
   ) || (
-    (i0decodePkt.alu && i0rs1hitStage === 0.U && (io.BypassPktTable(1).decodePkt.subalu )) ||
-    (i0decodePkt.alu && i0rs1hitStage === 1.U && (io.BypassPktTable(0).decodePkt.subalu )) ||
-    (i0decodePkt.alu && i0rs1hitStage === 2.U && (io.BypassPktTable(3).decodePkt.subalu )) ||
-    (i0decodePkt.alu && i0rs1hitStage === 3.U && (io.BypassPktTable(2).decodePkt.subalu )) ||
-    (i0decodePkt.alu && i0rs1hitStage === 4.U && (io.BypassPktTable(5).decodePkt.subalu )) ||
-    (i0decodePkt.alu && i0rs1hitStage === 5.U && (io.BypassPktTable(4).decodePkt.subalu ))
+    (i0decodePkt.alu && i0rs1hitStage === 0.U && (io.BypassPktTable(1).decodePkt.subalu || io.BypassPktTable(1).decodePkt.csr)) ||
+    (i0decodePkt.alu && i0rs1hitStage === 1.U && (io.BypassPktTable(0).decodePkt.subalu || io.BypassPktTable(0).decodePkt.csr)) ||
+    (i0decodePkt.alu && i0rs1hitStage === 2.U && (io.BypassPktTable(3).decodePkt.subalu || io.BypassPktTable(3).decodePkt.csr)) ||
+    (i0decodePkt.alu && i0rs1hitStage === 3.U && (io.BypassPktTable(2).decodePkt.subalu || io.BypassPktTable(2).decodePkt.csr)) ||
+    (i0decodePkt.alu && i0rs1hitStage === 4.U && (io.BypassPktTable(5).decodePkt.subalu || io.BypassPktTable(5).decodePkt.csr)) ||
+    (i0decodePkt.alu && i0rs1hitStage === 5.U && (io.BypassPktTable(4).decodePkt.subalu || io.BypassPktTable(4).decodePkt.csr))
   ) || (
-    (i0decodePkt.alu && i0rs2hitStage === 0.U && (io.BypassPktTable(1).decodePkt.subalu )) ||
-    (i0decodePkt.alu && i0rs2hitStage === 1.U && (io.BypassPktTable(0).decodePkt.subalu )) ||
-    (i0decodePkt.alu && i0rs2hitStage === 2.U && (io.BypassPktTable(3).decodePkt.subalu )) ||
-    (i0decodePkt.alu && i0rs2hitStage === 3.U && (io.BypassPktTable(2).decodePkt.subalu )) ||
-    (i0decodePkt.alu && i0rs2hitStage === 4.U && (io.BypassPktTable(5).decodePkt.subalu )) ||
-    (i0decodePkt.alu && i0rs2hitStage === 5.U && (io.BypassPktTable(4).decodePkt.subalu ))
-  )
+    (i0decodePkt.alu && i0rs2hitStage === 0.U && (io.BypassPktTable(1).decodePkt.subalu || io.BypassPktTable(1).decodePkt.csr)) ||
+    (i0decodePkt.alu && i0rs2hitStage === 1.U && (io.BypassPktTable(0).decodePkt.subalu || io.BypassPktTable(0).decodePkt.csr)) ||
+    (i0decodePkt.alu && i0rs2hitStage === 2.U && (io.BypassPktTable(3).decodePkt.subalu || io.BypassPktTable(3).decodePkt.csr)) ||
+    (i0decodePkt.alu && i0rs2hitStage === 3.U && (io.BypassPktTable(2).decodePkt.subalu || io.BypassPktTable(2).decodePkt.csr)) ||
+    (i0decodePkt.alu && i0rs2hitStage === 4.U && (io.BypassPktTable(5).decodePkt.subalu || io.BypassPktTable(5).decodePkt.csr)) ||
+    (i0decodePkt.alu && i0rs2hitStage === 5.U && (io.BypassPktTable(4).decodePkt.subalu || io.BypassPktTable(4).decodePkt.csr)))
 
 
   io.out1.bits.decodePkt.subalu := (
@@ -216,15 +215,15 @@ class DecodeIO2BypassPkt extends Module {
     (i1decodePkt.alu && i1rs2hitStage === 2.U && (io.BypassPktTable(3).decodePkt.muldiv || io.BypassPktTable(3).decodePkt.load )) ||
     (i1decodePkt.alu && i1rs2hitStage === 3.U && (io.BypassPktTable(2).decodePkt.muldiv || io.BypassPktTable(2).decodePkt.load ))
   ) || (
-    (i1decodePkt.alu && i1rs1hitStage === 0.U && (io.BypassPktTable(1).decodePkt.subalu )) ||
-    (i1decodePkt.alu && i1rs1hitStage === 1.U && (io.BypassPktTable(0).decodePkt.subalu )) ||
-    (i1decodePkt.alu && i1rs1hitStage === 2.U && (io.BypassPktTable(3).decodePkt.subalu )) ||
-    (i1decodePkt.alu && i1rs1hitStage === 3.U && (io.BypassPktTable(2).decodePkt.subalu )) 
+    (i1decodePkt.alu && i1rs1hitStage === 0.U && (io.BypassPktTable(1).decodePkt.subalu || io.BypassPktTable(1).decodePkt.csr)) ||
+    (i1decodePkt.alu && i1rs1hitStage === 1.U && (io.BypassPktTable(0).decodePkt.subalu || io.BypassPktTable(0).decodePkt.csr)) ||
+    (i1decodePkt.alu && i1rs1hitStage === 2.U && (io.BypassPktTable(3).decodePkt.subalu || io.BypassPktTable(3).decodePkt.csr)) ||
+    (i1decodePkt.alu && i1rs1hitStage === 3.U && (io.BypassPktTable(2).decodePkt.subalu || io.BypassPktTable(2).decodePkt.csr))
   ) || (
-    (i1decodePkt.alu && i1rs2hitStage === 0.U && (io.BypassPktTable(1).decodePkt.subalu )) ||
-    (i1decodePkt.alu && i1rs2hitStage === 1.U && (io.BypassPktTable(0).decodePkt.subalu )) ||
-    (i1decodePkt.alu && i1rs2hitStage === 2.U && (io.BypassPktTable(3).decodePkt.subalu )) ||
-    (i1decodePkt.alu && i1rs2hitStage === 3.U && (io.BypassPktTable(2).decodePkt.subalu )) 
+    (i1decodePkt.alu && i1rs2hitStage === 0.U && (io.BypassPktTable(1).decodePkt.subalu || io.BypassPktTable(1).decodePkt.csr )) ||
+    (i1decodePkt.alu && i1rs2hitStage === 1.U && (io.BypassPktTable(0).decodePkt.subalu || io.BypassPktTable(0).decodePkt.csr )) ||
+    (i1decodePkt.alu && i1rs2hitStage === 2.U && (io.BypassPktTable(3).decodePkt.subalu || io.BypassPktTable(3).decodePkt.csr )) ||
+    (i1decodePkt.alu && i1rs2hitStage === 3.U && (io.BypassPktTable(2).decodePkt.subalu || io.BypassPktTable(2).decodePkt.csr ))
   ) || ((i1Hiti0Rs1 || i1Hiti0Rs2) && i1decodePkt.alu)
 
   val i0Subalu = io.out0.bits.decodePkt.subalu
@@ -310,6 +309,7 @@ class DecodeIO2BypassPkt extends Module {
   val i0MulBlock = WireInit(false.B)          // mdu 源操作数
   val i0SecondaryBlock = WireInit(false.B)        // 副 alu 源操作数未准备 
   val i0SecondaryStall = WireInit(false.B)        // 主动阻塞， 让它在主 alu 执行
+  val i0CsrBlock = WireInit(false.B)
   //  assign i0_load_block_d = (i0_not_alu_eff & i0_rs1_class_d.load & i0_rs1_match_e1) |
   //                           (i0_not_alu_eff & i0_rs1_class_d.load & i0_rs1_match_e2 & ~i0_dp.load & ~i0_dp.store & ~i0_dp.mul) | // can bypass load to address of load/store
   //                           (i0_not_alu_eff & i0_rs2_class_d.load & i0_rs2_match_e1 & ~i0_dp.store) |
@@ -335,6 +335,8 @@ class DecodeIO2BypassPkt extends Module {
   //                                 (i0_dp.alu & i1_rs2_depend_i0_d & ~i1_dp.alu & ~i1_dp.store & i0_secondary_d)) & ~disable_secondary;
   i0SecondaryStall := (io.out0.bits.decodePkt.subalu && i1Hiti0Rs1 && i1NotAlu) |
                       (io.out0.bits.decodePkt.subalu && i1Hiti0Rs2 && i1NotAlu)
+
+//  i0CsrBlock :=
   
   io.issueStall(0) := 
     i0decodePkt.csr && instInPipe || (i0decodePkt.mou && (instInPipe)) ||
@@ -527,50 +529,50 @@ class DecodeIO2BypassPkt extends Module {
 
   // EX2 前递网络
   io.out0.bits.BypassCtl.rs1bypasse2 := VecInit(
-      i0rs1hitStage === 4.U && FuType(5).subalu,
-      i0rs1hitStage === 5.U && FuType(4).subalu
+      i0rs1hitStage === 4.U && (FuType(5).subalu || FuType(5).csr),
+      i0rs1hitStage === 5.U && (FuType(4).subalu || FuType(4).csr)
     )
   io.out0.bits.BypassCtl.rs2bypasse2 := Seq(
-      i0rs2hitStage === 4.U && FuType(5).subalu,
-      i0rs2hitStage === 5.U && FuType(4).subalu
+      i0rs2hitStage === 4.U && (FuType(5).subalu || FuType(5).csr),
+      i0rs2hitStage === 5.U && (FuType(4).subalu || FuType(4).csr)
     )
 
   // EX3 前递网络
   io.out0.bits.BypassCtl.rs1bypasse3 := VecInit(
       false.B,
-      i0rs1hitStage === 0.U && (FuType(1).subalu || FuType(1).load || FuType(1).muldiv),
-      i0rs1hitStage === 1.U && (FuType(0).subalu || FuType(0).load || FuType(0).muldiv),
-      i0rs1hitStage === 2.U && (FuType(3).subalu || FuType(3).load || FuType(3).muldiv),
-      i0rs1hitStage === 3.U && (FuType(2).subalu || FuType(2).load || FuType(2).muldiv)
+      i0rs1hitStage === 0.U && (FuType(1).csr || FuType(1).subalu || FuType(1).load || FuType(1).muldiv),
+      i0rs1hitStage === 1.U && (FuType(0).csr || FuType(0).subalu || FuType(0).load || FuType(0).muldiv),
+      i0rs1hitStage === 2.U && (FuType(3).csr || FuType(3).subalu || FuType(3).load || FuType(3).muldiv),
+      i0rs1hitStage === 3.U && (FuType(2).csr || FuType(2).subalu || FuType(2).load || FuType(2).muldiv)
     )
   io.out0.bits.BypassCtl.rs2bypasse3 := VecInit(
       false.B,
-      i0rs2hitStage === 0.U && (FuType(1).subalu || FuType(1).load || FuType(1).muldiv),
-      i0rs2hitStage === 1.U && (FuType(0).subalu || FuType(0).load || FuType(0).muldiv),
-      i0rs2hitStage === 2.U && (FuType(3).subalu || FuType(3).load || FuType(3).muldiv),
-      i0rs2hitStage === 3.U && (FuType(2).subalu || FuType(2).load || FuType(2).muldiv)
+      i0rs2hitStage === 0.U && (FuType(1).csr || FuType(1).subalu || FuType(1).load || FuType(1).muldiv),
+      i0rs2hitStage === 1.U && (FuType(0).csr || FuType(0).subalu || FuType(0).load || FuType(0).muldiv),
+      i0rs2hitStage === 2.U && (FuType(3).csr || FuType(3).subalu || FuType(3).load || FuType(3).muldiv),
+      i0rs2hitStage === 3.U && (FuType(2).csr || FuType(2).subalu || FuType(2).load || FuType(2).muldiv)
     )
 
   // 判断前递数据： Pipe1
   io.out1.bits.BypassCtl.rs1bypasse0 := VecInit(
-      i1rs1hitStage === 0.U && (FuType(1).alu && !FuType(1).subalu || FuType(1).csr) && !i1Hiti0Rs1,
-      i1rs1hitStage === 1.U && (FuType(0).alu && !FuType(0).subalu || FuType(0).csr) && !i1Hiti0Rs1,
-      i1rs1hitStage === 2.U && (FuType(3).alu && !FuType(3).subalu || FuType(3).csr) && !i1Hiti0Rs1,
-      i1rs1hitStage === 3.U && (FuType(2).alu && !FuType(2).subalu || FuType(2).csr) && !i1Hiti0Rs1,
-      i1rs1hitStage === 4.U && (FuType(5).alu && !FuType(5).subalu || FuType(5).csr || FuType(5).load || FuType(5).muldiv) && !i1Hiti0Rs1,
-      i1rs1hitStage === 5.U && (FuType(4).alu && !FuType(4).subalu || FuType(4).csr || FuType(4).load || FuType(4).muldiv) && !i1Hiti0Rs1,
+      i1rs1hitStage === 0.U && (FuType(1).alu && !FuType(1).subalu && !FuType(1).csr) && !i1Hiti0Rs1,
+      i1rs1hitStage === 1.U && (FuType(0).alu && !FuType(0).subalu && !FuType(0).csr) && !i1Hiti0Rs1,
+      i1rs1hitStage === 2.U && (FuType(3).alu && !FuType(3).subalu && !FuType(3).csr) && !i1Hiti0Rs1,
+      i1rs1hitStage === 3.U && (FuType(2).alu && !FuType(2).subalu && !FuType(2).csr) && !i1Hiti0Rs1,
+      i1rs1hitStage === 4.U && (FuType(5).alu && !FuType(5).subalu && !FuType(5).csr || FuType(5).load || FuType(5).muldiv) && !i1Hiti0Rs1,
+      i1rs1hitStage === 5.U && (FuType(4).alu && !FuType(4).subalu && !FuType(4).csr || FuType(4).load || FuType(4).muldiv) && !i1Hiti0Rs1,
       i1rs1hitStage === 6.U && !i1Hiti0Rs1,
       i1rs1hitStage === 7.U && !i1Hiti0Rs1,
       i1rs1hitStage === 8.U && !i1Hiti0Rs1,
       i1rs1hitStage === 9.U && !i1Hiti0Rs1
     )
   io.out1.bits.BypassCtl.rs2bypasse0 := VecInit(
-      i1rs2hitStage === 0.U && (FuType(1).alu && !FuType(1).subalu || FuType(1).csr) && !i1Hiti0Rs2,
-      i1rs2hitStage === 1.U && (FuType(0).alu && !FuType(0).subalu || FuType(0).csr) && !i1Hiti0Rs2,
-      i1rs2hitStage === 2.U && (FuType(3).alu && !FuType(3).subalu || FuType(3).csr) && !i1Hiti0Rs2,
-      i1rs2hitStage === 3.U && (FuType(2).alu && !FuType(2).subalu || FuType(2).csr) && !i1Hiti0Rs2,
-      i1rs2hitStage === 4.U && (FuType(5).alu && !FuType(5).subalu || FuType(5).csr || FuType(5).load || FuType(5).muldiv) && !i1Hiti0Rs2,
-      i1rs2hitStage === 5.U && (FuType(4).alu && !FuType(4).subalu || FuType(4).csr || FuType(4).load || FuType(4).muldiv) && !i1Hiti0Rs2,
+      i1rs2hitStage === 0.U && (FuType(1).alu && !FuType(1).subalu && !FuType(1).csr) && !i1Hiti0Rs2,
+      i1rs2hitStage === 1.U && (FuType(0).alu && !FuType(0).subalu && !FuType(0).csr) && !i1Hiti0Rs2,
+      i1rs2hitStage === 2.U && (FuType(3).alu && !FuType(3).subalu && !FuType(3).csr) && !i1Hiti0Rs2,
+      i1rs2hitStage === 3.U && (FuType(2).alu && !FuType(2).subalu && !FuType(2).csr) && !i1Hiti0Rs2,
+      i1rs2hitStage === 4.U && (FuType(5).alu && !FuType(5).subalu && !FuType(5).csr || FuType(5).load || FuType(5).muldiv) && !i1Hiti0Rs2,
+      i1rs2hitStage === 5.U && (FuType(4).alu && !FuType(4).subalu && !FuType(4).csr || FuType(4).load || FuType(4).muldiv) && !i1Hiti0Rs2,
       i1rs2hitStage === 6.U && !i1Hiti0Rs2,
       i1rs2hitStage === 7.U && !i1Hiti0Rs2,
       i1rs2hitStage === 8.U && !i1Hiti0Rs2,
@@ -579,30 +581,30 @@ class DecodeIO2BypassPkt extends Module {
 
     
     io.out1.bits.BypassCtl.rs1bypasse2 := VecInit(
-      i1rs1hitStage === 4.U && FuType(5).subalu && !i1Hiti0Rs1,
-      i1rs1hitStage === 5.U && FuType(4).subalu && !i1Hiti0Rs1
+      i1rs1hitStage === 4.U && (FuType(5).subalu || FuType(5).csr) && !i1Hiti0Rs1,
+      i1rs1hitStage === 5.U && (FuType(4).subalu || FuType(4).csr) && !i1Hiti0Rs1
     )
     io.out1.bits.BypassCtl.rs2bypasse2 := Seq(
-      i1rs2hitStage === 4.U && FuType(5).subalu && !i1Hiti0Rs2,
-      i1rs2hitStage === 5.U && FuType(4).subalu && !i1Hiti0Rs2
+      i1rs2hitStage === 4.U && (FuType(5).subalu || FuType(5).csr) && !i1Hiti0Rs2,
+      i1rs2hitStage === 5.U && (FuType(4).subalu || FuType(4).csr) && !i1Hiti0Rs2
     )
   i1Hiti0Rs1NotSec := i1Hiti0Rs1 && !i0decodePkt.subalu
   i1Hiti0Rs2NotSec := i1Hiti0Rs2 && !i0decodePkt.subalu
     io.out1.bits.BypassCtl.rs1bypasse3 := VecInit(
       i1Hiti0Rs1NotSec,
-      i1rs1hitStage === 0.U && (FuType(1).subalu || FuType(1).load || FuType(1).muldiv) && !i1Hiti0Rs1,
-      i1rs1hitStage === 1.U && (FuType(0).subalu || FuType(0).load || FuType(0).muldiv) && !i1Hiti0Rs1,
-      i1rs1hitStage === 2.U && (FuType(3).subalu || FuType(3).load || FuType(3).muldiv) && !i1Hiti0Rs1,
-      i1rs1hitStage === 3.U && (FuType(2).subalu || FuType(2).load || FuType(2).muldiv) && !i1Hiti0Rs1
+      i1rs1hitStage === 0.U && (FuType(1).csr || FuType(1).subalu || FuType(1).load || FuType(1).muldiv) && !i1Hiti0Rs1,
+      i1rs1hitStage === 1.U && (FuType(0).csr || FuType(0).subalu || FuType(0).load || FuType(0).muldiv) && !i1Hiti0Rs1,
+      i1rs1hitStage === 2.U && (FuType(3).csr || FuType(3).subalu || FuType(3).load || FuType(3).muldiv) && !i1Hiti0Rs1,
+      i1rs1hitStage === 3.U && (FuType(2).csr || FuType(2).subalu || FuType(2).load || FuType(2).muldiv) && !i1Hiti0Rs1
     )
 
 
     io.out1.bits.BypassCtl.rs2bypasse3 := VecInit(
       i1Hiti0Rs2NotSec,
-      i1rs2hitStage === 0.U && (FuType(1).subalu || FuType(1).load || FuType(1).muldiv) && !i1Hiti0Rs2,
-      i1rs2hitStage === 1.U && (FuType(0).subalu || FuType(0).load || FuType(0).muldiv) && !i1Hiti0Rs2,
-      i1rs2hitStage === 2.U && (FuType(3).subalu || FuType(3).load || FuType(3).muldiv) && !i1Hiti0Rs2,
-      i1rs2hitStage === 3.U && (FuType(2).subalu || FuType(2).load || FuType(2).muldiv) && !i1Hiti0Rs2
+      i1rs2hitStage === 0.U && (FuType(1).csr || FuType(1).subalu || FuType(1).load || FuType(1).muldiv) && !i1Hiti0Rs2,
+      i1rs2hitStage === 1.U && (FuType(0).csr || FuType(0).subalu || FuType(0).load || FuType(0).muldiv) && !i1Hiti0Rs2,
+      i1rs2hitStage === 2.U && (FuType(3).csr || FuType(3).subalu || FuType(3).load || FuType(3).muldiv) && !i1Hiti0Rs2,
+      i1rs2hitStage === 3.U && (FuType(2).csr || FuType(2).subalu || FuType(2).load || FuType(2).muldiv) && !i1Hiti0Rs2
     )
 
   // store pipeline bypaas ctrl

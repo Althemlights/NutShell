@@ -602,7 +602,9 @@ class SSDCSR extends NutCoreModule with SSDHasCSRConst with SSDHasExceptionNO wi
   MaskedRegMap.generate(mapping, addr, rdata, wen && !isIllegalAccess, wdata)
   val isIllegalAddr = MaskedRegMap.isIllegalAddr(mapping, addr)
   val resetSatp = addr === Satp.U && wen // write to satp will cause the pipeline be flushed
-  io.out.bits := rdata
+  val csrdata = WireInit(0.U(64.W))
+  csrdata := Mux(io.in.valid,rdata,RegNext(csrdata))
+  io.out.bits := csrdata
 
   // Fix Mip/Sip write
   val fixMapping = Map(
