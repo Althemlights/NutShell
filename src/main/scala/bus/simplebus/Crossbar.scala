@@ -168,9 +168,9 @@ class ImemSimpleBusCrossbar1toN(addressSpace: List[(Long, Long)]) extends Module
         //如果这次选择的通道和上一个通道一样，并且也成功握手了，直接保持在s_resp
         when (outSelIdx === outSelIdxResp && outSel.req.fire) {
           state := s_resp
-        }.otherwise{
-          state := s_idle
         }
+      }.otherwise{
+          state := s_idle
       }
     }
     is (s_error) { when(io.in.resp.fire){ state := s_idle } }

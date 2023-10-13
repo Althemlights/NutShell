@@ -257,12 +257,18 @@ class IUncacheImp(outer: IUnCache)extends LazyModuleImp(outer) with HasICacheIO 
     }
     is (s_send_resp) {
       resp.valid := true.B
-      resp.bits.rdata   := resp_data
+      resp.bits.rdata := resp_data
+      
+      // req user has usage
+      resp.bits.user.foreach { userValue =>
+        req_reg.user.foreach { reqUser =>
+          userValue := reqUser
+        }
+      }
 
       when (resp.fire()) {
         state := s_invalid
       }
     }
   }
-
 }

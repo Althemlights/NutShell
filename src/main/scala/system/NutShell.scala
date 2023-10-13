@@ -97,7 +97,7 @@ class NutShell()(implicit p: Parameters) extends LazyModule{
   for (i <- 0 until corenum) {
     core_with_l2(i).debug_int_sink := debugModule.debug.dmOuter.dmOuter.intnode
     l2_mem_tlxbar := TLBuffer() := core_with_l2(i).memory_port
-    peripheralXbar :=* core_with_l2(i).mmio_port
+    peripheralXbar := TLBuffer.chainNode(2, Some("L2_to_L3_peripheral_buffer")) :=* core_with_l2(i).mmio_port
   }
 
   //memAXI4SlaveNode := AXI4UserYanker() := AXI4Deinterleaver(8) := AXI4Buffer():= TLToAXI4() := TLWidthWidget(32) := TLBuffer() := TLCacheCork() :=* l2_mem_tlxbar

@@ -45,8 +45,8 @@ object DefaultSettings {
 
     "CoreNums" -> 0x1,
     "SoCTest" -> false,
-    //"CLINTBase" -> 0x38000000L,               // for bin compiled by AM
-    "CLINTBase" -> 0x2000000L,              // for rtthread
+    "CLINTBase" -> 0x38000000L,               // for bin compiled by AM
+    //"CLINTBase" -> 0x2000000L,              // for rtthread
     "CLINTSize" -> 0x00010000L,
     "PLICBase" -> 0x000000003c000000L
   )

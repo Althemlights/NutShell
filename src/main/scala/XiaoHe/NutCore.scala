@@ -110,8 +110,8 @@ class NutCore()(implicit p: Parameters) extends LazyModule with HasNutCoreParame
   val clintSpace = Seq(AddressSet(Settings.getLong("CLINTBase"), Settings.getLong("CLINTSize") - 0x1L)) // CLINT
   val timer = LazyModule(new TLTimer(clintSpace, sim = true))
   val mmioxbar = TLXbar()
-  mmioxbar := TLTempNode() := dUncache.clientNode
-  mmioxbar := TLTempNode() := iUncache.clientNode
+  mmioxbar := TLBuffer.chainNode(2) := TLTempNode() := dUncache.clientNode
+  mmioxbar := TLBuffer.chainNode(2) := TLTempNode() := iUncache.clientNode
   timer.node := mmioxbar
   
   val debug_int_sink = IntSinkNode(IntSinkPortSimple(1, 1))

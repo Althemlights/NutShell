@@ -60,7 +60,11 @@ class SimTop(implicit p: Parameters) extends Module {
   soc.io.clock := clock.asBool
   //soc.io.reset := reset.asAsyncReset
   // include global reset and jtag debug reset
-  soc.io.reset := (reset.asBool || soc.io.debug_reset).asAsyncReset     
+  soc.io.reset := (reset.asBool || soc.io.debug_reset).asAsyncReset  
+  val debug_reset = soc.io.debug_reset
+  val debug_resetReg = RegNext(debug_reset)   
+  Debug(!debug_resetReg && debug_reset, "Debug reset on\n")
+  Debug(debug_resetReg && !debug_reset, "Debug reset off\n")
 
   val l_mmio = LazyModule(new SimMMIO(l_soc.peripheralNode.in.head._2))
   val mmio = Module(l_mmio.module)

@@ -949,6 +949,7 @@ class SSDCSR extends NutCoreModule with SSDHasCSRConst with SSDHasExceptionNO wi
 
     mstatus := mstatusNew.asUInt
     mstatus_wire := mstatusNew.asUInt
+    Debug("[SSDCSR] Intr or Exception\n")
   }.elsewhen(addr === Mstatus.U && io.in.valid) {
     val mstatusNew = WireInit(mstatusUpdateSideEffect(wdata).asTypeOf(new MstatusStruct))
     mstatus := mstatusNew.asUInt

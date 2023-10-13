@@ -77,6 +77,7 @@ class DebugModule(numCores: Int)(implicit p: Parameters) extends LazyModule {
     def instantiateJtagDTM(sj: SystemJTAGIO): DebugTransportModuleJTAG = {
       val c = new JtagDTMKeyDefault
       val dtm = Module(new DebugTransportModuleJTAG(p(DebugModuleKey).get.nDMIAddrSize, c))
+      println("  dtm nMDIAddrSize: "          + p(DebugModuleKey).get.nDMIAddrSize)
       dtm.io.jtag <> sj.jtag
 
       io.debugIO.disableDebug.foreach { x => dtm.io.jtag.TMS := sj.jtag.TMS | x }  // force TMS high when debug is disabled

@@ -20,6 +20,7 @@ class DefaultConfig(FPGAPlatform: Boolean = true) extends Config((site, here, up
   // DebugModule use code from XiangShan-nanhu
   case XLen => 64
   // To be different with XiangShan, Wukong remove SimpleBus because Wukong not support memory coherency 
+  case ExportDebug => DebugAttachParams(protocols = Set(JTAG))
   case DebugModuleKey => Some(XSDebugModuleParams(site(XLen)))
   case MaxHartIdBits => 2
   case EnableJtag => true.B
