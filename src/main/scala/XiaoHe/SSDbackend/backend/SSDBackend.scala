@@ -952,7 +952,7 @@ class SSDbackend extends NutCoreModule with hasBypassConst {
     io.diff.dt_ic1.wen    := RegNext(regfile.io.writePorts(0).wen)
     io.diff.dt_ic1.wpdest := RegNext(regfile.io.writePorts(0).addr)
     io.diff.dt_ic1.wdest  := RegNext(regfile.io.writePorts(0).addr)
-    Debug(io.diff.dt_ic1.valid, "pc trace:  pc: %x   instr: %x\n", io.diff.dt_ic1.pc, io.diff.dt_ic1.instr)
+    //Debug(io.diff.dt_ic1.valid, "pc trace:  pc: %x   instr: %x\n", io.diff.dt_ic1.pc, io.diff.dt_ic1.instr)
     Debug(io.diff.dt_ic1.instr === 0x30200073L.U && io.diff.dt_ic1.valid, "IC1: Mret!\n")
 
     io.diff.dt_ic0.clock   := clock
@@ -970,7 +970,7 @@ class SSDbackend extends NutCoreModule with hasBypassConst {
     io.diff.dt_ic0.wpdest := RegNext(regfile.io.writePorts(1).addr)
     io.diff.dt_ic0.wdest  := RegNext(regfile.io.writePorts(1).addr)
     Debug(io.diff.dt_ic0.instr === 0x30200073L.U && io.diff.dt_ic0.valid, "IC0: Mret!\n")
-    Debug(io.diff.dt_ic0.valid, "pc trace:  pc: %x   instr: %x\n", io.diff.dt_ic0.pc, io.diff.dt_ic0.instr)
+    //Debug(io.diff.dt_ic0.valid, "pc trace:  pc: %x   instr: %x\n", io.diff.dt_ic0.pc, io.diff.dt_ic0.instr)
 
     io.diff.dt_iw0.clock := clock
     io.diff.dt_iw0.coreid := hartid
