@@ -88,6 +88,7 @@ class FuPkt extends NutCoreBundle {
   val csrInst = Output(Bool())
   //for SubALU
   val isSubALU = Output(Bool())
+  val isCsrWrite = Output(Bool())
   //for MMIO
   val isMMIO = Output(Bool())
 
