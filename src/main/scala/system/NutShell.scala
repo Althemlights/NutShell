@@ -100,8 +100,34 @@ class NutShell()(implicit p: Parameters) extends LazyModule{
     peripheralXbar := TLBuffer.chainNode(2, Some("L2_to_L3_peripheral_buffer")) :=* core_with_l2(i).mmio_port
   }
 
+  //l3 cache
+  val l3cacheOpt = LazyModule(new HuanCun()(new Config((_, _, _) => {
+    case HCCacheParamsKey => HCCacheParameters(
+      name = s"L3",
+      level = 3,
+      inclusive = false,
+      clientCaches = Seq(CacheParameters(sets = 128, ways = 4, blockGranularity = 7, name = "L2")),
+      ctrl = Some(CacheCtrl(
+        address = 0x39000000,
+        numCores = corenum
+      )),
+      //prefetch = Some(huancun.prefetch.BOPParameters()),
+      sramClkDivBy2 = true,
+      reqField = Seq(),
+      echoField = Seq()
+      //enableDebug = true
+    )
+  })))
+
+  l3cacheOpt.ctlnode.map(_ := peripheralXbar)
+  l3cacheOpt.intnode.map(int => {IntSinkNode(IntSinkPortSimple()) := int})
+  val core_rst_nodes = l3cacheOpt.rst_nodes.get
+  core_rst_nodes.zip(core_with_l2.map(_.core_reset_sink)).foreach({
+    case (source, sink) =>  sink := source
+  })
+
   //memAXI4SlaveNode := AXI4UserYanker() := AXI4Deinterleaver(8) := AXI4Buffer():= TLToAXI4() := TLWidthWidget(32) := TLBuffer() := TLCacheCork() :=* l2_mem_tlxbar
-  memAXI4SlaveNode := AXI4UserYanker() := AXI4Deinterleaver(8) := AXI4Buffer():= TLToAXI4() := TLWidthWidget(32) := TLBuffer() :=* l2_mem_tlxbar
+  memAXI4SlaveNode := AXI4UserYanker() := AXI4Deinterleaver(8) := AXI4Buffer():= TLToAXI4() := TLWidthWidget(32) := TLBuffer() := TLBuffer() := TLCacheCork() := l3cacheOpt.node :=* l2_mem_tlxbar
 
   val onChipPeripheralRange = AddressSet(0x38000000L, 0x07ffffffL)
   val uartRange = AddressSet(0x40600000L, 0xf)
@@ -161,6 +187,8 @@ class NutShellImp(outer: NutShell) extends LazyRawModuleImp(outer) with HasNutCo
   val peripheral = outer.peripheralNode.makeIOs()
   val nutcore_withl2 = outer.core_with_l2.map(_.module)
   (io.diff zip nutcore_withl2) map {case (i, o) => i <> o.io.diff} 
+  val core_rst_nodes = outer.core_rst_nodes
+  val l3cacheOpt = outer.l3cacheOpt.module
 
   for (i <- 0 until corenum) {
     outer.core_with_l2(i).module.io.hartId := i.U
@@ -196,7 +224,7 @@ class NutShellImp(outer: NutShell) extends LazyRawModuleImp(outer) with HasNutCo
   withClockAndReset(io.clock.asClock, reset_sync) {
     // Modules are reset one by one
     // reset ----> SYNC --> {L3 Cache, Cores}
-    val resetChain = Seq(Seq() ++ nutcore_withl2)
+    val resetChain = Seq(Seq(l3cacheOpt) ++ nutcore_withl2)
     ResetGen(resetChain, reset_sync, !FPGAPlatform)
   }
 

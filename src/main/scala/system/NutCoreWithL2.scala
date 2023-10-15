@@ -44,7 +44,7 @@ class NutcoreWithL2()(implicit p: Parameters) extends LazyModule{
   
   val nutcore = LazyModule(new NutCore())
 
-  /*val l2cache = LazyModule(new HuanCun()(new Config((_, _, _) => {
+  val l2cache = LazyModule(new HuanCun()(new Config((_, _, _) => {
     case HCCacheParamsKey => HCCacheParameters(
       name = s"L2",
       level = 2,
@@ -56,24 +56,26 @@ class NutcoreWithL2()(implicit p: Parameters) extends LazyModule{
         CacheParameters(sets = 64, ways = 4, blockGranularity = 6, name = "dcache")
       ),
       //prefetch = Some(huancun.prefetch.BOPParameters()),
-      sramClkDivBy2 = false,
+      sramClkDivBy2 = true,
       reqField = Seq(),
       echoField = Seq()
       //enableDebug = true
     )
-  })))*/
+  })))
 
   val tlBus = TLXbar()
-  tlBus := TLCacheCork() := TLBuffer() := nutcore.dcache.clientNode
-  tlBus := TLCacheCork() := TLBuffer() := nutcore.icache.clientNode
+  tlBus := TLBuffer() := nutcore.dcache.clientNode
+  tlBus := TLBuffer() := nutcore.icache.clientNode
   val memory_port = TLTempNode()
-  //memory_port := TLBuffer() := l2cache.node :=* tlBus
-  memory_port := TLBuffer() :=* tlBus
+  memory_port := TLBuffer() := l2cache.node :=* tlBus
+  //memory_port := TLBuffer() :=* tlBus
 
   //mmio_port: peripheralXbar
   val mmio_port = TLTempNode()
   //mmio_port :*= nutcore.uncache.clientNode
   mmio_port := nutcore.mmioxbar
+
+  val core_reset_sink = BundleBridgeSink(Some(() => Bool()))
 
   // debug Interrupt
   val debug_int_sink = IntIdentityNode()
@@ -92,28 +94,28 @@ class NutcoreWithL2Imp(outer: NutcoreWithL2) extends LazyModuleImp(outer) with H
   })
 
   val nutcore = outer.nutcore.module
-  //val core_reset_sink = outer.core_reset_sink
-  //val core_soft_rst = outer.core_reset_sink.in.head._1
+  val core_reset_sink = outer.core_reset_sink
+  val core_soft_rst = outer.core_reset_sink.in.head._1
 
   nutcore.io.hartid := io.hartId
   io.diff <> nutcore.io.diff
   
-  //val resetChain = Seq(Seq(nutcore, outer.l2cache.module))
-  val resetChain = Seq(Seq(nutcore))
+  val resetChain = Seq(Seq(nutcore, outer.l2cache.module))
+  //val resetChain = Seq(Seq(nutcore))
 
   //ResetGen(resetChain, reset, !FPGAPlatform)
-  /*withClockAndReset(clock, core_soft_rst) {
+  withClockAndReset(clock, core_soft_rst) {
     ResetGen(resetChain, reset, !FPGAPlatform)
-  }*/
+  }
 
   //val reset_sync = withClockAndReset(clock, reset) { ResetGen() }
-  //val core_reset_sync = RegNext(RegNext(core_soft_rst.asAsyncReset))
+  val core_reset_sync = RegNext(RegNext(core_soft_rst.asAsyncReset))
 
   when (io.hartId > 0.U) {
     withClockAndReset(clock, reset) {
-      //nutcore.reset := core_soft_rst.asAsyncReset
-      nutcore.reset := false.B.asAsyncReset
-      //ResetGen(resetChain, core_soft_rst.asAsyncReset, !FPGAPlatform)
+      nutcore.reset := core_soft_rst.asAsyncReset
+      //nutcore.reset := false.B.asAsyncReset
+      ResetGen(resetChain, core_soft_rst.asAsyncReset, !FPGAPlatform)
     }
   }
 

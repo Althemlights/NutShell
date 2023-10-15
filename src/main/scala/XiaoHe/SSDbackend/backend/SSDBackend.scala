@@ -24,6 +24,8 @@ class SSDbackend extends NutCoreModule with hasBypassConst {
     val bpuUpdateReq = new BPUUpdateReq
     val diff = Flipped(new DIFFTESTIO)
     val debugInt = Input(Bool())        // debug Interrupt
+    val mxbarflush = Output(Bool())
+    val mmioflush = Output(Bool())
     //val mmio = new SimpleBusUC
   })
   def BypassMux(sel:Bool,BypassCtl:Vec[Bool],BypassDataPort:Vec[UInt],rdata:UInt):UInt ={
@@ -319,13 +321,16 @@ class SSDbackend extends NutCoreModule with hasBypassConst {
   LSU.access(LSUValid,LSUsrc1,LSUsrc2,LSUfunc,LSUoffset)
   // MMIO
   val memflush = (BypassPkt(4).decodePkt.load && io.redirectOut.valid) || (BypassPkt(5).decodePkt.load && io.redirectOut.valid)
-  BoringUtils.addSource(memflush, "mmioflush")
-  BoringUtils.addSource(memflush, "mxbarflush")
+  //BoringUtils.addSource(memflush, "mmioflush")
+  //BoringUtils.addSource(memflush, "mxbarflush")
+  io.mxbarflush := memflush
+  io.mmioflush := memflush
   // MDU
   val divflush = (BypassPkt(2).decodePkt.muldiv && io.redirectOut.valid) || (BypassPkt(3).decodePkt.muldiv && io.redirectOut.valid)
-  BoringUtils.addSource(divflush, "divflush")
+  //BoringUtils.addSource(divflush, "divflush")
 
   val MDU = Module(new SSDMDU)
+  MDU.io.divflush := divflush
   MDU.io.out.ready := true.B && !memStall
   val i0MDUValid = BypassPktValid(0) && (BypassPkt(0).decodePkt.muldiv)
   val i1MDUValid = BypassPktValid(1) && (BypassPkt(1).decodePkt.muldiv)

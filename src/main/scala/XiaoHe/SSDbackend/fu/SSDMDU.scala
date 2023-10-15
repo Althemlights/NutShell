@@ -48,6 +48,7 @@ class MulDivIO(val len: Int) extends Bundle {
   val in = Flipped(DecoupledIO(Vec(2, Output(UInt(len.W)))))
   val sign = Input(Bool())
   val out = DecoupledIO(Output(UInt((len * 2).W)))
+  val divflush = Input(Bool())
 }
 
 class Multiplier(len: Int) extends NutCoreModule {
@@ -69,8 +70,7 @@ class Multiplier(len: Int) extends NutCoreModule {
 class Divider(len: Int = 64) extends NutCoreModule {
   val io = IO(new MulDivIO(len))
 
-  val divflush = WireInit(Bool(), false.B)
-  BoringUtils.addSink(divflush, "divflush")
+  val divflush = io.divflush
 
   def abs(a: UInt, sign: Bool): (Bool, UInt) = {
     val s = a(len - 1) && sign
@@ -155,6 +155,7 @@ class Divider(len: Int = 64) extends NutCoreModule {
 }
 
 class MDUIO extends FunctionUnitIO {
+  val divflush = Input(Bool())
 }
 
 class SSDMDU extends NutCoreModule {
@@ -176,6 +177,7 @@ class SSDMDU extends NutCoreModule {
 
   val mul = Module(new ArrayMultiplier(XLEN + 1))
   val div = Module(new Divider(XLEN))
+  div.io.divflush := io.divflush
   List(div.io).map { case x =>
     x.sign := isDivSign
     x.out.ready := io.out.ready

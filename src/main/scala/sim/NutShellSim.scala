@@ -58,7 +58,6 @@ class SimTop(implicit p: Parameters) extends Module {
   //Debug(reset.asBool, "SimTop reset\n")
   //Debug(clock.asBool, "SimTop clock\n")
   soc.io.clock := clock.asBool
-  //soc.io.reset := reset.asAsyncReset
   // include global reset and jtag debug reset
   soc.io.reset := (reset.asBool || soc.io.debug_reset).asAsyncReset  
   val debug_reset = soc.io.debug_reset

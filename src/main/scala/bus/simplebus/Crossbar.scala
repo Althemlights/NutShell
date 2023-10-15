@@ -27,6 +27,7 @@ class DmemSimpleBusCrossbar1toN(addressSpace: List[(Long, Long)]) extends Module
   val io = IO(new Bundle {
     val in = Flipped(new SimpleBusUC)
     val out = Vec(addressSpace.length, new SimpleBusUC)
+    val mxbarflush = Input(Bool())
   })
 
   val s_idle :: s_resp :: s_error :: Nil = Enum(3)
@@ -95,8 +96,9 @@ class DmemSimpleBusCrossbar1toN(addressSpace: List[(Long, Long)]) extends Module
   BoringUtils.addSource(memXbarStall,"memXbarStall")
   //memXbarStall := state === s_resp && outSelIdxResp =/= outSelIdx && io.in.req.valid
   memXbarStall := state === s_resp && outSelIdxResp =/= outSelIdx && io.in.req.valid
-  val mxbarflush = WireInit(false.B)
-  BoringUtils.addSink(mxbarflush, "mxbarflush")
+  //val mxbarflush = WireInit(false.B)
+  //BoringUtils.addSink(mxbarflush, "mxbarflush")
+  val mxbarflush = io.mxbarflush
   when (mxbarflush) {
     state := s_idle
   }

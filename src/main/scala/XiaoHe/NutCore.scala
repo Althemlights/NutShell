@@ -174,10 +174,12 @@ class NutCoreImp(outer: NutCore) extends LazyModuleImp(outer) with HasNutCorePar
 
   val dmemxbar = Module(new DmemSimpleBusCrossbar1toN(addrSpace))
   dmemxbar.io.in <> SSDbackend.io.dmem
+  dmemxbar.io.mxbarflush := SSDbackend.io.mxbarflush
 
   dcache.io.in <> dmemxbar.io.out(0)
   dcache.io.flush := false.B
   dUncache.io.in <> dmemxbar.io.out(1)
+  dUncache.mmioflush := SSDbackend.io.mmioflush
 
   // DMA?
   io.frontend.resp.bits := DontCare
