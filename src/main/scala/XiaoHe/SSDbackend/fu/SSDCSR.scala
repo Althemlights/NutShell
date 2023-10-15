@@ -366,6 +366,9 @@ class SSDCSR extends NutCoreModule with SSDHasCSRConst with SSDHasExceptionNO wi
   if (HasCExtension) {
     extList = extList :+ 'c'
   }
+  if (HasFPU) { 
+    extList = extList ++ List('f', 'd') 
+  }
   val misaInitVal = getMisaMxl(2) | extList.foldLeft(0L)((sum, i) => sum | getMisaExt(i)) //"h8000000000141105".U
   val misa = RegInit(UInt(XLEN.W), misaInitVal.U)
   // MXL = 2          | 0 | EXT = b 00 0000 0100 0001 0001 0000 0101
@@ -770,7 +773,9 @@ class SSDCSR extends NutCoreModule with SSDHasCSRConst with SSDHasExceptionNO wi
 
   // exceptions
 
-  // ebreak cause debug exception
+  // In this situation, hart will enter debug mode instead of handling a breakpoint exception simply.
+  // Ebreak block instructions backwards, so it's ok to not keep extra info to distinguish between breakpoint
+  // exception and enter-debug-mode exception.
   val ebreakEnterDebugMode =
     (priviledgeMode === ModeM && dcsrData.ebreakm) ||
     (priviledgeMode === ModeS && dcsrData.ebreaks) ||
@@ -804,7 +809,10 @@ class SSDCSR extends NutCoreModule with SSDHasCSRConst with SSDHasExceptionNO wi
   val retTarget = Wire(UInt(VAddrBits.W))
   val trapTarget = Wire(UInt(VAddrBits.W))
 
-  val hasDebugException = false.B
+  val hasBreakPoint = io.in.valid && isEbreak
+  val hasDebugEbreakException = hasBreakPoint && ebreakEnterDebugMode
+  // temporaily donnot consider trigger and singlestep
+  val hasDebugException = hasDebugEbreakException
   val hasDebugTrap = hasDebugException || hasDebugIntr          // 分为 debug 中断和 debug 例外, 暂时不考虑 debug 例外
   val ebreakEnterParkLoop = debugMode && raiseExceptionIntr
   //  io.redirect.valid := (valid && func === CSROpType.jmp) || raiseExceptionIntr || resetSatp

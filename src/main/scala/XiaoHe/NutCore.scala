@@ -40,6 +40,7 @@ trait HasNutCoreParameter {
   // General Parameter for NutShell
   val XLEN = if (Settings.get("IsRV32")) 32 else 64
   val HasMExtension = true
+  val HasFPU = true
   val HasCExtension = Settings.get("EnableRVC")
   val HasDiv = true
   val HasIcache = Settings.get("HasIcache")
