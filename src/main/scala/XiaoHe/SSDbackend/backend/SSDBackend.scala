@@ -832,8 +832,10 @@ class SSDbackend extends NutCoreModule with hasBypassConst {
 
   /*BoringUtils.addSource((pipeOut(8).bits.instr === "h0000006b".U || pipeOut(8).bits.instr === "h0005006b".U) &&  pipeOut(8).fire && !pipeInvalid(10) ||
     (pipeOut(9).bits.instr === "h0000006b".U || pipeOut(9).bits.instr === "h0005006b".U) &&  pipeOut(9).fire && !pipeInvalid(11),"SSDcoretrap")*/
-  SSDcoretrap := (pipeOut(8).bits.instr === "h0000006b".U || pipeOut(8).bits.instr === "h0005006b".U) &&  pipeOut(8).fire && !pipeInvalid(10) ||
-    (pipeOut(9).bits.instr === "h0000006b".U || pipeOut(9).bits.instr === "h0005006b".U) &&  pipeOut(9).fire && !pipeInvalid(11)
+//  SSDcoretrap := (pipeOut(8).bits.instr === "h0000006b".U || pipeOut(8).bits.instr === "h00100073".U) &&  pipeOut(8).fire && !pipeInvalid(10) ||
+//    (pipeOut(9).bits.instr === "h0000006b".U || pipeOut(9).bits.instr === "h00100073".U) &&  pipeOut(9).fire && !pipeInvalid(11)
+  SSDcoretrap := ((pipeOut(8).bits.instr === "h0000006b".U || RegNext(SSDCSR.io.wenFix)) &&  pipeOut(8).fire && !pipeInvalid(10)) ||
+    (pipeOut(9).bits.instr === "h0000006b".U || RegNext(SSDCSR.io.wenFix) &&  pipeOut(9).fire && !pipeInvalid(11))
   //BoringUtils.addSink(SSDcoretrap,"SSDcoretrap")
   //inst flag for mtvec
   val mtvecFlag = Reg(Bool())
