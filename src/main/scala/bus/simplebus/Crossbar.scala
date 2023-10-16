@@ -118,6 +118,7 @@ class DmemSimpleBusCrossbar1toN(addressSpace: List[(Long, Long)]) extends Module
       printf(p"${GTimer()}: xbar: in.resp: ${io.in.resp.bits}\n")
     }
   }*/
+  //Debug(io.in.req.valid && addr === 0x00000008.U, "data uncache 00000008\n")
 }
 
 class ImemSimpleBusCrossbar1toN(addressSpace: List[(Long, Long)]) extends Module with HasNutCoreConst{

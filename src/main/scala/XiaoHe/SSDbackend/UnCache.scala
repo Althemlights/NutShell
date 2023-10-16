@@ -98,7 +98,10 @@ class UncacheImp(outer: UnCache)extends LazyModuleImp(outer) with HasDCacheIO wi
 
   val req_reg = Reg(new SimpleBusReqBundle(userBits = userBits, idBits = idBits))
   val resp_data = Reg(UInt(DataBits.W))
-
+  val mmioflushReg = RegInit(false.B)
+  when (mmioflush && (state === s_refill_req || state === s_refill_resp)) {
+    mmioflushReg := true.B
+  }
   def storeReq = req_reg.cmd === SimpleBusCmd.write
   
   val load = edge.Get(
@@ -135,6 +138,12 @@ class UncacheImp(outer: UnCache)extends LazyModuleImp(outer) with HasDCacheIO wi
       when (mem_acquire.fire) {
         state := s_refill_resp
       }
+
+      when (mmioflush) {
+        mem_acquire.valid := false.B
+        state := s_invalid
+        mmioflushReg := false.B
+      }
     }
     is (s_refill_resp) {
       mem_grant.ready := true.B
@@ -142,6 +151,10 @@ class UncacheImp(outer: UnCache)extends LazyModuleImp(outer) with HasDCacheIO wi
       when (mem_grant.fire) {
         resp_data := mem_grant.bits.data
         state := Mux(storeReq, s_invalid, s_send_resp)
+        when (mmioflush || mmioflushReg) {
+          state := s_invalid
+          mmioflushReg := false.B
+        }
       }
     }
     is (s_send_resp) {
@@ -149,6 +162,9 @@ class UncacheImp(outer: UnCache)extends LazyModuleImp(outer) with HasDCacheIO wi
       resp.bits.rdata   := resp_data
 
       when (resp.fire()) {
+        state := s_invalid
+      }
+      when (mmioflush) {
         state := s_invalid
       }
     }
@@ -161,9 +177,10 @@ class UncacheImp(outer: UnCache)extends LazyModuleImp(outer) with HasDCacheIO wi
   //val mmioflush = WireInit(false.B)
   //BoringUtils.addSink(mmioflush, "mmioflush")
   //val mmioflush = io.mmioflush
-  when (mmioflush) {
+  /*when (mmioflush) {
     state := s_invalid
-  }
+  }*/
+  Debug(state === s_invalid && mmioflushReg, "data uncache wrong\n")
 }
 
 class IUnCache()(implicit p: Parameters) extends LazyModule with HasNutCoreParameter with HasICacheParameters with HasNutCoreParameters {
