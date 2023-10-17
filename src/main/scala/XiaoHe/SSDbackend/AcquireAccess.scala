@@ -233,6 +233,7 @@ sealed class IAcquireAccess(edge: TLEdgeOut)(implicit val p: Parameters) extends
     val dataWriteBus = Vec(sramNum, CacheDataArrayWriteBus())
     val tagWriteBus = CacheTagArrayWriteBus()
     val needFlush = Input(Bool())
+    val acquire_ok = Output(Bool())
   })    
 
   //condition machine: mmio s_get | s_putFullData | s_putPartialData | s_accessAckData | s_AccessAck    s_wait_resp与cpu交互
@@ -366,6 +367,7 @@ sealed class IAcquireAccess(edge: TLEdgeOut)(implicit val p: Parameters) extends
   io.mem_finish.bits := grantAck
   io.mem_finish.valid := state === s_grantA
 
+  io.acquire_ok := false.B
   switch (state) {
     is (s_idle) {
       when (mmio) {
@@ -423,6 +425,7 @@ sealed class IAcquireAccess(edge: TLEdgeOut)(implicit val p: Parameters) extends
     is (s_waitResp) {
       when (io.resp.fire || io.needFlush) {
         state := s_idle
+        io.acquire_ok := true.B
       }      
     }
   }
@@ -440,5 +443,5 @@ sealed class IAcquireAccess(edge: TLEdgeOut)(implicit val p: Parameters) extends
   io.resp.bits.cmd := SimpleBusCmd.readBurst
   io.resp.bits.user.zip(io.req.bits.user).map { case (o, i) => o := i }
   
-  //Debug(io.mem_grantAck.fire && addr.index === 0x27.U, "[ICache Miss] Addr:%x Tag:%x AcquireBlock:%x Data:%x\n", addr.asUInt, addr.tag, state === s_grantD, io.mem_grantAck.bits.data.asUInt)
+  Debug(io.mem_grantAck.fire && addr.asUInt === 0x80003d00L.U, "[ICache Miss] Addr:%x Tag:%x AcquireBlock:%x Data:%x\n", addr.asUInt, addr.tag, state === s_grantD, io.mem_grantAck.bits.data.asUInt)
 }

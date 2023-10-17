@@ -20,7 +20,7 @@ import chisel3._
 import chisel3.experimental.ExtModule
 import chisel3.util._
 
-/*class TS5N28HPCPLVTA128X64M2F extends ExtModule with HasExtModuleResource {
+class TS5N28HPCPLVTA128X64M2F extends ExtModule with HasExtModuleResource {
   //  val io = IO(new Bundle {
   val Q =   IO(Output(UInt(64.W)))
   val CLK = IO(Input(Clock()))
@@ -30,7 +30,7 @@ import chisel3.util._
   val D =   IO(Input(UInt(64.W)))
   //  })
   addResource("/vsrc/TS5N28HPCPLVTA128X64M2F.v")
-}*/
+}
 
 class TS5N28HPCPLVTA128X32M2F extends ExtModule with HasExtModuleResource {
   //  val io = IO(new Bundle {
@@ -118,7 +118,7 @@ class TS5N28HPCPLVTA128X80M2F extends ExtModule with HasExtModuleResource {
   Q := Cat(sram(1).Q, sram(0).Q)
 }*/
 
-class TS5N28HPCPLVTA128X64M2F extends Module {
+/*class TS5N28HPCPLVTA128X64M2F extends Module {
   val Q =   IO(Output(UInt(64.W)))
   val CLK = IO(Input(Clock()))
   val CEB = IO(Input(Bool()))
@@ -147,7 +147,7 @@ class TS5N28HPCPLVTA128X64M2F extends Module {
       2.U -> sram(2).Q,
       3.U -> sram(3).Q)
   ) 
-}
+}*/
 
 class SRAMBundleA(val set: Int) extends Bundle {
   val setIdx = Output(UInt(log2Up(set).W))

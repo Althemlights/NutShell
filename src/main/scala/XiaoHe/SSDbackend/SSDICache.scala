@@ -276,7 +276,7 @@ sealed class ICacheStage2(edge: TLEdgeOut)(implicit val p: Parameters) extends I
     //release操作完成
   val isrelDone = RegInit(false.B)
   when (release.io.release_ok) {isrelDone := true.B}
-  when (io.out.fire) {isrelDone := false.B}
+  when (io.out.fire || ((isrelDone || release.io.release_ok) && acquireAccess.io.acquire_ok)) {isrelDone := false.B}
   val relOK = !needRel || (needRel && isrelDone)
 
   release.io.req.bits := req
@@ -366,10 +366,10 @@ class ICacheImp(outer: ICache) extends LazyModuleImp(outer) with HasICacheIO wit
   val probe = Module(new Probe(edge))
 
   //meta 
-  //val tagArray = Module(new TagSRAMTemplateWithArbiter(nRead = 2, new DTagBundle, set = Sets, way = Ways, shouldReset = true))
-  val tagArray = Module(new SRAMTemplateWithArbiter(nRead = 2, new DTagBundle, set = Sets, way = Ways, shouldReset = true))
-  //val metaArray = Module(new MetaSRAMTemplateWithArbiter(nRead = 2, new DMetaBundle, set = Sets, way = Ways, shouldReset = true))
-  val metaArray = Module(new SRAMTemplateWithArbiter(nRead = 2, new DMetaBundle, set = Sets, way = Ways, shouldReset = true))
+  val tagArray = Module(new TagSRAMTemplateWithArbiter(nRead = 2, new DTagBundle, set = Sets, way = Ways, shouldReset = true))
+  //val tagArray = Module(new SRAMTemplateWithArbiter(nRead = 2, new DTagBundle, set = Sets, way = Ways, shouldReset = true))
+  val metaArray = Module(new MetaSRAMTemplateWithArbiter(nRead = 2, new DMetaBundle, set = Sets, way = Ways, shouldReset = true))
+  //val metaArray = Module(new SRAMTemplateWithArbiter(nRead = 2, new DMetaBundle, set = Sets, way = Ways, shouldReset = true))
 
   metaArray.reset := reset.asAsyncReset
   tagArray.reset := reset.asAsyncReset
@@ -429,6 +429,8 @@ class ICacheImp(outer: ICache) extends LazyModuleImp(outer) with HasICacheIO wit
   metaWriteArb.io.in(0) <> probe.io.metaWriteBus.req
   metaArray.io.w.req <> metaWriteArb.io.out
 
+  Debug(metaArray.io.w.req.valid && metaArray.io.w.req.bits.setIdx === 0x34.U , "Icache meta : %x\n", metaArray.io.w.req.bits.data.coh)
+  Debug(tagArray.io.w.req.valid && tagArray.io.w.req.bits.setIdx === 0x34.U , "Icache tag : %x\n", tagArray.io.w.req.bits.data.tag)
   Debug(s1.io.metaReadBus.req.valid && probe.io.metaReadBus.req.valid, "[Icache meta read conflict]\n")
   Debug(s1.io.tagReadBus.req.valid && probe.io.tagReadBus.req.valid, "[Icache tag read conflict]\n")
   Debug((s1.io.metaReadBus.req.valid || probe.io.metaReadBus.req.valid) && metaWriteArb.io.out.valid, "[Icache meta read|write conflict]\n")
