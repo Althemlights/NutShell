@@ -63,6 +63,10 @@ trait HasNutCoreParameter {
 
   val FetchBytes = 8
   val FetchSize = 2 //without compress instr
+
+  // Parameters for Sdtrig extension
+  protected val TriggerNum = 10
+  protected val TriggerChainMaxLength = 2
 }
 
 trait HasNutCoreConst extends HasNutCoreParameter {
