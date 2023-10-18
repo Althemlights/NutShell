@@ -106,6 +106,7 @@ object SoCTestSettings {
     "CLINTBase"-> 0x0000000002000000L,
     "PLICBase" -> 0x0000000002010000L,
     "EnableDebug" -> false,
+    "EnableDifftest" -> false,
     "FPGAPlatform" -> false,
     "HasL2cache" -> false,
     "HasPrefetch" -> false,
@@ -130,7 +131,6 @@ object SoCTestSettings {
 
 //    "FPGAPlatform" -> false,
 //    "EnableILA" -> true,
-    "EnableDebug" -> false,
     "EnableRVC" -> true
 //    "SoCTest" -> false
   )

@@ -1035,5 +1035,6 @@ class SSDbackend extends NutCoreModule with hasBypassConst {
     io.diff.dt_irs.coreid := hartid
     //io.diff.dt_irs.gpr := dt_irs_gpr
     io.diff.dt_irs.gpr := regfile.io.debugPorts
-  }*/
+  }
+  */
 }

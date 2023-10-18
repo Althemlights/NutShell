@@ -19,7 +19,7 @@ package top
 import XiaoHe.NutCoreConfig
 import XiaoHe._
 import device.AXI4VGA
-import sim.SimTop
+// import sim.SimTop
 import chisel3._
 import chisel3.stage._
 import system._
@@ -50,16 +50,17 @@ class Top()(implicit p: Parameters) extends LazyModule {
     val io = IO(new Bundle {})
 
     val nutshell = l_nutshell.module
-    val memory = IO(nutshell.memory.cloneType)
-    memory <> nutshell.memory
+    //val memory = IO(nutshell.memory.cloneType)
+    //memory <> nutshell.memory
 
-    // val vga = Module(new AXI4VGA)
     nutshell.io.clock := clock.asBool
     nutshell.io.reset := reset.asAsyncReset
-    // vga.io := DontCare
-    // nutshell.peripheral := DontCare
-    val peripheral = IO(nutshell.memory.cloneType)
-    peripheral <> nutshell.peripheral
+    //nutshell.io.reset := reset.asBool
+
+    //val peripheral = IO(nutshell.peripheral.cloneType)
+    //peripheral <> nutshell.peripheral
+    val mem = IO(nutshell.mem.cloneType)
+    mem <> nutshell.mem
     dontTouch(nutshell.io)
     // dontTouch(vga.io)
   }
@@ -106,7 +107,7 @@ object TopMain extends App {
   val config = new DefaultConfig(false)
 
   if (board == "sim") {  
-    Generator.execute(args, DisableMonitors(p => new SimTop()(p))(config))
+    // Generator.execute(args, DisableMonitors(p => new SimTop()(p))(config))
   } else {
     Generator.execute(args, (DisableMonitors(p => LazyModule(new Top()(p)))(config)).module)
   }

@@ -16,3 +16,7 @@
 
 // Dcache Icache DataTemplate
 Index bits: 7   Ways: 4   Banks: 4  SramTemplate Addr bits: 7 + 1 = 8  SramDatabits: 6
+
+
+
+mill chiselModule.runMain top.moduleTop -td ./build
