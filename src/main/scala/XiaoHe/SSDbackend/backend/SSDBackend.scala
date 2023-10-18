@@ -22,7 +22,7 @@ class SSDbackend extends NutCoreModule with hasBypassConst {
     val hartid = Input(UInt(XLEN.W))
     val pipelineEmpty = Output(Bool())
     val bpuUpdateReq = new BPUUpdateReq
-    val diff = Flipped(new DIFFTESTIO)
+    //val diff = Flipped(new DIFFTESTIO)
     val debugInt = Input(Bool())        // debug Interrupt
     val mxbarflush = Output(Bool())
     val mmioflush = Output(Bool())
@@ -888,7 +888,7 @@ class SSDbackend extends NutCoreModule with hasBypassConst {
   val rf_a0 = WireInit(0.U(64.W))
   BoringUtils.addSink(rf_a0, "rf_a0")
 
-  if(SSDCoreConfig().EnableDifftest) {
+  /*if(SSDCoreConfig().EnableDifftest) {
     val hartid = io.hartid
 
     //Commit for difftest to Handle load instruction carefully for SMP
@@ -1035,5 +1035,5 @@ class SSDbackend extends NutCoreModule with hasBypassConst {
     io.diff.dt_irs.coreid := hartid
     //io.diff.dt_irs.gpr := dt_irs_gpr
     io.diff.dt_irs.gpr := regfile.io.debugPorts
-  }
+  }*/
 }

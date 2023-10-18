@@ -43,7 +43,7 @@ object DefaultSettings {
     "EnableDebug" -> true,
     "EnableRVC" -> true,
 
-    "CoreNums" -> 0x1,
+    "CoreNums" -> 0x2,
     "SoCTest" -> false,
     "CLINTBase" -> 0x38000000L,               // for bin compiled by AM
     //"CLINTBase" -> 0x2000000L,              // for rtthread
@@ -61,6 +61,16 @@ object PynqSettings {
     "MemMapRegionBits" -> 28,
     "MMIOBase" -> 0x00000000e0000000L,
     "MMIOSize" -> 0x0000000020000000L
+  )
+}
+
+object WkSettings {
+  def apply() = Map(
+    "FPGAPlatform" -> true,
+    "NrExtIntr" -> 0,
+    "ResetVector" -> 0x30000000L,
+    "EnableDebug" -> false,
+    "EnableDifftest" -> false
   )
 }
 

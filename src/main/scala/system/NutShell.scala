@@ -61,7 +61,7 @@ class ILABundle extends NutCoreBundle {
 
 class NutShell()(implicit p: Parameters) extends LazyModule{
   val corenum = Settings.getInt("CoreNums")
-  val extIntr = Settings.getInt("NrExtIntr")
+  //val extIntr = Settings.getInt("NrExtIntr")
   val core_with_l2 = Array.fill(corenum){LazyModule(new NutcoreWithL2())}
 
   //axi4ram slave node
@@ -90,12 +90,12 @@ class NutShell()(implicit p: Parameters) extends LazyModule{
   val peripheralXbar = TLXbar()
   
   // jtag Debug Module
-  val debugModule = LazyModule(new DebugModule(corenum)(p))
-  debugModule.debug.node :=* peripheralXbar        // debug mmio 0x38020000 +：10000
+  /*val debugModule = LazyModule(new DebugModule(corenum)(p))
+  debugModule.debug.node :=* peripheralXbar */       // debug mmio 0x38020000 +：10000
 
   val l2_mem_tlxbar = TLXbar()
   for (i <- 0 until corenum) {
-    core_with_l2(i).debug_int_sink := debugModule.debug.dmOuter.dmOuter.intnode
+    //core_with_l2(i).debug_int_sink := debugModule.debug.dmOuter.dmOuter.intnode
     l2_mem_tlxbar := TLBuffer() := core_with_l2(i).memory_port
     peripheralXbar := TLBuffer.chainNode(2, Some("L2_to_L3_peripheral_buffer")) :=* core_with_l2(i).mmio_port
   }
@@ -170,23 +170,23 @@ class NutShellImp(outer: NutShell) extends LazyRawModuleImp(outer) with HasNutCo
     val clock = Input(Bool())
     val reset = Input(AsyncReset())
     //val frontend = Flipped(new AXI4)
-    val meip = Input(UInt(Settings.getInt("NrExtIntr").W))
+    //val meip = Input(UInt(Settings.getInt("NrExtIntr").W))
     val ila = if (FPGAPlatform && EnableILA) Some(Output(new ILABundle)) else None
-    val diff = Flipped(Vec(corenum, new DIFFTESTIO))
-    val systemjtag = new Bundle {
+    //val diff = Flipped(Vec(corenum, new DIFFTESTIO))
+    /*val systemjtag = new Bundle {
       val jtag = Flipped(new JTAGIO(hasTRSTn = false))
       val reset = Input(AsyncReset()) // No reset allowed on top
       val mfr_id = Input(UInt(11.W))
       val part_number = Input(UInt(16.W))
       val version = Input(UInt(4.W))
-    }
-    val debug_reset = Output(Bool())   // jtag debug reset
+    }*/
+    //val debug_reset = Output(Bool())   // jtag debug reset
   })
 
   val memory = outer.memAXI4SlaveNode.makeIOs()
   val peripheral = outer.peripheralNode.makeIOs()
   val nutcore_withl2 = outer.core_with_l2.map(_.module)
-  (io.diff zip nutcore_withl2) map {case (i, o) => i <> o.io.diff} 
+  //(io.diff zip nutcore_withl2) map {case (i, o) => i <> o.io.diff} 
   val core_rst_nodes = outer.core_rst_nodes
   val l3cacheOpt = outer.l3cacheOpt.module
 
@@ -195,10 +195,10 @@ class NutShellImp(outer: NutShell) extends LazyRawModuleImp(outer) with HasNutCo
   }
 
   // jtag debug module ndreset(reset for All except Debug Module)
-  val debug_module_io = outer.debugModule.module.io
-  val jtag_reset_sync = withClockAndReset(io.systemjtag.jtag.TCK, io.systemjtag.reset) { ResetGen() }
+  //val debug_module_io = outer.debugModule.module.io
+  //val jtag_reset_sync = withClockAndReset(io.systemjtag.jtag.TCK, io.systemjtag.reset) { ResetGen() }
 
-  io.debug_reset := debug_module_io.debugIO.ndreset
+  /*io.debug_reset := debug_module_io.debugIO.ndreset
   debug_module_io.resetCtrl.hartIsInReset := outer.core_with_l2.map(_.module.reset.asBool)
   debug_module_io.clock := io.clock
   debug_module_io.reset := io.reset
@@ -213,7 +213,7 @@ class NutShellImp(outer: NutShell) extends LazyRawModuleImp(outer) with HasNutCo
     x.mfr_id      := io.systemjtag.mfr_id
     x.part_number := io.systemjtag.part_number
     x.version     := io.systemjtag.version
-  }
+  }*/
 
   val reset_sync = withClockAndReset(io.clock.asClock, io.reset) { ResetGen() }
 

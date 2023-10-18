@@ -84,6 +84,7 @@ object TopMain extends App {
 
   val s = (board match {
     case "sim"    => Nil
+    case "wk"     => WkSettings()
     case "pynq"   => PynqSettings()
     case "axu3cg" => Axu3cgSettings()
     case "PXIe"   => PXIeSettings()
@@ -104,18 +105,9 @@ object TopMain extends App {
   
   val config = new DefaultConfig(false)
 
-  if (board == "sim") {
+  if (board == "sim") {  
     Generator.execute(args, DisableMonitors(p => new SimTop()(p))(config))
-    /*(new ChiselStage).execute(args, Seq(
-      //ChiselGeneratorAnnotation(DisableMonitors(p => LazyModule(new SimTop()(p)))(config).module _))
-      ChiselGeneratorAnnotation(DisableMonitors(p => new SimTop()(p))(config))
-      )
-    )*/
   } else {
-    /*(new ChiselStage).execute(args, 
-    Seq(
-      ChiselGeneratorAnnotation(() => new Top))
-    )*/
     Generator.execute(args, (DisableMonitors(p => LazyModule(new Top()(p)))(config)).module)
   }
 }

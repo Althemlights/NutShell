@@ -115,7 +115,7 @@ class NutCore()(implicit p: Parameters) extends LazyModule with HasNutCoreParame
   mmioxbar := TLBuffer.chainNode(2) := TLTempNode() := iUncache.clientNode
   timer.node := mmioxbar
   
-  val debug_int_sink = IntSinkNode(IntSinkPortSimple(1, 1))
+  //val debug_int_sink = IntSinkNode(IntSinkPortSimple(1, 1))
   lazy val module = new NutCoreImp(this)
 }
 
@@ -126,7 +126,8 @@ class NutCoreImp(outer: NutCore) extends LazyModuleImp(outer) with HasNutCorePar
   val dUncache = outer.dUncache.module
   val iUncache = outer.iUncache.module
   val timer = outer.timer.module
-  val debugInt = outer.debug_int_sink.in.head._1(0)
+  //val debugInt = outer.debug_int_sink.in.head._1(0)
+  val debugInt = false.B 
 
   BoringUtils.addSource(timer.io.mtip, "mtip")
   BoringUtils.addSource(timer.io.msip, "msip")
@@ -137,7 +138,7 @@ class NutCoreImp(outer: NutCore) extends LazyModuleImp(outer) with HasNutCorePar
     //val mmio = new SimpleBusUC
     val frontend = Flipped(new SimpleBusUC())
     val hartid = Input(UInt(XLEN.W))
-    val diff = Flipped(new DIFFTESTIO)
+    //val diff = Flipped(new DIFFTESTIO)
   }
   val io = IO(new NutCoreIO)
 
@@ -151,7 +152,7 @@ class NutCoreImp(outer: NutCore) extends LazyModuleImp(outer) with HasNutCorePar
   val SSDbackend = Module(new SSDbackend)
   SSDbackend.io.in <> frontend.io.out
   SSDbackend.io.hartid <> io.hartid
-  io.diff <> SSDbackend.io.diff
+  //io.diff <> SSDbackend.io.diff
   SSDbackend.io.debugInt := debugInt
   frontend.io.pipelineEmpty := SSDbackend.io.pipelineEmpty
   frontend.io.bpuUpdateReq := SSDbackend.io.bpuUpdateReq

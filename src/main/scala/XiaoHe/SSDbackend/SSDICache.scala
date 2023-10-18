@@ -429,8 +429,8 @@ class ICacheImp(outer: ICache) extends LazyModuleImp(outer) with HasICacheIO wit
   metaWriteArb.io.in(0) <> probe.io.metaWriteBus.req
   metaArray.io.w.req <> metaWriteArb.io.out
 
-  Debug(metaArray.io.w.req.valid && metaArray.io.w.req.bits.setIdx === 0x34.U , "Icache meta : %x\n", metaArray.io.w.req.bits.data.coh)
-  Debug(tagArray.io.w.req.valid && tagArray.io.w.req.bits.setIdx === 0x34.U , "Icache tag : %x\n", tagArray.io.w.req.bits.data.tag)
+  //Debug(metaArray.io.w.req.valid && metaArray.io.w.req.bits.setIdx === 0x34.U , "Icache meta : %x\n", metaArray.io.w.req.bits.data.coh)
+  //Debug(tagArray.io.w.req.valid && tagArray.io.w.req.bits.setIdx === 0x34.U , "Icache tag : %x\n", tagArray.io.w.req.bits.data.tag)
   Debug(s1.io.metaReadBus.req.valid && probe.io.metaReadBus.req.valid, "[Icache meta read conflict]\n")
   Debug(s1.io.tagReadBus.req.valid && probe.io.tagReadBus.req.valid, "[Icache tag read conflict]\n")
   Debug((s1.io.metaReadBus.req.valid || probe.io.metaReadBus.req.valid) && metaWriteArb.io.out.valid, "[Icache meta read|write conflict]\n")

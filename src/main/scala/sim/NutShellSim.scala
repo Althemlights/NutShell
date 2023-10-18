@@ -59,11 +59,12 @@ class SimTop(implicit p: Parameters) extends Module {
   //Debug(clock.asBool, "SimTop clock\n")
   soc.io.clock := clock.asBool
   // include global reset and jtag debug reset
-  soc.io.reset := (reset.asBool || soc.io.debug_reset).asAsyncReset  
-  val debug_reset = soc.io.debug_reset
+  soc.io.reset := reset.asAsyncReset  
+  //soc.io.reset := (reset.asBool || soc.io.debug_reset).asAsyncReset  
+  /*val debug_reset = soc.io.debug_reset
   val debug_resetReg = RegNext(debug_reset)   
   Debug(!debug_resetReg && debug_reset, "Debug reset on\n")
-  Debug(debug_resetReg && !debug_reset, "Debug reset off\n")
+  Debug(debug_resetReg && !debug_reset, "Debug reset off\n")*/
 
   val l_mmio = LazyModule(new SimMMIO(l_soc.peripheralNode.in.head._2))
   val mmio = Module(l_mmio.module)
@@ -130,11 +131,11 @@ class SimTop(implicit p: Parameters) extends Module {
   (dt_irs zip soc.io.diff) map { case (i,o) => i.io <> o.dt_irs }
 
   //uart
-  val success = Wire(Bool())
+  /*val success = Wire(Bool())
   val jtag = Module(new SimJTAG(tickDelay=3)(p))
   jtag.connect(soc.io.systemjtag.jtag, clock, reset.asBool, !reset.asBool, success)
   soc.io.systemjtag.reset := reset.asAsyncReset
   soc.io.systemjtag.mfr_id := 0.U(11.W)
   soc.io.systemjtag.part_number := 0.U(16.W)
-  soc.io.systemjtag.version := 0.U(4.W)
+  soc.io.systemjtag.version := 0.U(4.W) */
 }
