@@ -106,6 +106,13 @@ trait SSDHasCSRConst {
   val Pmpcfg3       = 0x3A3
   val PmpaddrBase   = 0x3B0
 
+  // Trigger Registers
+  val Tselect = 0x7A0
+  val Tdata1 = 0x7A1
+  val Tdata2 = 0x7A2
+  val Tinfo = 0x7A4
+  val Tcontrol = 0x7A5
+
   // Debug Mode Registers
   val Dcsr          = 0x7B0
   val Dpc           = 0x7B1
@@ -332,6 +339,47 @@ class SSDCSR extends NutCoreModule with SSDHasCSRConst with SSDHasExceptionNO wi
     val dcsrNew = dcsr | (dcsrOld.prv(0) | dcsrOld.prv(1)).asUInt // turn 10 priv into 11
     dcsrNew
   }
+
+  // Trigger CSRs
+  private val tselectPhy = RegInit(0.U(4.W))
+  private val tdata1RegVec = RegInit(VecInit(Seq.fill(TriggerNum)(Tdata1Bundle.default)))
+  private val tdata2RegVec = RegInit(VecInit(Seq.fill(TriggerNum)(0.U(64.W))))
+  private val tdata1WireVec = tdata1RegVec.map(_.asTypeOf(new Tdata1Bundle))
+  private val tdata2WireVec = tdata2RegVec
+  private val tdata1Selected = tdata1RegVec(tselectPhy).asTypeOf(new Tdata1Bundle)
+  private val tdata2Selected = tdata2RegVec(tselectPhy)
+  private val newTriggerChainVec = UIntToOH(tselectPhy, TriggerNum).asBools | tdata1WireVec.map(_.data.asTypeOf(new MControlData).chain)
+  private val newTriggerChainIsLegal = TriggerCheckChainLegal(newTriggerChainVec, TriggerChainMaxLength)
+  val tinfo = RegInit((BigInt(1) << TrigTypeEnum.MCONTROL.litValue.toInt).U(XLEN.W)) // This value should be 4.U
+
+  val tdata1Prev = RegNext(tdata1Selected.asUInt)
+  XSDebug(tdata1Prev =/= tdata1Selected.asUInt, "Debug Mode: tdata1 is altered! Current is %x, previous is %x\n", tdata1Selected.asUInt, tdata1Prev)
+  val tdata2Prev = RegNext(tdata2Selected.asUInt)
+  XSDebug(tdata2Prev =/= tdata2Selected.asUInt, "Debug Mode: tdata2 is altered! Current is %x, previous is %x\n", tdata2Selected.asUInt, tdata2Prev)
+
+  def WriteTselect(wdata: UInt) = {
+    Mux(wdata < TriggerNum.U, wdata(3, 0), tselectPhy)
+  }
+
+  def GenTdataDistribute(tdata1: Tdata1Bundle, tdata2: UInt): MatchTriggerIO = {
+    val res = Wire(new MatchTriggerIO)
+    val mcontrol: MControlData = WireInit(tdata1.data.asTypeOf(new MControlData))
+    res.matchType := mcontrol.match_.asUInt
+    res.select    := mcontrol.select
+    res.timing    := mcontrol.timing
+    res.action    := mcontrol.action.asUInt
+    res.chain     := mcontrol.chain
+    res.execute   := mcontrol.execute
+    res.load      := mcontrol.load
+    res.store     := mcontrol.store
+    res.tdata2    := tdata2
+    res
+  }
+
+  csrio.customCtrl.frontend_trigger.tUpdate.bits.addr := tselectPhy
+  csrio.customCtrl.mem_trigger.tUpdate.bits.addr := tselectPhy
+  csrio.customCtrl.frontend_trigger.tUpdate.bits.tdata := GenTdataDistribute(tdata1Selected, tdata2Selected)
+  csrio.customCtrl.mem_trigger.tUpdate.bits.tdata := GenTdataDistribute(tdata1Selected, tdata2Selected)
 
   // Machine-Level CSRs
 
@@ -571,6 +619,17 @@ class SSDCSR extends NutCoreModule with SSDHasCSRConst with SSDHasExceptionNO wi
     MaskedRegMap(PmpaddrBase + 1, pmpaddr1),
     MaskedRegMap(PmpaddrBase + 2, pmpaddr2),
     MaskedRegMap(PmpaddrBase + 3, pmpaddr3),
+
+    //--- Trigger ---
+    MaskedRegMap(Tselect, tselectPhy, WritableMask, WriteTselect),
+    // Todo: support chain length = 2
+    MaskedRegMap(Tdata1, tdata1RegVec(tselectPhy),
+      WritableMask,
+      x => Tdata1Bundle.Write(x, tdata1RegVec(tselectPhy), newTriggerChainIsLegal, debug_mode = debugMode),
+      WritableMask,
+      x => Tdata1Bundle.Read(x)),
+    MaskedRegMap(Tdata2, tdata2RegVec(tselectPhy)),
+    MaskedRegMap(Tinfo, tinfo, 0.U(XLEN.W), MaskedRegMap.Unwritable),
 
     //--- Debug Mode ---
     MaskedRegMap(Dcsr, dcsr, dcsrMask, dcsrUpdateSideEffect),
