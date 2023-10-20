@@ -233,6 +233,7 @@ sealed class IAcquireAccess(edge: TLEdgeOut)(implicit val p: Parameters) extends
     val dataWriteBus = Vec(sramNum, CacheDataArrayWriteBus())
     val tagWriteBus = CacheTagArrayWriteBus()
     val needFlush = Input(Bool())
+    val acquire_ok = Output(Bool())
   })    
 
   //condition machine: mmio s_get | s_putFullData | s_putPartialData | s_accessAckData | s_AccessAck    s_wait_resp与cpu交互
@@ -366,6 +367,7 @@ sealed class IAcquireAccess(edge: TLEdgeOut)(implicit val p: Parameters) extends
   io.mem_finish.bits := grantAck
   io.mem_finish.valid := state === s_grantA
 
+  io.acquire_ok := false.B
   switch (state) {
     is (s_idle) {
       when (mmio) {
@@ -423,6 +425,7 @@ sealed class IAcquireAccess(edge: TLEdgeOut)(implicit val p: Parameters) extends
     is (s_waitResp) {
       when (io.resp.fire || io.needFlush) {
         state := s_idle
+        io.acquire_ok := true.B
       }      
     }
   }

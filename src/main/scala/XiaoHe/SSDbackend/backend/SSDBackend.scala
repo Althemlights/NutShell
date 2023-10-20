@@ -326,7 +326,7 @@ class SSDbackend extends NutCoreModule with hasBypassConst {
   io.mxbarflush := memflush
   io.mmioflush := memflush
   // MDU
-  val divflush = (BypassPkt(2).decodePkt.muldiv && io.redirectOut.valid) || (BypassPkt(3).decodePkt.muldiv && io.redirectOut.valid)
+  val divflush = (BypassPkt(2).decodePkt.muldiv && io.redirectOut.valid &&(!(Redirect2.valid || Redirect3.valid)) ) || (BypassPkt(3).decodePkt.muldiv && io.redirectOut.valid &&(!(Redirect2.valid || Redirect3.valid)))
   //BoringUtils.addSource(divflush, "divflush")
 
   val MDU = Module(new SSDMDU)
@@ -830,13 +830,10 @@ class SSDbackend extends NutCoreModule with hasBypassConst {
     BypassPkt(9).BypassCtl.rs1bypasse3.asUInt.orR.asUInt + BypassPkt(9).BypassCtl.rs2bypasse3.asUInt.orR.asUInt
   }
 
-  /*BoringUtils.addSource((pipeOut(8).bits.instr === "h0000006b".U || pipeOut(8).bits.instr === "h0005006b".U) &&  pipeOut(8).fire && !pipeInvalid(10) ||
-    (pipeOut(9).bits.instr === "h0000006b".U || pipeOut(9).bits.instr === "h0005006b".U) &&  pipeOut(9).fire && !pipeInvalid(11),"SSDcoretrap")*/
-//  SSDcoretrap := (pipeOut(8).bits.instr === "h0000006b".U || pipeOut(8).bits.instr === "h00100073".U) &&  pipeOut(8).fire && !pipeInvalid(10) ||
-//    (pipeOut(9).bits.instr === "h0000006b".U || pipeOut(9).bits.instr === "h00100073".U) &&  pipeOut(9).fire && !pipeInvalid(11)
-  SSDcoretrap := ((pipeOut(8).bits.instr === "h0000006b".U || RegNext(SSDCSR.io.wenFix)) &&  pipeOut(8).fire && !pipeInvalid(10)) ||
-    (pipeOut(9).bits.instr === "h0000006b".U || RegNext(SSDCSR.io.wenFix) &&  pipeOut(9).fire && !pipeInvalid(11))
-  //BoringUtils.addSink(SSDcoretrap,"SSDcoretrap")
+  SSDcoretrap := (pipeOut(8).bits.instr === "h0000006b".U || pipeOut(8).bits.instr === "h0005006b".U) &&  pipeOut(8).fire && !pipeInvalid(10) ||
+    (pipeOut(9).bits.instr === "h0000006b".U || pipeOut(9).bits.instr === "h0005006b".U) &&  pipeOut(9).fire && !pipeInvalid(11)
+  val ebreak_skip = RegNext(SSDCSR.io.wenFix) && pipeOut(8).fire && !pipeInvalid(10) || RegNext(SSDCSR.io.wenFix) && pipeOut(9).fire && !pipeInvalid(11)
+
   //inst flag for mtvec
   val mtvecFlag = Reg(Bool())
   dontTouch(mtvecFlag)
@@ -948,7 +945,7 @@ class SSDbackend extends NutCoreModule with hasBypassConst {
     io.diff.dt_ic1.clock   := clock
     io.diff.dt_ic1.coreid  := hartid
     io.diff.dt_ic1.index   := 0.U
-    io.diff.dt_ic1.valid  := RegNext(pipeOut(8).fire() && !pipeInvalid(10) && pipeOut(8).bits.pc =/= 0.U) && !RegNext(SSDcoretrap)
+    io.diff.dt_ic1.valid  := RegNext(pipeOut(8).fire() && !pipeInvalid(10) && pipeOut(8).bits.pc =/= 0.U) && !RegNext(SSDcoretrap)&& !RegNext(ebreak_skip)
     io.diff.dt_ic1.pc     := RegNext(Cat(0.U((64 - VAddrBits).W), pipeOut(8).bits.pc))
     io.diff.dt_ic1.instr  := RegNext(pipeOut(8).bits.instr)
     io.diff.dt_ic1.special := 0.U
@@ -989,16 +986,16 @@ class SSDbackend extends NutCoreModule with hasBypassConst {
     
     io.diff.dt_iw1.clock := clock
     io.diff.dt_iw1.coreid := hartid
-    io.diff.dt_iw1.valid := RegNext(Mux(regP0 === regP1 && regfile.io.writePorts(0).wen && regfile.io.writePorts(1).wen ,false.B,regfile.io.writePorts(0).wen))
+    io.diff.dt_iw1.valid := RegNext(Mux(regP0 === regP1 && regfile.io.writePorts(0).wen && regfile.io.writePorts(1).wen ,false.B,regfile.io.writePorts(0).wen && !RegNext(ebreak_skip)))
     io.diff.dt_iw1.dest := RegNext(regfile.io.writePorts(0).addr)
     io.diff.dt_iw1.data := RegNext(regfile.io.writePorts(0).data)
 
     io.diff.dt_ae.clock := clock
     io.diff.dt_ae.coreid := hartid
-    io.diff.dt_ae.intrNO := RegNext(Mux(pipeOut(9).bits.csrInst,pipeOut(9).bits.ArchEvent.intrNO & VecInit(Seq.fill(32)(pipeOut(9).valid)).asUInt,pipeOut(8).bits.ArchEvent.intrNO & VecInit(Seq.fill(32)(pipeOut(8).valid)).asUInt))
-    io.diff.dt_ae.cause := RegNext(Mux(pipeOut(9).bits.csrInst,pipeOut(9).bits.ArchEvent.cause,pipeOut(8).bits.ArchEvent.cause))
-    io.diff.dt_ae.exceptionPC := RegNext(Mux(pipeOut(9).bits.csrInst,pipeOut(9).bits.ArchEvent.exceptionPC,pipeOut(8).bits.ArchEvent.exceptionPC))
-    io.diff.dt_ae.exceptionInst := DontCare 
+    io.diff.dt_ae.intrNO := RegNext(pipeOut(8).bits.ArchEvent.intrNO & VecInit(Seq.fill(32)(pipeOut(8).valid)).asUInt)
+    io.diff.dt_ae.cause := Mux((io.diff.dt_ic1.valid || RegNext(ebreak_skip)) ,RegNext(pipeOut(8).bits.ArchEvent.cause),0.U)//RegNext(pipeOut(8).bits.ArchEvent.cause)
+    io.diff.dt_ae.exceptionPC := RegNext(Cat(0.U((64 - VAddrBits).W), pipeOut(8).bits.pc))
+    io.diff.dt_ae.exceptionInst := RegNext(pipeOut(8).bits.instr)
 
     io.diff.dt_te.clock := clock
     io.diff.dt_te.coreid := hartid

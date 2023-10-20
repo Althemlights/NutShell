@@ -276,7 +276,7 @@ sealed class ICacheStage2(edge: TLEdgeOut)(implicit val p: Parameters) extends I
     //release操作完成
   val isrelDone = RegInit(false.B)
   when (release.io.release_ok) {isrelDone := true.B}
-  when (io.out.fire) {isrelDone := false.B}
+  when (io.out.fire || ((isrelDone || release.io.release_ok) && acquireAccess.io.acquire_ok)) {isrelDone := false.B}
   val relOK = !needRel || (needRel && isrelDone)
 
   release.io.req.bits := req

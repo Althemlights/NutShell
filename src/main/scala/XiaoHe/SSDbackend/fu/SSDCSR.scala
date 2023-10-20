@@ -797,7 +797,6 @@ class SSDCSR extends NutCoreModule with SSDHasCSRConst with SSDHasExceptionNO wi
   val raiseExceptionVec = csrExceptionVec.asUInt | iduExceptionVec.asUInt
   val raiseException = raiseExceptionVec.orR
   val exceptionNO = ExcPriority.foldRight(0.U)((i: Int, sum: UInt) => Mux(raiseExceptionVec(i), i.U, sum))
-  io.wenFix := raiseException
 
   val causeNO = (raiseIntr << (XLEN - 1)) | Mux(raiseIntr, intrNO, exceptionNO)
   io.intrNO := Mux(raiseIntr, causeNO, 0.U)
@@ -806,6 +805,7 @@ class SSDCSR extends NutCoreModule with SSDHasCSRConst with SSDHasExceptionNO wi
   val raiseExceptionIntr = (raiseException || raiseIntr) && RegNext(io.instrValid)
   //val raiseExceptionIntr_wire = (raiseException || raiseIntr_wire) && io.instrValid //dont support raise exception
   val raiseExceptionIntr_wire = (raiseException || raiseIntr_wire) && hasValidInst
+  io.wenFix := raiseExceptionIntr_wire
   val retTarget = Wire(UInt(VAddrBits.W))
   val trapTarget = Wire(UInt(VAddrBits.W))
 
