@@ -62,14 +62,13 @@ class RedirectIO_nooo extends NutCoreBundle {
 }
 
 
-
-
 class BypassIO extends  Bundle{
   val isALU = Output(Bool())
   val isMDU = Output(Bool())
   val isLoad = Output(Bool())
   val isStore = Output(Bool())
 }
+
 class CtrlFlowIO extends NutCoreBundle {
   val instr = Output(UInt(64.W))
   val pc = Output(UInt(VAddrBits.W))
@@ -82,6 +81,7 @@ class CtrlFlowIO extends NutCoreBundle {
   val crossPageIPFFix = Output(Bool())
   val runahead_checkpoint_id = Output(UInt(64.W))
   val isBranch = Output(Bool())
+  val triggeredFire = Output(new TriggerCf)
 
   //sfb add
   val sfb = Output(Bool())
@@ -176,3 +176,69 @@ class PredictPkt extends NutCoreBundle {
 }
 
 // Micro OP
+// XS bundle
+// these 3 bundles help distribute trigger control signals from CSR
+// to Frontend, Load and Store.
+class FrontendTdataDistributeIO extends NutCoreBundle {
+  val tUpdate = ValidIO(new Bundle {
+    val addr = Output(UInt(log2Up(TriggerNum).W))
+    val tdata = new MatchTriggerIO
+  })
+  val tEnableVec: Vec[Bool] = Output(Vec(TriggerNum, Bool()))
+}
+
+class MemTdataDistributeIO extends NutCoreBundle {
+  val tUpdate = ValidIO(new Bundle {
+    val addr = Output(UInt(log2Up(TriggerNum).W))
+    val tdata = new MatchTriggerIO
+  })
+  val tEnableVec: Vec[Bool] = Output(Vec(TriggerNum, Bool()))
+}
+
+class MatchTriggerIO extends NutCoreBundle {
+  val matchType = Output(UInt(2.W))
+  val select = Output(Bool())
+  val timing = Output(Bool())
+  val action = Output(Bool())
+  val chain = Output(Bool())
+  val execute = Output(Bool())
+  val store = Output(Bool())
+  val load = Output(Bool())
+  val tdata2 = Output(UInt(64.W))
+}
+
+class CustomCSRCtrlIO extends NutCoreBundle {
+  // TODO: move it to a new bundle, since single step is not a custom control signal
+  //val singlestep = Output(Bool())
+  val frontend_trigger = new FrontendTdataDistributeIO()
+  //val mem_trigger = new MemTdataDistributeIO()
+}
+
+class TriggerCf extends NutCoreBundle {
+  // frontend
+  val frontendHit       = Vec(TriggerNum, Bool()) // en && hit
+  val frontendTiming    = Vec(TriggerNum, Bool()) // en && timing
+  val frontendChain     = Vec(TriggerNum, Bool()) // en && chain
+  val frontendCanFire   = Vec(TriggerNum, Bool())
+  // backend
+  val backendHit        = Vec(TriggerNum, Bool())
+  val backendCanFire    = Vec(TriggerNum, Bool())
+
+  // Two situations not allowed:
+  // 1. load data comparison
+  // 2. store chaining with store
+  // def getHitFrontend = frontendHit.reduce(_ || _)
+  // def getHitBackend = backendHit.reduce(_ || _)
+  // def hit = getHitFrontend || getHitBackend
+  def getFrontendCanFire = frontendCanFire.reduce(_ || _)
+  def getBackendCanFire = backendCanFire.reduce(_ || _)
+  def canFire = getFrontendCanFire || getBackendCanFire
+  def clear(): Unit = {
+    frontendHit.foreach(_ := false.B)
+    frontendCanFire.foreach(_ := false.B)
+    backendHit.foreach(_ := false.B)
+    backendCanFire.foreach(_ := false.B)
+    frontendTiming.foreach(_ := false.B)
+    frontendChain.foreach(_ := false.B)
+  }
+}

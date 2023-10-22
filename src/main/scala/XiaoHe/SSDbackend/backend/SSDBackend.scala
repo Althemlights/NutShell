@@ -26,6 +26,7 @@ class SSDbackend extends NutCoreModule with hasBypassConst {
     val debugInt = Input(Bool())        // debug Interrupt
     val mxbarflush = Output(Bool())
     val mmioflush = Output(Bool())
+    val csrCtrl = Output(new CustomCSRCtrlIO)
     //val mmio = new SimpleBusUC
   })
   def BypassMux(sel:Bool,BypassCtl:Vec[Bool],BypassDataPort:Vec[UInt],rdata:UInt):UInt ={
@@ -159,6 +160,7 @@ class SSDbackend extends NutCoreModule with hasBypassConst {
   val hasI01Valid = i0Valid || i1Valid
   SSDCSR.io.hasI01Valid := hasI01Valid
   SSDCSR.io.cfIn.pc := Mux(BypassPktValid(6), pipeOut(6).bits.pc, pipeOut(7).bits.pc)
+  SSDCSR.io.cfIn.triggeredFire := BypassPkt(6).decodePkt.triggeredFire
   when(i0CSRValid) {
     SSDCSR.io.cfIn.pc                   := pipeOut(6).bits.pc
     SSDCSR.io.cfIn.pnpc                 := pipeOut(6).bits.pnpc
@@ -176,6 +178,7 @@ class SSDbackend extends NutCoreModule with hasBypassConst {
     SSDCSR.io.cfIn.isBranch             := pipeOut(7).bits.isBranch
     SSDCSR.io.cfIn.redirect.btbIsBranch := pipeOut(7).bits.btbIsBranch
   }
+  io.csrCtrl := SSDCSR.io.customCtrl
 //  when(RegNext(i0CSRValid)) {
 //    Redirect2_csr := RegNext(RegNext(SSDCSR.io.redirect))
 //    Redirect3_csr := 0.U.asTypeOf(new RedirectIO)

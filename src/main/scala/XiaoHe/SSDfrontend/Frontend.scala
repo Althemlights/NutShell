@@ -37,6 +37,7 @@ class FrontendIO(implicit p: Parameters) extends Bundle with HasNutCoreConst {
   val ipf = Input(Bool())
   val pipelineEmpty = Input(Bool())
   val bpuUpdateReq = Flipped(new BPUUpdateReq)
+  val frontend_trigger = Flipped(new FrontendTdataDistributeIO())
 }
 
 
@@ -84,6 +85,7 @@ class Frontend_ooo(implicit val p: Parameters) extends NutCoreModule with HasFro
 
   ibf1.io.flush := ifu.io.flushVec(1)
   ibf2.io.flush := ifu.io.flushVec(1)
+  ibf1.io.frontend_trigger := io.frontend_trigger
 
   PipelineVector2Connect(new CtrlFlowIO, ibf2.io.out(0), ibf2.io.out(1), idu.io.in(2), idu.io.in(3), ifu.io.flushVec(1), 64)
 

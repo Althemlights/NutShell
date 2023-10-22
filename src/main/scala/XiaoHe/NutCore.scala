@@ -64,6 +64,8 @@ trait HasNutCoreParameter {
   val FetchBytes = 8
   val FetchSize = 2 //without compress instr
 
+  val PredictWidth = 2
+
   // Parameters for Sdtrig extension
   protected val TriggerNum = 10
   protected val TriggerChainMaxLength = 2
@@ -153,13 +155,15 @@ class NutCoreImp(outer: NutCore) extends LazyModuleImp(outer) with HasNutCorePar
   val BoolTmp1 = WireInit(false.B)
 
   val SSDbackend = Module(new SSDbackend)
-  SSDbackend.io.in <> frontend.io.out
+  SSDbackend.io.in <> frontend.io.out 
   SSDbackend.io.hartid <> io.hartid
   io.diff <> SSDbackend.io.diff
   SSDbackend.io.debugInt := debugInt
+  
   frontend.io.pipelineEmpty := SSDbackend.io.pipelineEmpty
   frontend.io.bpuUpdateReq := SSDbackend.io.bpuUpdateReq
   frontend.io.redirect <> SSDbackend.io.redirectOut
+  frontend.io.frontend_trigger := SSDbackend.io.csrCtrl.frontend_trigger
   frontend.io.ipf := false.B
 
   for(i <- 0 to 3){frontend.io.out(i) <> SSDbackend.io.in(i)}

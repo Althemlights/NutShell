@@ -48,6 +48,7 @@ class Decoder(implicit p: Parameters) extends NutCoreModule with HasInstrType {
   val isRVC = io.in.bits.isRVC
 
   io.out.bits := DontCare
+  io.out.bits.ctrl.triggeredFire := io.in.bits.triggeredFire
   io.out.bits.ctrl.fuType := fuType
   io.out.bits.ctrl.fuOpType := fuOpType
 

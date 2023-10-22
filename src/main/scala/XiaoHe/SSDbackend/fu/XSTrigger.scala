@@ -2,13 +2,13 @@ package XiaoHe.SSDbackend.fu
 
 import chisel3._
 import chisel3.util._
-import xiangshan.XSBundle
+import XiaoHe._
 import chipsalliance.rocketchip.config.Parameters
 import utils.ConsecutiveOnes
 
 trait SdtrigExt {
   implicit val p: Parameters
-  class TDataRegs extends XSBundle {
+  class TDataRegs extends NutCoreBundle {
     val tdata1 = UInt(XLEN.W)
     val tdata2 = UInt(XLEN.W)
   }
@@ -16,7 +16,7 @@ trait SdtrigExt {
     def apply() = new TDataRegs
   }
 
-  class Tdata1Bundle extends XSBundle {
+  class Tdata1Bundle extends NutCoreBundle {
     val type_ = TrigTypeEnum()    // [XLEN-1: XLEN-4]
     val dmode = Bool()            // [XLEN-5]
     val data  = new Tdata1Data    // [XLEN-6, 0]
@@ -79,7 +79,7 @@ trait SdtrigExt {
     def apply()   = new TrigTypeEnum
   }
 
-  protected class Tdata1Data extends XSBundle {
+  protected class Tdata1Data extends NutCoreBundle {
     val value = UInt((XLEN-5).W)
   }
 

@@ -405,7 +405,9 @@ class DecodeIO2BypassPkt extends Module {
   val noneBlockCase = WireInit(false.B)
   noneBlockCase := (i1decodePkt.alu && i0decodePkt.load) || (i1decodePkt.alu && i0decodePkt.muldiv) || (i0decodePkt.alu && !i0Subalu && (i1decodePkt.load || i1decodePkt.store))
 
+  //TODO
   io.issueStall(1) :=
+    i0decodePkt.triggeredFire.canFire ||                  // trigger exception
     (i0decodePkt.csr && i1decodePkt.csr) ||
     (i0decodePkt.csr && i1decodePkt.branch) || (i1decodePkt.mou) ||
     i1decodePkt.csr ||
@@ -661,6 +663,7 @@ object DecodeIO2decodePkt {
     out.csr    := in.ctrl.fuType === FuType.csr
     out.skip   := in.cf.instr =/= 0x7b.U
     out.mou    := in.ctrl.fuType === FuType.mou
+    out.triggeredFire := in.cf.triggeredFire
   }
 }
 

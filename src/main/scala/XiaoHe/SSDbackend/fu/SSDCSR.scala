@@ -21,6 +21,7 @@ import chisel3.util._
 import chisel3.util.experimental.BoringUtils
 import top.Settings
 import utils._
+import utils.MaskedRegMap.WritableMask
 //import difftest._
 import XiaoHe.SSDbackend._
 import XiaoHe._
@@ -258,9 +259,10 @@ class SSDCSRIO extends FunctionUnitIO {
   val hartid = Input(UInt(XLEN.W))
   val debugInt = Input(Bool())      // debug Interrupt
   val hasI01Valid = Input(Bool())
+  val customCtrl = Output(new CustomCSRCtrlIO)
 }
 
-class SSDCSR extends NutCoreModule with SSDHasCSRConst with SSDHasExceptionNO with DebugCSR{
+class SSDCSR extends NutCoreModule with SSDHasCSRConst with SSDHasExceptionNO with DebugCSR with SdtrigExt{
   val io = IO(new SSDCSRIO)
 
   val (valid, src1, src2, func) = (io.in.valid, io.in.bits.src1, io.in.bits.src2, io.in.bits.func)
@@ -353,9 +355,9 @@ class SSDCSR extends NutCoreModule with SSDHasCSRConst with SSDHasExceptionNO wi
   val tinfo = RegInit((BigInt(1) << TrigTypeEnum.MCONTROL.litValue.toInt).U(XLEN.W)) // This value should be 4.U
 
   val tdata1Prev = RegNext(tdata1Selected.asUInt)
-  XSDebug(tdata1Prev =/= tdata1Selected.asUInt, "Debug Mode: tdata1 is altered! Current is %x, previous is %x\n", tdata1Selected.asUInt, tdata1Prev)
+  Debug(tdata1Prev =/= tdata1Selected.asUInt, "Debug Mode: tdata1 is altered! Current is %x, previous is %x\n", tdata1Selected.asUInt, tdata1Prev)
   val tdata2Prev = RegNext(tdata2Selected.asUInt)
-  XSDebug(tdata2Prev =/= tdata2Selected.asUInt, "Debug Mode: tdata2 is altered! Current is %x, previous is %x\n", tdata2Selected.asUInt, tdata2Prev)
+  Debug(tdata2Prev =/= tdata2Selected.asUInt, "Debug Mode: tdata2 is altered! Current is %x, previous is %x\n", tdata2Selected.asUInt, tdata2Prev)
 
   def WriteTselect(wdata: UInt) = {
     Mux(wdata < TriggerNum.U, wdata(3, 0), tselectPhy)
@@ -376,10 +378,10 @@ class SSDCSR extends NutCoreModule with SSDHasCSRConst with SSDHasExceptionNO wi
     res
   }
 
-  csrio.customCtrl.frontend_trigger.tUpdate.bits.addr := tselectPhy
-  csrio.customCtrl.mem_trigger.tUpdate.bits.addr := tselectPhy
-  csrio.customCtrl.frontend_trigger.tUpdate.bits.tdata := GenTdataDistribute(tdata1Selected, tdata2Selected)
-  csrio.customCtrl.mem_trigger.tUpdate.bits.tdata := GenTdataDistribute(tdata1Selected, tdata2Selected)
+  io.customCtrl.frontend_trigger.tUpdate.bits.addr := tselectPhy
+  //io.customCtrl.mem_trigger.tUpdate.bits.addr := tselectPhy
+  io.customCtrl.frontend_trigger.tUpdate.bits.tdata := GenTdataDistribute(tdata1Selected, tdata2Selected)
+  //io.customCtrl.mem_trigger.tUpdate.bits.tdata := GenTdataDistribute(tdata1Selected, tdata2Selected)
 
   // Machine-Level CSRs
 
@@ -676,6 +678,31 @@ class SSDCSR extends NutCoreModule with SSDHasCSRConst with SSDHasExceptionNO wi
   val rdataDummy = Wire(UInt(XLEN.W))
   MaskedRegMap.generate(fixMapping, addr, rdataDummy, wen && !isIllegalAccess, wdata)
 
+  // Trigger Ctrl
+  val triggerEnableVec = tdata1RegVec.map { tdata1 =>
+    val mcontrolData = tdata1.asTypeOf(new Tdata1Bundle).data.asTypeOf(new MControlData)
+    tdata1.asTypeOf(new Tdata1Bundle).type_.asUInt === TrigTypeEnum.MCONTROL && (
+      mcontrolData.m && priviledgeMode === ModeM ||
+        mcontrolData.s && priviledgeMode === ModeS ||
+        mcontrolData.u && priviledgeMode === ModeU)
+  }
+  val fetchTriggerEnableVec = triggerEnableVec.zip(tdata1WireVec).map {
+    case (tEnable, tdata1) => tEnable && tdata1.asTypeOf(new Tdata1Bundle).data.asTypeOf(new MControlData).isFetchTrigger
+  }
+  io.customCtrl.frontend_trigger.tEnableVec := fetchTriggerEnableVec
+
+  val tdata1Update = wen && (addr === Tdata1.U)
+  val tdata2Update = wen && (addr === Tdata2.U)
+  val triggerUpdate = wen && (addr === Tdata1.U || addr === Tdata2.U)
+  val frontendTriggerUpdate =
+    tdata1Update && wdata.asTypeOf(new Tdata1Bundle).type_.asUInt === TrigTypeEnum.MCONTROL &&
+      wdata.asTypeOf(new Tdata1Bundle).data.asTypeOf(new MControlData).isFetchTrigger ||
+      tdata1Selected.data.asTypeOf(new MControlData).isFetchTrigger && triggerUpdate
+
+  io.customCtrl.frontend_trigger.tUpdate.valid := RegNext(frontendTriggerUpdate)
+  Debug(triggerEnableVec.reduce(_ || _), p"Debug Mode: At least 1 trigger is enabled," +
+    p"trigger enable is ${Binary(triggerEnableVec.asUInt)}\n")
+
   // CSR inst decode
   val ret = Wire(Bool())
   val isEbreak = addr === privEbreak && func === SSDCSROpType.jmp && !io.isBackendException
@@ -687,84 +714,6 @@ class SSDCSR extends NutCoreModule with SSDHasCSRConst with SSDHasExceptionNO wi
 
   //  Debug(wen, "csr write: pc %x addr %x rdata %x wdata %x func %x\n", io.cfIn.pc, addr, rdata, wdata, func)
   //  Debug(wen, "[MST] time %d pc %x mstatus %x mideleg %x medeleg %x mode %x\n", GTimer(), io.cfIn.pc, mstatus, mideleg , medeleg, priviledgeMode)
-
-  // MMU Permission Check
-
-  // def MMUPermissionCheck(ptev: Bool, pteu: Bool): Bool = ptev && !(priviledgeMode === ModeU && !pteu) && !(priviledgeMode === ModeS && pteu && mstatusStruct.sum.asBool)
-  // def MMUPermissionCheckLoad(ptev: Bool, pteu: Bool): Bool = ptev && !(priviledgeMode === ModeU && !pteu) && !(priviledgeMode === ModeS && pteu && mstatusStruct.sum.asBool) && (pter || (mstatusStruct.mxr && ptex))
-  // imem
-  // val imemPtev = true.B
-  // val imemPteu = true.B
-  // val imemPtex = true.B
-  // val imemReq = true.B
-  // val imemPermissionCheckPassed = MMUPermissionCheck(imemPtev, imemPteu)
-  // val hasInstrPageFault = imemReq && !(imemPermissionCheckPassed && imemPtex)
-  // assert(!hasInstrPageFault)
-
-  // dmem
-  // val dmemPtev = true.B
-  // val dmemPteu = true.B
-  // val dmemReq = true.B
-  // val dmemPermissionCheckPassed = MMUPermissionCheck(dmemPtev, dmemPteu)
-  // val dmemIsStore = true.B
-
-  // val hasLoadPageFault  = dmemReq && !dmemIsStore && !(dmemPermissionCheckPassed)
-  // val hasStorePageFault = dmemReq &&  dmemIsStore && !(dmemPermissionCheckPassed)
-  // assert(!hasLoadPageFault)
-  // assert(!hasStorePageFault)
-
-  //TODO: Havn't test if io.dmemMMU.priviledgeMode is correct yet
-  //  io.imemMMU.priviledgeMode := priviledgeMode
-  //  io.dmemMMU.priviledgeMode := Mux(mstatusStruct.mprv.asBool, mstatusStruct.mpp, priviledgeMode)
-  //  io.imemMMU.status_sum := mstatusStruct.sum.asBool
-  //  io.dmemMMU.status_sum := mstatusStruct.sum.asBool
-  //  io.imemMMU.status_mxr := DontCare
-  //  io.dmemMMU.status_mxr := mstatusStruct.mxr.asBool
-
-  //  val hasInstrPageFault = Wire(Bool())
-  //  val hasLoadPageFault = Wire(Bool())
-  //  val hasStorePageFault = Wire(Bool())
-  //  val hasStoreAddrMisaligned = Wire(Bool())
-  //  val hasLoadAddrMisaligned = Wire(Bool())
-  //
-  //  val dmemPagefaultAddr = Wire(UInt(VAddrBits.W))
-  //  val dmemAddrMisalignedAddr = Wire(UInt(VAddrBits.W))
-  //  val lsuAddr = WireInit(0.U(64.W))
-  //  BoringUtils.addSink(lsuAddr, "LSUADDR")
-  //  if(EnableOutOfOrderExec){
-  //    hasInstrPageFault      := valid && io.cfIn.exceptionVec(instrPageFault)
-  //    hasLoadPageFault       := valid && io.cfIn.exceptionVec(loadPageFault)
-  //    hasStorePageFault      := valid && io.cfIn.exceptionVec(storePageFault)
-  //    hasStoreAddrMisaligned := valid && io.cfIn.exceptionVec(storeAddrMisaligned)
-  //    hasLoadAddrMisaligned  := valid && io.cfIn.exceptionVec(loadAddrMisaligned)
-  //    dmemPagefaultAddr := src1 // LSU -> wbresult -> prf -> beUop.data.src1
-  //    dmemAddrMisalignedAddr := src1
-  //  }else{
-  //    hasInstrPageFault := io.cfIn.exceptionVec(instrPageFault) && valid
-  //    hasLoadPageFault := io.dmemMMU.loadPF
-  //    hasStorePageFault := io.dmemMMU.storePF
-  //    hasStoreAddrMisaligned := io.cfIn.exceptionVec(storeAddrMisaligned)
-  //    hasLoadAddrMisaligned := io.cfIn.exceptionVec(loadAddrMisaligned)
-  //    dmemPagefaultAddr := io.dmemMMU.addr
-  //    dmemAddrMisalignedAddr := lsuAddr
-  //  }
-
-  //  when(hasInstrPageFault || hasLoadPageFault || hasStorePageFault){
-  //    val tval = Mux(hasInstrPageFault, Mux(io.cfIn.crossPageIPFFix, SignExt((io.cfIn.pc + 2.U)(VAddrBits-1,0), XLEN), SignExt(io.cfIn.pc(VAddrBits-1,0), XLEN)), SignExt(dmemPagefaultAddr, XLEN))
-  //    when(priviledgeMode === ModeM){
-  //      mtval := tval
-  //    }.otherwise{
-  //      stval := tval
-  //    }
-  //    Debug("[PF] %d: ipf %b tval %x := addr %x pc %x priviledgeMode %x\n", GTimer(), hasInstrPageFault, tval, SignExt(dmemPagefaultAddr, XLEN), io.cfIn.pc, priviledgeMode)
-  //  }
-  //
-  //  when(hasLoadAddrMisaligned || hasStoreAddrMisaligned)
-  //  {
-  //    mtval := SignExt(dmemAddrMisalignedAddr, XLEN)
-  //    Debug("[ML] %d: addr %x pc %x priviledgeMode %x\n", GTimer(), SignExt(dmemAddrMisalignedAddr, XLEN), io.cfIn.pc, priviledgeMode)
-  //  }
-
   // Exception and Intr
 
   // interrupts
@@ -830,8 +779,6 @@ class SSDCSR extends NutCoreModule with SSDHasCSRConst with SSDHasExceptionNO wi
   dontTouch(intrNO_wire)
   dontTouch(mipRaiseIntr_wire)
 
-  // exceptions
-
   // In this situation, hart will enter debug mode instead of handling a breakpoint exception simply.
   // Ebreak block instructions backwards, so it's ok to not keep extra info to distinguish between breakpoint
   // exception and enter-debug-mode exception.
@@ -852,11 +799,26 @@ class SSDCSR extends NutCoreModule with SSDHasCSRConst with SSDHasExceptionNO wi
   csrExceptionVec(illegalInstr) := false.B //(isIllegalAddr || isIllegalAccess) && wen && !io.isBackendException // Trigger an illegal instr exception when unimplemented csr is being read/written or not having enough priviledge
   csrExceptionVec(loadPageFault) := false.B
   csrExceptionVec(storePageFault) := false.B
+  val hasSingleStep = false.B               // TODO
+  val hasTriggerFire = io.cfIn.triggeredFire.canFire
+  val triggerFrontendHitVec = io.cfIn.triggeredFire.frontendHit
+  val triggerMemHitVec      = io.cfIn.triggeredFire.backendHit
+  val triggerHitVec         = triggerFrontendHitVec | triggerMemHitVec // Todo: update mcontrol.hit
+  val triggerCanFireVec     = io.cfIn.triggeredFire.frontendCanFire | io.cfIn.triggeredFire.backendCanFire
+  // More than one triggers can hit at the same time, but only fire one
+  // We select the first hit trigger to fire
+  val triggerFireOH = PriorityEncoderOH(triggerCanFireVec)
+  val triggerFireAction = PriorityMux(triggerFireOH, tdata1WireVec.map(_.getTriggerAction)).asUInt
+
+  Debug(hasSingleStep, "Debug Mode: single step exception\n")
+  Debug(hasTriggerFire, p"Debug Mode: trigger fire, frontend hit vec ${Binary(io.cfIn.triggeredFire.frontendHit.asUInt)} " +
+    p"backend hit vec ${Binary(io.cfIn.triggeredFire.backendHit.asUInt)}\n")
+
   val iduExceptionVec = io.cfIn.exceptionVec
   val raiseExceptionVec = csrExceptionVec.asUInt | iduExceptionVec.asUInt
-  val raiseException = raiseExceptionVec.orR
-  val exceptionNO = ExcPriority.foldRight(0.U)((i: Int, sum: UInt) => Mux(raiseExceptionVec(i), i.U, sum))
-
+  val raiseException = raiseExceptionVec.orR | hasTriggerFire
+  val regularExceptionNO = ExcPriority.foldRight(0.U)((i: Int, sum: UInt) => Mux(raiseExceptionVec(i), i.U, sum))  
+  val exceptionNO = Mux(hasSingleStep || hasTriggerFire, 3.U, regularExceptionNO)
   val causeNO = (raiseIntr << (XLEN - 1)) | Mux(raiseIntr, intrNO, exceptionNO)
   io.intrNO := Mux(raiseIntr, causeNO, 0.U)
   val causeNo_wire = (raiseIntr_wire << (XLEN - 1)) | Mux(raiseIntr_wire, intrNO_wire, exceptionNO) //do not support
@@ -870,24 +832,17 @@ class SSDCSR extends NutCoreModule with SSDHasCSRConst with SSDHasExceptionNO wi
 
   val hasBreakPoint = io.in.valid && isEbreak
   val hasDebugEbreakException = hasBreakPoint && ebreakEnterDebugMode
-  // temporaily donnot consider trigger and singlestep
-  val hasDebugException = hasDebugEbreakException
+  val hasDebugTriggerException = hasTriggerFire && triggerFireAction === TrigActionEnum.DEBUG_MODE
+  // temporaily donnot consider singlestep
+  val hasDebugException = hasDebugEbreakException || hasDebugTriggerException
   val hasDebugTrap = hasDebugException || hasDebugIntr          // 分为 debug 中断和 debug 例外, 暂时不考虑 debug 例外
   val ebreakEnterParkLoop = debugMode && raiseExceptionIntr
-  //  io.redirect.valid := (valid && func === CSROpType.jmp) || raiseExceptionIntr || resetSatp
-  //  io.redirect.rtype := 0.U
-  //  io.redirect.target := Mux(resetSatp, io.cfIn.pc + 4.U, Mux(raiseExceptionIntr, trapTarget, retTarget))
-  //io.redirect.valid := (valid && func === SSDCSROpType.jmp) || valid && raiseExceptionIntr_wire /*raiseExceptionIntr*/ || resetSatp
+
   io.redirect.valid := (valid && func === SSDCSROpType.jmp) || hasValidInst && raiseExceptionIntr_wire /*raiseExceptionIntr*/ || resetSatp
   io.redirect.rtype := 0.U
   io.redirect.target := Mux(resetSatp, io.cfIn.pc + 4.U, Mux(raiseExceptionIntr_wire, trapTarget, retTarget))
   io.redirect.btbIsBranch := 0.U
   io.redirect.pc := RegNext(io.cfIn.pc)
-  //  Debug(raiseExceptionIntr, "excin %b excgen %b", csrExceptionVec.asUInt(), iduExceptionVec.asUInt())
-  //  Debug(raiseExceptionIntr, "int/exc: pc %x int (%d):%x exc: (%d):%x\n",io.cfIn.pc, intrNO, io.cfIn.intrVec.asUInt, exceptionNO, raiseExceptionVec.asUInt)
-  //  Debug(raiseExceptionIntr, "[MST] time %d pc %x mstatus %x mideleg %x medeleg %x mode %x\n", GTimer(), io.cfIn.pc, mstatus, mideleg , medeleg, priviledgeMode)
-  //  Debug(io.redirect.valid, "redirect to %x\n", io.redirect.target)
-  //  Debug(resetSatp, "satp reset\n")
 
   // Branch control
 
@@ -900,8 +855,6 @@ class SSDCSR extends NutCoreModule with SSDHasCSRConst with SSDHasExceptionNO wi
   ret := isMret || isSret || isUret || isDret
   trapTarget := Mux((hasDebugTrap && !debugMode) || ebreakEnterParkLoop, debugTrapTarget, Mux(delegS, stvec, mtvec)(VAddrBits - 1, 0))
   retTarget := DontCare
-  // TODO redirect target
-  // val illegalEret = TODO
 
   when (valid && isDret) {
     val mstatusNew = WireInit(mstatus.asTypeOf(new MstatusStruct))
@@ -988,12 +941,6 @@ class SSDCSR extends NutCoreModule with SSDHasCSRConst with SSDHasExceptionNO wi
       // TODO: should not use =/=
       // trapTarget := mtvec(VAddrBits-1. 0)
     }
-    // mstatusNew.pie.m := LookupTree(priviledgeMode, List(
-    //   ModeM -> mstatusOld.ie.m,
-    //   ModeH -> mstatusOld.ie.h, //ERROR
-    //   ModeS -> mstatusOld.ie.s,
-    //   ModeU -> mstatusOld.ie.u
-    // ))
 
     mstatus := mstatusNew.asUInt
     mstatus_wire := mstatusNew.asUInt
@@ -1039,7 +986,12 @@ class SSDCSR extends NutCoreModule with SSDHasCSRConst with SSDHasExceptionNO wi
         dcsrNew.cause := CAUSE_HALTREQ
         Debug(hasDebugIntr, "Debug Mode: Trap to %x at pc %x\n", debugTrapTarget, dpc)
       }.otherwise {
-        // TODO
+        dpc := (SignExt(io.cfIn.pc, XLEN))
+        dcsrNew.cause := MuxCase(0.U, Seq(
+          hasTriggerFire -> CAUSE_TRIGGER,
+          hasBreakPoint -> CAUSE_HALTREQ,
+          hasSingleStep -> CAUSE_STEP
+        ))
       }
       dcsr := dcsrNew.asUInt
       debugIntrEnable := false.B
