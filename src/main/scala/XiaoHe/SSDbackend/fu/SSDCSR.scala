@@ -350,7 +350,7 @@ class SSDCSR extends NutCoreModule with SSDHasCSRConst with SSDHasExceptionNO wi
   private val tdata2WireVec = tdata2RegVec
   private val tdata1Selected = tdata1RegVec(tselectPhy).asTypeOf(new Tdata1Bundle)
   private val tdata2Selected = tdata2RegVec(tselectPhy)
-  private val newTriggerChainVec = UIntToOH(tselectPhy, TriggerNum).asBools | tdata1WireVec.map(_.data.asTypeOf(new MControlData).chain)
+  private val newTriggerChainVec = UIntToOH(tselectPhy, TriggerNum).asBools.zip(tdata1WireVec.map(_.data.asTypeOf(new MControlData).chain)).map { case (bool1, bool2) => bool1 || bool2 }
   private val newTriggerChainIsLegal = TriggerCheckChainLegal(newTriggerChainVec, TriggerChainMaxLength)
   val tinfo = RegInit((BigInt(1) << TrigTypeEnum.MCONTROL.litValue.toInt).U(XLEN.W)) // This value should be 4.U
 
@@ -700,8 +700,8 @@ class SSDCSR extends NutCoreModule with SSDHasCSRConst with SSDHasExceptionNO wi
       tdata1Selected.data.asTypeOf(new MControlData).isFetchTrigger && triggerUpdate
 
   io.customCtrl.frontend_trigger.tUpdate.valid := RegNext(frontendTriggerUpdate)
-  Debug(triggerEnableVec.reduce(_ || _), p"Debug Mode: At least 1 trigger is enabled," +
-    p"trigger enable is ${Binary(triggerEnableVec.asUInt)}\n")
+  val triggerEnableUInt = Cat(triggerEnableVec.reverse)
+  Debug(triggerEnableUInt > 0.U, "Debug Mode: At least 1 trigger is enabled, trigger enable is %b\n", triggerEnableUInt)
 
   // CSR inst decode
   val ret = Wire(Bool())
@@ -803,8 +803,12 @@ class SSDCSR extends NutCoreModule with SSDHasCSRConst with SSDHasExceptionNO wi
   val hasTriggerFire = io.cfIn.triggeredFire.canFire
   val triggerFrontendHitVec = io.cfIn.triggeredFire.frontendHit
   val triggerMemHitVec      = io.cfIn.triggeredFire.backendHit
-  val triggerHitVec         = triggerFrontendHitVec | triggerMemHitVec // Todo: update mcontrol.hit
-  val triggerCanFireVec     = io.cfIn.triggeredFire.frontendCanFire | io.cfIn.triggeredFire.backendCanFire
+  val triggerHitVec = triggerFrontendHitVec.zip(triggerMemHitVec).map {
+    case (frontendHit, memHit) => frontendHit || memHit
+  }                              // Todo: update mcontrol.hit
+  val triggerCanFireVec = io.cfIn.triggeredFire.frontendCanFire.zip(io.cfIn.triggeredFire.backendCanFire).map {
+    case (frontendCanFire, backendCanFire) => frontendCanFire || backendCanFire
+  }
   // More than one triggers can hit at the same time, but only fire one
   // We select the first hit trigger to fire
   val triggerFireOH = PriorityEncoderOH(triggerCanFireVec)

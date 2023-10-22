@@ -21,6 +21,7 @@ import chisel3.util._
 import _root_.utils._
 import XiaoHe._
 import XiaoHe.SSDbackend._
+import XiaoHe.SSDbackend.fu._
 import XiaoHe.SSDfrontend._
 trait HasIBUFConst{
   // val multiIssue = true
@@ -38,14 +39,6 @@ class IBF extends NutCoreModule with HasInstrType with HasIBUFConst{
     val flush = Input(Bool())
     val frontend_trigger = Flipped(new FrontendTdataDistributeIO())
   })
-
-  // Frontend Triggers
-  val frontendTrigger = Module(new FrontendTrigger)
-  frontendTrigger.io.frontendTrigger  := io.frontend_trigger
-  frontendTrigger.io.pc := Vec(io.inPredictPkt.bits.pc, io.inPredictPkt.bits.pc + 4.U)
-  frontendTrigger.io.data := instr.asTypeOf(Vec(2, UInt(32.W)))
-  val triggered = frontendTrigger.io.triggered
-  val triggerInfoBuffer = RegInit(VecInit(Seq.fill(ibufSize)(TriggerCf.getWidth)))
 
   //ibuf reg
   val ringInstBuffer = RegInit(VecInit(Seq.fill(ibufSize)(0.U(16.W))))
@@ -70,6 +63,17 @@ class IBF extends NutCoreModule with HasInstrType with HasIBUFConst{
   val icachePF = io.inPredictPkt.bits.icachePF
   instrVec := instr.asTypeOf(Vec(4, UInt(16.W)))
   (0 to 3).map(i => isRVC(i.U) := instrVec(i.U)(1,0) =/= "b11".U)
+
+  // Frontend Triggers
+  val frontendTrigger = Module(new FrontendTrigger)
+  frontendTrigger.io.frontendTrigger  := io.frontend_trigger
+  frontendTrigger.io.pc := VecInit((0 until PredictWidth).map { index =>
+    io.inPredictPkt.bits.pc + (index.U * 4.U)
+  })
+
+  frontendTrigger.io.data := instr.asTypeOf(Vec(2, UInt(32.W)))
+  val triggered = frontendTrigger.io.triggered
+  val triggerInfoBuffer = RegInit(VecInit(Seq.fill(ibufSize)(0.U(new TriggerCf().getWidth.W))))
 
   //ibuf enqueue
   //if valid & ringBufferAllowin, enqueue
@@ -96,7 +100,7 @@ class IBF extends NutCoreModule with HasInstrType with HasIBUFConst{
     ipfRingMeta(targetSlot.U + ringBufferHead) := io.inPredictPkt.bits.icachePF
     btbIsBranchRingMeta(targetSlot.U + ringBufferHead) := io.inPredictPkt.bits.btbIsBranch(shiftSize + targetSlot.U)
     sfbRingMeta(targetSlot.U + ringBufferHead) := io.inPredictPkt.bits.sfb(shiftSize + targetSlot.U)
-    triggerInfoBuffer(targetSlot.U + ringBufferHead) := triggered((shiftSize + targetSlot.U) >> 1)
+    triggerInfoBuffer(targetSlot.U + ringBufferHead) := triggered((shiftSize + targetSlot.U) >> 1).asUInt
   }
 
   when (ibufWen) {
@@ -148,7 +152,7 @@ class IBF extends NutCoreModule with HasInstrType with HasIBUFConst{
   io.out(0).valid := dequeueIsValid(0) && (first2B || dequeueIsValid(1)) && !io.flush
   io.out(0).bits.exceptionVec.map(_ => false.B)
   io.out(0).bits.exceptionVec(instrPageFault) := ipfRingMeta(ringBufferTail) || !first2B && ipfRingMeta(ringBufferTail + 1.U)
-  io.out(0).bits.triggeredFire := triggerInfoBuffer(ringBufferTail)
+  io.out(0).bits.triggeredFire := triggerInfoBuffer(ringBufferTail).asTypeOf(new TriggerCf)
 
   val dequeueSize1 = Mux(io.out(0).fire(), Mux(first2B, 1.U, 2.U), 0.U) // socket 2 will use dequeueSize1 to get its inst
 
@@ -173,7 +177,7 @@ class IBF extends NutCoreModule with HasInstrType with HasIBUFConst{
   }
   io.out(1).bits.exceptionVec.map(_ => false.B)
   io.out(1).bits.exceptionVec(instrPageFault) := ipfRingMeta(inst2_StartIndex) || !second2B && ipfRingMeta(inst2_StartIndex + 1.U)
-  io.out(1).bits.triggeredFire := triggerInfoBuffer(inst2_StartIndex)
+  io.out(1).bits.triggeredFire := triggerInfoBuffer(inst2_StartIndex).asTypeOf(new TriggerCf)
   
   val dequeueSize2 = Mux(io.out(1).fire, Mux(second2B, 1.U, 2.U), 0.U) // socket 2 will use dequeueSize1 to get its inst
   //Debug(io.out(1).fire, "dequeue2: inst %x pc %x npc %x br %x ipf %x(%x)\n", io.out(1).bits.instr, io.out(1).bits.pc, io.out(1).bits.pnpc, io.out(1).bits.brIdx, io.out(1).bits.exceptionVec(instrPageFault), io.out(1).bits.crossPageIPFFix)
@@ -225,7 +229,7 @@ class FrontendTrigger extends NutCoreModule with SdtrigExt {
   val triggerTimingVec = VecInit(tdata.map(_.timing))
   val triggerChainVec = VecInit(tdata.map(_.chain))
 
-  for (i <- 0 until TriggerNum) { PrintTriggerInfo(triggerEnableVec(i), tdata(i)) }
+  //for (i <- 0 until TriggerNum) { PrintTriggerInfo(triggerEnableVec(i), tdata(i)) }
 
   for (i <- 0 until PredictWidth) {
     val currentPC = io.pc(i)
@@ -249,7 +253,7 @@ class FrontendTrigger extends NutCoreModule with SdtrigExt {
     io.triggered(i).frontendCanFire := triggerCanFireVec
     io.triggered(i).frontendTiming  := triggerTimingVec.zip(triggerEnableVec).map{ case(timing, en) => timing && en}
     io.triggered(i).frontendChain  := triggerChainVec.zip(triggerEnableVec).map{ case(chain, en) => chain && en}
-    XSDebug(io.triggered(i).getFrontendCanFire, p"Debug Mode: Predecode Inst No. ${i} has trigger fire vec ${io.triggered(i).frontendCanFire}\n")
+    Debug(io.triggered(i).getFrontendCanFire, p"Debug Mode: Predecode Inst No. ${i} has trigger fire vec ${io.triggered(i).frontendCanFire}\n")
   }
   io.triggered.foreach(_.backendCanFire := VecInit(Seq.fill(TriggerNum)(false.B)))
   io.triggered.foreach(_.backendHit := VecInit(Seq.fill(TriggerNum)(false.B)))

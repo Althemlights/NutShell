@@ -7,7 +7,7 @@ import chipsalliance.rocketchip.config.Parameters
 import utils.ConsecutiveOnes
 
 trait SdtrigExt {
-  implicit val p: Parameters
+  //implicit val p: Parameters
   class TDataRegs extends NutCoreBundle {
     val tdata1 = UInt(XLEN.W)
     val tdata2 = UInt(XLEN.W)

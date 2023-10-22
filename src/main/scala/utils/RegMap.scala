@@ -36,7 +36,7 @@ object RegMap {
     wen: Bool, wdata: UInt, wmask: UInt):Unit = generate(mapping, addr, rdata, addr, wen, wdata, wmask)
 }
 
-object MaskedRegMap {
+/*object MaskedRegMap {
   def Unwritable = null
   def NoSideEffect: UInt => UInt = (x=>x)
   def WritableMask = Fill(if (Settings.get("IsRV32")) 32 else 64, true.B)
@@ -57,5 +57,37 @@ object MaskedRegMap {
     illegalAddr
   }
   def generate(mapping: Map[Int, (UInt, UInt, UInt => UInt, UInt)], addr: UInt, rdata: UInt,
+    wen: Bool, wdata: UInt):Unit = generate(mapping, addr, rdata, addr, wen, wdata)
+}*/
+
+object MaskedRegMap { // TODO: add read mask
+  def Unwritable = null
+  def NoSideEffect: UInt => UInt = (x=>x)
+  def WritableMask = Fill(64, true.B)
+  def UnwritableMask = 0.U(64.W)
+  def apply(addr: Int, reg: UInt,
+            wmask: UInt = WritableMask, wfn: UInt => UInt = (x => x),
+            rmask: UInt = WritableMask, rfn: UInt => UInt = x=>x
+           ): (Int, (UInt, UInt, UInt => UInt, UInt, UInt => UInt)) = (addr, (reg, wmask, wfn, rmask, rfn))
+  def generate(mapping: Map[Int, (UInt, UInt, UInt => UInt, UInt, UInt => UInt)], raddr: UInt, rdata: UInt,
+    waddr: UInt, wen: Bool, wdata: UInt):Unit = {
+    val chiselMapping = mapping.map { case (a, (r, wm, w, rm, rfn)) => (a.U, r, wm, w, rm, rfn) }
+    rdata := LookupTree(raddr, chiselMapping.map { case (a, r, _, _, rm, rfn) => (a, rfn(r & rm)) })
+    val wdata_reg = RegEnable(wdata, wen)
+    chiselMapping.foreach { case (a, r, wm, w, _, _) =>
+      if (w != null && wm != UnwritableMask) {
+        // Warning: this RegMap adds a RegNext for write to reduce fanout
+        // the w must be pure function without side effects
+        val wen_reg = RegNext(wen && waddr === a)
+        when (wen_reg) { r := w(MaskData(r, wdata_reg, wm)) }
+      }
+    }
+  }
+  def isIllegalAddr(mapping: Map[Int, (UInt, UInt, UInt => UInt, UInt, UInt => UInt)], addr: UInt):Bool = {
+    val illegalAddr = Wire(Bool())
+    illegalAddr := LookupTreeDefault(addr, true.B, mapping.toSeq.sortBy(_._1).map { case (a, _) => (a.U, false.B) })
+    illegalAddr
+  }
+  def generate(mapping: Map[Int, (UInt, UInt, UInt => UInt, UInt, UInt => UInt)], addr: UInt, rdata: UInt,
     wen: Bool, wdata: UInt):Unit = generate(mapping, addr, rdata, addr, wen, wdata)
 }
