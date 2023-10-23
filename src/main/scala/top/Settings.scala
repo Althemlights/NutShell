@@ -24,6 +24,8 @@ object DefaultSettings {
     "MMIOSize" -> 0x0000000040000000L,
     "UnCacheBase" -> 0x0000000000000000L,
     "UnCacheSize" -> 0x0000000060000000L,
+    "MemBase" -> 0x0000000080000000L,
+    "MemSize" -> 0x0000000080000000L,
     "ResetVector" -> 0x30000000L,
     "NrExtIntr" -> 1,
 
@@ -43,7 +45,7 @@ object DefaultSettings {
     "EnableDebug" -> false,
     "EnableRVC" -> false,
 
-    "CoreNums" -> 0x2,
+    "CoreNums" -> 0x1,
     "SoCTest" -> false,
     "CLINTBase" -> 0x38000000L,               // for bin compiled by AM
     //"CLINTBase" -> 0x2000000L,              // for rtthread

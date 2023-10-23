@@ -164,7 +164,7 @@ class NutCoreImp(outer: NutCore) extends LazyModuleImp(outer) with HasNutCorePar
   val s2NotReady = WireInit(false.B)
   
   val addrSpace = List(
-    (Settings.getLong("ResetVector"), 0x80000000L),          //cache
+    (Settings.getLong("MemBase"), Settings.getLong("MemSize")),          //cache
     (Settings.getLong("UnCacheBase"), Settings.getLong("UnCacheSize"))    //uncache
   )
   //icache.io.in <> frontend.io.imem
