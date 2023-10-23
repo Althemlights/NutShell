@@ -73,13 +73,11 @@ object MaskedRegMap { // TODO: add read mask
     waddr: UInt, wen: Bool, wdata: UInt):Unit = {
     val chiselMapping = mapping.map { case (a, (r, wm, w, rm, rfn)) => (a.U, r, wm, w, rm, rfn) }
     rdata := LookupTree(raddr, chiselMapping.map { case (a, r, _, _, rm, rfn) => (a, rfn(r & rm)) })
-    val wdata_reg = RegEnable(wdata, wen)
     chiselMapping.foreach { case (a, r, wm, w, _, _) =>
       if (w != null && wm != UnwritableMask) {
-        // Warning: this RegMap adds a RegNext for write to reduce fanout
-        // the w must be pure function without side effects
-        val wen_reg = RegNext(wen && waddr === a)
-        when (wen_reg) { r := w(MaskData(r, wdata_reg, wm)) }
+        when (wen && waddr === a) { 
+          r := w(MaskData(r, wdata, wm)) 
+        }
       }
     }
   }
