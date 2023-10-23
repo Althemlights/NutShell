@@ -24,7 +24,7 @@ object DefaultSettings {
     "MMIOSize" -> 0x0000000040000000L,
     "UnCacheBase" -> 0x0000000000000000L,
     "UnCacheSize" -> 0x0000000060000000L,
-    "ResetVector" -> 0x80000000L,
+    "ResetVector" -> 0x30000000L,
     "NrExtIntr" -> 1,
 
     "HasL2cache" -> false,
@@ -39,9 +39,9 @@ object DefaultSettings {
     "IsRV32" -> false,
 
     "FPGAPlatform" -> false,
-    "EnableILA" -> true,
-    "EnableDebug" -> true,
-    "EnableRVC" -> true,
+    "EnableILA" -> false,
+    "EnableDebug" -> false,
+    "EnableRVC" -> false,
 
     "CoreNums" -> 0x2,
     "SoCTest" -> false,
