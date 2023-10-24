@@ -1004,7 +1004,7 @@ class SSDbackend extends NutCoreModule with hasBypassConst {
     io.diff.dt_te.coreid := hartid
     io.diff.dt_te.valid := RegNext(SSDcoretrap)
     io.diff.dt_te.code := rf_a0(2, 0)
-    io.diff.dt_te.pc := Mux(RegNext(pipeOut(8).bits.instr === "h0000006b".U), RegNext(Cat(0.U((64 - VAddrBits).W), pipeOut(8).bits.pc)), RegNext(Cat(0.U((64 - VAddrBits).W), pipeOut(9).bits.pc)))
+    io.diff.dt_te.pc := Mux(RegNext(pipeOut(8).bits.instr === "h0000006b".U || pipeOut(8).bits.instr === "h0005006b".U), RegNext(Cat(0.U((64 - VAddrBits).W), pipeOut(8).bits.pc)), RegNext(Cat(0.U((64 - VAddrBits).W), pipeOut(9).bits.pc)))
     io.diff.dt_te.cycleCnt := cycle_cnt
     io.diff.dt_te.instrCnt := instr_cnt
 
