@@ -67,7 +67,7 @@ trait HasNutCoreParameter {
   val PredictWidth = 2
 
   // Parameters for Sdtrig extension
-  protected val TriggerNum = 10
+  protected val TriggerNum = 2
   protected val TriggerChainMaxLength = 2
 }
 
