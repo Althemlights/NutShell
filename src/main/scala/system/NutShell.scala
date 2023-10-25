@@ -180,7 +180,7 @@ class NutShell()(implicit p: Parameters) extends LazyModule{
     //TLBuffer.chainNode(3) :=
     peripheralXbar
 
-  memNode := AXI4Buffer() := AXI4IdIndexer(idBits = 4) := AXI4UserYanker() := AXI4Deinterleaver(8) := AXI4Buffer():= TLToAXI4() := mem
+  memNode := AXI4Buffer() := AXI4UserYanker() := AXI4Deinterleaver(8) := AXI4Buffer():= TLToAXI4() := mem
   lazy val module = new NutShellImp(this)
 }
 

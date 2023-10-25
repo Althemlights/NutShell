@@ -276,7 +276,7 @@ class IUncacheImp(outer: IUnCache)extends LazyModuleImp(outer) with HasICacheIO 
     }
     is (s_send_resp) {
       resp.valid := true.B
-      resp.bits.rdata := resp_data
+      resp.bits.rdata := Mux(resp_data > 0.U, resp_data, 0x0000001300000013L.U)
       
       // req user has usage
       resp.bits.user.foreach { userValue =>
