@@ -362,7 +362,7 @@ class DataSRAMTemplate[T <: Data](gen: T, set: Int, way: Int = 1,
     case (s, i) => s.CEB := ~(wen || realRen)
   }
   sram.zipWithIndex.map{
-    case (s, i) => s.WEB := ~(wen && OHToUInt(io.w.req.bits.waymask.getOrElse("b0".U)) === i.U)
+    case (s, i) => s.WEB := ~(wen && waymask(i))
   }
   sram.map(_.D := wdataword)
 
@@ -418,7 +418,7 @@ class MetaSRAMTemplate[T <: Data](gen: T, set: Int, way: Int = 1,
     case (s, i) => s.CEB := ~(wen || realRen)
   }
   sram.zipWithIndex.map{
-    case (s, i) => s.WEB := ~(wen && OHToUInt(io.w.req.bits.waymask.getOrElse("b0".U)) === i.U)
+    case (s, i) => s.WEB := ~(wen && waymask(i))
   }
   sram.map(_.D := wdataword)
 
@@ -474,7 +474,7 @@ class TagSRAMTemplate[T <: Data](gen: T, set: Int, way: Int = 1,
     case (s, i) => s.CEB := ~(wen || realRen)
   }
   sram.zipWithIndex.map{
-    case (s, i) => s.WEB := ~(wen && OHToUInt(io.w.req.bits.waymask.getOrElse("b0".U)) === i.U)
+    case (s, i) => s.WEB := ~(wen && waymask(i))
   }
   sram.map(_.D := wdataword)
 
