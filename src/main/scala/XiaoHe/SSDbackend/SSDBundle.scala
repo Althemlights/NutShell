@@ -101,6 +101,7 @@ class FuPkt extends NutCoreBundle {
   val ArchEvent = new ArchEvent
   //for sfb
   val sfb = Output(Bool())
+  val triggeredFire = Output(new TriggerCf) 
 }
 class CSRregfile extends NutCoreBundle {
   val priviledgeMode      =  Output(UInt(XLEN.W))

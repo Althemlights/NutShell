@@ -407,7 +407,8 @@ class DecodeIO2BypassPkt extends Module {
 
   //TODO
   io.issueStall(1) :=
-    i0decodePkt.triggeredFire.canFire ||                  // trigger exception
+    (i0decodePkt.triggeredFire.canFire && i1decodePkt.triggeredFire.canFire) ||                  // trigger exception
+    i1decodePkt.triggeredFire.canFire || 
     (i0decodePkt.csr && i1decodePkt.csr) ||
     (i0decodePkt.csr && i1decodePkt.branch) || (i1decodePkt.mou) ||
     i1decodePkt.csr ||

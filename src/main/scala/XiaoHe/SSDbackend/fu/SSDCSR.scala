@@ -1240,7 +1240,7 @@ class SSDCSR extends NutCoreModule with SSDHasCSRConst with SSDHasExceptionNO wi
   io.ArchEvent.intrNO := Mux(raiseIntr_wire && hasValidInst, intrNO_wire, 0.U)
   io.ArchEvent.exceptionPC := (SignExt(io.cfIn.pc, XLEN))
   io.ArchEvent.exceptionInst := (io.cfIn.instr)
-  io.ArchEvent.cause := (Mux(raiseException && io.instrValid && valid, exceptionNO, 0.U))
+  io.ArchEvent.cause := (Mux(raiseException && hasValidInst, exceptionNO, 0.U))
 
 }
 
