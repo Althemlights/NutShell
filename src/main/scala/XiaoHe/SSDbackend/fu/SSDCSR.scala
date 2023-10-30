@@ -379,9 +379,9 @@ class SSDCSR extends NutCoreModule with SSDHasCSRConst with SSDHasExceptionNO wi
   }
 
   io.customCtrl.frontend_trigger.tUpdate.bits.addr := tselectPhy
-  //io.customCtrl.mem_trigger.tUpdate.bits.addr := tselectPhy
+  io.customCtrl.mem_trigger.tUpdate.bits.addr := tselectPhy
   io.customCtrl.frontend_trigger.tUpdate.bits.tdata := GenTdataDistribute(tdata1Selected, tdata2Selected)
-  //io.customCtrl.mem_trigger.tUpdate.bits.tdata := GenTdataDistribute(tdata1Selected, tdata2Selected)
+  io.customCtrl.mem_trigger.tUpdate.bits.tdata := GenTdataDistribute(tdata1Selected, tdata2Selected)
 
   // Machine-Level CSRs
 
@@ -689,7 +689,11 @@ class SSDCSR extends NutCoreModule with SSDHasCSRConst with SSDHasExceptionNO wi
   val fetchTriggerEnableVec = triggerEnableVec.zip(tdata1WireVec).map {
     case (tEnable, tdata1) => tEnable && tdata1.asTypeOf(new Tdata1Bundle).data.asTypeOf(new MControlData).isFetchTrigger
   }
+  val memAccTriggerEnableVec = triggerEnableVec.zip(tdata1WireVec).map {
+    case (tEnable, tdata1) => tEnable && tdata1.asTypeOf(new Tdata1Bundle).data.asTypeOf(new MControlData).isMemAccTrigger
+  }
   io.customCtrl.frontend_trigger.tEnableVec := fetchTriggerEnableVec
+  io.customCtrl.mem_trigger.tEnableVec := memAccTriggerEnableVec
 
   val tdata1Update = wen && (addr === Tdata1.U)
   val tdata2Update = wen && (addr === Tdata2.U)
@@ -698,8 +702,13 @@ class SSDCSR extends NutCoreModule with SSDHasCSRConst with SSDHasExceptionNO wi
     tdata1Update && wdata.asTypeOf(new Tdata1Bundle).type_.asUInt === TrigTypeEnum.MCONTROL &&
       wdata.asTypeOf(new Tdata1Bundle).data.asTypeOf(new MControlData).isFetchTrigger ||
       tdata1Selected.data.asTypeOf(new MControlData).isFetchTrigger && triggerUpdate
+  val memTriggerUpdate =
+    tdata1Update && wdata.asTypeOf(new Tdata1Bundle).type_.asUInt === TrigTypeEnum.MCONTROL &&
+      wdata.asTypeOf(new Tdata1Bundle).data.asTypeOf(new MControlData).isMemAccTrigger ||
+      tdata1Selected.data.asTypeOf(new MControlData).isMemAccTrigger && triggerUpdate
 
   io.customCtrl.frontend_trigger.tUpdate.valid := RegNext(frontendTriggerUpdate)
+  io.customCtrl.mem_trigger.tUpdate.valid := RegNext(memTriggerUpdate)
   val triggerEnableUInt = Cat(triggerEnableVec.reverse)
   Debug(triggerEnableUInt > 0.U, "Debug Mode: At least 1 trigger is enabled, trigger enable is %b\n", triggerEnableUInt)
 

@@ -1,37 +1,120 @@
-fuwenyi@open13:~/main-xiaohe/NutShell$ ./build/emu -i ./ready-to-run/rtthread.bin 
-Emu compiled at Sep 24 2023, 18:17:03
+fuwenyi@open03:~/main-xiaohe/NutShell$ ./build/emu -i ./ready-to-run/rtthread.bin --dump-wave -b 1557000 -e 1560000
+Emu compiled at Oct 30 2023, 13:53:16
+dump wave to /nfs/home/fuwenyi/main-xiaohe/NutShell/build/2023-10-30@14:32:23.vcd...
 The image is ./ready-to-run/rtthread.bin
 Using simulated 256MB RAM
 --diff is not given, try to use $(NEMU_HOME)/build/riscv64-wukong-interpreter-so by default
 NemuProxy using /nfs/home/fuwenyi/main-xiaohe/../xiaohe/BNEMU/build/riscv64-wukong-interpreter-so
 The first instruction of core 0 has commited. Difftest enabled. 
-[WARNING] difftest store queue overflow
-^CCore 0: SOME SIGNAL STOPS THE PROGRAM at pc = 0x800011f4
-total guest instructions = 601,864
-instrCnt = 601,864, cycleCnt = 1,179,487, IPC = 0.510276
-Seed=0 Guest cycle spent: 1,179,491 (this will be different from cycleCnt if emu loads a snapshot)
-Host time spent: 21,259ms
+sh: 1: spike-dasm: not found
+
+============== Commit Group Trace (Core 0) ==============
+commit group [00]: pc 0080001250 cmtcnt 1
+commit group [01]: pc 0080000058 cmtcnt 1
+commit group [02]: pc 008000005c cmtcnt 1
+commit group [03]: pc 0080001254 cmtcnt 1
+commit group [04]: pc 00800011e8 cmtcnt 1
+commit group [05]: pc 00800011ec cmtcnt 2
+commit group [06]: pc 00800011f4 cmtcnt 1
+commit group [07]: pc 00800011f8 cmtcnt 1
+commit group [08]: pc 0080000360 cmtcnt 1
+commit group [09]: pc 0080000364 cmtcnt 2
+commit group [10]: pc 008000036c cmtcnt 2
+commit group [11]: pc 00800011fc cmtcnt 1
+commit group [12]: pc 0080001200 cmtcnt 1
+commit group [13]: pc 00800011f0 cmtcnt 2
+commit group [14]: pc 00800011fc cmtcnt 1 <--
+commit group [15]: pc 0080001248 cmtcnt 2
+
+============== Commit Instr Trace ==============
+commit inst [00]: pc 008000005c inst 00008067 wen 1 dst 00000000 data 0000000080000060
+commit inst [01]: pc 0080001254 inst f95ff06f wen 1 dst 00000000 data 0000000080001258
+commit inst [02]: pc 00800011e8 inst 0001d417 wen 1 dst 00000008 data 000000008001e1e8
+commit inst [03]: pc 00800011ec inst a2840413 wen 1 dst 00000008 data 000000008001dc10
+commit inst [04]: pc 00800011f0 inst 00043783 wen 1 dst 0000000f data 0000000080000360
+commit inst [05]: pc 00800011f4 inst 00078463 wen 0 dst 00000000 data 0000000080001258
+commit inst [06]: pc 00800011f8 inst 000780e7 wen 1 dst 00000001 data 00000000800011fc
+commit inst [07]: pc 0080000360 inst 00019797 wen 1 dst 0000000f data 0000000080019360
+commit inst [08]: pc 0080000364 inst fe078793 wen 1 dst 0000000f data 0000000080019340
+commit inst [09]: pc 0080000368 inst 0007c703 wen 1 dst 0000000e data 0000000000000001
+commit inst [10]: pc 008000036c inst 08071463 wen 0 dst 00000000 data 00000000800003f8
+commit inst [11]: pc 00800003f4 inst 00008067 wen 1 dst 00000000 data 00000000800003f8
+commit inst [12]: pc 00800011fc inst 00840413 wen 1 dst 00000008 data 000000008001dc18
+commit inst [13]: pc 0080001200 inst fe8998e3 wen 0 dst 00000000 data 00000000800003f8
+commit inst [14]: pc 00800011f0 inst 00043783 wen 1 dst 0000000f data 0000000000000000
+commit inst [15]: pc 00800011f4 inst 00078463 wen 0 dst 00000000 data 00000000800003f8
+commit inst [16]: pc 00800011fc inst 00840413 wen 0 dst 00000008 data 000000008001dc18 <--
+commit inst [17]: pc 0080000050 inst 30047573 wen 1 dst 0000000a data 8000000000006088
+commit inst [18]: pc 0080000054 inst 00008067 wen 1 dst 00000000 data 0000000080000058
+commit inst [19]: pc 008000123c inst 00050493 wen 1 dst 00000009 data 8000000000006088
+commit inst [20]: pc 0080001240 inst f29ff0ef wen 1 dst 00000001 data 0000000080001244
+commit inst [21]: pc 0080001168 inst 00010717 wen 1 dst 0000000e data 0000000080011168
+commit inst [22]: pc 008000116c inst f8070713 wen 1 dst 0000000e data 00000000800110e8
+commit inst [23]: pc 0080001170 inst 00073783 wen 1 dst 0000000f data 00000000800110e8
+commit inst [24]: pc 0080001174 inst 00000513 wen 1 dst 0000000a data 0000000000000000
+commit inst [25]: pc 0080001178 inst 02e78063 wen 0 dst 00000000 data 0000000080000058
+commit inst [26]: pc 0080001198 inst 00008067 wen 1 dst 00000000 data 000000008000119c
+commit inst [27]: pc 0080001244 inst 00050413 wen 1 dst 00000008 data 0000000000000000
+commit inst [28]: pc 0080001248 inst 00051863 wen 0 dst 00000000 data 000000008000119c
+commit inst [29]: pc 008000124c inst 00048513 wen 1 dst 0000000a data 8000000000006088
+commit inst [30]: pc 0080001250 inst e09fe0ef wen 1 dst 00000001 data 0000000080001254
+commit inst [31]: pc 0080000058 inst 30051073 wen 1 dst 00000000 data 8000000000006080
+
+==============  REF Regs  ==============
+  $0: 0x0000000000000000   ra: 0x00000000800011fc   sp: 0x0000000080021bd8   gp: 0x0000000080011b18 
+  tp: 0x00000000deadbeef   t0: 0x00000000deadbeef   t1: 0x0000000080019970   t2: 0x00000000deadbeef 
+  s0: 0x000000008001dc20   s1: 0x8000000000006088   a0: 0x8000000000006088   a1: 0x000000008000d5d8 
+  a2: 0x0000000080022af8   a3: 0x0000000000000000   a4: 0x0000000000000001   a5: 0x0000000000000000 
+  a6: 0x0000000000000005   a7: 0x0000000000000000   s2: 0x000000008000d398   s3: 0x000000008001dc30 
+  s4: 0x000000008000d360   s5: 0x000000008000d388   s6: 0x0000000000000001   s7: 0x0000000000000000 
+  s8: 0x00000000deadbeef   s9: 0x00000000deadbeef  s10: 0x00000000deadbeef  s11: 0x00000000deadbeef 
+  t3: 0x00000000deadbeef   t4: 0x00000000deadbeef   t5: 0x00000000deadbeef   t6: 0x00000000deadbeef 
+pc: 0x0000000080001200 mstatus: 0x8000000000006088 mcause: 0x8000000000000007 mepc: 0x00000000800011f0
+                       sstatus: 0x8000000000006000 scause: 0x0000000000000000 sepc: 0x0000000000000000
+satp: 0x0000000000000000
+mip: 0x0000000000000000 mie: 0x0000000000000080 mscratch: 0x0000000080015340 sscratch: 0x0000000000000000
+mideleg: 0x0000000000000000 medeleg: 0x0000000000000000
+mtval: 0x0000000000000000 stval: 0x0000000000000000 mtvec: 0x0000000080005424 stvec: 0x0000000000000000
+privilege mode:3  pmp: below
+ 0: cfg:0x00 addr:0x0000000000000000| 1: cfg:0x00 addr:0x0000000000000000
+ 2: cfg:0x00 addr:0x0000000000000000| 3: cfg:0x00 addr:0x0000000000000000
+pmp csr rw: enable, pmp check: disable
+tselect: 0x0000000000000000
+ 0: tdata1: 0xf000000000000000 tdata2: 0x0000000000000000
+ 1: tdata1: 0xf000000000000000 tdata2: 0x0000000000000000
+ 2: tdata1: 0x0000000000000000 tdata2: 0x0000000000000000
+priviledgeMode: 3
+     s0 different at pc = 0x00800011fc, right= 0x000000008001dc20, wrong = 0x000000008001dc18
+Core 0: ABORT at pc = 0x800011f4
+total guest instructions = 727,856
+instrCnt = 727,856, cycleCnt = 1,558,172, IPC = 0.467122
+Seed=0 Guest cycle spent: 1,558,175 (this will be different from cycleCnt if emu loads a snapshot)
+Host time spent: 120,853ms
 heap: [0x80022af8 - 0x86422af8]
 
  \ | /
 - RT -     Thread Operating System
  / | \     4.0.4 build Sep 10 2021
  2006 - 2021 Copyright by rt-thread team
-[               81023] : IC1: Mret!
-[               82157] : IC1: Mret!
+[              165624] : IC1: Mret!
+[              168715] : IC1: Mret!
 Hello OSCPU!
-[              101956] : IC1: Mret!
-msh />[              109498] : IC1: Mret!
-[              114478] : IC1: Mret!
+[              212368] : IC1: Mret!
+msh />[              228325] : IC1: Mret!
+[              239389] : IC1: Mret!
 thread1 count: 0
-[              117513] : IC1: Mret!
-[              120423] : IC1: Mret!
+[              245586] : IC1: Mret!
+[              251305] : IC1: Mret!
 thread2 count: 0
-[              123215] : IC1: Mret!
-[              531541] : CSR: MTIP set up!
-[              532221] : CSR: MTIP set down!
-[              532442] : IC1: Mret!
-[             1032191] : CSR: MTIP set up!
-[             1033512] : CSR: MTIP set down!
-[             1033843] : IC1: Mret!
-[             1036105] : IC1: Mret!
+[              254972] : IC1: Mret!
+[              554781] : CSR: MTIP set up!
+[              554799] : [SSDCSR] Intr or Exception
+[              556352] : CSR: MTIP set down!
+[              556788] : IC1: Mret!
+[             1056266] : CSR: MTIP set up!
+[             1056266] : [SSDCSR] Intr or Exception
+[             1058187] : CSR: MTIP set down!
+[             1058565] : IC1: Mret!
+[             1061747] : IC1: Mret!
+[             1558171] : CSR: MTIP set up!
+[             1558171] : [SSDCSR] Intr or Exception

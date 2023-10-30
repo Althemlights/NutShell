@@ -26,7 +26,7 @@ class SSDbackend extends NutCoreModule with hasBypassConst {
     val debugInt = Input(Bool())        // debug Interrupt
     val mxbarflush = Output(Bool())
     val mmioflush = Output(Bool())
-    val csrCtrl = Output(new CustomCSRCtrlIO)
+    val csrCtrl = Output(new FrontendTdataDistributeIO)
     //val mmio = new SimpleBusUC
   })
   def BypassMux(sel:Bool,BypassCtl:Vec[Bool],BypassDataPort:Vec[UInt],rdata:UInt):UInt ={
@@ -159,8 +159,9 @@ class SSDbackend extends NutCoreModule with hasBypassConst {
   val i1Valid = BypassPktValid(7) && (BypassPkt(7).decodePkt.skip) && !pipeInvalid(9)
   val hasI01Valid = i0Valid || i1Valid
   SSDCSR.io.hasI01Valid := hasI01Valid
-  SSDCSR.io.cfIn.pc := Mux(BypassPktValid(6), pipeOut(6).bits.pc, pipeOut(7).bits.pc)
-  SSDCSR.io.cfIn.triggeredFire := BypassPkt(6).decodePkt.triggeredFire
+  // There is possblity that pipe 7 has mem trigger fire
+  SSDCSR.io.cfIn.pc := Mux((BypassPktValid(6) && !BypassPkt(6).decodePkt.triggeredFire.canFire) || BypassPkt(6).decodePkt.triggeredFire.canFire, pipeOut(6).bits.pc, pipeOut(7).bits.pc)
+  SSDCSR.io.cfIn.triggeredFire := Mux(BypassPkt(6).decodePkt.triggeredFire.canFire, BypassPkt(6).decodePkt.triggeredFire, BypassPkt(7).decodePkt.triggeredFire)
   when(i0CSRValid) {
     SSDCSR.io.cfIn.pc                   := pipeOut(6).bits.pc
     SSDCSR.io.cfIn.pnpc                 := pipeOut(6).bits.pnpc
@@ -178,7 +179,7 @@ class SSDbackend extends NutCoreModule with hasBypassConst {
     SSDCSR.io.cfIn.isBranch             := pipeOut(7).bits.isBranch
     SSDCSR.io.cfIn.redirect.btbIsBranch := pipeOut(7).bits.btbIsBranch
   }
-  io.csrCtrl := SSDCSR.io.customCtrl
+  io.csrCtrl := SSDCSR.io.customCtrl.frontend_trigger
 //  when(RegNext(i0CSRValid)) {
 //    Redirect2_csr := RegNext(RegNext(SSDCSR.io.redirect))
 //    Redirect3_csr := 0.U.asTypeOf(new RedirectIO)
@@ -322,6 +323,8 @@ class SSDbackend extends NutCoreModule with hasBypassConst {
   val LSUsrc2 = Mux(i0LSUValid,pipeRegStage2.right.bits.rs2,pipeRegStage3.right.bits.rs2)
   val LSUoffset = Mux(i0LSUValid,pipeRegStage2.right.bits.offset,pipeRegStage3.right.bits.offset)
   LSU.access(LSUValid,LSUsrc1,LSUsrc2,LSUfunc,LSUoffset)
+  LSU.io.mem_trigger := SSDCSR.io.customCtrl.frontend_trigger
+  LSU.io.triggeredFireIn := BypassPkt(2).decodePkt.triggeredFire
   // MMIO
   val memflush = (BypassPkt(4).decodePkt.load && io.redirectOut.valid) || (BypassPkt(5).decodePkt.load && io.redirectOut.valid)
   //BoringUtils.addSource(memflush, "mmioflush")
@@ -568,6 +571,9 @@ class SSDbackend extends NutCoreModule with hasBypassConst {
   pipeIn(7).bits.rs1 := BypassMux(ByPassEna(12), BypassPkt(5).BypassCtl.rs1bypasse3,BypassPortE3, pipeOut(5).bits.rs1)
   pipeIn(7).bits.rs2 := BypassMux(ByPassEna(13), BypassPkt(5).BypassCtl.rs2bypasse3,BypassPortE3, pipeOut(5).bits.rs2)
   pipeIn(7).bits.isMMIO := Mux(BypassPkt(5).decodePkt.load || BypassPkt(5).decodePkt.store,LSU.io.isMMIO,false.B)
+  // trigger
+  pipeIn(6).bits.triggeredFire := Mux(BypassPkt(4).decodePkt.load || BypassPkt(4).decodePkt.store, LSU.io.triggeredFireOut, 0.U(asTypeOf(new TriggerCf)))
+  pipeIn(7).bits.triggeredFire := Mux(BypassPkt(5).decodePkt.load || BypassPkt(5).decodePkt.store, LSU.io.triggeredFireOut, 0.U(asTypeOf(new TriggerCf)))
 
   coupledPipeIn(0).bits.rd := Mux(BypassPkt(4).decodePkt.load,LSU.io.out.bits,Mux(BypassPkt(4).decodePkt.muldiv,MDU.io.out.bits,pipeOut(4).bits.rd))
   coupledPipeIn(0).bits.rs1 := BypassMux(ByPassEna(10), BypassPkt(4).BypassCtl.rs1bypasse3,BypassPortE3, pipeOut(4).bits.rs1)

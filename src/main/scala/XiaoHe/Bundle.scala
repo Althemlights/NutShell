@@ -211,7 +211,7 @@ class CustomCSRCtrlIO extends NutCoreBundle {
   // TODO: move it to a new bundle, since single step is not a custom control signal
   //val singlestep = Output(Bool())
   val frontend_trigger = new FrontendTdataDistributeIO()
-  //val mem_trigger = new MemTdataDistributeIO()
+  val mem_trigger = new MemTdataDistributeIO()
 }
 
 class TriggerCf extends NutCoreBundle {
