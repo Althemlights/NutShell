@@ -163,7 +163,7 @@ class NutCoreImp(outer: NutCore) extends LazyModuleImp(outer) with HasNutCorePar
   frontend.io.pipelineEmpty := SSDbackend.io.pipelineEmpty
   frontend.io.bpuUpdateReq := SSDbackend.io.bpuUpdateReq
   frontend.io.redirect <> SSDbackend.io.redirectOut
-  frontend.io.frontend_trigger := SSDbackend.io.csrCtrl.frontend_trigger
+  frontend.io.frontend_trigger := SSDbackend.io.csrCtrl
   frontend.io.ipf := false.B
 
   for(i <- 0 to 3){frontend.io.out(i) <> SSDbackend.io.in(i)}

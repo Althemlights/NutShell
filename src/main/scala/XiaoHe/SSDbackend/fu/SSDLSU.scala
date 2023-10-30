@@ -84,7 +84,7 @@ class storePipeEntry extends StoreBufferEntry{
   val mergeAddr           = Output(Bool())
 }
 
-class SSDLSU extends  NutCoreModule with HasStoreBufferConst{
+class SSDLSU extends NutCoreModule with HasStoreBufferConst with SdtrigExt{
   val io = IO(new SSDLSUIO)
   val (valid, src1, src2, func, invalid, offset) = (io.in.valid, io.in.bits.src1, io.in.bits.src2, io.in.bits.func, io.invalid, io.offset)
   def access(valid: Bool, src1: UInt, src2: UInt, func: UInt, offset: UInt): UInt = {
@@ -424,20 +424,21 @@ class SSDLSU extends  NutCoreModule with HasStoreBufferConst{
   }
 
   // Trigger
+  io.triggeredFireOut := io.triggeredFireIn
   val tdata = RegInit(VecInit(Seq.fill(TriggerNum)(0.U.asTypeOf(new MatchTriggerIO))))
   val tEnable = RegInit(VecInit(Seq.fill(TriggerNum)(false.B)))
   tEnable := io.mem_trigger.tEnableVec
   when(io.mem_trigger.tUpdate.valid) {
-    tdata(csrCtrl.mem_trigger.tUpdate.bits.addr) := csrCtrl.mem_trigger.tUpdate.bits.tdata
+    tdata(io.mem_trigger.tUpdate.bits.addr) := io.mem_trigger.tUpdate.bits.tdata
   }
 
   val backendTriggerTimingVec = tdata.map(_.timing)
   val backendTriggerChainVec  = tdata.map(_.chain)
 
   // Load Triggers
-  val frontendTriggerTimingVec  = io.triggeredFire.frontendTiming
-  val frontendTriggerChainVec   = io.triggeredFire.frontendChain
-  val frontendTriggerHitVec     = io.triggeredFire.frontendHit
+  val frontendTriggerTimingVec  = io.triggeredFireIn.frontendTiming
+  val frontendTriggerChainVec   = io.triggeredFireIn.frontendChain
+  val frontendTriggerHitVec     = io.triggeredFireIn.frontendHit
   val triggerCanFireVec = Wire(Vec(TriggerNum, Bool()))
   val loadTriggerHitVec         = Wire(Vec(TriggerNum, Bool()))
 
@@ -445,17 +446,18 @@ class SSDLSU extends  NutCoreModule with HasStoreBufferConst{
   val triggerChainVec   = VecInit(backendTriggerChainVec.zip(frontendTriggerChainVec).map { case (b, f) => b || f } )
   val triggerHitVec     = VecInit(loadTriggerHitVec.zip(frontendTriggerHitVec).map { case (b, f) => b || f })
 
+  val hitLoadAddrTriggerHitVec = Wire(Vec(TriggerNum, Bool()))
   (0 until TriggerNum).map{i => {
     val tdata2 = tdata(i).tdata2
     val matchType = tdata(i).matchType
     //val tEnable = tEnable(i) && loadCacheIn.valid
-    val tEnable = tEnable(i)           // this check don't care about load is valid or not
-    val hitLoadAddrTriggerHitVec = Wire(Vec(TriggerNum, Bool()))
+    //val tEnable = tEnable(i)           // this check don't care about load is valid or not
 
-    hitLoadAddrTriggerHitVec(i) := TriggerCmp(reqAddr, tdata2, matchType, tEnable)
+    hitLoadAddrTriggerHitVec(i) := TriggerCmp(reqAddr, tdata2, matchType, tEnable(i))
     // Just let load triggers that match data unavailable
     loadTriggerHitVec(i) := RegNext(hitLoadAddrTriggerHitVec(i)) && !tdata(i).select
   }}
   TriggerCheckCanFire(TriggerNum, triggerCanFireVec, triggerHitVec, triggerTimingVec, triggerChainVec)
-  io.triggeredFireOut := triggerCanFireVec
+  io.triggeredFireOut.backendHit     := triggerHitVec
+  io.triggeredFireOut.backendCanFire := triggerCanFireVec
 }

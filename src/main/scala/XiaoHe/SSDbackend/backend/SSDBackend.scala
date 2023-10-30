@@ -572,8 +572,8 @@ class SSDbackend extends NutCoreModule with hasBypassConst {
   pipeIn(7).bits.rs2 := BypassMux(ByPassEna(13), BypassPkt(5).BypassCtl.rs2bypasse3,BypassPortE3, pipeOut(5).bits.rs2)
   pipeIn(7).bits.isMMIO := Mux(BypassPkt(5).decodePkt.load || BypassPkt(5).decodePkt.store,LSU.io.isMMIO,false.B)
   // trigger
-  pipeIn(6).bits.triggeredFire := Mux(BypassPkt(4).decodePkt.load || BypassPkt(4).decodePkt.store, LSU.io.triggeredFireOut, 0.U(asTypeOf(new TriggerCf)))
-  pipeIn(7).bits.triggeredFire := Mux(BypassPkt(5).decodePkt.load || BypassPkt(5).decodePkt.store, LSU.io.triggeredFireOut, 0.U(asTypeOf(new TriggerCf)))
+  pipeIn(6).bits.triggeredFire := Mux(BypassPkt(4).decodePkt.load || BypassPkt(4).decodePkt.store, LSU.io.triggeredFireOut, WireInit(0.U).asTypeOf(new TriggerCf))
+  pipeIn(7).bits.triggeredFire := Mux(BypassPkt(5).decodePkt.load || BypassPkt(5).decodePkt.store, LSU.io.triggeredFireOut, WireInit(0.U).asTypeOf(new TriggerCf))
 
   coupledPipeIn(0).bits.rd := Mux(BypassPkt(4).decodePkt.load,LSU.io.out.bits,Mux(BypassPkt(4).decodePkt.muldiv,MDU.io.out.bits,pipeOut(4).bits.rd))
   coupledPipeIn(0).bits.rs1 := BypassMux(ByPassEna(10), BypassPkt(4).BypassCtl.rs1bypasse3,BypassPortE3, pipeOut(4).bits.rs1)
