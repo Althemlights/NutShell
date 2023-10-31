@@ -439,25 +439,34 @@ class SSDLSU extends NutCoreModule with HasStoreBufferConst with SdtrigExt{
   val frontendTriggerTimingVec  = io.triggeredFireIn.frontendTiming
   val frontendTriggerChainVec   = io.triggeredFireIn.frontendChain
   val frontendTriggerHitVec     = io.triggeredFireIn.frontendHit
-  val triggerCanFireVec = Wire(Vec(TriggerNum, Bool()))
+  val triggerCanFireVec         = Wire(Vec(TriggerNum, Bool()))
   val loadTriggerHitVec         = Wire(Vec(TriggerNum, Bool()))
 
   val triggerTimingVec  = VecInit(backendTriggerTimingVec.zip(frontendTriggerTimingVec).map { case (b, f) => b || f } )
   val triggerChainVec   = VecInit(backendTriggerChainVec.zip(frontendTriggerChainVec).map { case (b, f) => b || f } )
   val triggerHitVec     = VecInit(loadTriggerHitVec.zip(frontendTriggerHitVec).map { case (b, f) => b || f })
 
-  val hitLoadAddrTriggerHitVec = Wire(Vec(TriggerNum, Bool()))
+  val hitLoadAddrTriggerHitVecReg = RegInit(VecInit(Seq.fill(TriggerNum)(false.B)))
   (0 until TriggerNum).map{i => {
     val tdata2 = tdata(i).tdata2
     val matchType = tdata(i).matchType
     //val tEnable = tEnable(i) && loadCacheIn.valid
     //val tEnable = tEnable(i)           // this check don't care about load is valid or not
-
-    hitLoadAddrTriggerHitVec(i) := TriggerCmp(reqAddr, tdata2, matchType, tEnable(i))
+    when (io.out.valid || invalid(1)) {
+      hitLoadAddrTriggerHitVecReg(i) := false.B
+    }
+    hitLoadAddrTriggerHitVecReg(i) := TriggerCmp(reqAddr, tdata2, matchType, tEnable(i) && loadCacheIn.valid)
     // Just let load triggers that match data unavailable
-    loadTriggerHitVec(i) := RegNext(hitLoadAddrTriggerHitVec(i)) && !tdata(i).select
+    loadTriggerHitVec(i) := hitLoadAddrTriggerHitVecReg(i) && !tdata(i).select
   }}
   TriggerCheckCanFire(TriggerNum, triggerCanFireVec, triggerHitVec, triggerTimingVec, triggerChainVec)
   io.triggeredFireOut.backendHit     := triggerHitVec
   io.triggeredFireOut.backendCanFire := triggerCanFireVec
+
+  /*Debug(io.mem_trigger.tUpdate.valid, "tdata :%x\n", io.mem_trigger.tUpdate.bits.tdata.asUInt)
+  Debug(true.B, "data :%x\n", loadTriggerHitVec.asUInt)
+  Debug(true.B, "data :%x\n", triggerHitVec.asUInt)
+  Debug(true.B, "data :%x\n", triggerCanFireVec.asUInt)
+  Debug(true.B, "data :%x\n", frontendTriggerHitVec.asUInt)
+  Debug(true.B, "data :%x\n", io.triggeredFireOut.backendCanFire.asUInt)*/
 }

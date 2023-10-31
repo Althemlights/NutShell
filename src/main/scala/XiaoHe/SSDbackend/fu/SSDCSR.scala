@@ -851,9 +851,9 @@ class SSDCSR extends NutCoreModule with SSDHasCSRConst with SSDHasExceptionNO wi
   val hasDebugTrap = hasDebugException || hasDebugIntr          // 分为 debug 中断和 debug 例外, 暂时不考虑 debug 例外
   val ebreakEnterParkLoop = debugMode && raiseExceptionIntr
 
-  io.redirect.valid := (valid && func === SSDCSROpType.jmp) || hasValidInst && raiseExceptionIntr_wire /*raiseExceptionIntr*/ || resetSatp || frontendTriggerUpdate
+  io.redirect.valid := (valid && func === SSDCSROpType.jmp) || hasValidInst && raiseExceptionIntr_wire /*raiseExceptionIntr*/ || resetSatp || frontendTriggerUpdate || memTriggerUpdate
   io.redirect.rtype := 0.U
-  io.redirect.target := Mux(resetSatp || frontendTriggerUpdate, io.cfIn.pc + 4.U, Mux(raiseExceptionIntr_wire, trapTarget, retTarget))
+  io.redirect.target := Mux(resetSatp || frontendTriggerUpdate || memTriggerUpdate, io.cfIn.pc + 4.U, Mux(raiseExceptionIntr_wire, trapTarget, retTarget))
   io.redirect.btbIsBranch := 0.U
   io.redirect.pc := RegNext(io.cfIn.pc)
 

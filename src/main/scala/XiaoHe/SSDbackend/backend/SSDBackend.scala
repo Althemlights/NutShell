@@ -161,7 +161,7 @@ class SSDbackend extends NutCoreModule with hasBypassConst {
   SSDCSR.io.hasI01Valid := hasI01Valid
   // There is possblity that pipe 7 has mem trigger fire
   SSDCSR.io.cfIn.pc := Mux((BypassPktValid(6) && !BypassPkt(6).decodePkt.triggeredFire.canFire) || BypassPkt(6).decodePkt.triggeredFire.canFire, pipeOut(6).bits.pc, pipeOut(7).bits.pc)
-  SSDCSR.io.cfIn.triggeredFire := Mux(BypassPkt(6).decodePkt.triggeredFire.canFire, BypassPkt(6).decodePkt.triggeredFire, BypassPkt(7).decodePkt.triggeredFire)
+  SSDCSR.io.cfIn.triggeredFire := Mux(pipeOut(6).bits.triggeredFire.canFire, pipeOut(6).bits.triggeredFire, pipeOut(7).bits.triggeredFire)
   when(i0CSRValid) {
     SSDCSR.io.cfIn.pc                   := pipeOut(6).bits.pc
     SSDCSR.io.cfIn.pnpc                 := pipeOut(6).bits.pnpc
@@ -323,8 +323,9 @@ class SSDbackend extends NutCoreModule with hasBypassConst {
   val LSUsrc2 = Mux(i0LSUValid,pipeRegStage2.right.bits.rs2,pipeRegStage3.right.bits.rs2)
   val LSUoffset = Mux(i0LSUValid,pipeRegStage2.right.bits.offset,pipeRegStage3.right.bits.offset)
   LSU.access(LSUValid,LSUsrc1,LSUsrc2,LSUfunc,LSUoffset)
-  LSU.io.mem_trigger := SSDCSR.io.customCtrl.frontend_trigger
-  LSU.io.triggeredFireIn := BypassPkt(2).decodePkt.triggeredFire
+  LSU.io.mem_trigger := SSDCSR.io.customCtrl.mem_trigger
+  val mem_trigger = SSDCSR.io.customCtrl.mem_trigger
+  LSU.io.triggeredFireIn := pipeOut(2).bits.triggeredFire
   // MMIO
   val memflush = (BypassPkt(4).decodePkt.load && io.redirectOut.valid) || (BypassPkt(5).decodePkt.load && io.redirectOut.valid)
   //BoringUtils.addSource(memflush, "mmioflush")
@@ -572,8 +573,9 @@ class SSDbackend extends NutCoreModule with hasBypassConst {
   pipeIn(7).bits.rs2 := BypassMux(ByPassEna(13), BypassPkt(5).BypassCtl.rs2bypasse3,BypassPortE3, pipeOut(5).bits.rs2)
   pipeIn(7).bits.isMMIO := Mux(BypassPkt(5).decodePkt.load || BypassPkt(5).decodePkt.store,LSU.io.isMMIO,false.B)
   // trigger
-  pipeIn(6).bits.triggeredFire := Mux(BypassPkt(4).decodePkt.load || BypassPkt(4).decodePkt.store, LSU.io.triggeredFireOut, WireInit(0.U).asTypeOf(new TriggerCf))
-  pipeIn(7).bits.triggeredFire := Mux(BypassPkt(5).decodePkt.load || BypassPkt(5).decodePkt.store, LSU.io.triggeredFireOut, WireInit(0.U).asTypeOf(new TriggerCf))
+  pipeIn(6).bits.triggeredFire := Mux((BypassPkt(4).decodePkt.load || BypassPkt(4).decodePkt.store) && LSU.io.triggeredFireOut.getBackendCanFire, LSU.io.triggeredFireOut, pipeOut(4).bits.triggeredFire)
+  pipeIn(7).bits.triggeredFire := Mux((BypassPkt(5).decodePkt.load || BypassPkt(5).decodePkt.store) && LSU.io.triggeredFireOut.getBackendCanFire, LSU.io.triggeredFireOut, pipeOut(5).bits.triggeredFire)
+  //Debug(true.B, "%x\n", LSU.io.triggeredFireOut.asUInt)
 
   coupledPipeIn(0).bits.rd := Mux(BypassPkt(4).decodePkt.load,LSU.io.out.bits,Mux(BypassPkt(4).decodePkt.muldiv,MDU.io.out.bits,pipeOut(4).bits.rd))
   coupledPipeIn(0).bits.rs1 := BypassMux(ByPassEna(10), BypassPkt(4).BypassCtl.rs1bypasse3,BypassPortE3, pipeOut(4).bits.rs1)
@@ -602,10 +604,12 @@ class SSDbackend extends NutCoreModule with hasBypassConst {
   //e5 write back
   //regfile
   // if this instruction has Interrupt, dont do it
-  regfile.io.writePorts(0).wen := !(SSDCSR.io.redirect.valid && i0Valid) && BypassPktValid(8) && BypassPkt(8).decodePkt.rdvalid && !pipeInvalid(10) && (pipeOut(8).bits.ArchEvent.intrNO === 0.U)
+  // SSDCSR 重定向有两种可能 : 中断+异常（撤销写操作） | tdata相关
+  val hasIntrException = (SSDCSR.io.ArchEvent.intrNO =/= 0.U) || (SSDCSR.io.ArchEvent.cause =/= 0.U)
+  regfile.io.writePorts(0).wen := !RegNext(hasIntrException) && BypassPktValid(8) && BypassPkt(8).decodePkt.rdvalid && !pipeInvalid(10) && (pipeOut(8).bits.ArchEvent.intrNO === 0.U)
   regfile.io.writePorts(0).addr := BypassPkt(8).decodePkt.rd
   regfile.io.writePorts(0).data := pipeOut(8).bits.rd
-  regfile.io.writePorts(1).wen := !(SSDCSR.io.redirect.valid && i0Valid) && BypassPktValid(9) && BypassPkt(9).decodePkt.rdvalid && !pipeInvalid(11) && (pipeOut(9).bits.ArchEvent.intrNO === 0.U)
+  regfile.io.writePorts(1).wen := !RegNext(hasIntrException) && BypassPktValid(9) && BypassPkt(9).decodePkt.rdvalid && !pipeInvalid(11) && (pipeOut(9).bits.ArchEvent.intrNO === 0.U)
   regfile.io.writePorts(1).addr := BypassPkt(9).decodePkt.rd
   regfile.io.writePorts(1).data := pipeOut(9).bits.rd
 
