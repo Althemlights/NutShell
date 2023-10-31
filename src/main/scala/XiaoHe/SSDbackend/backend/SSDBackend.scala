@@ -160,7 +160,7 @@ class SSDbackend extends NutCoreModule with hasBypassConst {
   val hasI01Valid = i0Valid || i1Valid
   SSDCSR.io.hasI01Valid := hasI01Valid
   // There is possblity that pipe 7 has mem trigger fire
-  SSDCSR.io.cfIn.pc := Mux((BypassPktValid(6) && !BypassPkt(6).decodePkt.triggeredFire.canFire) || BypassPkt(6).decodePkt.triggeredFire.canFire, pipeOut(6).bits.pc, pipeOut(7).bits.pc)
+  SSDCSR.io.cfIn.pc := Mux((BypassPktValid(6) && !pipeOut(6).bits.triggeredFire.canFire && !pipeOut(7).bits.triggeredFire.canFire) || pipeOut(6).bits.triggeredFire.canFire, pipeOut(6).bits.pc, pipeOut(7).bits.pc)
   SSDCSR.io.cfIn.triggeredFire := Mux(pipeOut(6).bits.triggeredFire.canFire, pipeOut(6).bits.triggeredFire, pipeOut(7).bits.triggeredFire)
   when(i0CSRValid) {
     SSDCSR.io.cfIn.pc                   := pipeOut(6).bits.pc

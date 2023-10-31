@@ -435,18 +435,21 @@ class SSDLSU extends NutCoreModule with HasStoreBufferConst with SdtrigExt{
   val backendTriggerTimingVec = tdata.map(_.timing)
   val backendTriggerChainVec  = tdata.map(_.chain)
 
-  // Load Triggers
+  // Load Triggers and Store Triggers
+  // MemStage3 check
+  // MemStage4 result out
   val frontendTriggerTimingVec  = io.triggeredFireIn.frontendTiming
   val frontendTriggerChainVec   = io.triggeredFireIn.frontendChain
   val frontendTriggerHitVec     = io.triggeredFireIn.frontendHit
   val triggerCanFireVec         = Wire(Vec(TriggerNum, Bool()))
-  val loadTriggerHitVec         = Wire(Vec(TriggerNum, Bool()))
+  val MemTriggerHitVec          = Wire(Vec(TriggerNum, Bool()))
 
   val triggerTimingVec  = VecInit(backendTriggerTimingVec.zip(frontendTriggerTimingVec).map { case (b, f) => b || f } )
   val triggerChainVec   = VecInit(backendTriggerChainVec.zip(frontendTriggerChainVec).map { case (b, f) => b || f } )
-  val triggerHitVec     = VecInit(loadTriggerHitVec.zip(frontendTriggerHitVec).map { case (b, f) => b || f })
+  val triggerHitVec     = VecInit(MemTriggerHitVec.zip(frontendTriggerHitVec).map { case (b, f) => b || f })
 
   val hitLoadAddrTriggerHitVecReg = RegInit(VecInit(Seq.fill(TriggerNum)(false.B)))
+  val hitStoreAddrTriggerHitVecReg = RegInit(VecInit(Seq.fill(TriggerNum)(false.B)))
   (0 until TriggerNum).map{i => {
     val tdata2 = tdata(i).tdata2
     val matchType = tdata(i).matchType
@@ -455,16 +458,20 @@ class SSDLSU extends NutCoreModule with HasStoreBufferConst with SdtrigExt{
     when (io.out.valid || invalid(1)) {
       hitLoadAddrTriggerHitVecReg(i) := false.B
     }
-    hitLoadAddrTriggerHitVecReg(i) := TriggerCmp(reqAddr, tdata2, matchType, tEnable(i) && loadCacheIn.valid)
+    when (invalid(1) || lsuPipeStage3.io.right.fire) {
+      hitStoreAddrTriggerHitVecReg(i) := false.B
+    }
+    hitLoadAddrTriggerHitVecReg(i) := TriggerCmp(reqAddr, tdata2, matchType, tEnable(i) && loadCacheIn.valid && !invalid(0))
+    hitStoreAddrTriggerHitVecReg(i) := TriggerCmp(reqAddr, tdata2, matchType, tEnable(i) && isStore && !invalid(0))
     // Just let load triggers that match data unavailable
-    loadTriggerHitVec(i) := hitLoadAddrTriggerHitVecReg(i) && !tdata(i).select
+    MemTriggerHitVec(i) := (hitLoadAddrTriggerHitVecReg(i) || hitStoreAddrTriggerHitVecReg(i)) && !tdata(i).select
   }}
   TriggerCheckCanFire(TriggerNum, triggerCanFireVec, triggerHitVec, triggerTimingVec, triggerChainVec)
   io.triggeredFireOut.backendHit     := triggerHitVec
   io.triggeredFireOut.backendCanFire := triggerCanFireVec
 
   /*Debug(io.mem_trigger.tUpdate.valid, "tdata :%x\n", io.mem_trigger.tUpdate.bits.tdata.asUInt)
-  Debug(true.B, "data :%x\n", loadTriggerHitVec.asUInt)
+  Debug(true.B, "data :%x\n", MemTriggerHitVec.asUInt)
   Debug(true.B, "data :%x\n", triggerHitVec.asUInt)
   Debug(true.B, "data :%x\n", triggerCanFireVec.asUInt)
   Debug(true.B, "data :%x\n", frontendTriggerHitVec.asUInt)
