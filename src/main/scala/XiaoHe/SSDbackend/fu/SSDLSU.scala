@@ -450,6 +450,7 @@ class SSDLSU extends NutCoreModule with HasStoreBufferConst with SdtrigExt{
 
   val hitLoadAddrTriggerHitVecReg = RegInit(VecInit(Seq.fill(TriggerNum)(false.B)))
   val hitStoreAddrTriggerHitVecReg = RegInit(VecInit(Seq.fill(TriggerNum)(false.B)))
+  val hitAddrTriggerHitVecReg = WireInit(VecInit(Seq.fill(TriggerNum)(false.B)))
   (0 until TriggerNum).map{i => {
     val tdata2 = tdata(i).tdata2
     val matchType = tdata(i).matchType
@@ -463,8 +464,9 @@ class SSDLSU extends NutCoreModule with HasStoreBufferConst with SdtrigExt{
     }
     hitLoadAddrTriggerHitVecReg(i) := TriggerCmp(reqAddr, tdata2, matchType, tEnable(i) && loadCacheIn.valid && !invalid(0))
     hitStoreAddrTriggerHitVecReg(i) := TriggerCmp(reqAddr, tdata2, matchType, tEnable(i) && isStore && !invalid(0))
+    hitAddrTriggerHitVecReg(i) := Mux(RegNext(tdata(i).load), hitLoadAddrTriggerHitVecReg(i), hitStoreAddrTriggerHitVecReg(i))
     // Just let load triggers that match data unavailable
-    MemTriggerHitVec(i) := (hitLoadAddrTriggerHitVecReg(i) || hitStoreAddrTriggerHitVecReg(i)) && !tdata(i).select
+    MemTriggerHitVec(i) := hitAddrTriggerHitVecReg(i) && !tdata(i).select
   }}
   TriggerCheckCanFire(TriggerNum, triggerCanFireVec, triggerHitVec, triggerTimingVec, triggerChainVec)
   io.triggeredFireOut.backendHit     := triggerHitVec

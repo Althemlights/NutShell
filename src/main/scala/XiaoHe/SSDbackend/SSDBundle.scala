@@ -129,5 +129,6 @@ class ArchEvent extends NutCoreBundle {
   val cause =         Output(UInt(32.W))
   val exceptionPC =   Output(UInt(64.W))
   val exceptionInst = Output(UInt(32.W))
+  def hasIntrException = (intrNO =/= 0.U) || (cause =/= 0.U)
 }
 

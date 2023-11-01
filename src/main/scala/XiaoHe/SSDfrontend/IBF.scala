@@ -224,7 +224,7 @@ class FrontendTrigger extends NutCoreModule with SdtrigExt {
 //  io.triggered.foreach{ i => i := 0.U.asTypeOf(new TriggerCf)}
   val triggerEnableVec = RegInit(VecInit(Seq.fill(TriggerNum)(false.B))) // From CSR, controlled by priv mode, etc.
   triggerEnableVec := io.frontendTrigger.tEnableVec
-  Debug(triggerEnableVec.asUInt.orR, "Debug Mode: At least one frontend trigger is enabled\n")
+  //Debug(triggerEnableVec.asUInt.orR, "Debug Mode: At least one frontend trigger is enabled\n")
 
   val triggerTimingVec = VecInit(tdata.map(_.timing))
   val triggerChainVec = VecInit(tdata.map(_.chain))
@@ -253,7 +253,7 @@ class FrontendTrigger extends NutCoreModule with SdtrigExt {
     io.triggered(i).frontendCanFire := triggerCanFireVec
     io.triggered(i).frontendTiming  := triggerTimingVec.zip(triggerEnableVec).map{ case(timing, en) => timing && en}
     io.triggered(i).frontendChain  := triggerChainVec.zip(triggerEnableVec).map{ case(chain, en) => chain && en}
-    Debug(io.triggered(i).getFrontendCanFire, p"Debug Mode: Predecode Inst No. ${i} has trigger fire vec ${io.triggered(i).frontendCanFire}\n")
+    //Debug(io.triggered(i).getFrontendCanFire, p"Debug Mode: Predecode Inst No. ${i} has trigger fire vec ${io.triggered(i).frontendCanFire}\n")
   }
   io.triggered.foreach(_.backendCanFire := VecInit(Seq.fill(TriggerNum)(false.B)))
   io.triggered.foreach(_.backendHit := VecInit(Seq.fill(TriggerNum)(false.B)))

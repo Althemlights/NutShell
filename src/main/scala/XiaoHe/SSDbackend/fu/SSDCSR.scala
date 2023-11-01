@@ -710,7 +710,7 @@ class SSDCSR extends NutCoreModule with SSDHasCSRConst with SSDHasExceptionNO wi
   io.customCtrl.frontend_trigger.tUpdate.valid := RegNext(frontendTriggerUpdate)
   io.customCtrl.mem_trigger.tUpdate.valid := RegNext(memTriggerUpdate)
   val triggerEnableUInt = Cat(triggerEnableVec.reverse)
-  Debug(triggerEnableUInt > 0.U, "Debug Mode: At least 1 trigger is enabled, trigger enable is %b\n", triggerEnableUInt)
+  //Debug(triggerEnableUInt > 0.U, "Debug Mode: At least 1 trigger is enabled, trigger enable is %b\n", triggerEnableUInt)
 
   // CSR inst decode
   val ret = Wire(Bool())

@@ -165,6 +165,7 @@ class SSDbackend extends NutCoreModule with hasBypassConst {
   SSDCSR.io.hasI01Valid := hasI01Valid
   // There is possblity that pipe 7 has mem trigger fire
   SSDCSR.io.cfIn.pc := Mux(!chooseI1, pipeOut(6).bits.pc, pipeOut(7).bits.pc)
+  SSDCSR.io.cfIn.instr := Mux(!chooseI1, pipeOut(6).bits.instr, pipeOut(7).bits.instr)
   SSDCSR.io.cfIn.triggeredFire := Mux(i0Triggered, pipeOut(6).bits.triggeredFire, pipeOut(7).bits.triggeredFire)
   when(i0CSRValid) {
     SSDCSR.io.cfIn.pc                   := pipeOut(6).bits.pc
@@ -315,9 +316,9 @@ class SSDbackend extends NutCoreModule with hasBypassConst {
   val i1LSUValid = BypassPktValid(3) && !ex4Flush && !i0AluFlush && (BypassPkt(3).decodePkt.load || BypassPkt(3).decodePkt.store)
   
   //LSU flush
-  LSU.io.invalid(0) := ALU_6.io.redirect.valid || ALU_7.io.redirect.valid
-  LSU.io.invalid(1) := ALU_6.io.redirect.valid || ALU_7.io.redirect.valid
-  LSU.io.invalid(2) := ALU_6.io.redirect.valid && BypassPktValid(7) && BypassPkt(7).decodePkt.store
+  LSU.io.invalid(0) := ALU_6.io.redirect.valid || ALU_7.io.redirect.valid || SSDCSR.io.redirect.valid
+  LSU.io.invalid(1) := ALU_6.io.redirect.valid || ALU_7.io.redirect.valid || SSDCSR.io.redirect.valid
+  LSU.io.invalid(2) := (ALU_6.io.redirect.valid || SSDCSR.io.redirect.valid) && BypassPktValid(7) && BypassPkt(7).decodePkt.store
 
 //  dontTouch(i0LSUValid)
 //  dontTouch(i1LSUValid)
@@ -609,11 +610,11 @@ class SSDbackend extends NutCoreModule with hasBypassConst {
   //regfile
   // if this instruction has Interrupt, dont do it
   // SSDCSR 重定向有两种可能 : 中断+异常（撤销写操作） | tdata相关
-  val hasIntrException = (SSDCSR.io.ArchEvent.intrNO =/= 0.U) || (SSDCSR.io.ArchEvent.cause =/= 0.U)
-  regfile.io.writePorts(0).wen := !RegNext(hasIntrException) && BypassPktValid(8) && BypassPkt(8).decodePkt.rdvalid && !pipeInvalid(10) && (pipeOut(8).bits.ArchEvent.intrNO === 0.U)
+  //val hasIntrException = (SSDCSR.io.ArchEvent.intrNO =/= 0.U) || (SSDCSR.io.ArchEvent.cause =/= 0.U)
+  regfile.io.writePorts(0).wen := !pipeOut(8).bits.ArchEvent.hasIntrException && BypassPktValid(8) && BypassPkt(8).decodePkt.rdvalid && !pipeInvalid(10)
   regfile.io.writePorts(0).addr := BypassPkt(8).decodePkt.rd
   regfile.io.writePorts(0).data := pipeOut(8).bits.rd
-  regfile.io.writePorts(1).wen := !RegNext(hasIntrException) && BypassPktValid(9) && BypassPkt(9).decodePkt.rdvalid && !pipeInvalid(11) && (pipeOut(9).bits.ArchEvent.intrNO === 0.U)
+  regfile.io.writePorts(1).wen := !pipeOut(9).bits.ArchEvent.hasIntrException && BypassPktValid(9) && BypassPkt(9).decodePkt.rdvalid && !pipeInvalid(11)
   regfile.io.writePorts(1).addr := BypassPkt(9).decodePkt.rd
   regfile.io.writePorts(1).data := pipeOut(9).bits.rd
 
@@ -964,7 +965,8 @@ class SSDbackend extends NutCoreModule with hasBypassConst {
     io.diff.dt_ic1.clock   := clock
     io.diff.dt_ic1.coreid  := hartid
     io.diff.dt_ic1.index   := 0.U
-    io.diff.dt_ic1.valid  := RegNext(pipeOut(8).fire() && !pipeInvalid(10) && pipeOut(8).bits.pc =/= 0.U) && !RegNext(SSDcoretrap)&& !RegNext(ebreak_skip)
+    //io.diff.dt_ic1.valid  := RegNext(pipeOut(8).fire() && !pipeInvalid(10) && pipeOut(8).bits.pc =/= 0.U) && !RegNext(SSDcoretrap)&& !RegNext(ebreak_skip)
+    io.diff.dt_ic1.valid  := RegNext(pipeOut(8).fire() && !pipeInvalid(10) && pipeOut(8).bits.pc =/= 0.U) && !RegNext(SSDcoretrap)&& !RegNext(pipeOut(8).bits.ArchEvent.hasIntrException)
     io.diff.dt_ic1.pc     := RegNext(Cat(0.U((64 - VAddrBits).W), pipeOut(8).bits.pc))
     io.diff.dt_ic1.instr  := RegNext(pipeOut(8).bits.instr)
     io.diff.dt_ic1.special := 0.U
@@ -981,7 +983,7 @@ class SSDbackend extends NutCoreModule with hasBypassConst {
     io.diff.dt_ic0.clock   := clock
     io.diff.dt_ic0.coreid  := hartid
     io.diff.dt_ic0.index   := 1.U
-    io.diff.dt_ic0.valid  := RegNext(pipeOut(9).fire() && !pipeInvalid(11) && pipeOut(9).bits.pc =/= 0.U)
+    io.diff.dt_ic0.valid  := RegNext(pipeOut(9).fire() && !pipeInvalid(11) && pipeOut(9).bits.pc =/= 0.U) && !RegNext(SSDcoretrap)&& !RegNext(pipeOut(9).bits.ArchEvent.hasIntrException)
     io.diff.dt_ic0.pc     := RegNext(Cat(0.U((64 - VAddrBits).W), pipeOut(9).bits.pc))
     io.diff.dt_ic0.instr  := RegNext(pipeOut(9).bits.instr)
     io.diff.dt_ic0.special := 0.U
@@ -1011,10 +1013,10 @@ class SSDbackend extends NutCoreModule with hasBypassConst {
 
     io.diff.dt_ae.clock := clock
     io.diff.dt_ae.coreid := hartid
-    io.diff.dt_ae.intrNO := RegNext(pipeOut(8).bits.ArchEvent.intrNO & VecInit(Seq.fill(32)(pipeOut(8).valid)).asUInt)
-    io.diff.dt_ae.cause := Mux((io.diff.dt_ic1.valid || RegNext(ebreak_skip)) ,RegNext(pipeOut(8).bits.ArchEvent.cause),0.U)//RegNext(pipeOut(8).bits.ArchEvent.cause)
-    io.diff.dt_ae.exceptionPC := RegNext(Cat(0.U((64 - VAddrBits).W), pipeOut(8).bits.pc))
-    io.diff.dt_ae.exceptionInst := RegNext(pipeOut(8).bits.instr)
+    io.diff.dt_ae.intrNO := RegNext(RegNext(pipeOut(8).bits.ArchEvent.intrNO & VecInit(Seq.fill(32)(pipeOut(8).valid)).asUInt))
+    io.diff.dt_ae.cause := RegNext(Mux(RegNext(pipeOut(8).bits.ArchEvent.hasIntrException && pipeOut(8).fire()), RegNext(pipeOut(8).bits.ArchEvent.cause), Mux(RegNext(pipeOut(9).bits.ArchEvent.hasIntrException && pipeOut(9).fire()), RegNext(pipeOut(9).bits.ArchEvent.cause), 0.U)))//RegNext(pipeOut(8).bits.ArchEvent.cause)
+    io.diff.dt_ae.exceptionPC := RegNext(Mux(RegNext(pipeOut(8).bits.ArchEvent.hasIntrException && pipeOut(8).fire()), RegNext(Cat(0.U((64 - VAddrBits).W), pipeOut(8).bits.pc)), RegNext(Cat(0.U((64 - VAddrBits).W), pipeOut(9).bits.pc))))
+    io.diff.dt_ae.exceptionInst := RegNext(Mux(RegNext(pipeOut(8).bits.ArchEvent.hasIntrException && pipeOut(8).fire()), RegNext(pipeOut(8).bits.instr), RegNext(pipeOut(9).bits.instr)))
 
     io.diff.dt_te.clock := clock
     io.diff.dt_te.coreid := hartid
@@ -1027,23 +1029,23 @@ class SSDbackend extends NutCoreModule with hasBypassConst {
     io.diff.dt_cs.clock := clock
     io.diff.dt_cs.coreid := hartid
     io.diff.dt_cs.priviledgeMode := 3.U
-    io.diff.dt_cs.mstatus   := RegNext(Mux(pipeOut(9).bits.csrInst,pipeOut(9).bits.CSRregfile.mstatus ,pipeOut(8).bits.CSRregfile.mstatus ))
-    io.diff.dt_cs.sstatus   := RegNext(Mux(pipeOut(9).bits.csrInst,pipeOut(9).bits.CSRregfile.sstatus ,pipeOut(8).bits.CSRregfile.sstatus ))
-    io.diff.dt_cs.mepc      := RegNext(Mux(pipeOut(9).bits.csrInst,pipeOut(9).bits.CSRregfile.mepc    ,pipeOut(8).bits.CSRregfile.mepc    ))
-    io.diff.dt_cs.sepc      := RegNext(Mux(pipeOut(9).bits.csrInst,pipeOut(9).bits.CSRregfile.sepc    ,pipeOut(8).bits.CSRregfile.sepc    ))
-    io.diff.dt_cs.mtval     := RegNext(Mux(pipeOut(9).bits.csrInst,pipeOut(9).bits.CSRregfile.mtval   ,pipeOut(8).bits.CSRregfile.mtval   ))
-    io.diff.dt_cs.stval     := RegNext(Mux(pipeOut(9).bits.csrInst,pipeOut(9).bits.CSRregfile.stval   ,pipeOut(8).bits.CSRregfile.stval   ))
-    io.diff.dt_cs.mtvec     := RegNext(Mux(pipeOut(9).bits.csrInst,pipeOut(9).bits.CSRregfile.mtvec   ,pipeOut(8).bits.CSRregfile.mtvec   ))
-    io.diff.dt_cs.stvec     := RegNext(Mux(pipeOut(9).bits.csrInst,pipeOut(9).bits.CSRregfile.stvec   ,pipeOut(8).bits.CSRregfile.stvec   ))
-    io.diff.dt_cs.mcause    := RegNext(Mux(pipeOut(9).bits.csrInst,pipeOut(9).bits.CSRregfile.mcause  ,pipeOut(8).bits.CSRregfile.mcause  ))
-    io.diff.dt_cs.scause    := RegNext(Mux(pipeOut(9).bits.csrInst,pipeOut(9).bits.CSRregfile.scause  ,pipeOut(8).bits.CSRregfile.scause  ))
-    io.diff.dt_cs.satp      := RegNext(Mux(pipeOut(9).bits.csrInst,pipeOut(9).bits.CSRregfile.satp    ,pipeOut(8).bits.CSRregfile.satp    ))
-    io.diff.dt_cs.mip       := RegNext(Mux(pipeOut(9).bits.csrInst,pipeOut(9).bits.CSRregfile.mip     ,pipeOut(8).bits.CSRregfile.mip     ))
-    io.diff.dt_cs.mie       := RegNext(Mux(pipeOut(9).bits.csrInst,pipeOut(9).bits.CSRregfile.mie     ,pipeOut(8).bits.CSRregfile.mie     ))
-    io.diff.dt_cs.mscratch  := RegNext(Mux(pipeOut(9).bits.csrInst,pipeOut(9).bits.CSRregfile.mscratch,pipeOut(8).bits.CSRregfile.mscratch))
-    io.diff.dt_cs.sscratch  := RegNext(Mux(pipeOut(9).bits.csrInst,pipeOut(9).bits.CSRregfile.sscratch,pipeOut(8).bits.CSRregfile.sscratch))
-    io.diff.dt_cs.mideleg   := RegNext(Mux(pipeOut(9).bits.csrInst,pipeOut(9).bits.CSRregfile.mideleg ,pipeOut(8).bits.CSRregfile.mideleg ))
-    io.diff.dt_cs.medeleg   := RegNext(Mux(pipeOut(9).bits.csrInst,pipeOut(9).bits.CSRregfile.medeleg ,pipeOut(8).bits.CSRregfile.medeleg ))
+    io.diff.dt_cs.mstatus   := RegNext(Mux(pipeOut(9).bits.ArchEvent.hasIntrException && pipeOut(9).fire(), RegNext(pipeOut(8).bits.CSRregfile.mstatus) , pipeOut(8).bits.CSRregfile.mstatus ))
+    io.diff.dt_cs.sstatus   := RegNext(Mux(pipeOut(9).bits.ArchEvent.hasIntrException && pipeOut(9).fire(), RegNext(pipeOut(8).bits.CSRregfile.sstatus) , pipeOut(8).bits.CSRregfile.sstatus ))
+    io.diff.dt_cs.mepc      := RegNext(Mux(pipeOut(9).bits.ArchEvent.hasIntrException && pipeOut(9).fire(), RegNext(pipeOut(8).bits.CSRregfile.mepc)    , pipeOut(8).bits.CSRregfile.mepc    ))
+    io.diff.dt_cs.sepc      := RegNext(Mux(pipeOut(9).bits.ArchEvent.hasIntrException && pipeOut(9).fire(), RegNext(pipeOut(8).bits.CSRregfile.sepc)    , pipeOut(8).bits.CSRregfile.sepc    ))
+    io.diff.dt_cs.mtval     := RegNext(Mux(pipeOut(9).bits.ArchEvent.hasIntrException && pipeOut(9).fire(), RegNext(pipeOut(8).bits.CSRregfile.mtval)   , pipeOut(8).bits.CSRregfile.mtval   ))
+    io.diff.dt_cs.stval     := RegNext(Mux(pipeOut(9).bits.ArchEvent.hasIntrException && pipeOut(9).fire(), RegNext(pipeOut(8).bits.CSRregfile.stval)   , pipeOut(8).bits.CSRregfile.stval   ))
+    io.diff.dt_cs.mtvec     := RegNext(Mux(pipeOut(9).bits.ArchEvent.hasIntrException && pipeOut(9).fire(), RegNext(pipeOut(8).bits.CSRregfile.mtvec)   , pipeOut(8).bits.CSRregfile.mtvec   ))
+    io.diff.dt_cs.stvec     := RegNext(Mux(pipeOut(9).bits.ArchEvent.hasIntrException && pipeOut(9).fire(), RegNext(pipeOut(8).bits.CSRregfile.stvec)   , pipeOut(8).bits.CSRregfile.stvec   ))
+    io.diff.dt_cs.mcause    := RegNext(Mux(pipeOut(9).bits.ArchEvent.hasIntrException && pipeOut(9).fire(), RegNext(pipeOut(8).bits.CSRregfile.mcause)  , pipeOut(8).bits.CSRregfile.mcause  ))
+    io.diff.dt_cs.scause    := RegNext(Mux(pipeOut(9).bits.ArchEvent.hasIntrException && pipeOut(9).fire(), RegNext(pipeOut(8).bits.CSRregfile.scause)  , pipeOut(8).bits.CSRregfile.scause  ))
+    io.diff.dt_cs.satp      := RegNext(Mux(pipeOut(9).bits.ArchEvent.hasIntrException && pipeOut(9).fire(), RegNext(pipeOut(8).bits.CSRregfile.satp)    , pipeOut(8).bits.CSRregfile.satp    ))
+    io.diff.dt_cs.mip       := RegNext(Mux(pipeOut(9).bits.ArchEvent.hasIntrException && pipeOut(9).fire(), RegNext(pipeOut(8).bits.CSRregfile.mip)     , pipeOut(8).bits.CSRregfile.mip     ))
+    io.diff.dt_cs.mie       := RegNext(Mux(pipeOut(9).bits.ArchEvent.hasIntrException && pipeOut(9).fire(), RegNext(pipeOut(8).bits.CSRregfile.mie)     , pipeOut(8).bits.CSRregfile.mie     ))
+    io.diff.dt_cs.mscratch  := RegNext(Mux(pipeOut(9).bits.ArchEvent.hasIntrException && pipeOut(9).fire(), RegNext(pipeOut(8).bits.CSRregfile.mscratch), pipeOut(8).bits.CSRregfile.mscratch))
+    io.diff.dt_cs.sscratch  := RegNext(Mux(pipeOut(9).bits.ArchEvent.hasIntrException && pipeOut(9).fire(), RegNext(pipeOut(8).bits.CSRregfile.sscratch), pipeOut(8).bits.CSRregfile.sscratch))
+    io.diff.dt_cs.mideleg   := RegNext(Mux(pipeOut(9).bits.ArchEvent.hasIntrException && pipeOut(9).fire(), RegNext(pipeOut(8).bits.CSRregfile.mideleg) , pipeOut(8).bits.CSRregfile.mideleg ))
+    io.diff.dt_cs.medeleg   := RegNext(Mux(pipeOut(9).bits.ArchEvent.hasIntrException && pipeOut(9).fire(), RegNext(pipeOut(8).bits.CSRregfile.medeleg) , pipeOut(8).bits.CSRregfile.medeleg ))
 
 
     //val dt_irs_gpr = WireInit(VecInit(Seq.fill(32)(0.U(64.W))))
