@@ -855,7 +855,7 @@ class SSDCSR extends NutCoreModule with SSDHasCSRConst with SSDHasExceptionNO wi
   io.redirect.rtype := 0.U
   io.redirect.target := Mux(resetSatp || frontendTriggerUpdate || memTriggerUpdate, io.cfIn.pc + 4.U, Mux(raiseExceptionIntr_wire, trapTarget, retTarget))
   io.redirect.btbIsBranch := 0.U
-  io.redirect.pc := RegNext(io.cfIn.pc)
+  io.redirect.pc := io.cfIn.pc
 
   // Branch control
 

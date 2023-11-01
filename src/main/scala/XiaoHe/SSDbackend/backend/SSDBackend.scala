@@ -155,13 +155,17 @@ class SSDbackend extends NutCoreModule with hasBypassConst {
   SSDCSR.io.instrValid := CSRValid
   SSDCSR.io.debugInt := io.debugInt
   // hasI01Valid indicates pipe0 or pipe1 has valid instructions, so the exception/intrruption can be attached to this instruction, should care that 
+  // exception should include trigger: frontend trigger will only happen in pipe0; mem trigger may happen in pipe1
+  val i0Triggered = pipeOut(6).bits.triggeredFire.canFire
+  val i1Triggered = pipeOut(7).bits.triggeredFire.canFire
   val i0Valid = BypassPktValid(6) && (BypassPkt(6).decodePkt.skip) && !pipeInvalid(8)
   val i1Valid = BypassPktValid(7) && (BypassPkt(7).decodePkt.skip) && !pipeInvalid(9)
+  val chooseI1 = i1Valid && !i0Triggered && i1Triggered
   val hasI01Valid = i0Valid || i1Valid
   SSDCSR.io.hasI01Valid := hasI01Valid
   // There is possblity that pipe 7 has mem trigger fire
-  SSDCSR.io.cfIn.pc := Mux((BypassPktValid(6) && !pipeOut(6).bits.triggeredFire.canFire && !pipeOut(7).bits.triggeredFire.canFire) || pipeOut(6).bits.triggeredFire.canFire, pipeOut(6).bits.pc, pipeOut(7).bits.pc)
-  SSDCSR.io.cfIn.triggeredFire := Mux(pipeOut(6).bits.triggeredFire.canFire, pipeOut(6).bits.triggeredFire, pipeOut(7).bits.triggeredFire)
+  SSDCSR.io.cfIn.pc := Mux(!chooseI1, pipeOut(6).bits.pc, pipeOut(7).bits.pc)
+  SSDCSR.io.cfIn.triggeredFire := Mux(i0Triggered, pipeOut(6).bits.triggeredFire, pipeOut(7).bits.triggeredFire)
   when(i0CSRValid) {
     SSDCSR.io.cfIn.pc                   := pipeOut(6).bits.pc
     SSDCSR.io.cfIn.pnpc                 := pipeOut(6).bits.pnpc
@@ -309,11 +313,11 @@ class SSDbackend extends NutCoreModule with hasBypassConst {
   LSU.io.storeBypassCtrl <> Bypass.io.LSUBypassCtrl.storeBypassCtrlE2
   val i0LSUValid = BypassPktValid(2) && !ex4Flush && (BypassPkt(2).decodePkt.load || BypassPkt(2).decodePkt.store)
   val i1LSUValid = BypassPktValid(3) && !ex4Flush && !i0AluFlush && (BypassPkt(3).decodePkt.load || BypassPkt(3).decodePkt.store)
+  
   //LSU flush
-
-    LSU.io.invalid(0) := ALU_6.io.redirect.valid || ALU_7.io.redirect.valid
-    LSU.io.invalid(1) := ALU_6.io.redirect.valid || ALU_7.io.redirect.valid
-    LSU.io.invalid(2) := ALU_6.io.redirect.valid && BypassPktValid(7) && BypassPkt(7).decodePkt.store
+  LSU.io.invalid(0) := ALU_6.io.redirect.valid || ALU_7.io.redirect.valid
+  LSU.io.invalid(1) := ALU_6.io.redirect.valid || ALU_7.io.redirect.valid
+  LSU.io.invalid(2) := ALU_6.io.redirect.valid && BypassPktValid(7) && BypassPkt(7).decodePkt.store
 
 //  dontTouch(i0LSUValid)
 //  dontTouch(i1LSUValid)
@@ -548,14 +552,14 @@ class SSDbackend extends NutCoreModule with hasBypassConst {
 
   // pipeIn(2).bits.ArchEvent :=  Mux(RegNext(CSRValid),Mux(RegNext(i0CSRValid),SSDCSR.io.ArchEvent,0.U.asTypeOf(new ArchEvent)),0.U.asTypeOf(new ArchEvent))
   // pipeIn(3).bits.ArchEvent :=  Mux(RegNext(CSRValid),Mux(RegNext(i1CSRValid),SSDCSR.io.ArchEvent,0.U.asTypeOf(new ArchEvent)),0.U.asTypeOf(new ArchEvent))
-  pipeIn(8).bits.ArchEvent.intrNO := Mux(i0Valid, SSDCSR.io.ArchEvent.intrNO, 0.U)
-  pipeIn(8).bits.ArchEvent.exceptionPC := Mux(i0Valid, SSDCSR.io.ArchEvent.exceptionPC, 0.U)
-  pipeIn(8).bits.ArchEvent.exceptionInst := Mux(i0Valid, SSDCSR.io.ArchEvent.exceptionInst, 0.U)
-  pipeIn(8).bits.ArchEvent.cause := Mux(i0Valid, SSDCSR.io.ArchEvent.cause, 0.U)
-  pipeIn(9).bits.ArchEvent.intrNO := Mux(!i0Valid && i1Valid, SSDCSR.io.ArchEvent.intrNO, 0.U)
-  pipeIn(9).bits.ArchEvent.exceptionPC := Mux(!i0Valid && i1Valid, SSDCSR.io.ArchEvent.exceptionPC, 0.U)
-  pipeIn(9).bits.ArchEvent.exceptionInst := Mux(i0Valid, SSDCSR.io.ArchEvent.exceptionInst, 0.U)
-  pipeIn(9).bits.ArchEvent.cause := Mux(i0Valid, SSDCSR.io.ArchEvent.cause, 0.U)
+  pipeIn(8).bits.ArchEvent.intrNO := Mux(hasI01Valid && !chooseI1, SSDCSR.io.ArchEvent.intrNO, 0.U)
+  pipeIn(8).bits.ArchEvent.exceptionPC := Mux(hasI01Valid && !chooseI1, SSDCSR.io.ArchEvent.exceptionPC, 0.U)
+  pipeIn(8).bits.ArchEvent.exceptionInst := Mux(hasI01Valid && !chooseI1, SSDCSR.io.ArchEvent.exceptionInst, 0.U)
+  pipeIn(8).bits.ArchEvent.cause := Mux(hasI01Valid && !chooseI1, SSDCSR.io.ArchEvent.cause, 0.U)
+  pipeIn(9).bits.ArchEvent.intrNO := Mux(hasI01Valid && chooseI1, SSDCSR.io.ArchEvent.intrNO, 0.U)
+  pipeIn(9).bits.ArchEvent.exceptionPC := Mux(hasI01Valid && chooseI1, SSDCSR.io.ArchEvent.exceptionPC, 0.U)
+  pipeIn(9).bits.ArchEvent.exceptionInst := Mux(hasI01Valid && chooseI1, SSDCSR.io.ArchEvent.exceptionInst, 0.U)
+  pipeIn(9).bits.ArchEvent.cause := Mux(hasI01Valid && chooseI1, SSDCSR.io.ArchEvent.cause, 0.U)
 
   //e2
   pipeIn(4).bits.rs1 := BypassMux(ByPassEna(6), BypassPkt(2).BypassCtl.rs1bypasse2,BypassPortE2, pipeOut(2).bits.rs1)
@@ -590,8 +594,8 @@ class SSDbackend extends NutCoreModule with hasBypassConst {
   pipeIn(9).bits.rd := Mux(aluValid(3),ALU_7.io.out.bits,pipeOut(7).bits.rd)
   pipeIn(8).bits.branchTaken := Mux(aluValid(2),ALU_6.io.branchTaken,pipeOut(6).bits.branchTaken)
   pipeIn(9).bits.branchTaken := Mux(aluValid(3),ALU_7.io.branchTaken,pipeOut(7).bits.branchTaken)
-  pipeIn(8).bits.redirect := Mux(SSDCSR.io.redirect.valid && i0Valid ,SSDCSR.io.redirect,Mux(ALU_6.io.redirect.valid && pipeOut(6).valid,ALU_6.io.redirect,0.U.asTypeOf(new RedirectIO)))
-  pipeIn(9).bits.redirect := Mux(SSDCSR.io.redirect.valid && i0Valid ,SSDCSR.io.redirect,Mux(ALU_7.io.redirect.valid && pipeOut(7).valid,ALU_7.io.redirect,0.U.asTypeOf(new RedirectIO)))
+  pipeIn(8).bits.redirect := Mux(SSDCSR.io.redirect.valid && hasI01Valid && !chooseI1, SSDCSR.io.redirect, Mux(ALU_6.io.redirect.valid && pipeOut(6).valid,ALU_6.io.redirect,0.U.asTypeOf(new RedirectIO)))
+  pipeIn(9).bits.redirect := Mux(SSDCSR.io.redirect.valid && hasI01Valid && chooseI1, SSDCSR.io.redirect, Mux(ALU_7.io.redirect.valid && pipeOut(7).valid,ALU_7.io.redirect,0.U.asTypeOf(new RedirectIO)))
   pipeIn(8).bits.bpuUpdateReq := Mux(bpuUpdataReq6.valid && pipeOut(6).valid, bpuUpdataReq6, pipeOut(6).bits.bpuUpdateReq)
   pipeIn(9).bits.bpuUpdateReq := Mux(bpuUpdataReq7.valid && pipeOut(7).valid, bpuUpdataReq7, pipeOut(7).bits.bpuUpdateReq)
   pipeIn(8).bits.alu2pmu := Mux(bpuUpdataReq6.valid && pipeOut(6).valid, alu2pmu6, pipeOut(6).bits.alu2pmu)
