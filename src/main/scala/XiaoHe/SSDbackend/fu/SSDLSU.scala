@@ -186,7 +186,7 @@ class SSDLSU extends NutCoreModule with HasStoreBufferConst with SdtrigExt{
   io.memStall := (cacheStall || memXbarStall || mmioStall) && (isLoad || lsuPipeStage3.right.valid && !lsuPipeStage3.right.bits.isStore) || bufferFullStall
   val memStallforCache = (mmioStall) && (isLoad || lsuPipeStage3.right.valid && !lsuPipeStage3.right.bits.isStore) || bufferFullStall
 
-  lsuPipeIn(0).valid := isStore  || loadCacheIn.valid
+  lsuPipeIn(0).valid := isStore || loadCacheIn.valid
   lsuPipeIn(0).bits.isStore := isStore
   lsuPipeIn(0).bits.paddr := reqAddr(PAddrBits-1,0)
   lsuPipeIn(0).bits.offset := offset
@@ -202,7 +202,7 @@ class SSDLSU extends NutCoreModule with HasStoreBufferConst with SdtrigExt{
   lsuPipeIn(0).bits.isMMIOStoreInvalid := isMMIOStore
   lsuPipeIn(0).bits.isMMIO := isMMIO
   lsuPipeOut(1).ready := !bufferFullStall
-  lsuPipeStage3.io.isStall := false.B
+  lsuPipeStage3.io.isStall := !isStore && !loadCacheIn.ready
   lsuPipeStage4.io.isStall := io.memStall //There is only one stall point in LSU
 
   io.LoadReady := cacheIn.ready && !storeBuffer.io.isAlmostFull
@@ -264,6 +264,7 @@ class SSDLSU extends NutCoreModule with HasStoreBufferConst with SdtrigExt{
   // BoringUtils.addSource(loadCacheIn.valid && storeCacheIn.valid,"LSU_load_store_confilct")
 
   storeCacheIn.ready := Mux(storeBuffer.io.isAlmostFull || storeBuffer.io.isFull, cacheInArbiter0.io.in(0).ready, cacheInArbiter1.io.in(1).ready)
+  loadCacheIn.ready := Mux(storeBuffer.io.isAlmostFull || storeBuffer.io.isFull, cacheInArbiter0.io.in(1).ready, cacheInArbiter1.io.in(0).ready)
 
   cacheIn.bits :=  Mux(storeBuffer.io.isAlmostFull || storeBuffer.io.isFull,cacheInArbiter0.io.out.bits,cacheInArbiter1.io.out.bits)
   cacheIn.valid :=  Mux(storeBuffer.io.isAlmostFull || storeBuffer.io.isFull,cacheInArbiter0.io.out.valid,cacheInArbiter1.io.out.valid)

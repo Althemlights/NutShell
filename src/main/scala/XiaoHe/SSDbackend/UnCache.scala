@@ -246,6 +246,10 @@ class IUncacheImp(outer: IUnCache)extends LazyModuleImp(outer) with HasICacheIO 
   )._2
 
   val (_, _, refill_done, _) = edge.addr_inc(mem_grant)
+  val needFlush = RegInit(false.B)
+  when (io.flush && state =/= s_invalid) {
+    needFlush := true.B  
+  }
 
   switch (state) {
     is (s_invalid) {
@@ -285,8 +289,12 @@ class IUncacheImp(outer: IUnCache)extends LazyModuleImp(outer) with HasICacheIO 
         }
       }
 
-      when (resp.fire()) {
+      when (resp.ready || needFlush || io.flush) {
         state := s_invalid
+        when (needFlush || io.flush) {
+          resp.valid := false.B
+          needFlush := false.B
+        }
       }
     }
   }
