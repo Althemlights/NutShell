@@ -926,7 +926,6 @@ class SSDCSR extends NutCoreModule with SSDHasCSRConst with SSDHasExceptionNO wi
   when (raiseExceptionIntr && addr === Mstatus.U && io.in.valid) {
     val mstatusOld = WireInit(mstatus.asTypeOf(new MstatusStruct))
     val mstatusNew = WireInit(mstatus.asTypeOf(new MstatusStruct))
-
     when (delegS) {
       scause := causeNO
       sepc := SignExt(io.cfIn.pc, XLEN)
@@ -958,27 +957,57 @@ class SSDCSR extends NutCoreModule with SSDHasCSRConst with SSDHasExceptionNO wi
     mstatus := mstatusNew.asUInt
     mstatus_wire := mstatusNew.asUInt
   }.elsewhen(raiseExceptionIntr_wire) {
-    // val mstatusOld = WireInit(mstatus.asTypeOf(new MstatusStruct))
-    val mstatusNew1 = mstatusUpdateSideEffect(wdata).asTypeOf(new MstatusStruct)
-    val mstatusNew2 = mstatus.asTypeOf(new MstatusStruct)
-    val mstatusNew = WireInit(Mux(addr === Mstatus.U && io.in.valid, mstatusNew1, mstatusNew2))
+    when (hasDebugTrap && hasValidInst) {
+      val dcsrNew = WireInit(dcsr.asTypeOf(new DcsrStruct))
+      val debugModeNew = WireInit(debugMode)
+      when (!debugMode) {
+        import DcsrStruct._
+        debugModeNew := true.B
+        dcsrNew.prv := priviledgeMode
+        priviledgeMode := ModeM
+        when (hasDebugIntr) {
+          dpc := (SignExt(io.cfIn.pc, XLEN))
+          dcsrNew.cause := CAUSE_HALTREQ
+          Debug(hasDebugIntr, "Debug Mode: Trap to %x at pc %x\n", debugTrapTarget, dpc)
+        }.otherwise {
+          dpc := (SignExt(io.cfIn.pc, XLEN))
+          dcsrNew.cause := MuxCase(0.U, Seq(
+            hasTriggerFire -> CAUSE_TRIGGER,
+            hasBreakPoint -> CAUSE_HALTREQ,
+            hasSingleStep -> CAUSE_STEP
+          ))
+        }
+        dcsr := dcsrNew.asUInt
+        debugIntrEnable := false.B
+      }.elsewhen (debugMode) {
+        // do nothing
+      }.otherwise {
+        // do nothing 
+      }
+      debugMode := debugModeNew
+      Debug("[SSDCSR][Debug Mode] Intr or Exception\n")
+    }.otherwise {
+      val mstatusNew1 = mstatusUpdateSideEffect(wdata).asTypeOf(new MstatusStruct)
+      val mstatusNew2 = mstatus.asTypeOf(new MstatusStruct)
+      val mstatusNew = WireInit(Mux(addr === Mstatus.U && io.in.valid, mstatusNew1, mstatusNew2))
 
-    mcause := causeNo_wire
-    mcause_wire := causeNo_wire
-    mepc := (SignExt(io.cfIn.pc, XLEN))
-    mepc_wire := (SignExt(io.cfIn.pc, XLEN))
-    mstatusNew.mpp := (priviledgeMode)
-    // mstatusNew.pie.m := mstatusUpdateSideEffect(wdata).ie.m && !(RegNext(wdata).asTypeOf(new MstatusStruct).ie.m)
-    mstatusNew.ie.m := false.B
-    mstatusNew.pie.m := (mstatus).asTypeOf(new MstatusStruct).ie.m
-    priviledgeMode := ModeM
-    when(tvalWen) {
-      mtval := 0.U
+      mcause := causeNo_wire
+      mcause_wire := causeNo_wire
+      mepc := (SignExt(io.cfIn.pc, XLEN))
+      mepc_wire := (SignExt(io.cfIn.pc, XLEN))
+      mstatusNew.mpp := (priviledgeMode)
+      // mstatusNew.pie.m := mstatusUpdateSideEffect(wdata).ie.m && !(RegNext(wdata).asTypeOf(new MstatusStruct).ie.m)
+      mstatusNew.ie.m := false.B
+      mstatusNew.pie.m := (mstatus).asTypeOf(new MstatusStruct).ie.m
+      priviledgeMode := ModeM
+      when(tvalWen) {
+        mtval := 0.U
+      }
+
+      mstatus := mstatusNew.asUInt
+      mstatus_wire := mstatusNew.asUInt
+      Debug("[SSDCSR] Intr or Exception\n")
     }
-
-    mstatus := mstatusNew.asUInt
-    mstatus_wire := mstatusNew.asUInt
-    Debug("[SSDCSR] Intr or Exception\n")
   }.elsewhen(addr === Mstatus.U && io.in.valid) {
     val mstatusNew = WireInit(mstatusUpdateSideEffect(wdata).asTypeOf(new MstatusStruct))
     mstatus := mstatusNew.asUInt
@@ -986,7 +1015,7 @@ class SSDCSR extends NutCoreModule with SSDHasCSRConst with SSDHasExceptionNO wi
   }
 
   // jtag Debug Mode
-  when (hasDebugTrap && hasValidInst) {
+  /*when (hasDebugTrap && hasValidInst) {
     val dcsrNew = WireInit(dcsr.asTypeOf(new DcsrStruct))
     val debugModeNew = WireInit(debugMode)
     when (!debugMode) {
@@ -1014,7 +1043,7 @@ class SSDCSR extends NutCoreModule with SSDHasCSRConst with SSDHasExceptionNO wi
       // do nothing 
     }
     debugMode := debugModeNew
-  }
+  }*/
 
   io.in.ready := true.B
   io.out.valid := valid

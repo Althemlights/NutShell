@@ -122,6 +122,9 @@ class SimTop(implicit p: Parameters) extends Module {
 
   val dt_te = Seq.fill(corenum)(Module(new DifftestTrapEvent))
   (dt_te zip soc.io.diff) map { case (i,o) => i.io <> o.dt_te }
+  val cycle_cnt = RegInit(0.U(64.W))
+  cycle_cnt := cycle_cnt + 1.U
+  dt_te.zipWithIndex map { case (i,j) => i.io.cycleCnt <> cycle_cnt}
 
   val dt_cs = Seq.fill(corenum)(Module(new DifftestCSRState))
   (dt_cs zip soc.io.diff) map { case (i,o) => i.io <> o.dt_cs }
