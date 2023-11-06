@@ -100,7 +100,7 @@ class IBF extends NutCoreModule with HasInstrType with HasIBUFConst{
     ipfRingMeta(targetSlot.U + ringBufferHead) := io.inPredictPkt.bits.icachePF
     btbIsBranchRingMeta(targetSlot.U + ringBufferHead) := io.inPredictPkt.bits.btbIsBranch(shiftSize + targetSlot.U)
     sfbRingMeta(targetSlot.U + ringBufferHead) := io.inPredictPkt.bits.sfb(shiftSize + targetSlot.U)
-    triggerInfoBuffer(targetSlot.U + ringBufferHead) := triggered((shiftSize + targetSlot.U) >> 1).asUInt
+    triggerInfoBuffer(targetSlot.U + ringBufferHead) := triggered(targetSlot.U >> 1).asUInt
   }
 
   when (ibufWen) {
