@@ -154,6 +154,7 @@ class SSDbackend extends NutCoreModule with hasBypassConst {
   SSDCSR.io.isBackendException := false.B
   SSDCSR.io.instrValid := CSRValid
   SSDCSR.io.debugInt := io.debugInt
+  Bypass.io.singleStep := SSDCSR.io.singleStep
   // hasI01Valid indicates pipe0 or pipe1 has valid instructions, so the exception/intrruption can be attached to this instruction, should care that 
   // exception should include trigger: frontend trigger will only happen in pipe0; mem trigger may happen in pipe1
   val i0Triggered = pipeOut(6).bits.triggeredFire.canFire
@@ -610,7 +611,7 @@ class SSDbackend extends NutCoreModule with hasBypassConst {
   //regfile
   // if this instruction has Interrupt, dont do it
   // SSDCSR 重定向有两种可能 : 中断+异常（撤销写操作） | tdata相关
-  //val hasIntrException = (SSDCSR.io.ArchEvent.intrNO =/= 0.U) || (SSDCSR.io.ArchEvent.cause =/= 0.U)
+  // val hasIntrException = (SSDCSR.io.ArchEvent.intrNO =/= 0.U) || (SSDCSR.io.ArchEvent.cause =/= 0.U)
   regfile.io.writePorts(0).wen := !pipeOut(8).bits.ArchEvent.hasIntrException && BypassPktValid(8) && BypassPkt(8).decodePkt.rdvalid && !pipeInvalid(10)
   regfile.io.writePorts(0).addr := BypassPkt(8).decodePkt.rd
   regfile.io.writePorts(0).data := pipeOut(8).bits.rd

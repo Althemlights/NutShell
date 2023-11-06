@@ -260,6 +260,7 @@ class SSDCSRIO extends FunctionUnitIO {
   val debugInt = Input(Bool())      // debug Interrupt
   val hasI01Valid = Input(Bool())
   val customCtrl = Output(new CustomCSRCtrlIO)
+  val singleStep = Output(Bool())
 }
 
 class SSDCSR extends NutCoreModule with SSDHasCSRConst with SSDHasExceptionNO with DebugCSR with SdtrigExt{
@@ -808,7 +809,12 @@ class SSDCSR extends NutCoreModule with SSDHasCSRConst with SSDHasExceptionNO wi
   csrExceptionVec(illegalInstr) := false.B //(isIllegalAddr || isIllegalAccess) && wen && !io.isBackendException // Trigger an illegal instr exception when unimplemented csr is being read/written or not having enough priviledge
   csrExceptionVec(loadPageFault) := false.B
   csrExceptionVec(storePageFault) := false.B
-  val hasSingleStep = false.B               // TODO
+  val singleStepHasDone = RegInit(false.B)
+  val hasSingleStep = singleStepHasDone && hasValidInst
+  // to pay attension, we will modify bypass logic to guarantee only I0 has inst(I1 do not have) in step situation
+  when (dcsrData.step && !debugMode && hasValidInst) {singleStepHasDone := true.B}
+  when (singleStepHasDone && hasValidInst) {singleStepHasDone := false.B}
+  io.singleStep := dcsrData.step && !debugMode && !singleStepHasDone
   val hasTriggerFire = io.cfIn.triggeredFire.canFire
   val triggerFrontendHitVec = io.cfIn.triggeredFire.frontendHit
   val triggerMemHitVec      = io.cfIn.triggeredFire.backendHit
@@ -847,7 +853,7 @@ class SSDCSR extends NutCoreModule with SSDHasCSRConst with SSDHasExceptionNO wi
   val hasDebugEbreakException = hasBreakPoint && ebreakEnterDebugMode
   val hasDebugTriggerException = hasTriggerFire && triggerFireAction === TrigActionEnum.DEBUG_MODE
   // temporaily donnot consider singlestep
-  val hasDebugException = hasDebugEbreakException || hasDebugTriggerException
+  val hasDebugException = hasDebugEbreakException || hasDebugTriggerException || hasSingleStep
   val hasDebugTrap = hasDebugException || hasDebugIntr          // 分为 debug 中断和 debug 例外, 暂时不考虑 debug 例外
   val ebreakEnterParkLoop = debugMode && raiseExceptionIntr_wire
 

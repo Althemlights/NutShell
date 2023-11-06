@@ -30,6 +30,7 @@ class DecodeIO2BypassPkt extends Module {
     val issueStall = Output(Vec(2, Bool()))
     val memStall = Input(Bool())
     val mduStall = Input(Bool())
+    val singleStep = Input(Bool()) 
     val out0 = Decoupled(new BypassPkt)
     val out1 = Decoupled(new BypassPkt)
     val pmuio = new PMUIO0
@@ -411,6 +412,7 @@ class DecodeIO2BypassPkt extends Module {
     i1decodePkt.triggeredFire.canFire || 
     (i0decodePkt.csr && i1decodePkt.csr) ||
     (i0decodePkt.csr && i1decodePkt.branch) || (i1decodePkt.mou) ||
+    io.singleStep ||                                // single step I1 can not has inst
     i1decodePkt.csr ||
     i1LoadBlock ||
     i1MulBlock ||
@@ -734,6 +736,7 @@ class Bypass extends Module{
     val in = Vec(2,Flipped(Decoupled(new DecodeIO)))
     val memStall = Input(Bool())            // 与 issuestall 相关 
     val mduStall = Input(Bool())            // 与 issuestall 相关
+    val singleStep = Input(Bool()) 
     val flush = Input(Vec(6,Bool()))
     val issueStall = Output(Vec(2,Bool()))                    // * decode 级 issuestall
     // val pipeFlush = Output(Vec(10,Bool()))
@@ -788,6 +791,7 @@ class Bypass extends Module{
   DecodeIO2BypassPkt.io.in(1) <> io.in(1)
   DecodeIO2BypassPkt.io.memStall <> io.memStall
   DecodeIO2BypassPkt.io.mduStall <> io.mduStall
+  DecodeIO2BypassPkt.io.singleStep <> io.singleStep
   DecodeIO2BypassPkt.io.pmuio <> io.pmuio
 
 
