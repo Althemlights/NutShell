@@ -835,7 +835,7 @@ class SSDCSR extends NutCoreModule with SSDHasCSRConst with SSDHasExceptionNO wi
 
   val iduExceptionVec = io.cfIn.exceptionVec
   val raiseExceptionVec = csrExceptionVec.asUInt | iduExceptionVec.asUInt
-  val raiseException = raiseExceptionVec.orR | hasTriggerFire
+  val raiseException = raiseExceptionVec.orR | hasTriggerFire | hasSingleStep
   val regularExceptionNO = ExcPriority.foldRight(0.U)((i: Int, sum: UInt) => Mux(raiseExceptionVec(i), i.U, sum))  
   val exceptionNO = Mux(hasSingleStep || hasTriggerFire, 3.U, regularExceptionNO)
   val causeNO = (raiseIntr << (XLEN - 1)) | Mux(raiseIntr, intrNO, exceptionNO)
