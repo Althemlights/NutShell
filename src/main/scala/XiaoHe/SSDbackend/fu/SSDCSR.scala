@@ -333,7 +333,7 @@ class SSDCSR extends NutCoreModule with SSDHasCSRConst with SSDHasExceptionNO wi
   val debugIntrEnable = RegInit(true.B) // debug interrupt will be handle only when debugIntrEnable
 
   val dpcPrev = RegNext(dpc)
-  Debug(dpcPrev =/= dpc, "Debug Mode: dpc is altered! Current is %x, previous is %x\n", dpc, dpcPrev)
+  //Debug(dpcPrev =/= dpc, "Debug Mode: dpc is altered! Current is %x, previous is %x\n", dpc, dpcPrev)
 
   val dcsrData = dcsr.asTypeOf(new DcsrStruct)
   val dcsrMask = ZeroExt(GenMask(15) | GenMask(13, 11) | GenMask(4) | GenMask(2, 0), XLEN)// Dcsr write mask
@@ -356,9 +356,9 @@ class SSDCSR extends NutCoreModule with SSDHasCSRConst with SSDHasExceptionNO wi
   val tinfo = RegInit((BigInt(1) << TrigTypeEnum.MCONTROL.litValue.toInt).U(XLEN.W)) // This value should be 4.U
 
   val tdata1Prev = RegNext(tdata1Selected.asUInt)
-  Debug(tdata1Prev =/= tdata1Selected.asUInt, "Debug Mode: tdata1 is altered! Current is %x, previous is %x\n", tdata1Selected.asUInt, tdata1Prev)
+  //Debug(tdata1Prev =/= tdata1Selected.asUInt, "Debug Mode: tdata1 is altered! Current is %x, previous is %x\n", tdata1Selected.asUInt, tdata1Prev)
   val tdata2Prev = RegNext(tdata2Selected.asUInt)
-  Debug(tdata2Prev =/= tdata2Selected.asUInt, "Debug Mode: tdata2 is altered! Current is %x, previous is %x\n", tdata2Selected.asUInt, tdata2Prev)
+  //Debug(tdata2Prev =/= tdata2Selected.asUInt, "Debug Mode: tdata2 is altered! Current is %x, previous is %x\n", tdata2Selected.asUInt, tdata2Prev)
 
   def WriteTselect(wdata: UInt) = {
     Mux(wdata < TriggerNum.U, wdata(3, 0), tselectPhy)
@@ -738,8 +738,8 @@ class SSDCSR extends NutCoreModule with SSDHasCSRConst with SSDHasExceptionNO wi
   mipWire.e.m := meip
   mipWire.s.m := msip
   val pre_mtip = RegNext(mtip)
-  Debug(!pre_mtip && mtip, "CSR: MTIP set up!\n")
-  Debug(pre_mtip && !mtip, "CSR: MTIP set down!\n")
+  //Debug(!pre_mtip && mtip, "CSR: MTIP set up!\n")
+  //Debug(pre_mtip && !mtip, "CSR: MTIP set down!\n")
 
   // SEIP from PLIC is only used to raise interrupt,
   // but it is not stored in the CSR
@@ -757,8 +757,8 @@ class SSDCSR extends NutCoreModule with SSDHasCSRConst with SSDHasExceptionNO wi
   // TODO: debug Interrupt
   val debugIntr = io.debugInt & debugIntrEnable     // has debug Interrupt and Enable Interrupt
   val preDebugIntr = RegNext(debugIntr)
-  Debug(!preDebugIntr && debugIntr, "Debug Mode: debug interrupt is asserted and valid [start high]!\n")
-  Debug(preDebugIntr && !debugIntr, "Debug Mode: debug interrupt is asserted and valid [start low]!\n")
+  //Debug(!preDebugIntr && debugIntr, "Debug Mode: debug interrupt is asserted and valid [start high]!\n")
+  //Debug(preDebugIntr && !debugIntr, "Debug Mode: debug interrupt is asserted and valid [start low]!\n")
 
   val intrVecEnable = Wire(Vec(12, Bool()))
   intrVecEnable.zip(ideleg.asBools).map { case (x, y) => x := priviledgedEnableDetect(y) }
@@ -829,9 +829,9 @@ class SSDCSR extends NutCoreModule with SSDHasCSRConst with SSDHasExceptionNO wi
   val triggerFireOH = PriorityEncoderOH(triggerCanFireVec)
   val triggerFireAction = PriorityMux(triggerFireOH, tdata1WireVec.map(_.getTriggerAction)).asUInt
 
-  Debug(hasSingleStep, "Debug Mode: single step exception\n")
-  Debug(hasTriggerFire, p"Debug Mode: trigger fire, frontend hit vec ${Binary(io.cfIn.triggeredFire.frontendHit.asUInt)} " +
-    p"backend hit vec ${Binary(io.cfIn.triggeredFire.backendHit.asUInt)}\n")
+  //Debug(hasSingleStep, "Debug Mode: single step exception\n")
+  /*Debug(hasTriggerFire, p"Debug Mode: trigger fire, frontend hit vec ${Binary(io.cfIn.triggeredFire.frontendHit.asUInt)} " +
+    p"backend hit vec ${Binary(io.cfIn.triggeredFire.backendHit.asUInt)}\n")*/
 
   val iduExceptionVec = io.cfIn.exceptionVec
   val raiseExceptionVec = csrExceptionVec.asUInt | iduExceptionVec.asUInt
@@ -886,7 +886,7 @@ class SSDCSR extends NutCoreModule with SSDHasCSRConst with SSDHasExceptionNO wi
     debugIntrEnable := true.B
     debugMode := debugModeNew
     retTarget := dpc(VAddrBits-1, 0)
-    Debug("Debug Mode: Dret executed, returning to %x. \n", retTarget)
+    //Debug("Debug Mode: Dret executed, returning to %x. \n", retTarget)
   } 
 
   when (valid && isMret) {
@@ -974,7 +974,7 @@ class SSDCSR extends NutCoreModule with SSDHasCSRConst with SSDHasExceptionNO wi
         when (hasDebugIntr) {
           dpc := (SignExt(io.cfIn.pc, XLEN))
           dcsrNew.cause := CAUSE_HALTREQ
-          Debug(hasDebugIntr, "Debug Mode: Trap to %x at pc %x\n", debugTrapTarget, dpc)
+          //Debug(hasDebugIntr, "Debug Mode: Trap to %x at pc %x\n", debugTrapTarget, dpc)
         }.otherwise {
           dpc := (SignExt(io.cfIn.pc, XLEN))
           dcsrNew.cause := MuxCase(0.U, Seq(
@@ -991,7 +991,7 @@ class SSDCSR extends NutCoreModule with SSDHasCSRConst with SSDHasExceptionNO wi
         // do nothing 
       }
       debugMode := debugModeNew
-      Debug("[SSDCSR][Debug Mode] Intr or Exception\n")
+      //Debug("[SSDCSR][Debug Mode] Intr or Exception\n")
     }.otherwise {
       val mstatusNew1 = mstatusUpdateSideEffect(wdata).asTypeOf(new MstatusStruct)
       val mstatusNew2 = mstatus.asTypeOf(new MstatusStruct)
@@ -1012,7 +1012,7 @@ class SSDCSR extends NutCoreModule with SSDHasCSRConst with SSDHasExceptionNO wi
 
       mstatus := mstatusNew.asUInt
       mstatus_wire := mstatusNew.asUInt
-      Debug("[SSDCSR] Intr or Exception\n")
+      //Debug("[SSDCSR] Intr or Exception\n")
     }
   }.elsewhen(addr === Mstatus.U && io.in.valid) {
     val mstatusNew = WireInit(mstatusUpdateSideEffect(wdata).asTypeOf(new MstatusStruct))
