@@ -31,6 +31,7 @@ set constr_dir  ${script_dir}/constr
 set data_dir    ${script_dir}/data
 set ip_dir      ${script_dir}/ip
 
+# create vivado project
 create_project $project_name -force -dir $project_dir/ -part ${device}
 if {[info exists board]} {
   set_property board_part $board [current_project]
@@ -43,7 +44,7 @@ set inc_files [list \
 add_files -norecurse -fileset sources_1 $inc_files
 set_property is_global_include true [get_files $inc_files]
 
-# Add files for nutshell
+# Add files for nutshell: add design src\ constraints file \ simulation file
 lappend src_files "[file normalize "${fpga_dir}/../build/TopMain.v"]"
 
 add_files -norecurse -fileset sources_1 $src_files
