@@ -45,7 +45,7 @@ add_files -norecurse -fileset sources_1 $inc_files
 set_property is_global_include true [get_files $inc_files]
 
 # Add files for nutshell: add design src\ constraints file \ simulation file
-lappend src_files "[file normalize "${fpga_dir}/../build/TopMain.v"]"
+lappend src_files "[file normalize "${fpga_dir}/../build/Top.v"]"
 
 add_files -norecurse -fileset sources_1 $src_files
 if {[info exists xdc_files]} {

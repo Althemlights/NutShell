@@ -1,7 +1,8 @@
-set device xc7z020-1-clg400
-set board tul.com.tw:pynq-z2:part0:1.0
+set device xc7z045ffg900-2
+set board xilinx.com:zc706:part0:1.4
 
 set script_dir  [file dirname [info script]]
+puts $script_dir
 
 # Add files for system top
 set src_files [list \

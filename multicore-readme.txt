@@ -18,5 +18,8 @@
 Index bits: 7   Ways: 4   Banks: 4  SramTemplate Addr bits: 7 + 1 = 8  SramDatabits: 6
 
 
-
+生成 TopMain
 mill chiselModule.runMain top.moduleTop -td ./build
+生成 vivado project
+cd fpga
+make PRJ=myproject BOARD=zynq STANDALONE=true

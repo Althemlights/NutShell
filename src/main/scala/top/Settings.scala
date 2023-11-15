@@ -18,15 +18,13 @@ package top
 
 object DefaultSettings {
   def apply() = Map(
-    "MemMapBase" -> 0x0000000000000000L,
-    "MemMapRegionBits" -> 0,
-    "MMIOBase" -> 0x0000000040000000L,
-    "MMIOSize" -> 0x0000000040000000L,
-    "UnCacheBase" -> 0x0000000000000000L,
-    "UnCacheSize" -> 0x0000000060000000L,
-    "MemBase" -> 0x0000000080000000L,
-    "MemSize" -> 0x0000000080000000L,
-    "ResetVector" -> 0x30000000L,
+    "MMIOBase" -> 0x00000000e0000000L,
+    "MMIOSize" -> 0x0000000010000000L,
+    "UnCacheBase" -> 0x00000000e0000000L,
+    "UnCacheSize" -> 0x0000000010000000L,
+    "MemBase" -> 0x0000000010000000L,
+    "MemSize" -> 0x0000000010000000L,
+    "ResetVector" -> 0x10000000L,
     "NrExtIntr" -> 1,
 
     "HasL2cache" -> false,
