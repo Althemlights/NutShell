@@ -20,7 +20,7 @@ set script_folder [_tcl::get_script_folder]
 ################################################################
 # Check if script is running in correct Vivado version.
 ################################################################
-set scripts_vivado_version 2019.1
+set scripts_vivado_version 2019.2
 set current_vivado_version [version -short]
 
 if { [string first $scripts_vivado_version $current_vivado_version] == -1 } {
@@ -551,6 +551,14 @@ proc create_root_design { parentCell } {
   set_property -dict [ list \
    CONFIG.NUM_PORTS {3} \
  ] $xlconcat_0
+
+  # Check if 'DDR' is already connected
+  set existing_connection [get_bd_intf_pins -of_objects [get_bd_intf_ports DDR]]
+
+  # If there is an existing connection, disconnect it
+  if {[llength $existing_connection] > 0} {
+   disconnect_bd_intf_net [lindex $existing_connection 0]
+  }
 
   # Create interface connections
   connect_bd_intf_net -intf_net WuKong_0_io_master [get_bd_intf_pins axi_interconnect_0/S00_AXI] [get_bd_intf_pins rv_system/io_master]
