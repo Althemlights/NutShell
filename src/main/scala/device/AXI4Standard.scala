@@ -15,8 +15,8 @@ class riscv_cpu_io extends Bundle {
   val master = new ysyxAXI4IO()
 }
 
-class AXI4Standard(implicit p: Parameters) extends LazyModule {
-  val totalmemRange = AddressSet(0x00000000L, 0xffffffffL).subtract(AddressSet(0x38000000L, 0x07ffffffL))
+class AXI4Standard(addressSpace: (Long, Long))(implicit p: Parameters) extends LazyModule {
+  val totalmemRange = Seq(AddressSet(addressSpace._1, addressSpace._2))
   val node = AXI4SlaveNode(Seq(AXI4SlavePortParameters(
     Seq(AXI4SlaveParameters(
       address = totalmemRange,

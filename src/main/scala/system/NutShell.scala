@@ -148,9 +148,9 @@ class NutShell()(implicit p: Parameters) extends LazyModule{
     case (source, sink) =>  sink := source
   })
 
-  val mem = TLXbar()
+  val membuf = AXI4Buffer()
   //memAXI4SlaveNode := AXI4UserYanker() := AXI4Deinterleaver(8) := AXI4Buffer():= TLToAXI4() := TLWidthWidget(32) := TLBuffer() := TLCacheCork() :=* l2_mem_tlxbar
-  mem := TLWidthWidget(32) := TLBuffer() := TLBuffer() := TLCacheCork() := l3cacheOpt.node :=* l2_mem_tlxbar
+  membuf := AXI4UserYanker() := AXI4Deinterleaver(8) := AXI4Buffer():= TLToAXI4() := TLWidthWidget(32) := TLBuffer() := TLBuffer() := TLCacheCork() := l3cacheOpt.node :=* l2_mem_tlxbar
 
   val onChipPeripheralRange = AddressSet(0x38000000L, 0x07ffffffL)
   //val uartRange = AddressSet(0x40600000L, 0xf)
@@ -171,17 +171,17 @@ class NutShell()(implicit p: Parameters) extends LazyModule{
     beatBytes = 8
   )))*/
 
-  mem :=
-    //AXI4IdIndexer(idBits = 4) :=
-    //AXI4Buffer() :=
-    //AXI4Buffer() :=
-    //AXI4Buffer() :=
+  val mmiobuf = AXI4Buffer()
+  mmiobuf :=
+    AXI4UserYanker() :=
+    AXI4Deinterleaver(8) :=
+    AXI4Buffer() :=
+    TLToAXI4() :=
     TLBuffer() :=*
-    //TLBuffer.chainNode(3) :=
     peripheralXbar
 
-  val temp_buf = AXI4Buffer()
-  temp_buf := AXI4UserYanker() := AXI4Deinterleaver(8) := AXI4Buffer():= TLToAXI4() := mem
+  /*val temp_buf = AXI4Buffer()
+  temp_buf := AXI4UserYanker() := AXI4Deinterleaver(8) := AXI4Buffer():= TLToAXI4() := mem*/
   lazy val module = new NutShellImp(this)
 }
 

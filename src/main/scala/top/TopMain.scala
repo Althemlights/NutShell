@@ -34,18 +34,27 @@ import freechips.rocketchip.diplomacy._
 class Top()(implicit p: Parameters) extends LazyModule {
 
   val l_nutshell = LazyModule(new NutShell())
-  val l_axi = LazyModule(new AXI4Standard())
-  l_axi.node := l_nutshell.temp_buf
+  val mem_space = ((Settings.getLong("MemBase"), Settings.getLong("MemSize") - 1))
+  val l_axi_mem = LazyModule(new AXI4Standard(mem_space))
+  l_axi_mem.node := l_nutshell.membuf
+
+  val mmio_space = ((Settings.getLong("UnCacheBase"), Settings.getLong("UnCacheSize") - 1))
+  val l_axi_mmio = LazyModule(new AXI4Standard(mmio_space))
+  l_axi_mmio.node := l_nutshell.mmiobuf
 
   lazy val module = new LazyModuleImp(this) {
 
     val io = IO(new Bundle{
       val master = new ysyxAXI4IO()
+      val mmio = new ysyxAXI4IO()
     })
 
     val nutshell = l_nutshell.module
-    val axi = l_axi.module
-    io.master <> axi.io.master
+    val axi_mem = l_axi_mem.module
+    io.master <> axi_mem.io.master
+
+    val axi_mmio = l_axi_mmio.module
+    io.mmio <> axi_mmio.io.master
 
     nutshell.io.clock := clock.asBool
     nutshell.io.reset := reset.asAsyncReset
