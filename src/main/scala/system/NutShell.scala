@@ -68,7 +68,7 @@ class NutShell()(implicit p: Parameters) extends LazyModule{
   val device = new MemoryDevice
 
   val totalmemRange = AddressSet(0x00000000L, 0xffffffffL).subtract(AddressSet(0x38000000L, 0x07ffffffL))
-  val memNode = AXI4SlaveNode(Seq(
+  /*val memNode = AXI4SlaveNode(Seq(
     AXI4SlavePortParameters(
       slaves = Seq(
         AXI4SlaveParameters(
@@ -86,7 +86,7 @@ class NutShell()(implicit p: Parameters) extends LazyModule{
       //beatBytes = 32
       beatBytes = 8
     )
-  ))
+  ))*/
 
   /*val memRange = AddressSet(0x00000000L, 0xffffffffL).subtract(AddressSet(0x0L, 0x7fffffffL))
   val memAXI4SlaveNode = AXI4SlaveNode(Seq(
@@ -180,7 +180,8 @@ class NutShell()(implicit p: Parameters) extends LazyModule{
     //TLBuffer.chainNode(3) :=
     peripheralXbar
 
-  memNode := AXI4Buffer() := AXI4UserYanker() := AXI4Deinterleaver(8) := AXI4Buffer():= TLToAXI4() := mem
+  val temp_buf = AXI4Buffer()
+  temp_buf := AXI4UserYanker() := AXI4Deinterleaver(8) := AXI4Buffer():= TLToAXI4() := mem
   lazy val module = new NutShellImp(this)
 }
 
@@ -206,7 +207,7 @@ class NutShellImp(outer: NutShell) extends LazyRawModuleImp(outer) with HasNutCo
 
   //val memory = outer.memAXI4SlaveNode.makeIOs()
   //val peripheral = outer.peripheralNode.makeIOs()
-  val mem = outer.memNode.makeIOs()
+  //val mem = outer.memNode.makeIOs()
   val nutcore_withl2 = outer.core_with_l2.map(_.module)
   //(io.diff zip nutcore_withl2) map {case (i, o) => i <> o.io.diff} 
   val core_rst_nodes = outer.core_rst_nodes

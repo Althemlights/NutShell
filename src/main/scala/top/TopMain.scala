@@ -18,7 +18,8 @@ package top
 
 import XiaoHe.NutCoreConfig
 import XiaoHe._
-import device.AXI4VGA
+import bus.axi4.ysyxAXI4IO
+import device.{AXI4Standard, riscv_cpu_io}
 // import sim.SimTop
 import chisel3._
 import chisel3.stage._
@@ -31,36 +32,27 @@ import chipsalliance.rocketchip.config._
 import freechips.rocketchip.diplomacy._
 
 class Top()(implicit p: Parameters) extends LazyModule {
-  //val io = IO(new Bundle{})
-  //lazy val config = new DefaultConfig(FPGAPlatform = false)
-  //val l_nutshell = LazyModule(new NutShell()(config))
-  val l_nutshell = LazyModule(new NutShell())
-  //val nutshell = Module(l_nutshell.module)
-  //val vga = Module(new AXI4VGA)
 
-  //nutshell.io := DontCare
-  //vga.io := DontCare
-  //nutshell.memory := DontCare
-  //nutshell.peripheral := DontCare
-  //dontTouch(nutshell.io)
-  //dontTouch(vga.io)
+  val l_nutshell = LazyModule(new NutShell())
+  val l_axi = LazyModule(new AXI4Standard())
+  l_axi.node := l_nutshell.temp_buf
 
   lazy val module = new LazyModuleImp(this) {
 
-    val io = IO(new Bundle {})
+    val io = IO(new Bundle{
+      val master = new ysyxAXI4IO()
+    })
 
     val nutshell = l_nutshell.module
-    //val memory = IO(nutshell.memory.cloneType)
-    //memory <> nutshell.memory
+    val axi = l_axi.module
+    io.master <> axi.io.master
 
     nutshell.io.clock := clock.asBool
     nutshell.io.reset := reset.asAsyncReset
-    //nutshell.io.reset := reset.asBool
 
-    //val peripheral = IO(nutshell.peripheral.cloneType)
-    //peripheral <> nutshell.peripheral
-    val mem = IO(nutshell.mem.cloneType)
-    mem <> nutshell.mem
+    //val nutshell_mem = IO(nutshell.mem.cloneType)
+    //val nutshell_mem = nutshell.mem
+    //mem <> nutshell.mem
     dontTouch(nutshell.io)
     // dontTouch(vga.io)
   }

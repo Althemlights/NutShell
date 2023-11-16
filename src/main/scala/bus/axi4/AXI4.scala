@@ -13,13 +13,13 @@ object AXI4Parameters extends HasNutCoreParameter {
   val lenBits   = 8
   val sizeBits  = 3
   val burstBits = 2
-  val cacheBits = 0
-  val protBits  = 0
-  val qosBits   = 0
+  val cacheBits = 4
+  val protBits  = 3
+  val qosBits   = 4
   val respBits  = 2
 
   // These are not fixed:
-  val idBits    = 4
+  val idBits    = 6
   val addrBits  = PAddrBits
   val dataBits  = DataBits
   val userBits  = 0
@@ -136,4 +136,41 @@ class AXI4(val dataBits: Int = XiaoheAXI4Parameters.dataBits, val idBits: Int = 
     when (ar.fire) { printf(p"${GTimer()},[${name}.ar] ${ar.bits}\n") }
     when (r.fire) { printf(p"${GTimer()},[${name}.r] ${r.bits}\n") }
   }
+}
+
+class ysyxAXI4IO extends Bundle {
+  val arready   = Input(Bool())
+  val arvalid   = Output(Bool())
+  val araddr    = Output(UInt(AXI4Parameters.addrBits.W))
+  val arid      = Output(UInt(AXI4Parameters.idBits.W))
+  val arlen     = Output(UInt(AXI4Parameters.lenBits.W))
+  val arsize    = Output(UInt(AXI4Parameters.sizeBits.W))
+  val arburst   = Output(UInt(AXI4Parameters.burstBits.W))
+
+  val rready   = Output(Bool())
+  val rvalid   = Input(Bool())
+  val rresp    = Input(UInt(AXI4Parameters.respBits.W))
+  val rdata    = Input(UInt(AXI4Parameters.dataBits.W))
+  val rlast    = Input(Bool())
+  val rid      = Input(UInt(AXI4Parameters.idBits.W))
+
+  val awready   = Input(Bool())
+  val awvalid   = Output(Bool())
+  val awaddr    = Output(UInt(AXI4Parameters.addrBits.W))
+  val awid      = Output(UInt(AXI4Parameters.idBits.W))
+  val awlen     = Output(UInt(AXI4Parameters.lenBits.W))
+  val awsize    = Output(UInt(AXI4Parameters.sizeBits.W))
+  val awburst   = Output(UInt(AXI4Parameters.burstBits.W))
+
+  val wready        = Input(Bool())
+  val wvalid        = Output(Bool())
+  val wdata  : UInt = Output(UInt(AXI4Parameters.dataBits.W))
+  val wlast  : Bool = Output(Bool())
+  val wstrb  : UInt = Output(UInt((AXI4Parameters.dataBits/8).W))
+
+  val bready       = Output(Bool())
+  val bvalid       = Input(Bool())
+  val bresp : UInt = Input(UInt(AXI4Parameters.respBits.W))
+  val bid   : UInt = Input(UInt(AXI4Parameters.idBits.W))
+
 }
