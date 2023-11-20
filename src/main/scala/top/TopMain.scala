@@ -20,18 +20,17 @@ import XiaoHe.NutCoreConfig
 import XiaoHe._
 import bus.axi4.ysyxAXI4IO
 import device.{AXI4Standard, riscv_cpu_io}
-// import sim.SimTop
+import sim.SimTop
 import chisel3._
 import chisel3.stage._
 import system._
-//import top.XiaoHeSim.args
 
 
 import freechips.rocketchip.diplomacy.{DisableMonitors, AddressSet, LazyModule, LazyModuleImp}
 import chipsalliance.rocketchip.config._
 import freechips.rocketchip.diplomacy._
 
-class Top()(implicit p: Parameters) extends LazyModule {
+/*class Top()(implicit p: Parameters) extends LazyModule {
 
   val l_nutshell = LazyModule(new NutShell())
   val mem_space = ((Settings.getLong("MemBase"), Settings.getLong("MemSize") - 1))
@@ -65,7 +64,7 @@ class Top()(implicit p: Parameters) extends LazyModule {
     dontTouch(nutshell.io)
     // dontTouch(vga.io)
   }
-}
+}*/
 
 object Generator {
   def execute(args: Array[String], mod: => RawModule) {
@@ -108,9 +107,9 @@ object TopMain extends App {
   val config = new DefaultConfig(false)
 
   if (board == "sim") {  
-    // Generator.execute(args, DisableMonitors(p => new SimTop()(p))(config))
+    Generator.execute(args, DisableMonitors(p => new SimTop()(p))(config))
   } else {
-    Generator.execute(args, (DisableMonitors(p => LazyModule(new Top()(p)))(config)).module)
+    //Generator.execute(args, (DisableMonitors(p => LazyModule(new Top()(p)))(config)).module)
   }
 }
 

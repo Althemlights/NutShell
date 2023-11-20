@@ -18,9 +18,9 @@ package top
 
 object DefaultSettings {
   def apply() = Map(
-    "MMIOBase" -> 0x00000000e0000000L,
+    "MMIOBase" -> 0x0000000040000000L,
     "MMIOSize" -> 0x0000000010000000L,
-    "UnCacheBase" -> 0x00000000e0000000L,
+    "UnCacheBase" -> 0x0000000040000000L,
     "UnCacheSize" -> 0x0000000010000000L,
     "MemBase" -> 0x0000000010000000L,
     "MemSize" -> 0x0000000010000000L,

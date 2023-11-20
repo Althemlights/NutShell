@@ -90,7 +90,7 @@ class NutcoreWithL2Imp(outer: NutcoreWithL2) extends LazyModuleImp(outer) with H
     val hartId = Input(UInt(XLEN.W))
     //val meip = Input(UInt(Settings.getInt("NrExtIntr").W))
     val ila = if (FPGAPlatform && EnableILA) Some(Output(new ILABundle)) else None
-    //val diff = Flipped(new DIFFTESTIO)
+    val diff = Flipped(new DIFFTESTIO)
   })
 
   val nutcore = outer.nutcore.module
@@ -98,7 +98,7 @@ class NutcoreWithL2Imp(outer: NutcoreWithL2) extends LazyModuleImp(outer) with H
   val core_soft_rst = outer.core_reset_sink.in.head._1
 
   nutcore.io.hartid := io.hartId
-  //io.diff <> nutcore.io.diff
+  io.diff <> nutcore.io.diff
   
   val resetChain = Seq(Seq(nutcore, outer.l2cache.module))
   //val resetChain = Seq(Seq(nutcore))

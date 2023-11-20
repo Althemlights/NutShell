@@ -88,7 +88,7 @@ class NutShell()(implicit p: Parameters) extends LazyModule{
     )
   ))*/
 
-  /*val memRange = AddressSet(0x00000000L, 0xffffffffL).subtract(AddressSet(0x0L, 0x7fffffffL))
+  val memRange = Seq(AddressSet(0x10000000L, 0xfffffffL))
   val memAXI4SlaveNode = AXI4SlaveNode(Seq(
     AXI4SlavePortParameters(
       slaves = Seq(
@@ -107,7 +107,7 @@ class NutShell()(implicit p: Parameters) extends LazyModule{
       //beatBytes = 32
       beatBytes = 8
     )
-  ))*/
+  ))
 
   val peripheralXbar = TLXbar()
   
@@ -148,13 +148,13 @@ class NutShell()(implicit p: Parameters) extends LazyModule{
     case (source, sink) =>  sink := source
   })
 
-  val membuf = AXI4Buffer()
-  //memAXI4SlaveNode := AXI4UserYanker() := AXI4Deinterleaver(8) := AXI4Buffer():= TLToAXI4() := TLWidthWidget(32) := TLBuffer() := TLCacheCork() :=* l2_mem_tlxbar
-  membuf := AXI4UserYanker() := AXI4Deinterleaver(8) := AXI4Buffer():= TLToAXI4() := TLWidthWidget(32) := TLBuffer() := TLBuffer() := TLCacheCork() := l3cacheOpt.node :=* l2_mem_tlxbar
+  //val membuf = AXI4Buffer()
+  memAXI4SlaveNode := AXI4UserYanker() := AXI4Deinterleaver(8) := AXI4Buffer():= TLToAXI4() := TLWidthWidget(32) := TLBuffer() := TLBuffer() := TLCacheCork() := l3cacheOpt.node :=* l2_mem_tlxbar
+  //membuf := AXI4UserYanker() := AXI4Deinterleaver(8) := AXI4Buffer():= TLToAXI4() := TLWidthWidget(32) := TLBuffer() := TLBuffer() := TLCacheCork() := l3cacheOpt.node :=* l2_mem_tlxbar*/
 
   val onChipPeripheralRange = AddressSet(0x38000000L, 0x07ffffffL)
-  //val uartRange = AddressSet(0x40600000L, 0xf)
-  val uartRange = AddressSet(0x10000000L, 0xf)
+  val uartRange = AddressSet(0x40600000L, 0xf)
+  //val uartRange = AddressSet(0x10000000L, 0xf)
   val uartDevice = new SimpleDevice("serial", Seq("xilinx,uartlite"))
   val uartParams = AXI4SlaveParameters(
     address = Seq(uartRange),
@@ -166,19 +166,27 @@ class NutShell()(implicit p: Parameters) extends LazyModule{
   /*val peripheralRange = AddressSet(
     0x0, 0x7fffffff
   ).subtract(onChipPeripheralRange).flatMap(x => x.subtract(uartRange))
+  */
   val peripheralNode = AXI4SlaveNode(Seq(AXI4SlavePortParameters(
     Seq(uartParams),
     beatBytes = 8
-  )))*/
+  )))
 
-  val mmiobuf = AXI4Buffer()
-  mmiobuf :=
+  peripheralNode :=
     AXI4UserYanker() :=
     AXI4Deinterleaver(8) :=
     AXI4Buffer() :=
     TLToAXI4() :=
     TLBuffer() :=*
     peripheralXbar
+  /*val mmiobuf = AXI4Buffer()
+  mmiobuf :=
+    AXI4UserYanker() :=
+    AXI4Deinterleaver(8) :=
+    AXI4Buffer() :=
+    TLToAXI4() :=
+    TLBuffer() :=*
+    peripheralXbar*/
 
   /*val temp_buf = AXI4Buffer()
   temp_buf := AXI4UserYanker() := AXI4Deinterleaver(8) := AXI4Buffer():= TLToAXI4() := mem*/
@@ -194,7 +202,7 @@ class NutShellImp(outer: NutShell) extends LazyRawModuleImp(outer) with HasNutCo
     //val frontend = Flipped(new AXI4)
     //val meip = Input(UInt(Settings.getInt("NrExtIntr").W))
     val ila = if (FPGAPlatform && EnableILA) Some(Output(new ILABundle)) else None
-    //val diff = Flipped(Vec(corenum, new DIFFTESTIO))
+    val diff = Flipped(Vec(corenum, new DIFFTESTIO))
     /*val systemjtag = new Bundle {
       val jtag = Flipped(new JTAGIO(hasTRSTn = false))
       val reset = Input(AsyncReset()) // No reset allowed on top
@@ -205,11 +213,11 @@ class NutShellImp(outer: NutShell) extends LazyRawModuleImp(outer) with HasNutCo
     //val debug_reset = Output(Bool())   // jtag debug reset
   })
 
-  //val memory = outer.memAXI4SlaveNode.makeIOs()
-  //val peripheral = outer.peripheralNode.makeIOs()
+  val memory = outer.memAXI4SlaveNode.makeIOs()
+  val peripheral = outer.peripheralNode.makeIOs()
   //val mem = outer.memNode.makeIOs()
   val nutcore_withl2 = outer.core_with_l2.map(_.module)
-  //(io.diff zip nutcore_withl2) map {case (i, o) => i <> o.io.diff} 
+  (io.diff zip nutcore_withl2) map {case (i, o) => i <> o.io.diff} 
   val core_rst_nodes = outer.core_rst_nodes
   val l3cacheOpt = outer.l3cacheOpt.module
 
